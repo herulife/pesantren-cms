@@ -1,0 +1,37 @@
+name: Unggahan Rilis Titip Terbit NPM
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for npm provenance
+    steps:
+      - name: Buka Geledah Persediaan Muatan Repo
+        uses: actions/checkout@v4
+
+      - name: Dikte Pemasangan Serapan Mesin Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Tukang Tancap Pangkat Versi lewat Rilis Turun Temurun Git Tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Setting version to $VERSION"
+          npm version $VERSION --no-git-tag-version
+        working-directory: ./cli
+
+      - name: Pemindahan Selinap Kertas README pilar Rilis Kemasan Paket npm
+        run: cp README.md cli/README.md
+
+      - name: Penggembosan Lepas Tayang Publik di npm berkalung Izin Kemurnian 
+        run: npm publish --provenance --access public
+        working-directory: ./cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

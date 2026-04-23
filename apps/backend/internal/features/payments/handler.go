@@ -1,0 +1,136 @@
+package payments
+
+import (
+	"darussunnah-api/internal/features/auth"
+	"darussunnah-api/internal/platform/logger"
+	"darussunnah-api/internal/validators"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
+)
+
+type Handler struct {
+	repo IRepository
+}
+
+func sendJSONResponse(w http.ResponseWriter, status int, success bool, message string, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": success,
+		"message": message,
+		"data":    data,
+	})
+}
+
+func NewHandler(repo IRepository) *Handler {
+	return &Handler{repo: repo}
+}
+
+func (h *Handler) Routes() chi.Router {
+	r := chi.NewRouter()
+	r.Get("/all", h.GetAll)
+	r.Get("/users", h.GetAllUsers)
+	r.Post("/", h.Create)
+	r.Delete("/{id}", h.Delete)
+	return r
+}
+
+func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	logger.Info(r.Context(), "payments list users started", logger.Field{"operation": "payments_list_users"})
+	users, err := h.repo.GetUsers()
+	if err != nil {
+		logger.Error(r.Context(), "payments list users failed", logger.Field{"operation": "payments_list_users", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	logger.Info(r.Context(), "payments list users completed", logger.Field{"operation": "payments_list_users", "count": len(users)})
+	sendJSONResponse(w, http.StatusOK, true, "Daftar pengguna berhasil dimuat", users)
+}
+
+func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
+	logger.Info(r.Context(), "payments list started", logger.Field{"operation": "payments_list"})
+	ps, err := h.repo.GetAll()
+	if err != nil {
+		logger.Error(r.Context(), "payments list failed", logger.Field{"operation": "payments_list", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	logger.Info(r.Context(), "payments list completed", logger.Field{"operation": "payments_list", "count": len(ps)})
+	sendJSONResponse(w, http.StatusOK, true, "Daftar pembayaran berhasil dimuat", ps)
+}
+
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	logger.Info(r.Context(), "payments create started", logger.Field{"operation": "payments_create"})
+	var p Payment
+	if err := validators.DecodeJSON(w, r, &p); err != nil {
+		logger.Warn(r.Context(), "payments create rejected", logger.Field{"operation": "payments_create"})
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+
+	if err := h.repo.Create(&p); err != nil {
+		logger.Error(r.Context(), "payments create failed", logger.Field{"operation": "payments_create", "error": err.Error(), "user_id": p.UserID})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+
+	// Log activity
+	adminID := 0
+	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
+		if id, ok := claims["id"].(float64); ok {
+			adminID = int(id)
+		}
+	}
+	logger.RecordActivity(&adminID, "CREATE_PAYMENT", fmt.Sprintf("Mencatat pembayaran Rp %d untuk User ID %d", p.Amount, p.UserID), r.RemoteAddr, r.UserAgent())
+	logger.Info(r.Context(), "payments create completed", logger.Field{"operation": "payments_create", "user_id": p.UserID, "amount": p.Amount})
+
+	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil dicatat", nil)
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	logger.Info(r.Context(), "payments delete started", logger.Field{"operation": "payments_delete"})
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		logger.Warn(r.Context(), "payments delete rejected", logger.Field{"operation": "payments_delete", "id": idStr})
+		sendJSONResponse(w, http.StatusBadRequest, false, "ID pembayaran tidak valid", nil)
+		return
+	}
+
+	if err := h.repo.Delete(id); err != nil {
+		logger.Error(r.Context(), "payments delete failed", logger.Field{"operation": "payments_delete", "error": err.Error(), "payment_id": id})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+
+	// Log activity
+	adminID := 0
+	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
+		if cid, ok := claims["id"].(float64); ok {
+			adminID = int(cid)
+		}
+	}
+	logger.RecordActivity(&adminID, "DELETE_PAYMENT", fmt.Sprintf("Menghapus catatan pembayaran ID %d", id), r.RemoteAddr, r.UserAgent())
+	logger.Info(r.Context(), "payments delete completed", logger.Field{"operation": "payments_delete", "payment_id": id})
+
+	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil dihapus", nil)
+}
+
+// Code generated by ifacemaker; DO NOT EDIT.
+
+// IRepository ...
+type IRepository interface {
+	GetAll() ([]Payment, error)
+	GetByUserID(userID int) ([]Payment, error)
+	Create(p *Payment) error
+	Delete(id int) error
+	GetUsers() ([]struct {
+		ID    int    `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}, error)
+}

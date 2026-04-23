@@ -1,0 +1,41 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Node / Next.js
+apps/frontend/node_modules/
+apps/frontend/.next/
+apps/frontend/tsconfig.tsbuildinfo
+apps/frontend/lint_errors.txt
+apps/frontend/ts_errors.txt
+
+# Go build/cache artifacts
+.gocache/
+.gomodcache/
+*.exe
+*.test
+*.out
+
+# Logs and temp files
+*.log
+*.tmp
+.tmp_*.log
+apps/backend/internal/features/videos/test_output.txt
+apps/backend/internal/features/videos/vet_output.txt
+
+# Local databases and runtime files
+*.db
+*.db-shm
+*.db-wal
+*.db.backup
+
+# User uploads
+apps/backend/public/uploads/
+
+# Bun legacy binary lockfile
+raport/bun.lockb
