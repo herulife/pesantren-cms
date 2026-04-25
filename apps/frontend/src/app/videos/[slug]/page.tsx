@@ -36,7 +36,7 @@ export default function VideoSeriesPage() {
     async function fetchSeries() {
       try {
         const res = await getVideos({ limit: 200, offset: 0 });
-        const items = (res.data || []) as Video[];
+        const items = Array.isArray(res.data) ? res.data : [];
         const grouped = new Map<string, Video[]>();
 
         for (const video of items) {

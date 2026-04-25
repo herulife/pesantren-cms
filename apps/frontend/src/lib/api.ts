@@ -863,8 +863,9 @@ export async function getVideos(params: { search?: string, limit?: number, offse
 		const res = await fetch(`${API_BASE_URL}/videos?${queryParams.toString()}`, { cache: 'no-store' });
 		if (!res.ok) return { data: [], pagination: { total: 0, limit: params.limit || 9, offset: params.offset || 0 } };
 		const result = await parseResponse(res);
+		const items = extractListData<Video>(result);
 		return {
-			data: extractListData<Video>(result),
+			data: Array.isArray(items) ? items : [],
 			pagination: extractPagination(result, {
 				total: 0,
 				limit: params.limit || 9,

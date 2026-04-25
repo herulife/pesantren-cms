@@ -78,6 +78,9 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil, nil, correlationID)
 		return
 	}
+	if videos == nil {
+		videos = make([]Video, 0)
+	}
 	writeJSONResponse(w, http.StatusOK, true, "Daftar video berhasil dimuat", videos, map[string]int{
 		"total":  total,
 		"limit":  limit,

@@ -28,7 +28,7 @@ export default function VideosPage() {
     async function fetchVideosData() {
       try {
         const res = await getVideos({ limit: 200, offset: 0 });
-        setVideos(res.data || []);
+        setVideos(Array.isArray(res.data) ? res.data : []);
       } finally {
         setIsLoading(false);
       }
