@@ -1,519 +1,87 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  CircleUserRound,
-  LogOut,
-  Menu,
-  MessageCircle,
-  X,
-} from 'lucide-react';
+import { CircleUserRound, LogOut } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const { user, loading, logout } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const [settings, setSettings] = useState<SettingsMap>({});
-  const [openDesktopDropdown, setOpenDesktopDropdown] = useState<'profil' | 'informasi' | null>(null);
-  const [openAccountMenu, setOpenAccountMenu] = useState(false);
-  const desktopDropdownRef = useRef<HTMLUListElement | null>(null);
-  const accountMenuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleScroll = () => setShowBackToTop(window.scrollY > 320);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    async function fetchSettings() {
-      const data = await getSettingsMap({ silentUnauthorized: true });
-      setSettings(data || {});
-    }
-
-    void fetchSettings();
-  }, []);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-    setOpenDesktopDropdown(null);
-    setOpenAccountMenu(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(event.target as Node)) {
-        setOpenDesktopDropdown(null);
-      }
-      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
-        setOpenAccountMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-  const firstName = user?.name?.trim().split(/\s+/)[0] || 'Pengguna';
   const isPortalUser = user?.role === 'user';
   const dashboardHref = isPortalUser ? '/portal' : '/admin';
-  const dashboardLabel = user ? (isPortalUser ? 'Portal Wali Santri' : 'Panel Admin') : 'Masuk Admin';
-  const schoolName = settings.school_name || 'Darussunnah Parung';
-  const welcomeText = settings.web_welcome_text || 'Pondok Pesantren Tahfidz';
-  const logoUrl = resolveDisplayImageUrl(settings.web_logo_url || '/assets/img/logo.jpg');
-  const schoolAddress =
-    settings.school_address ||
-    'Jl. KH. Ahmad Sugriwa, Kp. Lengkong Barang RT 01 RW 02, Desa Iwul, Kec. Parung, Kab. Bogor 16330';
-  const schoolPhone = settings.school_phone || '0814 1324 1748';
-  const schoolEmail = settings.school_email || '';
-  const schoolWebsite = settings.school_website || '';
-  const whatsappNumber = schoolPhone.replace(/\D/g, '') || '6281413241748';
-  const socialLinks = [
-    { href: settings.social_instagram || 'https://instagram.com/darussunnahparung', label: 'IG' },
-    { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'FB' },
-    { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YT' },
-  ].filter((item) => item.href);
-  const isProfileActive = pathname === '/profil' || pathname.startsWith('/teachers') || pathname.startsWith('/sambutan');
-  const isProgramActive = pathname.startsWith('/program');
-  const isPsbActive = pathname.startsWith('/psb');
-  const isInformationActive =
-    pathname.startsWith('/galeri') || pathname.startsWith('/videos') || pathname.startsWith('/news');
-  const isContactActive = pathname.startsWith('/kontak');
-
-  const toggleDesktopDropdown = (menu: 'profil' | 'informasi') => {
-    setOpenDesktopDropdown((current) => (current === menu ? null : menu));
-  };
+  const dashboardLabel = isPortalUser ? 'Portal Wali Santri' : 'Panel Admin';
 
   return (
-    <div className="min-h-screen bg-white font-sans antialiased">
-      <nav className="sticky top-0 z-[1000] border-b border-emerald-900/80 bg-emerald-950/95 shadow-[0_10px_30px_rgba(2,6,23,0.2)] backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between md:h-20">
-            <Link href="/" className="group flex items-center gap-3 text-white transition-opacity hover:opacity-95">
-              <img
-                src={logoUrl}
-                alt={`Logo ${schoolName}`}
-                className="h-10 w-10 rounded-full border border-emerald-400/80 object-cover shadow-[0_10px_25px_rgba(16,185,129,0.18)] transition-transform duration-300 group-hover:scale-105 md:h-12 md:w-12"
-              />
-              <div className="flex flex-col">
-                <span className="text-base font-extrabold leading-none tracking-tight md:text-xl">
-                  {schoolName}
-                </span>
-                <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.24em] text-emerald-200/75 md:text-[11px]">
-                  {welcomeText}
-                </span>
-              </div>
-            </Link>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
+          <Link href="/" className="flex min-w-0 flex-col">
+            <span className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">
+              Darussunnah Parung
+            </span>
+            <span className="truncate text-lg font-bold text-slate-900">
+              Pondok Pesantren Tahfidz Al-Qur&apos;an
+            </span>
+          </Link>
 
-            <ul
-              ref={desktopDropdownRef}
-              className="hidden items-center gap-2 rounded-full border border-emerald-900/70 bg-emerald-900/30 px-3 py-2 lg:flex"
-            >
-              <li>
+          <nav className="hidden items-center gap-5 text-sm font-medium text-slate-600 md:flex">
+            <Link href="/" className="transition hover:text-emerald-700">Beranda</Link>
+            <Link href="/profil" className="transition hover:text-emerald-700">Profil</Link>
+            <Link href="/program" className="transition hover:text-emerald-700">Program</Link>
+            <Link href="/psb" className="transition hover:text-emerald-700">PSB</Link>
+            <Link href="/news" className="transition hover:text-emerald-700">Berita</Link>
+            <Link href="/kontak" className="transition hover:text-emerald-700">Kontak</Link>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            {loading ? (
+              <div className="h-10 w-28 animate-pulse rounded-full bg-slate-200" />
+            ) : user ? (
+              <>
                 <Link
-                  href="/"
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                    pathname === '/'
-                      ? 'bg-emerald-400/12 text-emerald-200 shadow-inner shadow-emerald-400/10'
-                      : 'text-emerald-50 hover:bg-emerald-400/10 hover:text-emerald-200'
-                  }`}
+                  href={dashboardHref}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
                 >
-                  Beranda
+                  <CircleUserRound size={16} />
+                  {dashboardLabel}
                 </Link>
-              </li>
-              <li className="relative">
                 <button
                   type="button"
-                  onClick={() => toggleDesktopDropdown('profil')}
-                  aria-expanded={openDesktopDropdown === 'profil'}
-                  className={`flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                    isProfileActive || openDesktopDropdown === 'profil'
-                      ? 'bg-emerald-400/12 text-emerald-200 shadow-inner shadow-emerald-400/10'
-                      : 'text-emerald-50 hover:bg-emerald-400/10 hover:text-emerald-200'
-                  }`}
+                  onClick={() => void logout()}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
-                  Profil
-                  <ChevronDown size={12} className={`transition-transform ${openDesktopDropdown === 'profil' ? 'rotate-180' : ''}`} />
+                  <LogOut size={16} />
+                  Keluar
                 </button>
-                <div className={`absolute left-0 top-full z-50 w-52 pt-4 ${openDesktopDropdown === 'profil' ? 'block' : 'hidden'}`}>
-                  <div className="overflow-hidden rounded-2xl border border-emerald-100 bg-white py-2 shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
-                    <div className="border-b border-slate-100 px-4 pb-2 pt-1">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Profil</p>
-                    </div>
-                    <Link href="/profil" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-                      Profil Pesantren
-                    </Link>
-                    <Link href="/sambutan" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-                      Sambutan Pimpinan
-                    </Link>
-                    <Link href="/teachers" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-                      Profil Asatidz
-                    </Link>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <Link
-                  href="/program"
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                    isProgramActive
-                      ? 'bg-emerald-400/12 text-emerald-200 shadow-inner shadow-emerald-400/10'
-                      : 'text-emerald-50 hover:bg-emerald-400/10 hover:text-emerald-200'
-                  }`}
-                >
-                  Program
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/psb"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                    isPsbActive
-                      ? 'bg-amber-400/12 text-amber-200 shadow-inner shadow-amber-300/10'
-                      : 'text-emerald-50 hover:bg-amber-400/10 hover:text-amber-200'
-                  }`}
-                >
-                  PSB
-                </Link>
-              </li>
-              <li className="relative">
-                <button
-                  type="button"
-                  onClick={() => toggleDesktopDropdown('informasi')}
-                  aria-expanded={openDesktopDropdown === 'informasi'}
-                  className={`flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                    isInformationActive || openDesktopDropdown === 'informasi'
-                      ? 'bg-emerald-400/12 text-emerald-200 shadow-inner shadow-emerald-400/10'
-                      : 'text-emerald-50 hover:bg-emerald-400/10 hover:text-emerald-200'
-                  }`}
-                >
-                  Informasi
-                  <ChevronDown size={12} className={`transition-transform ${openDesktopDropdown === 'informasi' ? 'rotate-180' : ''}`} />
-                </button>
-                <div className={`absolute left-0 top-full z-50 w-52 pt-4 ${openDesktopDropdown === 'informasi' ? 'block' : 'hidden'}`}>
-                  <div className="overflow-hidden rounded-2xl border border-emerald-100 bg-white py-2 shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
-                    <div className="border-b border-slate-100 px-4 pb-2 pt-1">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Informasi</p>
-                    </div>
-                    <Link href="/galeri" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-                      Galeri
-                    </Link>
-                    <Link href="/videos" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-                      Video
-                    </Link>
-                    <Link href="/news" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-                      Berita
-                    </Link>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <Link
-                  href="/kontak"
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                    isContactActive
-                      ? 'bg-emerald-400/12 text-emerald-200 shadow-inner shadow-emerald-400/10'
-                      : 'text-emerald-50 hover:bg-emerald-400/10 hover:text-emerald-200'
-                  }`}
-                >
-                  Kontak
-                </Link>
-              </li>
-            </ul>
-
-            <div className="hidden items-center gap-3 lg:flex">
-              {loading ? (
-                <div className="h-11 w-44 animate-pulse rounded-full bg-emerald-900/60" />
-              ) : user ? (
-                <>
-                  <div className="rounded-full border border-emerald-800/80 bg-emerald-900/35 px-4 py-2.5 text-sm text-emerald-100">
-                    <span className="text-emerald-300/80">Assalamu&apos;alaikum, </span>
-                    <span className="font-semibold text-white">{firstName}</span>
-                  </div>
-                  <div ref={accountMenuRef} className="relative">
-                    <button
-                      type="button"
-                      aria-label={dashboardLabel}
-                      onClick={() => setOpenAccountMenu((prev) => !prev)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-900/20 transition-all hover:brightness-105"
-                    >
-                      <CircleUserRound size={20} />
-                    </button>
-                    <div className={`absolute right-0 top-full mt-3 w-64 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.18)] transition-all duration-200 ${openAccountMenu ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'}`}>
-                      <div className="border-b border-slate-100 px-4 py-4 text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">{dashboardLabel}</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-800">{user.name}</p>
-                      </div>
-                      <div className="p-2">
-                        <Link
-                          href={dashboardHref}
-                          onClick={() => setOpenAccountMenu(false)}
-                          className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700"
-                        >
-                          <span>Buka {dashboardLabel}</span>
-                          <ArrowRight size={16} />
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenAccountMenu(false);
-                            void logout();
-                          }}
-                          className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-                        >
-                          <span>Keluar</span>
-                          <LogOut size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/psb"
-                    className="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:brightness-105"
-                  >
-                    Daftar PSB
-                  </Link>
-                  <div ref={accountMenuRef} className="relative">
-                    <button
-                      type="button"
-                      aria-label="Menu akun"
-                      onClick={() => setOpenAccountMenu((prev) => !prev)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-700/90 bg-emerald-900/35 text-emerald-50 transition-all hover:border-emerald-500 hover:bg-emerald-900/60 hover:text-emerald-200"
-                    >
-                      <CircleUserRound size={20} />
-                    </button>
-                    <div className={`absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.18)] transition-all duration-200 ${openAccountMenu ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'}`}>
-                      <div className="border-b border-slate-100 px-4 py-4 text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Menu Akun</p>
-                        <p className="mt-1 text-sm font-medium text-slate-500">Masuk untuk mengakses portal atau panel admin.</p>
-                      </div>
-                      <div className="p-2">
-                        <Link
-                          href="/login"
-                          onClick={() => setOpenAccountMenu(false)}
-                          className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700"
-                        >
-                          <span>Masuk</span>
-                          <ArrowRight size={16} />
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-800 bg-emerald-900/50 transition-colors hover:bg-emerald-800 lg:hidden"
-            >
-              {mobileMenuOpen ? <X size={20} className="text-emerald-50" /> : <Menu size={20} className="text-emerald-50" />}
-            </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                <CircleUserRound size={16} />
+                Masuk
+              </Link>
+            )}
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className="absolute left-0 top-full z-[999] w-full border-t border-emerald-900 bg-emerald-950 shadow-2xl lg:hidden">
-            <div className="px-4 py-4">
-              <div className="grid grid-cols-1 gap-2 rounded-2xl border border-emerald-900/60 bg-emerald-900/30 p-2">
-                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900">
-                  Beranda
-                </Link>
-                <Link href="/program" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900">
-                  Program
-                </Link>
-                <Link href="/psb" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900">
-                  Info PSB
-                </Link>
-                <Link href="/kontak" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900">
-                  Kontak
-                </Link>
-              </div>
-
-              <div className="mt-5">
-                <p className="px-1 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300/70">Profil</p>
-                <div className="mt-2 grid grid-cols-1 gap-2">
-                  <Link href="/profil" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900/70">
-                    Profil Pesantren
-                  </Link>
-                  <Link href="/sambutan" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900/70">
-                    Sambutan Pimpinan
-                  </Link>
-                  <Link href="/teachers" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900/70">
-                    Profil Asatidz
-                  </Link>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <p className="px-1 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300/70">Informasi</p>
-                <div className="mt-2 grid grid-cols-1 gap-2">
-                  <Link href="/galeri" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900/70">
-                    Galeri
-                  </Link>
-                  <Link href="/videos" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900/70">
-                    Video
-                  </Link>
-                  <Link href="/news" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-emerald-50 hover:bg-emerald-900/70">
-                    Berita
-                  </Link>
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3">
-                {loading ? (
-                  <div className="h-24 animate-pulse rounded-2xl bg-emerald-900/40" />
-                ) : user ? (
-                  <>
-                    <div className="rounded-2xl border border-emerald-800 bg-emerald-900/40 px-5 py-4 text-center text-emerald-100">
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300/70">Sudah Masuk</p>
-                      <p className="mt-2 text-base font-semibold text-white">{user.name}</p>
-                    </div>
-                    <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)} className="block rounded-xl bg-emerald-500 px-6 py-3 text-center font-bold text-white shadow-lg shadow-emerald-950/30">
-                      {isPortalUser ? 'Buka Portal Wali Santri' : 'Buka Panel Admin'}
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/psb" onClick={() => setMobileMenuOpen(false)} className="block rounded-xl bg-emerald-500 px-6 py-3 text-center font-bold text-white shadow-lg shadow-emerald-950/30">
-                      Daftar Sekarang
-                    </Link>
-                    <Link
-                      href="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-center gap-3 rounded-xl border border-emerald-800 bg-emerald-900/40 px-6 py-3 text-center font-bold text-emerald-50"
-                    >
-                      <CircleUserRound size={18} />
-                      Masuk Admin
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </nav>
+      </header>
 
       <main>{children}</main>
 
-      <footer className="border-t border-emerald-900 bg-emerald-950 pb-8 pt-14">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex flex-col gap-6 border-b border-emerald-800 pb-8 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col items-center gap-4 text-center md:flex-row md:text-left">
-              <img src={logoUrl} alt={`Logo ${schoolName}`} className="h-16 w-16 rounded-full border-2 border-emerald-500 object-cover shadow-md" />
-              <div>
-                <div className="text-2xl font-extrabold tracking-tight text-white">{schoolName}</div>
-                <div className="mt-1 text-sm font-medium tracking-wide text-emerald-400">{welcomeText}</div>
-                <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-200/80">
-                  Pondok Pesantren Tahfidz Al-Qur&apos;an yang berikhtiar membina santri dalam ilmu, adab, dan kesiapan berdakwah.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {socialLinks.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-800 bg-emerald-900/50 text-xs font-bold text-emerald-400 transition-all hover:bg-emerald-800 hover:text-white"
-                  aria-label={s.label}
-                >
-                  {s.label}
-                </a>
-              ))}
-            </div>
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="font-semibold text-slate-900">Darussunnah Parung</div>
+            <div>Jl. KH. Ahmad Sugriwa, Parung, Bogor</div>
           </div>
-
-          <div className="grid gap-8 py-8 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <h4 className="mb-4 text-sm font-black uppercase tracking-[0.2em] text-white">Ringkasan Pondok</h4>
-              <p className="text-sm leading-relaxed text-emerald-200/80">
-                Berdiri sejak 2012, Darussunnah Parung menekankan pendidikan tahfidz, pembinaan akhlak, dan penumbuhan semangat dakwah dalam kehidupan santri.
-              </p>
-            </div>
-            <div>
-              <h4 className="mb-4 text-sm font-black uppercase tracking-[0.2em] text-white">Kontak Pondok</h4>
-              <div className="space-y-3 text-sm text-emerald-100">
-                <div>{schoolAddress}</div>
-                <div>Kontak utama: {schoolPhone}</div>
-                {schoolEmail ? <div>Email: {schoolEmail}</div> : null}
-                {schoolWebsite ? <div>Website: {schoolWebsite}</div> : null}
-              </div>
-            </div>
-            <div>
-              <h4 className="mb-4 text-sm font-black uppercase tracking-[0.2em] text-white">Tautan Utama</h4>
-              <div className="space-y-2">
-                {[
-                  { name: 'Beranda', href: '/' },
-                  { name: 'Sambutan Pimpinan', href: '/sambutan' },
-                  { name: 'Profil Pondok', href: '/profil' },
-                  { name: 'Program Pondok', href: '/program' },
-                  { name: 'Berita', href: '/news' },
-                  { name: 'Video Kegiatan', href: '/videos' },
-                  { name: 'Galeri Kegiatan', href: '/galeri' },
-                  { name: 'Kontak Pondok', href: '/kontak' },
-                ].map((link) => (
-                  <Link key={link.href} href={link.href} className="block text-sm text-emerald-200 transition-colors hover:text-emerald-400">
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h4 className="mb-4 text-sm font-black uppercase tracking-[0.2em] text-white">Waktu Layanan</h4>
-              <div className="space-y-2 text-sm text-emerald-200/80">
-                <p>Senin - Sabtu: 08:00 - 16:00 WIB</p>
-                <p>Ahad & Hari Libur: Tutup</p>
-                <p className="mt-4 font-medium text-emerald-400">Kunjungan wali santri setiap Ahad terakhir bulan.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-between gap-4 border-t border-emerald-900 pt-8 text-center text-sm text-emerald-300/60 md:flex-row md:text-left">
-            <div>&copy; 2026 {schoolName}.</div>
-            <div>
-              Dikembangkan oleh{' '}
-              <a href="https://herufidiyanto.netlify.app/" className="text-emerald-200 transition-colors hover:text-white">
-                Heru F
-              </a>
-            </div>
+          <div className="flex flex-wrap gap-4">
+            <Link href="/psb" className="transition hover:text-emerald-700">Info PSB</Link>
+            <Link href="/news" className="transition hover:text-emerald-700">Berita</Link>
+            <Link href="/kontak" className="transition hover:text-emerald-700">Kontak</Link>
           </div>
         </div>
       </footer>
-
-      <a
-        href={`https://wa.me/${whatsappNumber}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-[9995] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-600/30 ring-4 ring-white/30 transition-all duration-300 hover:scale-110 hover:shadow-emerald-600/50"
-        aria-label="Chat via WhatsApp"
-      >
-        <MessageCircle size={28} />
-        <span className="absolute -z-10 h-full w-full animate-ping rounded-full bg-emerald-400 opacity-20" />
-      </a>
-
-      {showBackToTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-24 right-6 z-[9990] flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-emerald-600 shadow-lg transition-all hover:scale-110 hover:text-emerald-500"
-          aria-label="Kembali ke atas"
-        >
-          <ChevronUp size={24} />
-        </button>
-      )}
     </div>
   );
 }
