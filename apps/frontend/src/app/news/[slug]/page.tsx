@@ -1,10 +1,6 @@
-'use client';
-
-import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, Calendar, Loader2, Newspaper, Tag } from 'lucide-react';
-import { getNewsBySlug, News } from '@/lib/api';
+import { ArrowLeft, Calendar, Newspaper, Tag } from 'lucide-react';
+import { getNewsBySlug } from '@/lib/api';
 import PublicLayout from '@/components/PublicLayout';
 
 function formatPublishedDate(value: string) {
@@ -47,48 +43,13 @@ function extractParagraphs(html: string) {
     .filter(Boolean);
 }
 
-export default function NewsDetail() {
-  const params = useParams();
-  const slug = params?.slug as string;
-
-  const [news, setNews] = useState<News | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchDetail() {
-      if (!slug) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const data = await getNewsBySlug(slug);
-        setNews(data);
-      } catch (error) {
-        console.error('Error fetching news detail:', error);
-        setNews(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void fetchDetail();
-  }, [slug]);
-
-  const contentParagraphs = useMemo(() => extractParagraphs(news?.content || ''), [news?.content]);
-
-  if (isLoading) {
-    return (
-      <PublicLayout>
-        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50">
-          <Loader2 className="mb-4 h-10 w-10 animate-spin text-emerald-500" />
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">
-            Memuat berita
-          </p>
-        </div>
-      </PublicLayout>
-    );
-  }
+export default async function NewsDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const news = await getNewsBySlug(slug);
 
   if (!news) {
     return (
@@ -115,6 +76,7 @@ export default function NewsDetail() {
     );
   }
 
+  const paragraphs = extractParagraphs(news.content || '');
   const categoryName =
     typeof news.category_name === 'string'
       ? news.category_name
@@ -158,8 +120,8 @@ export default function NewsDetail() {
           ) : null}
 
           <article className="mt-10 space-y-5 rounded-[2rem] border border-slate-200 bg-slate-50 p-6 sm:p-8">
-            {contentParagraphs.length > 0 ? (
-              contentParagraphs.map((paragraph, index) => (
+            {paragraphs.length > 0 ? (
+              paragraphs.map((paragraph, index) => (
                 <p key={index} className="text-base leading-8 text-slate-700">
                   {paragraph}
                 </p>
