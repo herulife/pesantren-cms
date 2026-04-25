@@ -54,6 +54,9 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
+	if gallery == nil {
+		gallery = make([]GalleryItem, 0)
+	}
 	sendJSONResponse(w, http.StatusOK, true, "Daftar galeri berhasil dimuat", map[string]interface{}{
 		"items": gallery,
 		"pagination": map[string]int{

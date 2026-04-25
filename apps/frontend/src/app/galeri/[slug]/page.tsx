@@ -37,7 +37,7 @@ export default function GaleriDetailPage() {
     async function fetchAlbum() {
       try {
         const res = await getGallery({ limit: 200, offset: 0 });
-        const items = (res.data || []) as GalleryItem[];
+        const items = Array.isArray(res.data) ? res.data : [];
 
         const grouped = new Map<string, GalleryItem[]>();
         for (const photo of items) {

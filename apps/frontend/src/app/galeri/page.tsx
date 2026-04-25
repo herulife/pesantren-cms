@@ -30,7 +30,7 @@ export default function GaleriPage() {
     async function fetchGalleryData() {
       try {
         const res = await getGallery({ limit: 80, offset: 0 });
-        setPhotos(res.data || []);
+        setPhotos(Array.isArray(res.data) ? res.data : []);
       } finally {
         setIsLoading(false);
       }

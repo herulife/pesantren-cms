@@ -13,7 +13,7 @@ export default function TeachersPage() {
     async function fetchTeachers() {
       try {
         const data = await getTeachers();
-        setTeachers(data);
+        setTeachers(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error('Error fetching teachers:', e);
       } finally {

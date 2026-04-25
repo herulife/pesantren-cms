@@ -37,6 +37,9 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
+	if list == nil {
+		list = make([]Teacher, 0)
+	}
 	sendJSONResponse(w, http.StatusOK, true, "Daftar pengajar berhasil dimuat", list)
 }
 

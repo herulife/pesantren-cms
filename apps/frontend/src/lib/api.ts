@@ -788,7 +788,8 @@ export async function getTeachers(search: string = '') {
 		const res = await fetch(`${API_BASE_URL}/teachers?search=${search}`, withCredentials({ cache: 'no-store' }));
 		if (!res.ok) return [];
 		const result = await parseResponse(res);
-		return (result.data || []) as Teacher[];
+		const items = extractListData<Teacher>(result);
+		return Array.isArray(items) ? items : [];
 	} catch (e) {
 		console.error(`[API] Fetch teachers error:`, e);
 		return [];
@@ -806,8 +807,9 @@ export async function getGallery(params: { category?: string, search?: string, l
 		const res = await fetch(`${API_BASE_URL}/gallery?${queryParams.toString()}`, withCredentials({ cache: 'no-store' }));
 		if (!res.ok) return { data: [], pagination: { total: 0, limit: params.limit || 12, offset: params.offset || 0 } };
 		const result = await parseResponse(res);
+		const items = extractListData<GalleryItem>(result);
 		return {
-			data: extractListData<GalleryItem>(result),
+			data: Array.isArray(items) ? items : [],
 			pagination: extractPagination(result, {
 				total: 0,
 				limit: params.limit || 12,
