@@ -50,31 +50,60 @@ const programCards = [
 export default function LandingPage() {
   return (
     <PublicLayout>
-      <section className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 text-white">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:py-24 lg:py-28">
-          <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-200">
-            Pondok Pesantren Tahfidz
-          </p>
-          <h1 className="mt-4 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-            Darussunnah Parung
-          </h1>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-emerald-50/90 sm:text-lg">
-            Lembaga pendidikan yang berikhtiar menumbuhkan hafalan Al-Qur&apos;an, adab, dan
-            kemandirian santri dalam suasana belajar yang tertib dan terarah.
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/psb"
-              className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-bold text-emerald-900 transition hover:bg-emerald-50"
-            >
-              Lihat Info PSB
-            </Link>
-            <Link
-              href="/profil"
-              className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-            >
-              Profil Pondok
-            </Link>
+      <section className="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 text-white">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute -left-10 top-12 h-40 w-40 rounded-full bg-emerald-300 blur-3xl" />
+          <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-cyan-300 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-yellow-200 blur-3xl" />
+        </div>
+        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:py-24 lg:py-28">
+          <div className="max-w-4xl">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
+              <span className="h-2 w-2 rounded-full bg-emerald-300" />
+              Pondok Pesantren Tahfidz
+            </p>
+            <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+              Darussunnah Parung
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-8 text-emerald-50/90 sm:text-lg">
+              Lembaga pendidikan yang berikhtiar menumbuhkan hafalan Al-Qur&apos;an, adab, dan
+              kemandirian santri dalam suasana belajar yang tertib dan terarah.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/psb"
+                className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-bold text-emerald-900 transition hover:bg-emerald-50"
+              >
+                Lihat Info PSB
+              </Link>
+              <Link
+                href="/profil"
+                className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+              >
+                Profil Pondok
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
+                Fokus Utama
+              </p>
+              <p className="mt-3 text-lg font-bold text-white">Tahfidz, Adab, dan Kemandirian</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
+                Lingkungan
+              </p>
+              <p className="mt-3 text-lg font-bold text-white">Pembinaan disiplin dalam suasana pesantren</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
+                Akses Cepat
+              </p>
+              <p className="mt-3 text-lg font-bold text-white">Info PSB, program, dan berita terbaru</p>
+            </div>
           </div>
         </div>
       </section>
