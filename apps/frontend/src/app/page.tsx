@@ -173,6 +173,21 @@ const contactHighlights = [
   },
 ];
 
+const closingStats = [
+  {
+    value: 'Tahfidz',
+    label: 'Fokus utama pembinaan hafalan dan murajaah santri.',
+  },
+  {
+    value: 'Adab',
+    label: 'Pembiasaan karakter dan disiplin hadir dalam keseharian pondok.',
+  },
+  {
+    value: 'Kemandirian',
+    label: 'Santri diarahkan siap belajar, bertanggung jawab, dan mengabdi.',
+  },
+];
+
 export default function LandingPage() {
   return (
     <PublicLayout>
@@ -496,6 +511,35 @@ export default function LandingPage() {
                   {item.label}
                 </span>
               </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 bg-slate-950 py-16 text-white">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">
+              Inti Pembinaan
+            </p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight">
+              Tiga arah yang terus dijaga dalam perjalanan pendidikan santri.
+            </h2>
+            <p className="mt-4 text-base leading-8 text-slate-300">
+              Setiap kegiatan pondok diarahkan agar santri dekat dengan Al-Qur&apos;an, kuat dalam
+              adab, dan terbiasa menjalani amanah hidup dengan tanggung jawab.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            {closingStats.map((item) => (
+              <div
+                key={item.value}
+                className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur-sm"
+              >
+                <p className="text-2xl font-black tracking-tight text-white">{item.value}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{item.label}</p>
+              </div>
             ))}
           </div>
         </div>
