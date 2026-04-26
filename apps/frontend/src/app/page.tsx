@@ -156,6 +156,23 @@ const closingNotes = [
   },
 ];
 
+const contactHighlights = [
+  {
+    title: 'Hubungi Kami',
+    description:
+      'Gunakan halaman kontak untuk memperoleh informasi awal mengenai pondok, program, dan kebutuhan komunikasi lainnya.',
+    href: '/kontak',
+    label: 'Buka kontak',
+  },
+  {
+    title: 'Lihat Agenda',
+    description:
+      'Pantau agenda kegiatan dan momen penting pondok yang dibagikan untuk wali santri dan masyarakat.',
+    href: '/agendas',
+    label: 'Lihat agenda',
+  },
+];
+
 export default function LandingPage() {
   return (
     <PublicLayout>
@@ -447,6 +464,39 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 bg-white py-16">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
+              Informasi Lanjutan
+            </p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
+              Temukan jalur komunikasi dan informasi pondok dengan lebih mudah.
+            </h2>
+            <p className="mt-4 text-base leading-8 text-slate-600">
+              Setelah mengenal profil, program, dan ritme pembinaan santri, Anda dapat melanjutkan
+              ke halaman yang paling sesuai dengan kebutuhan informasi Anda.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {contactHighlights.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
+              >
+                <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
+                <span className="mt-5 inline-flex text-sm font-bold text-emerald-700">
+                  {item.label}
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
