@@ -47,6 +47,24 @@ const programCards = [
   },
 ];
 
+const valueCards = [
+  {
+    title: 'Adab Sebelum Ilmu',
+    description:
+      'Pembinaan akhlak, disiplin, dan kebiasaan baik menjadi fondasi sebelum santri mendalami ilmu lebih jauh.',
+  },
+  {
+    title: 'Belajar Terarah',
+    description:
+      'Target hafalan, bimbingan ustadz, dan evaluasi berkala menjaga proses belajar tetap tertib dan terukur.',
+  },
+  {
+    title: 'Siap Mengabdi',
+    description:
+      'Santri dibiasakan bertanggung jawab, mandiri, dan siap memberi manfaat bagi keluarga, umat, dan masyarakat.',
+  },
+];
+
 export default function LandingPage() {
   return (
     <PublicLayout>
@@ -111,15 +129,28 @@ export default function LandingPage() {
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-3xl">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-            Ringkasan
+            Tentang Darussunnah
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-            Halaman publik sementara kami sederhanakan agar akses website stabil.
+            Menyiapkan santri yang dekat dengan Al-Qur&apos;an dan kokoh dalam adab.
           </h2>
           <p className="mt-4 text-base leading-8 text-slate-600">
-            Beberapa elemen visual berat sedang kami nonaktifkan sementara saat proses debugging.
-            Informasi inti tetap bisa diakses melalui menu utama di atas.
+            Darussunnah Parung berupaya menghadirkan suasana pendidikan yang tenang, tertib, dan
+            fokus pada pembiasaan ibadah, hafalan, serta pembentukan karakter santri dalam
+            kehidupan sehari-hari.
           </p>
+        </div>
+
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
+          {valueCards.map((item) => (
+            <div
+              key={item.title}
+              className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm"
+            >
+              <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
+            </div>
+          ))}
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
