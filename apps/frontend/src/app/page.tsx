@@ -188,6 +188,38 @@ const closingStats = [
   },
 ];
 
+const featuredNews = [
+  {
+    title: 'Santri Darussunnah menata hafalan dengan ritme harian yang disiplin',
+    description:
+      'Kegiatan murajaah, setoran, dan evaluasi berjalan bertahap untuk menjaga hafalan tetap kuat dan terarah.',
+    href: '/news',
+    badge: 'Berita Pilihan',
+  },
+  {
+    title: 'Kegiatan pesantren dibangun agar ilmu dan adab tumbuh bersama',
+    description:
+      'Lingkungan belajar, ibadah berjamaah, dan pembiasaan tanggung jawab menjadi bagian dari pembinaan harian.',
+    href: '/news',
+    badge: 'Kabar Pondok',
+  },
+];
+
+const featuredAgendas = [
+  {
+    title: 'Pembinaan Pekanan Santri',
+    meta: 'Setiap pekan • Aula utama',
+  },
+  {
+    title: 'Pertemuan Wali Santri',
+    meta: 'Agenda berkala • Kampus pondok',
+  },
+  {
+    title: 'Kajian dan Evaluasi Hafalan',
+    meta: 'Sesi terarah • Ruang pembinaan',
+  },
+];
+
 export default function LandingPage() {
   return (
     <PublicLayout>
@@ -307,7 +339,92 @@ export default function LandingPage() {
 
       <section className="border-t border-slate-200 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_40%),linear-gradient(to_bottom,_#f8fafc,_#f1f5f9)] py-16">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="grid gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <div className="mb-8 flex items-end justify-between gap-4">
+                <div className="max-w-2xl">
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
+                    Kabar Pesantren
+                  </p>
+                  <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
+                    Warta Darussunnah
+                  </h2>
+                  <p className="mt-4 text-base leading-8 text-slate-600">
+                    Ringkasan berita dan kegiatan pondok kami tampilkan dengan format yang lebih hidup
+                    namun tetap ringan untuk dibuka.
+                  </p>
+                </div>
+                <Link
+                  href="/news"
+                  className="hidden rounded-full bg-white px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-700 shadow-sm transition hover:bg-emerald-50 sm:inline-flex"
+                >
+                  Semua Berita
+                </Link>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                {featuredNews.map((item) => (
+                  <Link
+                    key={item.title}
+                    href={item.href}
+                    className="group rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_20px_40px_-20px_rgba(16,185,129,0.25)]"
+                  >
+                    <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+                      {item.badge}
+                    </span>
+                    <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-900 transition group-hover:text-emerald-700">
+                      {item.title}
+                    </h3>
+                    <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
+                    <span className="mt-6 inline-flex text-sm font-bold text-emerald-700 transition group-hover:translate-x-1">
+                      Baca selengkapnya
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <aside className="lg:col-span-5">
+              <div className="rounded-[2.25rem] border border-emerald-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(16,185,129,0.18)]">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
+                  Agenda Singkat
+                </p>
+                <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
+                  Momen penting yang menjaga ritme pembinaan pondok.
+                </h3>
+                <div className="mt-8 space-y-4">
+                  {featuredAgendas.map((item, index) => (
+                    <div
+                      key={item.title}
+                      className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-sm font-black text-emerald-700 shadow-sm">
+                          0{index + 1}
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-slate-900">{item.title}</h4>
+                          <p className="mt-2 text-sm text-slate-500">{item.meta}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  href="/agendas"
+                  className="mt-8 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition hover:brightness-110"
+                >
+                  Lihat Agenda
+                </Link>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 bg-white py-16">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto mb-12 max-w-3xl text-center">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
               Program Pendidikan
             </p>
@@ -315,12 +432,12 @@ export default function LandingPage() {
               Fokus Pembinaan Santri
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-600">
-              Kami kembalikan dulu bagian yang paling aman: gambaran program inti pesantren tanpa
-              animasi atau komponen berat.
+              Kami mempertahankan struktur yang ringan, namun tampilannya dibuat lebih kaya agar
+              mendekati nuansa halaman lokal yang lebih lengkap.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {programCards.map((item) => {
               const Icon = item.icon;
               return (
