@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type Slide = {
   title: string;
@@ -54,9 +55,36 @@ export default function HomeHeroSlider() {
   }, []);
 
   const activeSlide = slides[activeIndex];
+  const goPrev = () => setActiveIndex((current) => (current - 1 + slides.length) % slides.length);
+  const goNext = () => setActiveIndex((current) => (current + 1) % slides.length);
 
   return (
     <div className="rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-[0_25px_80px_-30px_rgba(15,23,42,0.9)] backdrop-blur-sm">
+      <div className="mb-3 flex items-center justify-between rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-4 py-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">Slider Utama</p>
+          <p className="mt-1 text-sm font-semibold text-white">Sorotan informasi Darussunnah</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={goPrev}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white transition hover:bg-white/20"
+            aria-label="Slide sebelumnya"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white transition hover:bg-white/20"
+            aria-label="Slide berikutnya"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950">
         <div
           className="relative min-h-[280px] bg-cover bg-center"
@@ -85,6 +113,9 @@ export default function HomeHeroSlider() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-t border-white/10 bg-slate-950/90 px-4 py-4">
+          <span className="mr-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/50">
+            Slide {activeIndex + 1}/{slides.length}
+          </span>
           {slides.map((slide, index) => (
             <button
               key={slide.title}
