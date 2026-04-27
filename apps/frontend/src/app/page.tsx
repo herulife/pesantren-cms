@@ -239,14 +239,14 @@ export default function LandingPage() {
           <div className="max-w-4xl">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
               <span className="h-2 w-2 rounded-full bg-emerald-300" />
-              Boarding School SMP-SMA
+              Pondok Pesantren Tahfidz
             </p>
             <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
               Pondok Pesantren Tahfidz Al-Qur&apos;an Darussunnah Parung
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-emerald-50/90 sm:text-lg">
-              Boarding school jenjang SMP-SMA yang menumbuhkan hafalan Al-Qur&apos;an, adab,
-              kedisiplinan, dan kemandirian santri dalam suasana belajar berasrama yang tertib dan terarah.
+              Lembaga pendidikan pesantren yang menumbuhkan hafalan Al-Qur&apos;an, adab,
+              kedisiplinan, dan kemandirian santri dalam suasana belajar yang tertib, tenang, dan terarah.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -271,9 +271,9 @@ export default function LandingPage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
-                Jenjang Pendidikan
+                Lingkungan Pesantren
               </p>
-              <p className="mt-3 text-lg font-bold text-white">SMP-SMA berbasis asrama dan pembinaan pesantren</p>
+              <p className="mt-3 text-lg font-bold text-white">Asrama santri, pendampingan ustadz, dan pembinaan harian</p>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
@@ -283,9 +283,9 @@ export default function LandingPage() {
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
-                Lingkungan
+                Jenjang Pendidikan
               </p>
-              <p className="mt-3 text-lg font-bold text-white">Asrama, pendampingan ustadz, dan ritme hidup santri</p>
+              <p className="mt-3 text-lg font-bold text-white">Pembinaan santri jenjang SMP dan SMA dalam naungan pesantren</p>
             </div>
           </div>
         </div>
@@ -299,12 +299,12 @@ export default function LandingPage() {
             Tentang Darussunnah
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-            Menumbuhkan santri boarding school yang dekat dengan Al-Qur&apos;an dan kokoh dalam adab.
+            Menumbuhkan santri yang dekat dengan Al-Qur&apos;an dan kokoh dalam adab.
           </h2>
           <p className="mt-4 text-base leading-8 text-slate-600">
             Darussunnah Parung menghadirkan suasana pendidikan yang tenang, tertib, dan berwibawa,
             dengan pembiasaan ibadah, hafalan, akademik, serta pembentukan karakter santri dalam
-            kehidupan berasrama sehari-hari.
+            kehidupan pondok pesantren sehari-hari.
           </p>
         </div>
 
