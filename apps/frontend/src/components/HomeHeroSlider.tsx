@@ -59,17 +59,17 @@ export default function HomeHeroSlider() {
   const goNext = () => setActiveIndex((current) => (current + 1) % slides.length);
 
   return (
-    <div className="rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-[0_25px_80px_-30px_rgba(15,23,42,0.9)] backdrop-blur-sm">
-      <div className="mb-3 flex items-center justify-between rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-4 py-3">
+    <div className="overflow-hidden rounded-[2.25rem] border border-white/70 bg-white/88 p-3 shadow-[0_35px_80px_-35px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+      <div className="mb-3 flex items-center justify-between rounded-[1.5rem] border border-slate-200/80 bg-white/90 px-4 py-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">Slider Utama</p>
-          <p className="mt-1 text-sm font-semibold text-white">Sorotan informasi Darussunnah</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">Sorotan Utama</p>
+          <p className="mt-1 text-sm font-semibold text-slate-800">Suasana dan informasi Pondok Darussunnah</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={goPrev}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white transition hover:bg-white/20"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
             aria-label="Slide sebelumnya"
           >
             <ChevronLeft size={18} />
@@ -77,7 +77,7 @@ export default function HomeHeroSlider() {
           <button
             type="button"
             onClick={goNext}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white transition hover:bg-white/20"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
             aria-label="Slide berikutnya"
           >
             <ChevronRight size={18} />
@@ -85,42 +85,43 @@ export default function HomeHeroSlider() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950">
+      <div className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white">
         <div
-          className="relative min-h-[280px] bg-cover bg-center"
+          className="relative min-h-[320px] bg-cover bg-center"
           style={{ backgroundImage: `url('${activeSlide.image}')` }}
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-900/30" />
-          <div className="relative flex min-h-[280px] flex-col justify-end p-6">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-200">
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/88 to-slate-950/20" />
+          <div className="absolute inset-y-0 left-0 w-full max-w-[70%] bg-gradient-to-r from-white/98 via-white/86 to-white/0" />
+          <div className="relative flex min-h-[320px] flex-col justify-end p-7 md:p-8">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-700">
               {activeSlide.eyebrow}
             </p>
-            <h3 className="mt-3 max-w-md text-2xl font-black leading-tight text-white">
+            <h3 className="mt-3 max-w-xl text-2xl font-black leading-tight text-slate-950 md:text-3xl">
               {activeSlide.title}
             </h3>
-            <p className="mt-3 max-w-md text-sm leading-7 text-white/80">
+            <p className="mt-3 max-w-lg text-sm leading-7 text-slate-600">
               {activeSlide.description}
             </p>
             <div className="mt-5">
               <Link
                 href={activeSlide.href}
-                className="inline-flex items-center rounded-full bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-emerald-900 transition hover:bg-emerald-50"
+                className="inline-flex items-center rounded-full bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-emerald-700"
               >
                 {activeSlide.cta}
               </Link>
             </div>
-            <div className="mt-6 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/15">
+            <div className="mt-6 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-200">
               <div
-                className="h-full rounded-full bg-emerald-400 transition-all duration-500"
+                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                 style={{ width: `${((activeIndex + 1) / slides.length) * 100}%` }}
               />
             </div>
           </div>
         </div>
 
-        <div className="border-t border-white/10 bg-slate-950/90 px-4 py-4">
+        <div className="border-t border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] px-4 py-4">
           <div className="mb-3 flex flex-wrap items-center gap-3">
-            <span className="mr-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/50">
+            <span className="mr-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
               Slide {activeIndex + 1}/{slides.length}
             </span>
             {slides.map((slide, index) => (
@@ -130,8 +131,8 @@ export default function HomeHeroSlider() {
                 onClick={() => setActiveIndex(index)}
                 className={`rounded-full px-4 py-2 text-left text-[11px] font-black uppercase tracking-[0.18em] transition ${
                   index === activeIndex
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white/5 text-white/65 hover:bg-white/10 hover:text-white'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
                 }`}
               >
                 {slide.eyebrow}
@@ -147,21 +148,21 @@ export default function HomeHeroSlider() {
                 onClick={() => setActiveIndex(index)}
                 className={`group overflow-hidden rounded-[1.25rem] border text-left transition ${
                   index === activeIndex
-                    ? 'border-emerald-400 bg-white/10 shadow-[0_20px_40px_-25px_rgba(16,185,129,0.8)]'
-                    : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                    ? 'border-emerald-300 bg-white shadow-[0_20px_40px_-25px_rgba(16,185,129,0.35)]'
+                    : 'border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40'
                 }`}
               >
                 <div
                   className="h-20 w-full bg-cover bg-center"
                   style={{ backgroundImage: `url('${slide.image}')` }}
                 >
-                  <div className="h-full w-full bg-gradient-to-t from-slate-950/80 to-slate-900/10" />
+                  <div className="h-full w-full bg-gradient-to-t from-slate-950/45 to-transparent" />
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
                     {slide.eyebrow}
                   </p>
-                  <p className="mt-2 text-sm font-bold leading-6 text-white transition group-hover:text-emerald-100">
+                  <p className="mt-2 text-sm font-bold leading-6 text-slate-900 transition group-hover:text-emerald-800">
                     {slide.title}
                   </p>
                 </div>

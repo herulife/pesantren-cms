@@ -342,7 +342,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_40%),linear-gradient(to_bottom,_#f8fafc,_#f1f5f9)] py-16">
+      <section className="border-t border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] py-16">
         <div className="mx-auto max-w-6xl px-4">
           <div className="grid gap-10 lg:grid-cols-12">
             <div className="lg:col-span-7">
@@ -355,13 +355,13 @@ export default function LandingPage() {
                     Warta Darussunnah
                   </h2>
                   <p className="mt-4 text-base leading-8 text-slate-600">
-                    Ringkasan berita dan kegiatan pondok kami tampilkan dengan format yang lebih hidup
-                    namun tetap ringan untuk dibuka.
+                    Potret kegiatan pondok, pembinaan santri, dan dinamika pesantren kami sajikan
+                    dengan nuansa yang bersih, tenang, dan mudah diikuti.
                   </p>
                 </div>
                 <Link
                   href="/news"
-                  className="hidden rounded-full bg-white px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-700 shadow-sm transition hover:bg-emerald-50 sm:inline-flex"
+                  className="hidden rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 sm:inline-flex"
                 >
                   Semua Berita
                 </Link>
@@ -372,9 +372,9 @@ export default function LandingPage() {
                   <Link
                     key={item.title}
                     href={item.href}
-                    className="group rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_20px_40px_-20px_rgba(16,185,129,0.25)]"
+                    className="group rounded-[2rem] border border-slate-200 bg-white p-7 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.18)] transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_28px_60px_-28px_rgba(16,185,129,0.22)]"
                   >
-                    <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+                    <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
                       {item.badge}
                     </span>
                     <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-900 transition group-hover:text-emerald-700">
@@ -390,21 +390,21 @@ export default function LandingPage() {
             </div>
 
             <aside className="lg:col-span-5">
-              <div className="rounded-[2.25rem] border border-emerald-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(16,185,129,0.18)]">
+              <div className="rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] p-8 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.18)]">
                 <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
                   Agenda Singkat
                 </p>
                 <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
-                  Momen penting yang menjaga ritme pembinaan pondok.
+                  Momen penting yang menjaga ritme pembinaan pondok pesantren.
                 </h3>
                 <div className="mt-8 space-y-4">
                   {featuredAgendas.map((item, index) => (
                     <div
                       key={item.title}
-                      className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                      className="rounded-2xl border border-slate-200 bg-white p-4"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-sm font-black text-emerald-700 shadow-sm">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-sm font-black text-emerald-700 shadow-sm">
                           0{index + 1}
                         </div>
                         <div>
