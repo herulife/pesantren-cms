@@ -13,7 +13,7 @@ type Slide = {
   eyebrow: string;
 };
 
-const slides: Slide[] = [
+const defaultSlides: Slide[] = [
   {
     eyebrow: 'Pendaftaran Santri',
     title: 'PSB Darussunnah Parung',
@@ -43,8 +43,29 @@ const slides: Slide[] = [
   },
 ];
 
-export default function HomeHeroSlider() {
+type HeroSlideInput = {
+  id?: string;
+  title?: string;
+  subtitle?: string;
+  image_url?: string;
+  button_text?: string;
+  button_url?: string;
+};
+
+export default function HomeHeroSlider({ slides: externalSlides }: { slides?: HeroSlideInput[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const slides = (externalSlides?.length
+    ? externalSlides.map((slide, index) => ({
+        eyebrow: `Slide ${index + 1}`,
+        title: slide.title || defaultSlides[index]?.title || 'Darussunnah Parung',
+        description:
+          slide.subtitle || defaultSlides[index]?.description || 'Informasi terbaru Darussunnah.',
+        image: slide.image_url || defaultSlides[index]?.image || '/assets/img/gedung.webp',
+        href: slide.button_url || defaultSlides[index]?.href || '/profil',
+        cta: slide.button_text || defaultSlides[index]?.cta || 'Lihat Selengkapnya',
+      }))
+    : defaultSlides) as Slide[];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
