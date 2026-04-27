@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CircleUserRound, LogOut } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -13,9 +14,15 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const navLinks = [
     { href: '/', label: 'Beranda' },
     { href: '/profil', label: 'Profil' },
+    { href: '/sambutan', label: 'Sambutan' },
     { href: '/program', label: 'Program' },
+    { href: '/facilities', label: 'Fasilitas' },
+    { href: '/teachers', label: 'Pengajar' },
+    { href: '/agendas', label: 'Agenda' },
     { href: '/psb', label: 'PSB' },
     { href: '/news', label: 'Berita' },
+    { href: '/galeri', label: 'Galeri' },
+    { href: '/videos', label: 'Video' },
     { href: '/kontak', label: 'Kontak' },
   ];
 
@@ -33,7 +40,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center justify-between gap-4">
               <Link href="/" className="flex min-w-0 items-start gap-3">
-                <div className="mt-1 h-11 w-11 shrink-0 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 shadow-sm" />
+                <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+                  <Image
+                    src="/assets/img/logo.jpg"
+                    alt="Logo Darussunnah"
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                    priority
+                  />
+                </div>
                 <div className="min-w-0">
                   <span className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-600">
                     Darussunnah Parung
