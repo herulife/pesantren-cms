@@ -18,11 +18,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     { href: '/program', label: 'Program' },
     { href: '/facilities', label: 'Fasilitas' },
     { href: '/teachers', label: 'Pengajar' },
-    { href: '/agendas', label: 'Agenda' },
-    { href: '/psb', label: 'PSB' },
     { href: '/news', label: 'Berita' },
     { href: '/galeri', label: 'Galeri' },
     { href: '/videos', label: 'Video' },
+    { href: '/agendas', label: 'Agenda' },
+    { href: '/psb', label: 'PSB' },
     { href: '/kontak', label: 'Kontak' },
   ];
 
@@ -122,7 +122,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                className={`rounded-full border px-4 py-2 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
+                  item.href === '/psb'
+                    ? 'border-emerald-500 bg-emerald-600 text-white hover:border-emerald-600 hover:bg-emerald-700 hover:text-white'
+                    : 'border-slate-200 bg-white'
+                }`}
               >
                 {item.label}
               </Link>
@@ -134,7 +138,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Link
                 key={item.href}
                 href={item.href}
-                className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                className={`shrink-0 rounded-full border px-4 py-2 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
+                  item.href === '/psb'
+                    ? 'border-emerald-500 bg-emerald-600 text-white hover:border-emerald-600 hover:bg-emerald-700 hover:text-white'
+                    : 'border-slate-200 bg-white'
+                }`}
               >
                 {item.label}
               </Link>
