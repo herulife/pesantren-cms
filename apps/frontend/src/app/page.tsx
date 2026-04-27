@@ -6,17 +6,17 @@ import HomeHeroSlider from '@/components/HomeHeroSlider';
 const quickLinks = [
   {
     title: 'Pendaftaran Santri Baru',
-    description: 'Lihat alur pendaftaran, persyaratan, dan informasi biaya terbaru.',
+    description: 'Jalur informasi awal bagi calon santri SMP-SMA boarding school Darussunnah.',
     href: '/psb',
   },
   {
     title: 'Program Pendidikan',
-    description: 'Pelajari fokus tahfidz, pembinaan adab, dan kegiatan belajar santri.',
+    description: 'Kenali tahfidz, pembinaan adab, dan ritme belajar berasrama yang kami jalankan.',
     href: '/program',
   },
   {
     title: 'Berita & Informasi',
-    description: 'Ikuti pengumuman, dokumentasi kegiatan, dan kabar terbaru dari pondok.',
+    description: 'Ikuti kabar kegiatan pondok, agenda santri, dan dinamika kehidupan pesantren.',
     href: '/news',
   },
 ];
@@ -239,14 +239,14 @@ export default function LandingPage() {
           <div className="max-w-4xl">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
               <span className="h-2 w-2 rounded-full bg-emerald-300" />
-              Pondok Pesantren Tahfidz
+              Boarding School SMP-SMA
             </p>
             <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-              Darussunnah Parung
+              Pondok Pesantren Tahfidz Al-Qur&apos;an Darussunnah Parung
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-emerald-50/90 sm:text-lg">
-              Lembaga pendidikan yang berikhtiar menumbuhkan hafalan Al-Qur&apos;an, adab, dan
-              kemandirian santri dalam suasana belajar yang tertib dan terarah.
+              Boarding school jenjang SMP-SMA yang menumbuhkan hafalan Al-Qur&apos;an, adab,
+              kedisiplinan, dan kemandirian santri dalam suasana belajar berasrama yang tertib dan terarah.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -259,7 +259,7 @@ export default function LandingPage() {
                 href="/profil"
                 className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10"
               >
-                Profil Pondok
+                Lihat Profil Pondok
               </Link>
             </div>
           </div>
@@ -271,21 +271,21 @@ export default function LandingPage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
+                Jenjang Pendidikan
+              </p>
+              <p className="mt-3 text-lg font-bold text-white">SMP-SMA berbasis asrama dan pembinaan pesantren</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
                 Fokus Utama
               </p>
-              <p className="mt-3 text-lg font-bold text-white">Tahfidz, Adab, dan Kemandirian</p>
+              <p className="mt-3 text-lg font-bold text-white">Tahfidz, adab, akademik, dan kedisiplinan harian</p>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
                 Lingkungan
               </p>
-              <p className="mt-3 text-lg font-bold text-white">Pembinaan disiplin dalam suasana pesantren</p>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
-                Akses Cepat
-              </p>
-              <p className="mt-3 text-lg font-bold text-white">Info PSB, program, dan berita terbaru</p>
+              <p className="mt-3 text-lg font-bold text-white">Asrama, pendampingan ustadz, dan ritme hidup santri</p>
             </div>
           </div>
         </div>
@@ -299,12 +299,12 @@ export default function LandingPage() {
             Tentang Darussunnah
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-            Menyiapkan santri yang dekat dengan Al-Qur&apos;an dan kokoh dalam adab.
+            Menumbuhkan santri boarding school yang dekat dengan Al-Qur&apos;an dan kokoh dalam adab.
           </h2>
           <p className="mt-4 text-base leading-8 text-slate-600">
-            Darussunnah Parung berupaya menghadirkan suasana pendidikan yang tenang, tertib, dan
-            fokus pada pembiasaan ibadah, hafalan, serta pembentukan karakter santri dalam
-            kehidupan sehari-hari.
+            Darussunnah Parung menghadirkan suasana pendidikan yang tenang, tertib, dan berwibawa,
+            dengan pembiasaan ibadah, hafalan, akademik, serta pembentukan karakter santri dalam
+            kehidupan berasrama sehari-hari.
           </p>
         </div>
 
