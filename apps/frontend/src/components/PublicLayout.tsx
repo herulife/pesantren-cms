@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CircleUserRound, LogOut } from 'lucide-react';
+import { ChevronDown, CircleUserRound, LogOut } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -12,35 +12,22 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const dashboardHref = isPortalUser ? '/portal' : '/admin';
   const dashboardLabel = isPortalUser ? 'Portal Wali Santri' : 'Panel Admin';
   const navLinks = [
-    { href: '/', label: 'Beranda' },
-    { href: '/profil', label: 'Profil' },
-    { href: '/sambutan', label: 'Sambutan' },
+    { href: '/', label: 'Beranda', active: true },
+    { href: '/profil', label: 'Profil', withChevron: true },
     { href: '/program', label: 'Program' },
-    { href: '/facilities', label: 'Fasilitas' },
-    { href: '/teachers', label: 'Pengajar' },
-    { href: '/news', label: 'Berita' },
-    { href: '/galeri', label: 'Galeri' },
-    { href: '/videos', label: 'Video' },
-    { href: '/agendas', label: 'Agenda' },
     { href: '/psb', label: 'PSB' },
+    { href: '/news', label: 'Informasi', withChevron: true },
     { href: '/kontak', label: 'Kontak' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-white/60 bg-white/90 shadow-sm backdrop-blur">
-        <div className="border-b border-slate-200/70 bg-[linear-gradient(to_right,_rgba(16,185,129,0.08),_rgba(15,23,42,0.02),_rgba(16,185,129,0.08))]">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-            <span>Pondok Pesantren Tahfidz Al-Qur&apos;an</span>
-            <span className="hidden sm:inline">Parung, Bogor</span>
-          </div>
-        </div>
-
-        <div className="mx-auto max-w-6xl px-4 py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-h-screen bg-white text-slate-900">
+      <header className="sticky top-0 z-30 border-b border-emerald-950/70 bg-[#0f4d3f] text-white shadow-[0_18px_45px_-30px_rgba(0,0,0,0.55)] backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center justify-between gap-4">
-              <Link href="/" className="flex min-w-0 items-start gap-3">
-                <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+              <Link href="/" className="flex min-w-0 items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-emerald-300/30 bg-white shadow-[0_12px_30px_-18px_rgba(255,255,255,0.55)]">
                   <Image
                     src="/assets/img/logo.jpg"
                     alt="Logo Darussunnah"
@@ -51,23 +38,25 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-600">
+                  <span className="block truncate text-[11px] font-black uppercase tracking-[0.24em] text-emerald-200">
                     Darussunnah Parung
                   </span>
-                  <div className="truncate text-lg font-bold text-slate-900">
-                    Pondok Pesantren Tahfidz Al-Qur&apos;an
+                  <div className="truncate text-[2rem] font-black leading-none text-white sm:text-[2.1rem]">
+                    Darussunnah Parung
                   </div>
-                  <div className="text-sm text-slate-500">Pendidikan adab, hafalan, dan kemandirian santri</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/85">
+                    Pondok Pesantren Tahfidz
+                  </div>
                 </div>
               </Link>
 
               <div className="flex items-center gap-2 lg:hidden">
                 {loading ? (
-                  <div className="h-10 w-24 animate-pulse rounded-full bg-slate-200" />
+                  <div className="h-10 w-24 animate-pulse rounded-full bg-white/15" />
                 ) : user ? (
                   <Link
                     href={dashboardHref}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                   >
                     <CircleUserRound size={16} />
                     Masuk
@@ -75,7 +64,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 ) : (
                   <Link
                     href="/login"
-                    className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                   >
                     <CircleUserRound size={16} />
                     Masuk
@@ -84,14 +73,33 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               </div>
             </div>
 
-            <div className="hidden items-center gap-2 lg:flex">
+            <nav className="hidden xl:flex xl:flex-1 xl:justify-center">
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#115745] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                {navLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`inline-flex items-center gap-1 rounded-full px-5 py-3 text-sm font-semibold transition ${
+                      item.active
+                        ? 'bg-[#16624d] text-white shadow-[0_10px_28px_-18px_rgba(0,0,0,0.6)]'
+                        : 'text-white/92 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {item.label}
+                    {item.withChevron ? <ChevronDown size={14} className="opacity-70" /> : null}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+
+            <div className="hidden items-center gap-3 lg:flex">
               {loading ? (
-                <div className="h-10 w-28 animate-pulse rounded-full bg-slate-200" />
+                <div className="h-10 w-28 animate-pulse rounded-full bg-white/15" />
               ) : user ? (
                 <>
                   <Link
                     href={dashboardHref}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#12d89f] px-5 py-3 text-sm font-bold text-[#08372d] transition hover:bg-[#21e3ab]"
                   >
                     <CircleUserRound size={16} />
                     {dashboardLabel}
@@ -99,52 +107,46 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <button
                     type="button"
                     onClick={() => void logout()}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
                   >
                     <LogOut size={16} />
                     Keluar
                   </button>
                 </>
-              ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                >
-                  <CircleUserRound size={16} />
-                  Masuk
-                </Link>
-              )}
+                ) : (
+                  <>
+                    <Link
+                      href="/psb"
+                      className="inline-flex items-center rounded-full bg-[#12d89f] px-7 py-3 text-sm font-black text-[#08372d] transition hover:bg-[#21e3ab]"
+                    >
+                      Daftar PSB
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-white/5 text-white transition hover:bg-white/12"
+                    >
+                      <CircleUserRound size={18} />
+                    </Link>
+                  </>
+                )}
             </div>
           </div>
 
-          <nav className="mt-4 hidden flex-wrap items-center gap-2 text-sm font-medium text-slate-600 md:flex">
+          <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 text-sm font-medium text-white/90 xl:hidden">
             {navLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-full border px-4 py-2 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
-                  item.href === '/psb'
-                    ? 'border-emerald-500 bg-emerald-600 text-white hover:border-emerald-600 hover:bg-emerald-700 hover:text-white'
-                    : 'border-slate-200 bg-white'
+                className={`shrink-0 rounded-full border px-4 py-2 transition ${
+                  item.active
+                    ? 'border-white/10 bg-white/12 text-white'
+                    : 'border-white/10 bg-transparent hover:bg-white/10'
                 }`}
               >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 text-sm font-medium text-slate-600 md:hidden">
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`shrink-0 rounded-full border px-4 py-2 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
-                  item.href === '/psb'
-                    ? 'border-emerald-500 bg-emerald-600 text-white hover:border-emerald-600 hover:bg-emerald-700 hover:text-white'
-                    : 'border-slate-200 bg-white'
-                }`}
-              >
-                {item.label}
+                <span className="inline-flex items-center gap-1">
+                  {item.label}
+                  {item.withChevron ? <ChevronDown size={14} className="opacity-70" /> : null}
+                </span>
               </Link>
             ))}
           </nav>

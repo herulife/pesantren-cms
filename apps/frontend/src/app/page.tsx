@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { Award, BookOpen, Heart, School } from 'lucide-react';
+import { ArrowRight, Award, BookOpen, CirclePlay, Heart, Landmark, Medal, School } from 'lucide-react';
 import PublicLayout from '@/components/PublicLayout';
-import HomeHeroSlider from '@/components/HomeHeroSlider';
 
 const quickLinks = [
   {
@@ -224,69 +223,87 @@ const featuredAgendas = [
 export default function LandingPage() {
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,_#fefefe_0%,_#f5f8f5_42%,_#edf5ef_100%)] text-slate-900">
+      <section className="relative overflow-hidden bg-[#0f1728] text-white">
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-[0.14]"
+          className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/assets/img/gedung.webp')" }}
         />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.95),_rgba(255,255,255,0.65)_32%,_transparent_62%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(255,255,255,0.97)_0%,_rgba(255,255,255,0.9)_32%,_rgba(240,247,241,0.82)_58%,_rgba(226,239,231,0.92)_100%)]" />
-        <div className="absolute inset-0 opacity-50">
-          <div className="absolute -left-10 top-12 h-40 w-40 rounded-full bg-emerald-200 blur-3xl" />
-          <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-teal-100 blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-lime-100 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(14,34,53,0.58)_0%,_rgba(13,22,39,0.7)_60%,_rgba(13,22,39,0.9)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_center,_rgba(120,214,233,0.35),_transparent_34%)]" />
+        <div className="absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(160,235,247,0.28),_transparent)]" />
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute left-0 top-10 h-44 w-44 rounded-full bg-emerald-500/20 blur-3xl" />
+          <div className="absolute right-0 top-20 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
         </div>
-        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:py-24 lg:min-h-[680px] lg:py-28">
-          <div className="max-w-4xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-700 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+        <div className="relative mx-auto max-w-7xl px-4 pt-24 sm:pt-28 lg:min-h-[760px] lg:pt-36">
+          <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/35 bg-emerald-500/10 px-5 py-3 text-xs font-black uppercase tracking-[0.28em] text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
               Pondok Pesantren Tahfidz
             </p>
-            <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 max-w-5xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
               Pondok Pesantren Tahfidz Al-Qur&apos;an Darussunnah Parung
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+            <p className="mt-6 max-w-3xl text-base leading-8 text-slate-100/85 sm:text-lg">
               Lembaga pendidikan pesantren yang menumbuhkan hafalan Al-Qur&apos;an, adab,
               kedisiplinan, dan kemandirian santri dalam suasana belajar yang tertib, tenang, dan terarah.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
                 href="/psb"
-                className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-[0_20px_45px_-24px_rgba(5,150,105,0.6)] transition hover:bg-emerald-700"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#12d89f] px-8 py-4 text-base font-black text-[#08372d] shadow-[0_25px_55px_-25px_rgba(18,216,159,0.65)] transition hover:bg-[#24e6b0]"
               >
-                Lihat Info PSB
+                Daftar Sekarang
+                <ArrowRight size={18} />
               </Link>
               <Link
                 href="/profil"
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/85 px-6 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50"
+                className="inline-flex items-center justify-center gap-3 rounded-full border border-white/20 bg-white/8 px-8 py-4 text-base font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:bg-white/12"
               >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/12">
+                  <CirclePlay size={16} />
+                </span>
                 Lihat Profil Pondok
               </Link>
             </div>
           </div>
 
-          <div className="mt-12">
-            <HomeHeroSlider />
-          </div>
-
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-3xl border border-white/80 bg-white/88 p-5 shadow-[0_24px_50px_-32px_rgba(15,23,42,0.28)] backdrop-blur-md">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+          <div className="relative z-10 mt-20 grid gap-6 pb-[-1px] md:grid-cols-3 lg:mt-24">
+            <div className="rounded-[2rem] bg-white p-8 text-left text-slate-900 shadow-[0_35px_70px_-38px_rgba(15,23,42,0.5)]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm">
+                <School className="text-emerald-600" size={30} />
+              </div>
+              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
                 Lingkungan Pesantren
               </p>
-              <p className="mt-3 text-lg font-bold text-slate-900">Asrama santri, pendampingan ustadz, dan pembinaan harian</p>
-            </div>
-            <div className="rounded-3xl border border-white/80 bg-white/88 p-5 shadow-[0_24px_50px_-32px_rgba(15,23,42,0.28)] backdrop-blur-md">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
-                Fokus Utama
+              <p className="mt-3 text-[2rem] font-black leading-tight text-slate-900">PSB Tahun Ajaran 2026/2027</p>
+              <p className="mt-4 text-base leading-8 text-slate-500">
+                Informasi pendaftaran dan alur bergabung sebagai santri baru.
               </p>
-              <p className="mt-3 text-lg font-bold text-slate-900">Tahfidz, adab, akademik, dan kedisiplinan harian</p>
             </div>
-            <div className="rounded-3xl border border-white/80 bg-white/88 p-5 shadow-[0_24px_50px_-32px_rgba(15,23,42,0.28)] backdrop-blur-md">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
-                Jenjang Pendidikan
+            <div className="rounded-[2rem] bg-white p-8 text-left text-slate-900 shadow-[0_35px_70px_-38px_rgba(15,23,42,0.5)]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm">
+                <Medal className="text-emerald-600" size={30} />
+              </div>
+              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
+                Pembinaan
               </p>
-              <p className="mt-3 text-lg font-bold text-slate-900">Pembinaan santri jenjang SMP dan SMA dalam naungan pesantren</p>
+              <p className="mt-3 text-[2rem] font-black leading-tight text-slate-900">Tahfidz &amp; Adab Harian</p>
+              <p className="mt-4 text-base leading-8 text-slate-500">
+                Pembinaan hafalan, ibadah harian, dan pembentukan karakter santri.
+              </p>
+            </div>
+            <div className="rounded-[2rem] bg-white p-8 text-left text-slate-900 shadow-[0_35px_70px_-38px_rgba(15,23,42,0.5)]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm">
+                <Landmark className="text-emerald-600" size={30} />
+              </div>
+              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
+                Tentang Pondok
+              </p>
+              <p className="mt-3 text-[2rem] font-black leading-tight text-slate-900">Visi, Misi, dan Arah Pendidikan</p>
+              <p className="mt-4 text-base leading-8 text-slate-500">
+                Gambaran arah pendidikan dan nilai yang dibangun di lingkungan pesantren.
+              </p>
             </div>
           </div>
         </div>
