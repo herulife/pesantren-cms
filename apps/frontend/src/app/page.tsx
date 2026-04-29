@@ -1,24 +1,20 @@
 import Link from 'next/link';
-import { ArrowRight, Award, BookOpen, CirclePlay, Heart, Landmark, Medal, School } from 'lucide-react';
+import {
+  ArrowRight,
+  Award,
+  BookOpen,
+  CalendarDays,
+  CirclePlay,
+  Heart,
+  ImageIcon,
+  Landmark,
+  Medal,
+  Newspaper,
+  Quote,
+  School,
+  UserRound,
+} from 'lucide-react';
 import PublicLayout from '@/components/PublicLayout';
-
-const quickLinks = [
-  {
-    title: 'Pendaftaran Santri Baru',
-    description: 'Jalur informasi awal bagi calon santri SMP dan SMA Pondok Pesantren Darussunnah Parung.',
-    href: '/psb',
-  },
-  {
-    title: 'Program Pendidikan',
-    description: 'Kenali tahfidz, pembinaan adab, dan ritme belajar berasrama yang kami jalankan.',
-    href: '/program',
-  },
-  {
-    title: 'Berita & Informasi',
-    description: 'Ikuti kabar kegiatan pondok, agenda santri, dan dinamika kehidupan pesantren.',
-    href: '/news',
-  },
-];
 
 const programCards = [
   {
@@ -29,7 +25,7 @@ const programCards = [
   },
   {
     title: 'Kajian Kitab Kuning',
-    description: 'Pendalaman literatur klasik Islam dengan bimbingan asatidz kompeten.',
+    description: 'Mendalami literatur klasik Islam dengan bimbingan asatidz kompeten.',
     href: '/program#kitab-kuning',
     icon: School,
   },
@@ -47,178 +43,15 @@ const programCards = [
   },
 ];
 
-const valueCards = [
-  {
-    title: 'Adab Sebelum Ilmu',
-    description:
-      'Pembinaan akhlak, disiplin, dan kebiasaan baik menjadi fondasi sebelum santri mendalami ilmu lebih jauh.',
-  },
-  {
-    title: 'Belajar Terarah',
-    description:
-      'Target hafalan, bimbingan ustadz, dan evaluasi berkala menjaga proses belajar tetap tertib dan terukur.',
-  },
-  {
-    title: 'Siap Mengabdi',
-    description:
-      'Santri dibiasakan bertanggung jawab, mandiri, dan siap memberi manfaat bagi keluarga, umat, dan masyarakat.',
-  },
-];
+const principalMessage = {
+  name: 'Ust. Rusdi',
+  title: 'Menyiapkan Kader Dai Masa Depan',
+  body: `Assalamu'alaikum warahmatullahi wabarakatuh.
 
-const dailyRhythms = [
-  {
-    title: 'Pagi yang Tertib',
-    description:
-      'Hari dimulai dengan ibadah, murajaah, dan persiapan belajar agar santri terbiasa disiplin sejak awal waktu.',
-  },
-  {
-    title: 'Belajar yang Fokus',
-    description:
-      'Sesi tahfidz, kajian, dan pembelajaran pendukung berjalan terarah dengan pendampingan ustadz secara berkala.',
-  },
-  {
-    title: 'Malam yang Menenangkan',
-    description:
-      'Penutup hari diisi evaluasi, penguatan hafalan, dan pembiasaan hidup sederhana dalam suasana asrama.',
-  },
-];
+Alhamdulillah, segala puji bagi Allah SWT atas nikmat-Nya, sehingga kita dapat terus berkontribusi dalam mencetak generasi penghafal Al-Qur'an. Kami berkomitmen tidak hanya melahirkan hafizh, namun membentuk pribadi berasas tauhid, berakhlak mulia, dan mandiri.
 
-const nextSteps = [
-  {
-    title: 'Pelajari Profil Pondok',
-    description:
-      'Kenali visi, lingkungan belajar, dan gambaran umum pembinaan di Darussunnah Parung.',
-    href: '/profil',
-    label: 'Buka profil',
-  },
-  {
-    title: 'Simak Informasi PSB',
-    description:
-      'Lihat persyaratan, alur pendaftaran, dan informasi penting bagi calon wali santri.',
-    href: '/psb',
-    label: 'Lihat PSB',
-  },
-  {
-    title: 'Ikuti Kabar Terbaru',
-    description:
-      'Pantau berita kegiatan, agenda, dan informasi terbaru pondok secara berkala.',
-    href: '/news',
-    label: 'Baca berita',
-  },
-];
-
-const supportHighlights = [
-  {
-    title: 'Pendampingan Ustadz',
-    description:
-      'Santri dibina dengan arahan yang konsisten agar perkembangan hafalan, adab, dan kebiasaan baik tetap terjaga.',
-  },
-  {
-    title: 'Komunikasi Wali',
-    description:
-      'Informasi penting mengenai kegiatan dan perkembangan santri disiapkan agar wali lebih mudah mengikuti proses pembinaan.',
-  },
-  {
-    title: 'Lingkungan Bertumbuh',
-    description:
-      'Suasana pondok dibangun untuk menumbuhkan rasa tanggung jawab, kebersamaan, dan semangat memperbaiki diri.',
-  },
-];
-
-const reasonsToChoose = [
-  {
-    title: 'Pembinaan Bertahap',
-    description:
-      'Materi dan kebiasaan disusun berjenjang agar santri bertumbuh secara mantap, bukan terburu-buru.',
-  },
-  {
-    title: 'Arah yang Jelas',
-    description:
-      'Fokus pendidikan diarahkan pada hafalan, adab, dan kesiapan menjalani tanggung jawab dalam keseharian.',
-  },
-  {
-    title: 'Suasana Terkawal',
-    description:
-      'Kehidupan pondok dibangun dengan ritme yang teratur sehingga santri lebih mudah menjaga fokus dan semangat belajar.',
-  },
-];
-
-const closingNotes = [
-  {
-    title: 'Bagi Calon Wali Santri',
-    description:
-      'Informasi dasar tentang profil pondok, program, dan pendaftaran kami susun agar mudah ditelusuri dari halaman publik.',
-  },
-  {
-    title: 'Bagi Alumni dan Masyarakat',
-    description:
-      'Berita, agenda, serta perkembangan kegiatan pondok disajikan agar hubungan dengan Darussunnah tetap terjaga.',
-  },
-];
-
-const contactHighlights = [
-  {
-    title: 'Hubungi Kami',
-    description:
-      'Gunakan halaman kontak untuk memperoleh informasi awal mengenai pondok, program, dan kebutuhan komunikasi lainnya.',
-    href: '/kontak',
-    label: 'Buka kontak',
-  },
-  {
-    title: 'Lihat Agenda',
-    description:
-      'Pantau agenda kegiatan dan momen penting pondok yang dibagikan untuk wali santri dan masyarakat.',
-    href: '/agendas',
-    label: 'Lihat agenda',
-  },
-];
-
-const closingStats = [
-  {
-    value: 'Tahfidz',
-    label: 'Fokus utama pembinaan hafalan dan murajaah santri.',
-  },
-  {
-    value: 'Adab',
-    label: 'Pembiasaan karakter dan disiplin hadir dalam keseharian pondok.',
-  },
-  {
-    value: 'Kemandirian',
-    label: 'Santri diarahkan siap belajar, bertanggung jawab, dan mengabdi.',
-  },
-];
-
-const featuredNews = [
-  {
-    title: 'Santri Darussunnah menata hafalan dengan ritme harian yang disiplin',
-    description:
-      'Kegiatan murajaah, setoran, dan evaluasi berjalan bertahap untuk menjaga hafalan tetap kuat dan terarah.',
-    href: '/news',
-    badge: 'Berita Pilihan',
-  },
-  {
-    title: 'Kegiatan pesantren dibangun agar ilmu dan adab tumbuh bersama',
-    description:
-      'Lingkungan belajar, ibadah berjamaah, dan pembiasaan tanggung jawab menjadi bagian dari pembinaan harian.',
-    href: '/news',
-    badge: 'Kabar Pondok',
-  },
-];
-
-const featuredAgendas = [
-  {
-    title: 'Pembinaan Pekanan Santri',
-    meta: 'Setiap pekan • Aula utama',
-  },
-  {
-    title: 'Pertemuan Wali Santri',
-    meta: 'Agenda berkala • Kampus pondok',
-  },
-  {
-    title: 'Kajian dan Evaluasi Hafalan',
-    meta: 'Sesi terarah • Ruang pembinaan',
-  },
-];
+Proses pendidikan di sini diramu secara komprehensif memadukan Tahfidz, kajian Kitab Kuning, serta keterampilan hidup sesungguhnya. Wassalamu'alaikum warahmatullahi wabarakatuh.`,
+};
 
 export default function LandingPage() {
   return (
@@ -235,6 +68,7 @@ export default function LandingPage() {
           <div className="absolute left-0 top-10 h-44 w-44 rounded-full bg-emerald-500/20 blur-3xl" />
           <div className="absolute right-0 top-20 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
         </div>
+
         <div className="relative mx-auto max-w-7xl px-4 pt-24 sm:pt-28 lg:min-h-[760px] lg:pt-36">
           <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
             <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/35 bg-emerald-500/10 px-5 py-3 text-xs font-black uppercase tracking-[0.28em] text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
@@ -268,13 +102,13 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="relative z-10 mt-20 grid gap-6 pb-[-1px] md:grid-cols-3 lg:mt-24">
+          <div className="relative z-10 mt-20 grid gap-6 md:grid-cols-3 lg:mt-24">
             <div className="rounded-[2rem] bg-white p-8 text-left text-slate-900 shadow-[0_35px_70px_-38px_rgba(15,23,42,0.5)]">
               <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm">
                 <School className="text-emerald-600" size={30} />
               </div>
               <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
-                Lingkungan Pesantren
+                Pendaftaran
               </p>
               <p className="mt-3 text-[2rem] font-black leading-tight text-slate-900">PSB Tahun Ajaran 2026/2027</p>
               <p className="mt-4 text-base leading-8 text-slate-500">
@@ -309,135 +143,86 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative -mt-8 overflow-hidden sm:-mt-10">
-        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-emerald-50 to-white" />
-        <div className="relative mx-auto max-w-6xl px-4 py-16">
-        <div className="max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-            Tentang Darussunnah
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-            Menumbuhkan santri yang dekat dengan Al-Qur&apos;an dan kokoh dalam adab.
-          </h2>
-          <p className="mt-4 text-base leading-8 text-slate-600">
-            Darussunnah Parung menghadirkan suasana pendidikan yang tenang, tertib, dan berwibawa,
-            dengan pembiasaan ibadah, hafalan, akademik, serta pembentukan karakter santri dalam
-            kehidupan pondok pesantren sehari-hari.
-          </p>
-        </div>
-
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {valueCards.map((item) => (
-            <div
-              key={item.title}
-              className="rounded-3xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50 p-6 shadow-sm"
-            >
-              <div className="mb-4 h-1 w-14 rounded-full bg-emerald-500" />
-              <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {quickLinks.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
-            >
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
-                Akses Cepat
-              </p>
-              <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-              <span className="mt-5 inline-flex text-sm font-bold text-emerald-700 transition group-hover:translate-x-1">
-                Buka halaman
-              </span>
-            </Link>
-          ))}
-        </div>
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] py-16">
+      <section className="relative -mt-10 overflow-hidden bg-[linear-gradient(to_bottom,_#ffffff,_#f7fbf8)] py-20">
+        <div className="absolute left-0 top-0 h-72 w-72 rounded-full bg-emerald-100/60 blur-3xl" />
         <div className="mx-auto max-w-6xl px-4">
-          <div className="grid gap-10 lg:grid-cols-12">
-            <div className="lg:col-span-7">
-              <div className="mb-8 flex items-end justify-between gap-4">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-                    Kabar Pesantren
+          <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
+            <div className="rounded-[2.25rem] border border-emerald-100/80 bg-[linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(236,253,245,0.88))] p-8 shadow-[0_40px_80px_-42px_rgba(15,23,42,0.22)] lg:p-10">
+              <div className="flex items-start gap-6">
+                <div className="hidden shrink-0 lg:block">
+                  <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b from-slate-50 to-emerald-50 shadow-lg">
+                    <UserRound className="text-emerald-600" size={54} />
+                  </div>
+                  <div className="mx-auto mt-3 inline-flex items-center justify-center rounded-full border border-emerald-200 bg-white px-4 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                    Pimpinan
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <Quote className="text-emerald-200" size={28} />
+                  <p className="mt-3 text-xs font-black uppercase tracking-[0.28em] text-emerald-600">
+                    Sambutan Pimpinan
                   </p>
-                  <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-                    Warta Darussunnah
+                  <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 lg:text-[2.6rem]">
+                    {principalMessage.title}
                   </h2>
-                  <p className="mt-4 text-base leading-8 text-slate-600">
-                    Potret kegiatan pondok, pembinaan santri, dan dinamika pesantren kami sajikan
-                    dengan nuansa yang bersih, tenang, dan mudah diikuti.
+                  <div className="mt-6 space-y-4 text-base font-medium leading-8 text-slate-700">
+                    {principalMessage.body.split('\n\n').map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
+                  <p className="mt-8 text-[2rem] font-semibold tracking-tight text-slate-800">
+                    {principalMessage.name}
                   </p>
                 </div>
-                <Link
-                  href="/news"
-                  className="hidden rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 sm:inline-flex"
-                >
-                  Semua Berita
-                </Link>
-              </div>
-
-              <div className="grid gap-6 sm:grid-cols-2">
-                {featuredNews.map((item) => (
-                  <Link
-                    key={item.title}
-                    href={item.href}
-                    className="group rounded-[2rem] border border-slate-200 bg-white p-7 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.18)] transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_28px_60px_-28px_rgba(16,185,129,0.22)]"
-                  >
-                    <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
-                      {item.badge}
-                    </span>
-                    <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-900 transition group-hover:text-emerald-700">
-                      {item.title}
-                    </h3>
-                    <p className="mt-4 text-sm leading-7 text-slate-600">{item.description}</p>
-                    <span className="mt-6 inline-flex text-sm font-bold text-emerald-700 transition group-hover:translate-x-1">
-                      Baca selengkapnya
-                    </span>
-                  </Link>
-                ))}
               </div>
             </div>
 
-            <aside className="lg:col-span-5">
-              <div className="rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] p-8 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.18)]">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-                  Agenda Singkat
-                </p>
-                <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
-                  Momen penting yang menjaga ritme pembinaan pondok pesantren.
-                </h3>
-                <div className="mt-8 space-y-4">
-                  {featuredAgendas.map((item, index) => (
-                    <div
-                      key={item.title}
-                      className="rounded-2xl border border-slate-200 bg-white p-4"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-sm font-black text-emerald-700 shadow-sm">
-                          0{index + 1}
-                        </div>
-                        <div>
-                          <h4 className="text-base font-bold text-slate-900">{item.title}</h4>
-                          <p className="mt-2 text-sm text-slate-500">{item.meta}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <aside className="space-y-6">
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_30px_65px_-42px_rgba(15,23,42,0.22)]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="h-10 w-1.5 rounded-full bg-emerald-500" />
+                    <h3 className="text-2xl font-black tracking-tight text-slate-900">Berita</h3>
+                  </div>
+                  <Link
+                    href="/news"
+                    className="rounded-full bg-emerald-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700"
+                  >
+                    Lihat
+                  </Link>
                 </div>
+                <div className="mt-10 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
+                  <Newspaper className="mx-auto text-slate-300" size={30} />
+                  <p className="mt-4 text-lg font-black text-slate-800">Belum ada berita terbaru.</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-500">
+                    Kabar kegiatan pondok akan muncul di sini setelah redaksi menerbitkannya.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[2rem] border border-emerald-200 bg-[linear-gradient(135deg,_#ffffff,_#ecfdf5)] p-6 shadow-[0_35px_70px_-42px_rgba(16,185,129,0.25)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-600">
+                      Pendaftaran
+                    </p>
+                    <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
+                      Penerimaan Santri Baru 2026/2027
+                    </h3>
+                  </div>
+                  <span className="rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-bold text-emerald-700">
+                    Dibuka
+                  </span>
+                </div>
+                <p className="mt-6 text-base leading-8 text-slate-600">
+                  Daftarkan putra Anda untuk belajar Al-Qur&apos;an, adab, dan kehidupan pesantren yang tertib.
+                </p>
                 <Link
-                  href="/agendas"
-                  className="mt-8 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition hover:brightness-110"
+                  href="/psb"
+                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0bb783] px-6 py-4 text-sm font-black text-white shadow-[0_20px_45px_-24px_rgba(11,183,131,0.55)] transition hover:brightness-110"
                 >
-                  Lihat Agenda
+                  Lihat Info Pendaftaran
+                  <ArrowRight size={16} />
                 </Link>
               </div>
             </aside>
@@ -445,19 +230,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-white py-16">
+      <section className="border-t border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto mb-12 max-w-3xl text-center">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
               Program Pendidikan
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-              Fokus Pembinaan Santri
+              Program Pendidikan Pondok
             </h2>
-            <p className="mt-4 text-base leading-8 text-slate-600">
-              Kami mempertahankan struktur yang ringan, namun tampilannya dibuat lebih kaya agar
-              mendekati nuansa halaman lokal yang lebih lengkap.
-            </p>
+            <div className="mx-auto mt-4 h-1.5 w-24 rounded-full bg-gradient-to-r from-emerald-400 to-[#0bd39b]" />
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -467,16 +249,13 @@ export default function LandingPage() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
+                  className="group flex h-full flex-col rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_55px_-36px_rgba(15,23,42,0.2)] transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_28px_60px_-30px_rgba(16,185,129,0.18)]"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
                     <Icon size={22} />
                   </div>
-                  <h3 className="mt-5 text-xl font-bold text-slate-900">{item.title}</h3>
+                  <h3 className="mt-6 text-[1.7rem] font-black leading-tight text-slate-900">{item.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-                  <span className="mt-auto pt-5 text-sm font-bold text-emerald-700">
-                    Pelajari selengkapnya
-                  </span>
                 </Link>
               );
             })}
@@ -484,225 +263,117 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] py-16">
+      <section className="border-t border-slate-200 bg-[#111a31] py-20 text-white">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-              Kehidupan Santri
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-              Ritme pembinaan yang dibangun dengan tertib dan berkesinambungan.
-            </h2>
-            <p className="mt-4 text-base leading-8 text-slate-600">
-              Pola kegiatan harian dirancang agar santri bertumbuh dalam kedisiplinan, kebiasaan
-              ibadah, dan tanggung jawab terhadap amanah belajar yang dijalani.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {dailyRhythms.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <div className="mb-4 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
-                  Ritme Harian
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 bg-emerald-950 py-16 text-white">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">
-              Langkah Berikutnya
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight">
-              Akses informasi penting dengan jalur yang sederhana dan jelas.
-            </h2>
-            <p className="mt-4 text-base leading-8 text-emerald-50/85">
-              Bagi calon wali santri, alumni, maupun masyarakat umum, halaman-halaman utama kami
-              siapkan agar informasi inti bisa ditemukan lebih cepat tanpa membingungkan.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {nextSteps.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-3xl border border-white/10 bg-white/10 p-6 backdrop-blur-sm transition hover:-translate-y-1 hover:bg-white/15"
-              >
-                <h3 className="text-xl font-bold text-white">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-emerald-50/80">{item.description}</p>
-                <span className="mt-5 inline-flex text-sm font-bold text-emerald-200">
-                  {item.label}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 bg-slate-50 py-16">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-              Pendampingan
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-              Pembinaan tidak berhenti pada ruang kelas, tetapi hadir dalam keseharian santri.
-            </h2>
-            <p className="mt-4 text-base leading-8 text-slate-600">
-              Kami ingin menghadirkan pengalaman belajar yang tertata, hangat, dan bertahap agar
-              perkembangan ilmu serta karakter berjalan beriringan.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {supportHighlights.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <div className="mb-4 h-1 w-12 rounded-full bg-emerald-500" />
-                <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] py-16">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-              Mengapa Darussunnah
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-              Pembelajaran dirancang agar santri tumbuh dengan arah, adab, dan ketekunan.
-            </h2>
-            <p className="mt-4 text-base leading-8 text-slate-600">
-              Kami ingin proses pendidikan terasa terukur dan menenangkan, sehingga santri dapat
-              menapaki target hafalan dan pembinaan karakter dengan lebih mantap dari hari ke hari.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {reasonsToChoose.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-3xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50 p-6 shadow-sm"
-              >
-                <div className="mb-4 inline-flex rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 shadow-sm">
-                  Nilai
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 bg-emerald-900 py-16 text-white">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">
-                Tetap Terhubung
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+                Dokumentasi & Kajian
               </p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight">
-                Darussunnah Parung membuka ruang informasi yang lebih rapi untuk wali, santri, dan masyarakat.
+              <h2 className="mt-3 text-4xl font-black tracking-tight text-white lg:text-5xl">
+                Video Kegiatan Pondok
               </h2>
-              <p className="mt-4 max-w-2xl text-base leading-8 text-emerald-50/85">
-                Kami terus merapikan tampilan publik agar profil pondok, jalur pendaftaran, dan
-                kabar kegiatan dapat diakses lebih nyaman tanpa mengurangi kestabilan website.
+              <p className="mt-4 text-base leading-8 text-slate-300">
+                Rekaman kegiatan, kajian, dan momen penting santri yang dapat disimak kembali kapan saja.
               </p>
             </div>
 
-            <div className="grid gap-4">
-              {closingNotes.map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-3xl border border-white/10 bg-white/10 p-6 backdrop-blur-sm"
-                >
-                  <h3 className="text-lg font-bold text-white">{item.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-emerald-50/80">{item.description}</p>
-                </div>
-              ))}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/videos"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-500/30 bg-[#0f4d3f] px-6 py-3 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:bg-[#136050]"
+              >
+                Lihat Semua Video
+                <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/videos"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/6 px-6 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Kanal YouTube
+                <ArrowRight size={16} />
+              </Link>
             </div>
+          </div>
+
+          <div className="mt-10 rounded-[2rem] border border-white/10 bg-white px-6 py-16 text-center shadow-[0_30px_80px_-48px_rgba(0,0,0,0.65)]">
+            <CirclePlay className="mx-auto text-slate-500" size={44} />
+            <p className="mt-6 text-lg font-black text-slate-800">Video kegiatan dan kajian terbaru akan tampil di sini setelah diunggah.</p>
           </div>
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] py-16">
+      <section className="border-t border-slate-200 bg-white py-20">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Berita</p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-900 lg:text-5xl">Kabar Utama</h2>
+              <p className="mt-4 text-base leading-8 text-slate-600">
+                Ringkasan berita, pengumuman, dan berita terbaru dari aktivitas Darussunnah.
+              </p>
+            </div>
+            <Link
+              href="/news"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
+            >
+              Lihat Semua Kabar
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="mt-10 rounded-[2rem] border border-dashed border-slate-200 bg-white px-6 py-16 text-center shadow-[0_24px_55px_-42px_rgba(15,23,42,0.12)]">
+            <Newspaper className="mx-auto text-slate-300" size={40} />
+            <p className="mt-6 text-2xl font-black text-slate-900">Belum ada berita terbaru</p>
+            <p className="mt-3 text-base leading-8 text-slate-500">
+              Kabar terbaru dari pondok akan muncul di sini setelah redaksi menerbitkannya.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 bg-[linear-gradient(135deg,_#f6fffb,_#ffffff_70%)] py-20">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto max-w-4xl text-center">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-              Informasi Lanjutan
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-              Temukan jalur komunikasi dan informasi pondok dengan lebih mudah.
-            </h2>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Jadwal Kegiatan</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-900 lg:text-5xl">Agenda Mendatang</h2>
             <p className="mt-4 text-base leading-8 text-slate-600">
-              Setelah mengenal profil, program, dan ritme pembinaan santri, Anda dapat melanjutkan
-              ke halaman yang paling sesuai dengan kebutuhan informasi Anda.
+              Pantau kegiatan pondok, agenda akademik, dan informasi penting yang akan datang.
             </p>
           </div>
-
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {contactHighlights.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
-              >
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
-                  Informasi
-                </p>
-                <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-                <span className="mt-5 inline-flex text-sm font-bold text-emerald-700 transition group-hover:translate-x-1">
-                  {item.label}
-                </span>
-              </Link>
-            ))}
+          <div className="mt-10 rounded-[2rem] border border-dashed border-slate-200 bg-white px-6 py-16 text-center shadow-[0_24px_55px_-42px_rgba(15,23,42,0.12)]">
+            <CalendarDays className="mx-auto text-slate-300" size={40} />
+            <p className="mt-6 text-2xl font-black text-slate-900">Belum ada agenda terbaru</p>
+            <p className="mt-3 text-base leading-8 text-slate-500">
+              Agenda pondok yang akan datang akan ditampilkan di bagian ini.
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-slate-950 py-16 text-white">
+      <section className="border-t border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">
-              Inti Pembinaan
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight">
-              Tiga arah yang terus dijaga dalam perjalanan pendidikan santri.
-            </h2>
-            <p className="mt-4 text-base leading-8 text-slate-300">
-              Setiap kegiatan pondok diarahkan agar santri dekat dengan Al-Qur&apos;an, kuat dalam
-              adab, dan terbiasa menjalani amanah hidup dengan tanggung jawab.
-            </p>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Dokumentasi Visual</p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-900 lg:text-5xl">Potret Pesantren</h2>
+              <p className="mt-4 text-base leading-8 text-slate-600">
+                Album kegiatan terbaru yang memperlihatkan ritme belajar, ibadah, dan kehidupan santri di Darussunnah.
+              </p>
+            </div>
+            <Link
+              href="/galeri"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
+            >
+              Lihat Galeri Lengkap
+              <ArrowRight size={16} />
+            </Link>
           </div>
-
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {closingStats.map((item) => (
-              <div
-                key={item.value}
-                className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/10 to-white/5 p-6 text-center backdrop-blur-sm"
-              >
-                <p className="text-2xl font-black tracking-tight text-white">{item.value}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-300">{item.label}</p>
-              </div>
-            ))}
+          <div className="mt-10 rounded-[2rem] border border-dashed border-slate-200 bg-white px-6 py-16 text-center shadow-[0_24px_55px_-42px_rgba(15,23,42,0.12)]">
+            <ImageIcon className="mx-auto text-slate-300" size={40} />
+            <p className="mt-6 text-2xl font-black text-slate-900">Belum ada album galeri terbaru</p>
+            <p className="mt-3 text-base leading-8 text-slate-500">
+              Album kegiatan terbaru akan muncul di sini setelah dokumentasi dipublikasikan.
+            </p>
           </div>
         </div>
       </section>
@@ -711,11 +382,8 @@ export default function LandingPage() {
         <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-emerald-400/30 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-teal-300/20 blur-3xl" />
         <div className="relative mx-auto max-w-5xl px-4 text-center text-white">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-100/80">
-            Langkah Akhir
-          </p>
           <h2 className="mt-4 text-4xl font-black tracking-tight md:text-5xl lg:text-6xl">
-            Siap Bergabung Bersama Darussunnah?
+            Siap Bergabung Bersama Kami?
           </h2>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-emerald-50/90">
             Kenali lebih dekat sistem pendidikan Darussunnah dan lanjutkan ke proses pendaftaran
@@ -724,9 +392,10 @@ export default function LandingPage() {
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/psb"
-              className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-extrabold text-emerald-900 transition hover:bg-emerald-50"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-base font-extrabold text-emerald-900 transition hover:bg-emerald-50"
             >
               Lihat Info PSB
+              <ArrowRight size={16} />
             </Link>
             <a
               href="https://wa.me/6281413241748"
