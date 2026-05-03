@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 import PublicLayout from '@/components/PublicLayout';
-import { GraduationCap, Quote, Clock, Share2, Printer } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { GraduationCap, Quote, Clock, Share2, Printer, ChevronRight } from 'lucide-react';
 
 export default function SambutanPage() {
   const [settings, setSettings] = useState<SettingsMap>({});
@@ -29,24 +30,25 @@ export default function SambutanPage() {
   const role = settings.welcome_speech_role || 'Pimpinan Pondok';
   const image = settings.welcome_speech_image || '/assets/img/kepsek.png';
   const text = settings.welcome_speech_text || '';
-  
+
   const paragraphs = text
     .split(/\n+/)
     .map((item) => item.trim())
     .filter(Boolean);
 
-  const fallbackText = "Selamat datang di Pondok Pesantren Tahfidz Darussunnah. Kami berkomitmen untuk melahirkan generasi Robbani yang hafal Al-Qur'an, memiliki kedalaman ilmu syar'i, serta berakhlak mulia sesuai sunnah Nabi Muhammad SAW. Melalui kurikulum yang terintegrasi, kami membangun kemandirian dan integritas santri untuk siap mengabdi di tengah umat.";
+  const fallbackText =
+    "Selamat datang di Pondok Pesantren Tahfidz Darussunnah. Kami berkomitmen untuk melahirkan generasi Robbani yang hafal Al-Qur'an, memiliki kedalaman ilmu syar'i, serta berakhlak mulia sesuai sunnah Nabi Muhammad SAW. Melalui kurikulum yang terintegrasi, kami membangun kemandirian dan integritas santri untuk siap mengabdi di tengah umat.";
 
   if (isLoading) {
     return (
       <PublicLayout>
-        <div className="container mx-auto px-4 py-24 flex flex-col items-center">
-          <div className="w-40 h-40 rounded-full bg-slate-100 animate-pulse mb-8" />
-          <div className="w-64 h-8 bg-slate-100 animate-pulse mb-4" />
+        <div className="container mx-auto flex flex-col items-center px-4 py-24">
+          <div className="mb-8 h-40 w-40 animate-pulse rounded-[1.75rem] bg-slate-100" />
+          <div className="mb-4 h-8 w-64 animate-pulse bg-slate-100" />
           <div className="w-full max-w-2xl space-y-4">
-            <div className="h-4 bg-slate-100 animate-pulse" />
-            <div className="h-4 bg-slate-100 animate-pulse" />
-            <div className="h-4 bg-slate-100 animate-pulse w-3/4" />
+            <div className="h-4 animate-pulse bg-slate-100" />
+            <div className="h-4 animate-pulse bg-slate-100" />
+            <div className="h-4 w-3/4 animate-pulse bg-slate-100" />
           </div>
         </div>
       </PublicLayout>
@@ -55,124 +57,127 @@ export default function SambutanPage() {
 
   return (
     <PublicLayout>
-      {/* 🏛️ HEADER SECTION */}
-      <section className="relative overflow-hidden bg-slate-950 pt-24 pb-48 lg:pt-32 lg:pb-64">
-        <div className="absolute inset-0 bg-[url('/assets/img/pattern.svg')] opacity-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-emerald-950/70" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
-        
-        <div className="container mx-auto px-4 relative z-10 text-center">
+      <section className="relative overflow-hidden bg-slate-950 px-4 pb-16 pt-24 text-white sm:px-6 lg:px-8 lg:pb-24 lg:pt-32">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/88 to-emerald-950/72" />
+        <div className="absolute right-0 top-0 h-72 w-72 translate-x-1/3 -translate-y-1/3 rounded-full bg-emerald-700/25 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-72 w-72 -translate-x-1/3 translate-y-1/3 rounded-full bg-amber-300/16 blur-3xl" />
+
+        <div className="relative mx-auto max-w-6xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center"
+            className="max-w-3xl"
           >
-            <span className="mb-6 rounded-full border border-white/15 bg-white/10 px-6 py-2 text-xs font-black uppercase tracking-[0.3em] text-emerald-200">
+            <span className="inline-flex rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200">
               Pesan dari Pimpinan
             </span>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white tracking-tight mb-4">
-              Sambutan Pimpinan
+            <h1 className="mt-6 text-4xl font-black tracking-tight text-white md:text-6xl">
+              Sambutan yang menegaskan arah pendidikan Darussunnah.
             </h1>
-            <p className="text-slate-400 text-lg md:text-xl max-w-2xl font-medium">
-              Visi dan harapan besar dalam membina generasi penghafal Al-Qur&apos;an di Darussunnah.
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-emerald-100/82 sm:text-base sm:leading-8">
+              Visi, harapan, dan ajakan untuk menumbuhkan generasi yang dekat dengan Al-Qur&apos;an,
+              beradab, dan siap berkontribusi untuk umat.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* 📜 CONTENT SECTION */}
-      <section className="relative -mt-32 lg:-mt-48 pb-24">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="bg-white rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-12">
-              
-              {/* Profile Sidebar */}
-              <div className="lg:col-span-4 bg-slate-50/50 p-8 lg:p-12 border-b lg:border-b-0 lg:border-r border-slate-100 flex flex-col items-center">
-                <div className="relative group mb-8">
-                  <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full scale-110 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative w-48 h-48 lg:w-56 lg:h-56 rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl transition-transform duration-500 group-hover:-translate-y-2">
-                    <Image 
-                      src={resolveDisplayImageUrl(image)} 
-                      alt={name} 
-                      fill 
-                      unoptimized
-                      className="object-cover"
-                    />
-                  </div>
-                </div>
+      <section className="relative bg-[linear-gradient(to_bottom,_#f8fafc,_#ffffff)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+        <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.18)]">
+          <div className="grid lg:grid-cols-[340px_minmax(0,1fr)]">
+            <aside className="border-b border-slate-100 bg-slate-50/70 p-6 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
+              <div className="relative mx-auto h-64 w-full max-w-[250px] overflow-hidden rounded-[1.75rem] border border-white bg-white shadow-lg">
+                <Image
+                  src={resolveDisplayImageUrl(image)}
+                  alt={name}
+                  fill
+                  priority
+                  unoptimized
+                  className="object-cover"
+                />
+              </div>
 
-                <div className="text-center space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Pimpinan Pondok</p>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">{name}</h2>
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">
-                    <GraduationCap size={14} />
-                    {role}
-                  </div>
-                </div>
-
-                <div className="mt-12 w-full pt-8 border-t border-slate-200">
-                   <div className="flex flex-col gap-4">
-                      <button className="flex items-center justify-center gap-3 w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-white hover:shadow-md transition-all">
-                        <Share2 size={16} /> Bagikan
-                      </button>
-                      <button onClick={() => window.print()} className="flex items-center justify-center gap-3 w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-white hover:shadow-md transition-all">
-                        <Printer size={16} /> Cetak Pesan
-                      </button>
-                   </div>
+              <div className="mt-6 text-center lg:text-left">
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-700">
+                  Pimpinan Pondok
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{name}</h2>
+                <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">
+                  <GraduationCap size={14} />
+                  {role}
                 </div>
               </div>
 
-              {/* Speech Body */}
-              <div className="lg:col-span-8 p-8 lg:p-16 relative">
-                <Quote className="absolute top-10 right-10 text-emerald-500/5 sm:text-emerald-500/10" size={120} />
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 text-slate-400 text-sm font-bold uppercase tracking-widest mb-8">
-                    <Clock size={16} className="text-emerald-500" />
-                    Waktu Baca: 2 Menit
-                  </div>
+              <div className="mt-8 border-t border-slate-200 pt-6">
+                <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+                  <button className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700">
+                    <Share2 size={16} />
+                    Bagikan
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
+                  >
+                    <Printer size={16} />
+                    Cetak
+                  </button>
+                </div>
+              </div>
+            </aside>
 
-                  <div className="prose prose-slate prose-lg max-w-none">
-                    <div className="space-y-6 text-slate-700 leading-relaxed font-medium text-lg lg:text-xl italic">
-                      {paragraphs.length > 0 ? (
-                        paragraphs.map((p, i) => (
-                          <p key={i}>{p}</p>
-                        ))
-                      ) : (
-                        <p>{fallbackText}</p>
-                      )}
-                    </div>
-                  </div>
+            <div className="p-6 sm:p-8 lg:p-12">
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                <Clock size={14} className="text-emerald-600" />
+                Waktu baca sekitar 2 menit
+              </div>
 
-                  <div className="mt-16 pt-8 border-t border-slate-100">
-                    <p className="text-slate-500 text-sm italic">
-                      &quot;Pendidikan bukan hanya tentang mengisi wadah, melainkan tentang menyalakan api perjuangan untuk agama dan bangsa.&quot;
-                    </p>
-                  </div>
+              <div className="relative mt-6">
+                <Quote className="absolute -top-4 right-0 text-emerald-100" size={72} />
+                <div className="relative z-10 space-y-6 text-base leading-8 text-slate-700 sm:text-[17px]">
+                  {paragraphs.length > 0 ? (
+                    paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                  ) : (
+                    <p>{fallbackText}</p>
+                  )}
                 </div>
               </div>
 
+              <div className="mt-10 border-t border-slate-100 pt-6">
+                <p className="text-sm italic leading-7 text-slate-500">
+                  &quot;Pendidikan bukan hanya mengisi pikiran, tetapi juga menumbuhkan iman,
+                  tanggung jawab, dan keberanian untuk memberi manfaat.&quot;
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 🚀 CTA SECTION */}
-      <section className="pb-24 pt-12">
-        <div className="container mx-auto px-4 max-w-5xl text-center">
-           <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-emerald-600 to-teal-600 p-12 shadow-2xl shadow-emerald-900/20 lg:p-16">
-              <div className="absolute inset-0 bg-[url('/assets/img/pattern.svg')] opacity-10" />
-              <div className="relative z-10">
-                 <h2 className="text-3xl md:text-4xl font-black text-white mb-6">Mulai Perjalanan Spiritual Santri</h2>
-                 <p className="text-emerald-100 text-lg mb-10 max-w-2xl mx-auto">
-                    Bergabunglah bersama keluarga besar Darussunnah dan wujudkan cita-cita menjadi penghafal Al-Qur&apos;an yang mandiri.
-                 </p>
-                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="/psb" className="bg-white text-emerald-800 px-8 py-4 rounded-2xl font-black text-lg hover:scale-105 transition-transform shadow-xl">Daftar Sekarang</a>
-                    <a href="/program" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-emerald-400 transition-colors">Lihat Program Unggulan</a>
-                 </div>
-              </div>
-           </div>
+      <section className="px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
+        <div className="mx-auto max-w-6xl rounded-[2rem] border border-emerald-100 bg-[linear-gradient(to_bottom,_#ecfdf5,_#f8fafc)] px-6 py-12 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-2xl font-extrabold tracking-tight text-emerald-950 md:text-3xl">
+              Kenali lebih dekat program pembinaan dan jalur pendaftaran santri.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-emerald-800/85 sm:text-base sm:leading-8">
+              Setelah membaca sambutan pimpinan, Anda dapat melanjutkan ke informasi program,
+              fasilitas, dan pendaftaran untuk melihat gambaran pembinaan di Darussunnah.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                href="/program"
+                className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+              >
+                Lihat Program <ChevronRight size={16} />
+              </Link>
+              <Link
+                href="/psb"
+                className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-white px-5 py-3 text-sm font-bold text-emerald-800 transition hover:border-emerald-300"
+              >
+                Buka Informasi PSB <ChevronRight size={16} />
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </PublicLayout>

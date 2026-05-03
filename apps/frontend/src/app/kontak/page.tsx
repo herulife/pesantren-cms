@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { createContactMessage, getSettingsMap, SettingsMap } from '@/lib/api';
 import { useToast } from '@/components/Toast';
-import { Send, MapPin, Phone, Mail, Clock, RefreshCw, MessageCircle } from 'lucide-react';
+import PublicLayout from '@/components/PublicLayout';
+import { Send, MapPin, Phone, Clock, RefreshCw, MessageCircle } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -28,8 +29,8 @@ export default function ContactPage() {
 
   const schoolAddress = settings.school_address || 'Jl. KH. Ahmad Sugriwa, Kp. Lengkong Barang RT 01 RW 02, Desa Iwul, Kec. Parung, Kab. Bogor 16330';
   const schoolPhone = settings.school_phone || '0814 1324 1748';
-  const schoolEmail = settings.school_email || 'info@darussunnah.local';
-  const schoolWebsite = settings.school_website || 'https://darussunnah.local';
+  const schoolEmail = settings.school_email || 'info@darussunnahparung.or.id';
+  const schoolWebsite = settings.school_website || 'https://darussunnahparung.or.id';
   const adminWhatsAppRaw = settings.whatsapp_admin_numbers || schoolPhone;
   const adminWhatsAppNumbers = adminWhatsAppRaw
     .split(/\r?\n|,/)
@@ -57,14 +58,15 @@ export default function ContactPage() {
       } else {
         showToast('error', 'Gagal mengirim pesan.');
       }
-    } catch (err) {
+    } catch {
       showToast('error', 'Terjadi kesalahan sistem.');
     }
     setIsSubmitting(false);
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-20">
+    <PublicLayout>
+    <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header Section */}
       <div className="bg-slate-950 text-white py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-emerald-950/70"></div>
@@ -106,7 +108,7 @@ export default function ContactPage() {
           
           {/* Contact Info Cards */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
+            <div className="bg-white/95 backdrop-blur-sm p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
                <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0">
                   <MapPin size={24} />
                </div>
@@ -118,7 +120,7 @@ export default function ContactPage() {
                </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
+            <div className="bg-white/95 backdrop-blur-sm p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
                <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
                   <Phone size={24} />
                </div>
@@ -147,7 +149,7 @@ export default function ContactPage() {
                </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
+            <div className="bg-white/95 backdrop-blur-sm p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
                <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
                   <Clock size={24} />
                </div>
@@ -162,7 +164,7 @@ export default function ContactPage() {
 
           {/* Contact Form */}
           <div className="lg:col-span-2">
-            <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
+            <div className="bg-white/96 backdrop-blur-sm p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
               <div className="mb-10">
                  <h2 className="text-2xl font-black text-slate-800 mb-2 font-outfit">Kirim Pesan</h2>
                  <p className="text-slate-500 text-sm text-balance">Isi form di bawah ini. Insya Allah kami akan membalas melalui WhatsApp atau email yang Anda cantumkan.</p>
@@ -253,7 +255,7 @@ export default function ContactPage() {
         </div>
 
         {/* Large Map Section */}
-        <div className="mt-12 bg-white p-4 md:p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
+        <div className="mt-12 bg-white/96 backdrop-blur-sm p-4 md:p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
            <div className="flex flex-col gap-4 px-4 pb-4 md:flex-row md:items-end md:justify-between">
              <div>
                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-600">Lokasi Pondok</p>
@@ -286,5 +288,6 @@ export default function ContactPage() {
 
       </div>
     </div>
+    </PublicLayout>
   );
 }

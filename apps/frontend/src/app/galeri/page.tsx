@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import PublicLayout from '@/components/PublicLayout';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
@@ -9,6 +10,12 @@ import { getGallery, GalleryItem, resolveDisplayImageUrl, formatGalleryAlbumTitl
 import { ArrowRight, CalendarDays, ImageIcon, MapPinned, Search, X } from 'lucide-react';
 
 const ALL_CATEGORY = 'Semua';
+
+const galleryHighlights = [
+  { value: 'Album', label: 'Kegiatan Pondok' },
+  { value: 'Foto', label: 'Dokumentasi Santri' },
+  { value: 'Momen', label: 'Belajar & Ibadah' },
+];
 
 type GalleryAlbum = {
   key: string;
@@ -84,32 +91,45 @@ export default function GaleriPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-emerald-900/50 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_38%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-24 text-white">
+      <section className="relative overflow-hidden border-b border-emerald-900/50 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_38%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-24 text-white lg:py-28">
         <div className="absolute inset-0 bg-cover bg-center opacity-15" style={{ backgroundImage: `url('${heroImage}')` }} />
         <div className="absolute inset-0 bg-[linear-gradient(to_top,_rgba(2,6,23,0.75),_rgba(2,6,23,0.1))]" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <PublicSectionIntro
-            eyebrow="Galeri Kegiatan Pondok"
-            title="Potret Kehidupan Darussunnah"
-            description="Dokumentasi belajar, ibadah, pembinaan, dan keseharian santri dalam suasana pondok yang tertib dan hangat."
-            theme="dark"
-          />
+          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+            <PublicSectionIntro
+              eyebrow="Galeri Kegiatan Pondok"
+              title="Potret Kehidupan Darussunnah"
+              description="Dokumentasi belajar, ibadah, pembinaan, dan keseharian santri dalam suasana pondok yang tertib dan hangat."
+              theme="dark"
+            />
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+              {galleryHighlights.map((item) => (
+                <div key={item.label} className="rounded-[1.6rem] border border-white/10 bg-white/8 px-5 py-5 shadow-[0_20px_42px_-30px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                  <p className="text-2xl font-black text-white">{item.value}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200/82">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       <section className="bg-[#f6f4ee] py-10">
         <div className="container mx-auto max-w-6xl px-4">
-          <div className="rounded-[2rem] border border-[#e8e0d1] bg-white/90 p-4 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.2)] md:p-5">
+          <div className="rounded-[1.5rem] border border-[#e8e0d1] bg-white/90 p-4 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.2)] md:p-5">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="relative w-full md:max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari kegiatan, album, atau kategori..."
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
-                />
+              <div className="w-full md:max-w-xl">
+                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">Pencarian Album</p>
+                <div className="relative w-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari kegiatan, album, atau kategori..."
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+                  />
+                </div>
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {categories.map((category) => (
@@ -143,13 +163,22 @@ export default function GaleriPage() {
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 <Link
                   href={`/galeri/${featuredPhoto.album_slug || featuredPhoto.id}`}
-                  className="group relative overflow-hidden rounded-[2.75rem] border border-white/70 bg-white text-left shadow-[0_30px_70px_-35px_rgba(15,23,42,0.35)] lg:col-span-7"
+                  className="group relative overflow-hidden rounded-[1.9rem] border border-white/70 bg-white text-left shadow-[0_30px_70px_-35px_rgba(15,23,42,0.35)] lg:col-span-7"
                 >
-                  <img src={resolveDisplayImageUrl(featuredPhoto.image_url)} alt={featuredPhoto.title} className="h-[420px] w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="relative h-[420px] w-full">
+                    <Image
+                      src={resolveDisplayImageUrl(featuredPhoto.image_url)}
+                      alt={featuredPhoto.title}
+                      fill
+                      unoptimized
+                      sizes="(max-width: 1024px) 100vw, 58vw"
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-8 text-white">
                     <p className="mb-3 text-[10px] font-black uppercase tracking-[0.35em] text-emerald-200">{featuredPhoto.category}</p>
-                    <h2 className="max-w-xl text-3xl font-black uppercase tracking-tight">{featuredPhoto.album_name || featuredPhoto.title}</h2>
+                    <h2 className="max-w-xl text-3xl font-black tracking-tight">{featuredPhoto.album_name || featuredPhoto.title}</h2>
                     <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold backdrop-blur-sm">
                       Buka Album
                       <ArrowRight size={14} />
@@ -162,13 +191,22 @@ export default function GaleriPage() {
                     <Link
                       key={photo.id}
                       href={`/galeri/${photo.album_slug || photo.id}`}
-                      className="group relative overflow-hidden rounded-[2rem] border border-white/70 bg-white text-left shadow-[0_20px_50px_-30px_rgba(15,23,42,0.25)]"
+                      className="group relative overflow-hidden rounded-[1.5rem] border border-white/70 bg-white text-left shadow-[0_20px_50px_-30px_rgba(15,23,42,0.25)]"
                     >
-                      <img src={resolveDisplayImageUrl(photo.image_url)} alt={photo.title} className="h-[196px] w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <div className="relative h-[196px] w-full">
+                        <Image
+                          src={resolveDisplayImageUrl(photo.image_url)}
+                          alt={photo.title}
+                          fill
+                          unoptimized
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                          className="object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                      </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
                       <div className="absolute inset-x-0 bottom-0 p-5 text-white">
                         <p className="mb-2 text-[9px] font-black uppercase tracking-[0.28em] text-emerald-200">{photo.category}</p>
-                        <h3 className="line-clamp-2 text-sm font-black uppercase tracking-tight">{photo.album_name || photo.title}</h3>
+                        <h3 className="line-clamp-2 text-sm font-black tracking-tight">{photo.album_name || photo.title}</h3>
                       </div>
                     </Link>
                   ))}
@@ -178,7 +216,10 @@ export default function GaleriPage() {
               <div className="mt-12 flex items-end justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">Album Terbaru</p>
-                  <h2 className="mt-2 text-3xl font-black uppercase tracking-tight text-slate-900">Jejak Kegiatan Santri</h2>
+                  <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Jejak Kegiatan Santri</h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+                    Dokumentasi kegiatan yang menampilkan ritme belajar, ibadah, kebersamaan, dan pembinaan santri Darussunnah.
+                  </p>
                 </div>
                 <div className="hidden items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-500 shadow-sm md:flex">
                   <CalendarDays size={14} className="text-emerald-600" />
@@ -191,17 +232,22 @@ export default function GaleriPage() {
                   <Link
                     key={album.key}
                     href={`/galeri/${album.cover.album_slug || album.cover.id}`}
-                    className="group relative mb-6 block w-full break-inside-avoid overflow-hidden rounded-[2rem] border border-white/70 bg-white text-left shadow-[0_18px_50px_-30px_rgba(15,23,42,0.28)]"
+                    className="group relative mb-6 block w-full break-inside-avoid overflow-hidden rounded-[1.5rem] border border-white/70 bg-white text-left shadow-[0_18px_50px_-30px_rgba(15,23,42,0.28)]"
                   >
-                    <img
-                      src={resolveDisplayImageUrl(album.cover.image_url)}
-                      alt={album.title}
-                      className={`w-full object-cover transition-transform duration-700 group-hover:scale-105 ${index % 3 === 0 ? 'h-[340px]' : index % 3 === 1 ? 'h-[260px]' : 'h-[300px]'}`}
-                    />
+                    <div className={`relative w-full ${index % 3 === 0 ? 'h-[340px]' : index % 3 === 1 ? 'h-[260px]' : 'h-[300px]'}`}>
+                      <Image
+                        src={resolveDisplayImageUrl(album.cover.image_url)}
+                        alt={album.title}
+                        fill
+                        unoptimized
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                     <div className="absolute inset-x-0 bottom-0 translate-y-4 p-6 text-white opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                       <p className="mb-2 text-[9px] font-black uppercase tracking-[0.28em] text-emerald-200">{album.category}</p>
-                      <h3 className="text-lg font-black uppercase tracking-tight">{album.title}</h3>
+                      <h3 className="text-lg font-black tracking-tight">{album.title}</h3>
                       <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-200">{album.items.length} foto</p>
                     </div>
                   </Link>
@@ -221,20 +267,20 @@ export default function GaleriPage() {
 
       <section className="bg-white py-16">
         <div className="container mx-auto max-w-5xl px-4">
-          <div className="rounded-[2.5rem] border border-emerald-100 bg-[linear-gradient(135deg,_#ecfdf5_0%,_#f8fafc_100%)] px-8 py-10 text-center shadow-[0_25px_60px_-35px_rgba(16,185,129,0.25)]">
+          <div className="rounded-[1.8rem] border border-emerald-100 bg-[linear-gradient(135deg,_#ecfdf5_0%,_#f8fafc_100%)] px-8 py-10 text-center shadow-[0_25px_60px_-35px_rgba(16,185,129,0.25)]">
             <p className="text-[10px] font-black uppercase tracking-[0.35em] text-emerald-700">Kehidupan Pesantren</p>
-            <h2 className="mt-3 text-3xl font-black uppercase tracking-tight text-slate-900">Ingin Menjadi Bagian Dari Pondok Ini?</h2>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Ingin menjadi bagian dari pondok ini?</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-600">
               Lihat suasana belajar, ibadah, dan pembinaan santri Darussunnah, lalu lanjutkan ke informasi pendaftaran.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <a href="/psb" className="rounded-full bg-emerald-600 px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-emerald-600/20 transition-all hover:bg-emerald-500">
+              <Link href="/psb" className="rounded-full bg-emerald-600 px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-emerald-600/20 transition-all hover:bg-emerald-500">
                 Daftar PSB
-              </a>
-              <a href="/kontak" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-slate-700 transition-all hover:border-emerald-200 hover:text-emerald-700">
+              </Link>
+              <Link href="/kontak" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-slate-700 transition-all hover:border-emerald-200 hover:text-emerald-700">
                 <MapPinned size={16} />
                 Hubungi Pondok
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -252,8 +298,15 @@ export default function GaleriPage() {
               <X size={18} />
             </button>
             <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr]">
-              <div className="bg-black">
-                <img src={resolveDisplayImageUrl(selectedPhoto.image_url)} alt={selectedPhoto.title} className="h-full max-h-[78vh] w-full object-contain" />
+              <div className="relative min-h-[320px] bg-black lg:min-h-[78vh]">
+                <Image
+                  src={resolveDisplayImageUrl(selectedPhoto.image_url)}
+                  alt={selectedPhoto.title}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 1024px) 100vw, 65vw"
+                  className="object-contain"
+                />
               </div>
               <div className="flex flex-col justify-end bg-[linear-gradient(180deg,_rgba(5,46,43,0.96),_rgba(15,23,42,0.98))] p-8 text-white">
                 <p className="text-[10px] font-black uppercase tracking-[0.35em] text-emerald-200">{selectedPhoto.category}</p>

@@ -1,10 +1,73 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import PublicLayout from '@/components/PublicLayout';
-import { BookOpen, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import PublicLayout from '@/components/PublicLayout';
 import { getPrograms, Program, resolveDisplayImageUrl } from '@/lib/api';
+import { ArrowRight, Award, BookOpen, Compass, GraduationCap, Heart, Target } from 'lucide-react';
+
+const curatedPrograms = [
+  {
+    title: 'Tarbiyah Aqidah',
+    desc: 'Pembinaan fondasi iman agar santri bertumbuh dengan arah ibadah, akhlak, dan keyakinan yang kokoh.',
+    icon: <Heart size={22} />,
+  },
+  {
+    title: 'Tsaqofah Islamiyah',
+    desc: 'Bekal wawasan Islam yang luas untuk membentuk nalar, adab berpikir, dan kesiapan berdakwah.',
+    icon: <Compass size={22} />,
+  },
+  {
+    title: 'Akselerasi Tahfidz 30 Juz',
+    desc: 'Program inti pesantren yang menargetkan hafalan Al-Quran yang kuat, terjaga, dan terus dibina.',
+    icon: <BookOpen size={22} />,
+  },
+  {
+    title: 'Tahfidz Hadits',
+    desc: 'Penguatan hafalan hadits sebagai pelengkap pembinaan ilmu, adab, dan orientasi belajar santri.',
+    icon: <Award size={22} />,
+  },
+  {
+    title: 'Mahasantri Bahasa Arab',
+    desc: 'Pendalaman bahasa Arab untuk memperkuat akses santri ke literatur Islam dan komunikasi akademik.',
+    icon: <GraduationCap size={22} />,
+  },
+  {
+    title: 'Life Skill',
+    desc: 'Pembekalan keterampilan hidup agar santri tumbuh mandiri, kreatif, dan siap berkontribusi nyata.',
+    icon: <Target size={22} />,
+  },
+];
+
+const curatedProgramVisuals = [
+  { title: 'Tarbiyah Aqidah', image: '/assets/img/khalaqoh.jpg' },
+  { title: 'Tsaqofah Islamiyah', image: '/assets/img/belajar-kitab.jpg' },
+  { title: 'Akselerasi Tahfidz 30 Juz', image: '/assets/img/tahfidz.jpg' },
+  { title: 'Tahfidz Hadits', image: '/assets/img/tasmi.jpg' },
+  { title: 'Mahasantri Bahasa Arab', image: '/assets/img/tahfidz1.jpg' },
+  { title: 'Life Skill', image: '/assets/img/masak.jpg' },
+];
+
+const curriculumTracks = ['Kurikulum Pondok', 'Kurikulum DIKNAS', 'Kurikulum Tahfidz'];
+
+const extracurriculars = [
+  'Teknik Otomotif',
+  'Teknik Listrik',
+  'Tata Boga',
+  'Futsal',
+  'Karate',
+  'Beladiri Tifan',
+  'Bahasa',
+  'Panahan',
+  'Basket',
+];
+
+const programHighlights = [
+  { value: '6', label: 'Program Inti' },
+  { value: '3', label: 'Kurikulum Utama' },
+  { value: '9', label: 'Ekskul Pilihan' },
+];
 
 export default function ProgramPage() {
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -12,24 +75,35 @@ export default function ProgramPage() {
 
   useEffect(() => {
     let isActive = true;
+
     async function fetchPrograms() {
       try {
         const data = await getPrograms();
-        if (!isActive) return;
+        if (!isActive) {
+          return;
+        }
+
         const sorted = [...data].sort((a, b) => {
           const orderA = a.order_index ?? 0;
           const orderB = b.order_index ?? 0;
-          if (orderA !== orderB) return orderA - orderB;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
           return a.title.localeCompare(b.title);
         });
+
         setPrograms(sorted);
-      } catch (e) {
-        console.error('Error fetching programs:', e);
+      } catch (error) {
+        console.error('Error fetching programs:', error);
       } finally {
-        if (isActive) setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
+
     fetchPrograms();
+
     return () => {
       isActive = false;
     };
@@ -37,122 +111,240 @@ export default function ProgramPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-emerald-800 bg-slate-950 py-24 text-white">
-        <div className="absolute inset-0 bg-[url('/assets/img/khalaqoh.jpg')] bg-cover bg-center opacity-25" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-emerald-950/70" />
-        <div className="absolute inset-0 opacity-25">
-          <div className="absolute -left-10 top-12 h-40 w-40 rounded-full bg-emerald-300 blur-3xl" />
-          <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-cyan-300 blur-3xl" />
-        </div>
-        <div className="relative mx-auto max-w-6xl px-4 text-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
-            <span className="h-2 w-2 rounded-full bg-emerald-300" />
-            Program Pendidikan
-          </p>
-          <h1 className="mt-6 text-4xl font-black uppercase tracking-tight text-white md:text-5xl lg:text-6xl">
-            Program Pendidikan
-          </h1>
-          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-emerald-50/90">
-            Kurikulum terpadu yang dirancang untuk menumbuhkan hafalan, adab, pemahaman ilmu, dan
-            kesiapan santri menjalani amanah kehidupan.
-          </p>
+      <section className="relative overflow-hidden border-b border-emerald-900/80 bg-slate-950 py-24 text-white lg:py-28">
+        <div className="absolute inset-0 bg-[url('/assets/img/khalaqoh.jpg')] bg-cover bg-center opacity-20" />
+        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(2,6,23,0.96)_10%,rgba(2,6,23,0.84)_44%,rgba(6,78,59,0.66)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.12),transparent_24%)]" />
+        <div className="relative mx-auto max-w-6xl px-4">
+          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100 backdrop-blur-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                Program Pendidikan
+              </p>
+              <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
+                Sistem pembinaan Darussunnah dirancang menyeluruh, bukan hanya kuat di hafalan.
+              </h1>
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-emerald-50/90">
+                Kenali program unggulan, kurikulum, pembiasaan santri, dan kegiatan penunjang yang
+                membentuk karakter serta kesiapan hidup mereka.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                {['Tahfidz', 'Adab', 'Tsaqofah Islamiyah', 'Life Skill'].map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-white/12 bg-black/18 px-4 py-2 text-xs font-semibold text-emerald-50/90 backdrop-blur-sm"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+              {programHighlights.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-[1.65rem] border border-white/10 bg-white/8 px-5 py-5 shadow-[0_20px_45px_-30px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+                >
+                  <p className="text-3xl font-black leading-none text-white">{item.value}</p>
+                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200/85">
+                    {item.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="bg-[linear-gradient(to_bottom,_#ffffff,_#f8fafc)] py-20">
+      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#fbfcfa_0%,#f3f7f3_100%)] py-16 md:py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.05),_transparent_22%)]" />
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="text-center">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Program Unggulan</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
+              Arah pembinaan inti Darussunnah
+            </h2>
+            <p className="mx-auto mt-4 max-w-3xl text-base leading-8 text-slate-600">
+              Enam pilar pembinaan ini menjadi fondasi ritme belajar, ibadah, akhlak, dan kesiapan hidup santri.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {curatedPrograms.map((program) => {
+              const visual = curatedProgramVisuals.find((item) => item.title === program.title);
+              return (
+              <div
+                key={program.title}
+                className="group overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.2)] backdrop-blur-sm"
+              >
+                <div className="relative h-52 overflow-hidden bg-slate-100">
+                  {visual ? (
+                    <Image
+                      src={visual.image}
+                      alt={program.title}
+                      fill
+                      unoptimized
+                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : null}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/16 to-transparent" />
+                  <div className="absolute left-5 top-5 inline-flex rounded-2xl bg-white/12 p-4 text-emerald-100 backdrop-blur-sm">
+                    {program.icon}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                    <h3 className="text-xl font-black tracking-tight">{program.title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-slate-200">{program.desc}</p>
+                  </div>
+                </div>
+              </div>
+            )})}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden border-y border-slate-200 bg-[#f7f8f4] py-16 md:py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.10),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.08),_transparent_28%)]" />
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 lg:grid-cols-[0.95fr_1.05fr] lg:items-stretch">
+          <div className="rounded-[2rem] border border-white/80 bg-white/92 p-8 shadow-[0_24px_55px_-36px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Kurikulum</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+              Kurikulum berlapis untuk menjaga keseimbangan ilmu.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-slate-600">
+              Struktur belajar santri disusun agar pembinaan diniyah, akademik, dan tahfidz berjalan seimbang.
+            </p>
+            <div className="mt-8 space-y-4">
+              {curriculumTracks.map((track, index) => (
+                <div key={track} className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-5 py-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
+                    0{index + 1}
+                  </p>
+                  <p className="mt-2 font-bold text-slate-800">{track}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-slate-900 bg-[linear-gradient(180deg,#0f172a_0%,#10251d_100%)] p-8 text-white shadow-[0_30px_70px_-35px_rgba(15,23,42,0.35)]">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">Ekstrakurikuler</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">
+              Ruang tumbuh yang melatih keterampilan, disiplin, dan percaya diri santri.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-slate-300">
+              Kegiatan penunjang ini membantu santri berkembang aktif, terampil, dan lebih siap menghadapi kehidupan nyata.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {extracurriculars.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-white py-16 md:py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.05),_transparent_24%)]" />
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto mb-12 max-w-3xl text-center">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
-              Fokus Pembelajaran
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold text-slate-900">Struktur Program Pondok</h2>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Program Lainnya</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
+              Program tambahan di Darussunnah
+            </h2>
             <p className="mt-4 text-base leading-8 text-slate-600">
-              Setiap program disusun untuk membantu santri bertumbuh secara seimbang dalam hafalan,
-              adab, pembiasaan ibadah, dan kesiapan berdakwah.
+              Daftar berikut melengkapi pembinaan utama Darussunnah dan menampilkan program-program
+              yang tersedia untuk mendukung perkembangan santri.
             </p>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-[320px] bg-slate-50 rounded-[3rem] animate-pulse" />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
+              {[1, 2].map((index) => (
+                <div key={index} className="h-[320px] rounded-[2.5rem] bg-slate-50 animate-pulse" />
               ))}
             </div>
           ) : programs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               {programs.map((program) => {
                 const imageUrl = resolveDisplayImageUrl(program.image_url);
-                const description = program.excerpt || program.content || 'Program unggulan untuk membentuk karakter dan kompetensi santri.';
+                const description =
+                  program.excerpt ||
+                  program.content ||
+                  'Program unggulan yang membantu santri tumbuh dalam ilmu, adab, dan kedisiplinan.';
+
                 return (
-                  <div key={program.id} className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-                    <div className="relative h-56 bg-slate-50 overflow-hidden">
+                  <div
+                    key={program.id}
+                    className="group overflow-hidden rounded-[2.2rem] border border-slate-100 bg-white shadow-[0_20px_50px_-35px_rgba(15,23,42,0.22)] transition-all hover:-translate-y-1 hover:border-emerald-200"
+                  >
+                    <div className="relative h-56 overflow-hidden bg-slate-50">
                       {imageUrl ? (
-                        <img src={imageUrl} alt={program.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <Image
+                          src={imageUrl}
+                          alt={program.title}
+                          fill
+                          unoptimized
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-emerald-300">
-                          <BookOpen size={56} className="mb-3 opacity-60" />
-                          <span className="font-black text-[10px] uppercase tracking-widest text-emerald-400">Program Pondok</span>
+                        <div className="flex h-full w-full items-center justify-center text-emerald-300">
+                          <BookOpen size={48} />
                         </div>
                       )}
-                      <div className="absolute top-5 left-5 flex flex-wrap gap-2">
-                        {program.category && (
-                          <span className="px-3 py-1 rounded-full bg-white/90 text-emerald-700 text-[10px] font-black uppercase tracking-widest shadow-sm">
-                            {program.category}
-                          </span>
-                        )}
-                        {program.is_featured && (
-                          <span className="px-3 py-1 rounded-full bg-amber-400/90 text-emerald-950 text-[10px] font-black uppercase tracking-widest shadow-sm">
-                            Unggulan
-                          </span>
-                        )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/78 via-slate-950/8 to-transparent" />
+                      <div className="absolute left-5 top-5 rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white backdrop-blur-sm">
+                        Program Pondok
                       </div>
                     </div>
-                    <div className="p-10">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
-                        Program Pondok
-                      </p>
-                      <h2 className="mb-4 mt-3 text-2xl font-black uppercase tracking-tight text-slate-900">
-                        {program.title}
-                      </h2>
-                      <p className="mb-8 text-lg leading-relaxed text-slate-600 line-clamp-3">{description}</p>
-                      <Link href="/psb" className="inline-flex items-center gap-2 font-bold text-emerald-600 transition-all hover:gap-4">
-                        Pelajari Lebih Lanjut <ArrowRight size={18} />
-                      </Link>
+                    <div className="p-7">
+                      <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">{program.title}</h3>
+                      <p className="mt-4 line-clamp-3 text-base leading-7 text-slate-600">{description}</p>
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="bg-slate-50 rounded-[3rem] py-24 text-center border-2 border-dashed border-slate-200">
-              <BookOpen className="mx-auto text-slate-200 mb-6" size={48} />
-              <p className="text-slate-400 font-black uppercase tracking-widest text-xs mb-4">Program pondok belum tersedia</p>
-              <Link href="/psb" className="inline-flex items-center gap-2 text-emerald-600 font-bold">
-                Lihat Informasi PSB <ArrowRight size={18} />
-              </Link>
+            <div className="rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50 py-20 text-center">
+              <BookOpen className="mx-auto mb-5 text-slate-300" size={42} />
+              <p className="text-sm font-bold text-slate-500">Program tambahan akan ditampilkan di sini saat tersedia.</p>
             </div>
           )}
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-slate-50 py-20">
-        <div className="mx-auto max-w-4xl px-4 text-center">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Target Output</p>
-          <h2 className="mt-3 mb-6 text-3xl font-extrabold text-slate-900">Target Lulusan</h2>
-          <p className="mx-auto mb-10 max-w-2xl text-base leading-8 text-slate-600">
-            Program pendidikan diarahkan agar santri memiliki keluaran yang jelas, baik dalam
-            hafalan, karakter, maupun kesiapan berkontribusi di tengah masyarakat.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              "Hafizh 30 Juz Mutqin",
-              "Mampu Berdakwah",
-              "Berakhlak Karimah"
-            ].map((target, i) => (
-              <div key={i} className="rounded-3xl border border-emerald-100 bg-white p-6 text-lg font-bold text-emerald-800 shadow-sm">
-                {target}
-              </div>
-            ))}
+      <section className="relative overflow-hidden bg-slate-50 py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.08),_transparent_28%)]" />
+        <div className="mx-auto max-w-5xl px-4 text-center">
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/92 p-8 shadow-[0_28px_65px_-38px_rgba(15,23,42,0.18)] backdrop-blur-sm md:p-10">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Selanjutnya</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
+              Lanjutkan melihat fasilitas dan proses pendaftaran
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-slate-600">
+              Setelah memahami program pembinaan, lanjutkan ke fasilitas pondok dan informasi PSB agar gambaran Darussunnah makin utuh.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/facilities"
+                className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white transition-all hover:-translate-y-0.5"
+              >
+                Lihat fasilitas pondok <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/psb"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-emerald-200 hover:text-emerald-700"
+              >
+                Buka info PSB <ArrowRight size={16} />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
