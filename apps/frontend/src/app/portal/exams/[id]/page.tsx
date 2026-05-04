@@ -298,7 +298,9 @@ export default function ExamInterfacePage() {
                 </button>
               ) : (
                 <button
-                  onClick={handleFinish}
+                  onClick={() => {
+                    void handleFinish();
+                  }}
                   disabled={isSubmitting}
                   className="flex items-center gap-3 rounded-[1.25rem] bg-emerald-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/30 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
                 >
