@@ -279,6 +279,7 @@ func main() {
 			// Superadmin Only
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("superadmin"))
+				r.Post("/users", authHandler.CreateUser)
 				r.Get("/users", authHandler.GetAllUsers)
 				r.Put("/users/{id}/role", authHandler.UpdateUserRole)
 				r.Delete("/users/{id}", authHandler.DeleteUser)
