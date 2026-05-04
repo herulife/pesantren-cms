@@ -99,6 +99,12 @@ func RequireLicense(db *sql.DB) func(http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
+
+			if canBypassLicenseForBootstrap(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			status, _ := CheckLicense(db)
 			if !status.IsValid {
 				logger.Warn(r.Context(), "license check failed", logger.Field{
@@ -112,6 +118,27 @@ func RequireLicense(db *sql.DB) func(http.Handler) http.Handler {
 			}
 			next.ServeHTTP(w, r)
 		})
+	}
+}
+
+func canBypassLicenseForBootstrap(r *http.Request) bool {
+	claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims)
+	if !ok {
+		return false
+	}
+
+	role, _ := claims["role"].(string)
+	if role != "superadmin" {
+		return false
+	}
+
+	switch {
+	case r.URL.Path == "/api/me":
+		return true
+	case strings.HasPrefix(r.URL.Path, "/api/settings"):
+		return true
+	default:
+		return false
 	}
 }
 
