@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -24,11 +24,21 @@ export default function WalletPage() {
   const [isSettingPin, setIsSettingPin] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
 
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    const [wData, hData] = await Promise.all([
+      getMyWallet(),
+      getWalletHistory(20)
+    ]);
+    setWallet(wData);
+    setHistory(hData);
+    setIsLoading(false);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     const loadData = async () => {
-      setIsLoading(true);
       const [wData, hData] = await Promise.all([
         getMyWallet(),
         getWalletHistory(20)
