@@ -17,6 +17,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	_ "golang.org/x/image/webp"
 )
 
 const maxUploadSize = 5 << 20
@@ -77,7 +79,7 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 			"filename":       header.Filename,
 			"error":          err.Error(),
 		})
-		sendJSONResponse(w, http.StatusBadRequest, false, "File harus berupa gambar JPG, PNG, atau GIF yang valid", nil)
+		sendJSONResponse(w, http.StatusBadRequest, false, "File harus berupa gambar JPG, JPEG, PNG, GIF, atau WEBP yang valid", nil)
 		return
 	}
 
@@ -175,6 +177,9 @@ func sanitizeImage(file io.Reader) ([]byte, string, error) {
 		err = png.Encode(&buf, img)
 	case "gif":
 		err = gif.Encode(&buf, img, nil)
+	case "webp":
+		err = png.Encode(&buf, img)
+		format = "png"
 	default:
 		return nil, "", fmt.Errorf("unsupported image format: %s", format)
 	}

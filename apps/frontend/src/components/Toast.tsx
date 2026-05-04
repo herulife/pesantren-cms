@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useRef, useState, createContext, useContext } from 'react';
 import { CheckCircle2, AlertCircle, X, Info } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'info';
@@ -19,9 +19,14 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const fallbackIdRef = useRef(0);
 
   const showToast = (type: ToastType, message: string) => {
-    const id = typeof crypto !== 'undefined' ? crypto.randomUUID() : Date.now().toString();
+    fallbackIdRef.current += 1;
+    const id =
+      typeof crypto !== 'undefined'
+        ? crypto.randomUUID()
+        : `toast-${fallbackIdRef.current}`;
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
       removeToast(id);

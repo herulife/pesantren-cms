@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   getExamQuestions, 
@@ -40,31 +40,59 @@ export default function ExamInterfacePage() {
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentIdx];
 
-  const fetchExamData = useCallback(async () => {
-    setIsLoading(true);
-    const qs = await getExamQuestions(examID);
-    const sid = await startExamSession(examID);
-    
-    if (!sid) {
-      alert("Gagal memulai sesi ujian. Silakan kembali.");
-      router.push('/portal/exams');
-      return;
-    }
+  useEffect(() => {
+    let isMounted = true;
 
-    setQuestions(qs);
-    setSessionID(sid);
-    setTimeLeft(60 * 60); // 60 minutes mock, should come from exam data
-    setIsLoading(false);
+    const loadExamData = async () => {
+      setIsLoading(true);
+      const qs = await getExamQuestions(examID);
+      const sid = await startExamSession(examID);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (!sid) {
+        alert("Gagal memulai sesi ujian. Silakan kembali.");
+        router.push('/portal/exams');
+        return;
+      }
+
+      setQuestions(qs);
+      setSessionID(sid);
+      setTimeLeft(60 * 60); // 60 minutes mock, should come from exam data
+      setIsLoading(false);
+    };
+
+    void loadExamData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [examID, router]);
 
-  useEffect(() => {
-    fetchExamData();
-  }, [fetchExamData]);
+  const handleFinish = useCallback(async (skipConfirm: boolean = false) => {
+    if (!sessionID || isSubmitting || isFinished) return;
+    
+    if (!skipConfirm) {
+      const confirmFinish = window.confirm("Apakah Anda yakin ingin menyelesaikan ujian ini? Jawaban tidak dapat diubah lagi.");
+      if (!confirmFinish && (timeLeft ?? 0) > 0) return;
+    }
+
+    setIsSubmitting(true);
+    const res = await finishExamSession(sessionID);
+    if (res.success) {
+      setScore(res.score);
+      setIsFinished(true);
+    } else {
+      alert("Gagal mengirim jawaban akhir. Silakan coba lagi.");
+    }
+    setIsSubmitting(false);
+  }, [isFinished, isSubmitting, sessionID, timeLeft]);
 
   // Timer
   useEffect(() => {
     if (timeLeft === null || isFinished || timeLeft <= 0) {
-      if (timeLeft === 0 && !isFinished) handleFinish();
       return;
     }
 
@@ -74,6 +102,18 @@ export default function ExamInterfacePage() {
 
     return () => clearInterval(timer);
   }, [timeLeft, isFinished]);
+
+  useEffect(() => {
+    if (timeLeft !== 0 || isFinished) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void handleFinish(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [handleFinish, isFinished, timeLeft]);
 
   // Prevent leaving & Context Menu
   useEffect(() => {
@@ -101,23 +141,6 @@ export default function ExamInterfacePage() {
     if (sessionID) {
       await submitExamAnswer(sessionID, qID, optIdx);
     }
-  };
-
-  const handleFinish = async () => {
-    if (!sessionID || isSubmitting || isFinished) return;
-    
-    const confirmFinish = window.confirm("Apakah Anda yakin ingin menyelesaikan ujian ini? Jawaban tidak dapat diubah lagi.");
-    if (!confirmFinish && timeLeft! > 0) return;
-
-    setIsSubmitting(true);
-    const res = await finishExamSession(sessionID);
-    if (res.success) {
-      setScore(res.score);
-      setIsFinished(true);
-    } else {
-      alert("Gagal mengirim jawaban akhir. Silakan coba lagi.");
-    }
-    setIsSubmitting(false);
   };
 
   const formatTime = (seconds: number) => {
@@ -344,7 +367,7 @@ export default function ExamInterfacePage() {
                     <span className="text-[10px] font-black uppercase tracking-widest">Waktu Kritis</span>
                   </div>
                   <p className="text-xs font-medium text-rose-800/80 leading-relaxed">
-                    Waktu Anda kurang dari 5 menit. Segera periksa kembali jawaban dan tekan tombol 'Selesai Ujian'.
+                    Waktu Anda kurang dari 5 menit. Segera periksa kembali jawaban dan tekan tombol &apos;Selesai Ujian&apos;.
                   </p>
                 </div>
               )}

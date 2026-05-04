@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { addNews, uploadImage, generateArticleAI, normalizeApiAssetUrl, resolveDisplayImageUrl, type NewsPayload } from '@/lib/api';
 import { useToast } from '@/components/Toast';
-import { Sparkles, Image as ImageIcon, Loader2, ArrowLeft, Send, Save } from 'lucide-react';
+import { Sparkles, Image as ImageIcon, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import ImageCropperModal from '@/components/ImageCropperModal';
@@ -16,7 +16,39 @@ const SunEditor = dynamic(() => import('suneditor-react'), {
 
 import GallerySelectionModal from '@/components/GallerySelectionModal';
 
-function extractAiDraft(response: any) {
+type NullableString = { String: string; Valid: boolean };
+type NullableInt = { Int64: number; Valid: boolean };
+type NewsFormData = {
+  title: string;
+  content: string;
+  excerpt: string;
+  image_url: NullableString;
+  status: string;
+  slug: string;
+  category_id: NullableInt;
+};
+type AiDraftResponse = {
+  data?: {
+    result?: string;
+    suggestedImage?: string;
+  };
+  result?: string;
+  suggestedImage?: string;
+};
+type EditorInstance = {
+  insertHTML: (html: string) => void;
+};
+type UploadErrorHandler = (message: string) => void;
+type UploadSuccessHandler = (result: {
+  result: Array<{
+    url: string;
+    name: string;
+    size: number;
+  }>;
+}) => void;
+type SunEditorUploadHandler = UploadErrorHandler & UploadSuccessHandler;
+
+function extractAiDraft(response: AiDraftResponse) {
   const payload = response?.data ?? response;
   return {
     result: typeof payload?.result === 'string' ? payload.result : '',
@@ -24,15 +56,7 @@ function extractAiDraft(response: any) {
   };
 }
 
-function buildNewsPayload(formData: {
-  title: string;
-  content: string;
-  excerpt: string;
-  image_url: { String: string; Valid: boolean };
-  status: string;
-  slug: string;
-  category_id: { Int64: number; Valid: boolean };
-}): NewsPayload {
+function buildNewsPayload(formData: NewsFormData): NewsPayload {
   return {
     title: formData.title,
     content: formData.content,
@@ -68,7 +92,7 @@ export default function AddNewsPage() {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isEditorGalleryOpen, setIsEditorGalleryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<EditorInstance | null>(null);
 
   // States untuk Cropper Model
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
@@ -308,11 +332,11 @@ export default function AddNewsPage() {
                             ['preview', 'print']
                         ]
                     }}
-                    onImageUploadBefore={(files: any[], info: object, uploadHandler: Function) => {
+                    onImageUploadBefore={(files: File[], _info: object, uploadHandler: SunEditorUploadHandler) => {
                         try {
                             const file = files[0];
                             const reader = new FileReader();
-                            reader.onload = (e) => {
+                            reader.onload = () => {
                                 const img = new Image();
                                 img.onload = () => {
                                     const canvas = document.createElement('canvas');
@@ -357,17 +381,17 @@ export default function AddNewsPage() {
                                             } else {
                                                 uploadHandler('Upload API failed');
                                             }
-                                        } catch(err) {
+                                        } catch {
                                             uploadHandler('Upload catch error');
                                         }
                                     }, 'image/webp', 0.85);
                                 };
                                 img.onerror = () => uploadHandler('Image load error');
-                                img.src = e.target?.result as string;
+                                img.src = typeof reader.result === 'string' ? reader.result : '';
                             };
                             reader.onerror = () => uploadHandler('File read error');
                             reader.readAsDataURL(file);
-                        } catch (err) {
+                        } catch {
                             uploadHandler('Outer try catch error');
                         }
                         return undefined;

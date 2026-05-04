@@ -22,21 +22,31 @@ export default function WalletPage() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
   const [isSettingPin, setIsSettingPin] = useState(false);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    const [wData, hData] = await Promise.all([
-      getMyWallet(),
-      getWalletHistory(20)
-    ]);
-    setWallet(wData);
-    setHistory(hData);
-    setIsLoading(false);
-  };
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    let cancelled = false;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      const [wData, hData] = await Promise.all([
+        getMyWallet(),
+        getWalletHistory(20)
+      ]);
+      if (cancelled) {
+        return;
+      }
+      setWallet(wData);
+      setHistory(hData);
+      setIsLoading(false);
+    };
+
+    void loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTick]);
 
   const handleSetPIN = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +56,7 @@ export default function WalletPage() {
     const success = await setWalletPIN(pin);
     if (success) {
       setShowPinModal(false);
-      fetchData();
+      setRefreshTick((value) => value + 1);
     } else {
       alert("Gagal mengatur PIN");
     }

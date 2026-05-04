@@ -37,6 +37,33 @@ function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
 
 const fetch = apiFetch;
 
+function resolveApiOrigin() {
+	if (typeof window !== 'undefined') {
+		return window.location.origin;
+	}
+
+	try {
+		return new URL(API_BASE_URL).origin;
+	} catch {
+		return 'http://localhost:8080';
+	}
+}
+
+function buildApiUrl(path: string, params?: Record<string, string | number | undefined>) {
+	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+	const url = new URL(`${API_BASE_URL}${normalizedPath}`, resolveApiOrigin());
+
+	if (params) {
+		Object.entries(params).forEach(([key, value]) => {
+			if (value !== undefined && value !== null && value !== '') {
+				url.searchParams.append(key, String(value));
+			}
+		});
+	}
+
+	return url.toString();
+}
+
 function flattenValidationErrors(errors: unknown): string[] {
 	if (!errors || typeof errors !== 'object') {
 		return [];
@@ -140,13 +167,13 @@ function extractPagination(payload: unknown, fallback: { total: number; limit: n
 	if (payload && typeof payload === 'object') {
 		const p = payload as Record<string, unknown>;
 		if (p.pagination && typeof p.pagination === 'object') {
-			const pagi = p.pagination as Record<string, any>;
+			const pagi = p.pagination as Record<string, unknown>;
 			return { total: Number(pagi.total || fallback.total), limit: Number(pagi.limit || fallback.limit), offset: Number(pagi.offset || fallback.offset) };
 		}
 		if (p.data && typeof p.data === 'object') {
 			const pData = p.data as Record<string, unknown>;
 			if (pData.pagination && typeof pData.pagination === 'object') {
-				const pagi = pData.pagination as Record<string, any>;
+				const pagi = pData.pagination as Record<string, unknown>;
 				return { total: Number(pagi.total || fallback.total), limit: Number(pagi.limit || fallback.limit), offset: Number(pagi.offset || fallback.offset) };
 			}
 		}
@@ -164,7 +191,7 @@ export function normalizeApiAssetUrl(url?: string | null) {
 		return '';
 	}
 
-	const apiOrigin = new URL(API_BASE_URL).origin;
+	const apiOrigin = resolveApiOrigin();
 
 	try {
 		const parsed = new URL(trimmed);
@@ -237,7 +264,7 @@ function normalizeNullableIntValue(value: unknown): ApiNullableInt {
 function normalizeNewsPayload(payload: unknown): News {
 	const data = (payload || {}) as Record<string, unknown>;
 	return {
-		...(data as Record<string, any>),
+		...data,
 		id: typeof data.id === 'number' ? data.id : Number(data.id ?? 0),
 		title: typeof data.title === 'string' ? data.title : '',
 		slug: typeof data.slug === 'string' ? data.slug : '',
@@ -749,7 +776,7 @@ export async function getNews() {
     const res = await fetch(`${API_BASE_URL}/news?status=published`, withCredentials({ cache: 'no-store' }));
     if (!res.ok) return [];
     const result = await parseResponse(res);
-    return extractListData<any>(result).map(normalizeNewsPayload);
+    return extractListData<unknown>(result).map(normalizeNewsPayload);
   } catch (e) {
     console.error(`[API] Fetch news error:`, e);
     return [];
@@ -1040,7 +1067,7 @@ export async function getNewsPaginated(params: { status?: string, category?: str
     if (!res.ok) return { data: [], pagination: { total: 0 } };
     const result = await parseResponse(res);
     return {
-      data: extractListData<any>(result).map(normalizeNewsPayload),
+      data: extractListData<unknown>(result).map(normalizeNewsPayload),
       pagination: extractPagination(result, {
         total: 0,
         limit: params.limit || 10,
@@ -1463,10 +1490,10 @@ export async function deleteSubject(id: number) {
 
 export async function getGrades(semester?: string, year?: string) {
 	try {
-		const url = new URL(`${API_BASE_URL}/academics/grades`);
-		if (semester) url.searchParams.append('semester', semester);
-		if (year) url.searchParams.append('year', year);
-		const res = await fetch(url.toString(), {
+		const res = await fetch(buildApiUrl('/academics/grades', {
+			semester,
+			year
+		}), {
 			headers: getAuthHeaders(),
 			cache: 'no-store'
 		});
@@ -1531,9 +1558,9 @@ export async function deleteGrade(id: number) {
 
 export async function getAttendance(date?: string) {
 	try {
-		const url = new URL(`${API_BASE_URL}/academics/attendance`);
-		if (date) url.searchParams.append('date', date);
-		const res = await fetch(url.toString(), {
+		const res = await fetch(buildApiUrl('/academics/attendance', {
+			date
+		}), {
 			headers: getAuthHeaders(),
 			cache: 'no-store'
 		});

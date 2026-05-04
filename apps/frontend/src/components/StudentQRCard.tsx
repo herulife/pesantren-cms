@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { RefreshCw, Clock, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import { getAttendanceToken } from '@/lib/api';
@@ -9,31 +9,46 @@ export default function StudentQRCard() {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [countdown, setCountdown] = useState(300); // 5 minutes in seconds
-
-  const fetchToken = useCallback(async () => {
-    setIsLoading(true);
-    const newToken = await getAttendanceToken();
-    setToken(newToken);
-    setCountdown(300);
-    setIsLoading(false);
-  }, []);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
-    fetchToken();
-  }, [fetchToken]);
+    let cancelled = false;
+
+    const loadToken = async () => {
+      setIsLoading(true);
+      const newToken = await getAttendanceToken();
+      if (cancelled) {
+        return;
+      }
+      setToken(newToken);
+      setCountdown(300);
+      setIsLoading(false);
+    };
+
+    void loadToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTick]);
 
   useEffect(() => {
-    if (countdown <= 0) {
-      fetchToken();
+    if (isLoading || countdown <= 0) {
       return;
     }
 
-    const timer = setInterval(() => {
-      setCountdown((prev) => prev - 1);
+    const timer = window.setTimeout(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          setRefreshTick((value) => value + 1);
+          return 300;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [countdown, fetchToken]);
+    return () => window.clearTimeout(timer);
+  }, [countdown, isLoading]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -122,7 +137,7 @@ export default function StudentQRCard() {
       {/* Footer Info */}
       <div className="bg-slate-50 p-6 flex flex-col gap-3">
         <button
-          onClick={fetchToken}
+          onClick={() => setRefreshTick((value) => value + 1)}
           disabled={isLoading}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-200/50 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-200 hover:text-slate-900 disabled:opacity-50"
         >

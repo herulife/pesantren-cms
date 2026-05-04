@@ -88,7 +88,7 @@ export default function UsersPage() {
     try {
       const data = await getUsers(search);
       setUsers(data);
-    } catch (e: any) {
+    } catch {
       showToast('error', 'Gagal memuat data pengguna.');
     } finally {
       setIsLoading(false);
@@ -135,8 +135,9 @@ export default function UsersPage() {
         showToast('success', `Otoritas User berhasil dialihkan ke ${getRoleConfig(newRole).label}`);
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
       }
-    } catch (e: any) {
-      showToast('error', e.message || 'Gagal merubah role');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Gagal merubah role';
+      showToast('error', message);
     } finally {
       setUpdating(null);
     }

@@ -16,17 +16,27 @@ import { getMyWallet, type Wallet } from '@/lib/api';
 export default function WalletCard() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const fetchWallet = async () => {
-    setIsLoading(true);
-    const data = await getMyWallet();
-    setWallet(data);
-    setIsLoading(false);
-  };
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
-    fetchWallet();
-  }, []);
+    let cancelled = false;
+
+    const loadWallet = async () => {
+      setIsLoading(true);
+      const data = await getMyWallet();
+      if (cancelled) {
+        return;
+      }
+      setWallet(data);
+      setIsLoading(false);
+    };
+
+    void loadWallet();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTick]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -56,7 +66,7 @@ export default function WalletCard() {
               <span className="font-outfit text-sm font-black uppercase tracking-widest text-white/50">Darussunnah Pay</span>
             </div>
             <button 
-              onClick={fetchWallet}
+              onClick={() => setRefreshTick((value) => value + 1)}
               className="rounded-full bg-white/5 p-2 text-white/50 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white active:scale-95"
             >
               <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />

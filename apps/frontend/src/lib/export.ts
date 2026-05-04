@@ -38,6 +38,12 @@ type BulkStudentReportPayload = {
 	reports: StudentReportPayload[];
 };
 
+type AutoTableDoc = jsPDF & {
+	lastAutoTable?: {
+		finalY?: number;
+	};
+};
+
 /**
  * Export data ke PDF dengan header Darussunnah
  */
@@ -86,6 +92,7 @@ export function exportToPDF(
 }
 
 function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
+	const tableDoc = doc as AutoTableDoc;
 	const printedAt =
 		payload.printedAt ||
 		new Date().toLocaleDateString('id-ID', {
@@ -162,7 +169,7 @@ function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
 		alternateRowStyles: { fillColor: [248, 250, 252] },
 	});
 
-	const tahfidzStartY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 120;
+	const tahfidzStartY = tableDoc.lastAutoTable?.finalY ? tableDoc.lastAutoTable.finalY + 10 : 120;
 	doc.setFontSize(11);
 	doc.setFont('helvetica', 'bold');
 	doc.text('Progres Tahfidz', 14, tahfidzStartY);
@@ -185,7 +192,7 @@ function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
 		alternateRowStyles: { fillColor: [255, 251, 235] },
 	});
 
-	const noteStartY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 12 : tahfidzStartY + 50;
+	const noteStartY = tableDoc.lastAutoTable?.finalY ? tableDoc.lastAutoTable.finalY + 12 : tahfidzStartY + 50;
 	doc.setFontSize(10);
 	doc.setFont('helvetica', 'bold');
 	doc.text('Catatan Wali Kelas / Musyrif', 14, noteStartY);

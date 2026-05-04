@@ -15,8 +15,6 @@ export default function TabNotifikasiWA() {
     'wa_discipline_summary_template'
   ];
 
-  useEffect(() => { fetchData(); }, []);
-
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -24,11 +22,19 @@ export default function TabNotifikasiWA() {
       const initialValues: Record<string, string> = {};
       sData.forEach(s => { initialValues[s.key] = s.value; });
       setFormValues(initialValues);
-    } catch (e) {
+    } catch {
       showToast('error', 'Gagal memuat pengaturan WA');
     }
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   const handleChange = (k: string, v: string) => setFormValues(p => ({ ...p, [k]: v }));
 
@@ -37,7 +43,7 @@ export default function TabNotifikasiWA() {
     try {
       await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
       showToast('success', 'Template pesan WA berhasil disimpan');
-    } catch (e) {
+    } catch {
       showToast('error', 'Gagal menyimpan pengaturan');
     }
     setIsSaving(false);

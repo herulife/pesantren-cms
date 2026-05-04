@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useCallback, useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getProgramById, createProgram, updateProgram, Program } from '@/lib/api';
 import { Save, ArrowLeft, Loader2, Image as ImageIcon, AlignLeft, LayoutList, Fingerprint, Star, ListOrdered } from 'lucide-react';
@@ -15,6 +15,7 @@ export default function ProgramFormPage() {
 }
 
 function ProgramFormContent() {
+	type ProgramMutationPayload = Omit<Program, 'id' | 'created_at' | 'updated_at'>;
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const id = searchParams.get('id');
@@ -35,11 +36,7 @@ function ProgramFormContent() {
 		order_index: 0
 	});
 
-	useEffect(() => {
-		if (id) fetchProgram();
-	}, [id]);
-
-	const fetchProgram = async () => {
+	const fetchProgram = useCallback(async () => {
 		const data = await getProgramById(id!);
 		if (data) {
 			setFormData(data);
@@ -48,7 +45,19 @@ function ProgramFormContent() {
 			router.push('/admin/programs');
 		}
 		setIsLoading(false);
-	};
+	}, [id, router, showToast]);
+
+	useEffect(() => {
+		if (!id) {
+			return;
+		}
+
+		const timeout = window.setTimeout(() => {
+			void fetchProgram();
+		}, 0);
+
+		return () => window.clearTimeout(timeout);
+	}, [id, fetchProgram]);
 
 	const generateSlug = (val: string) => {
 		return val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -81,7 +90,7 @@ function ProgramFormContent() {
 					showToast('error', res.message || 'Gagal memperbarui');
 				}
 			} else {
-				const res = await createProgram(formData as Omit<Program, 'id' | 'created_at' | 'updated_at'>);
+				const res = await createProgram(formData as ProgramMutationPayload);
 				if (res.success) {
 					showToast('success', 'Program berhasil ditambahkan');
 					router.push('/admin/programs');
@@ -89,8 +98,9 @@ function ProgramFormContent() {
 					showToast('error', res.message || 'Gagal menambahkan');
 				}
 			}
-		} catch (error: any) {
-			showToast('error', error.message || 'Terjadi kesalahan sistem');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
+			showToast('error', message);
 		} finally {
 			setIsSaving(false);
 		}

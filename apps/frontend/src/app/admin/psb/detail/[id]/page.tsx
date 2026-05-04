@@ -26,10 +26,6 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const [isLoading, setIsLoading] = useState(true);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchRegistration();
-  }, [id]);
-
   const fetchRegistration = async () => {
     setIsLoading(true);
     const data = await getRegistrations();
@@ -37,6 +33,14 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     setRegistration(found || null);
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchRegistration();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [id]);
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!registration) return;

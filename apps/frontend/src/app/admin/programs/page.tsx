@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast';
 import { Plus, Trash2, Layers, Star, Search, X, Save, Pencil, Upload, Eye, EyeOff, LayoutPanelLeft, Image as ImageIcon } from 'lucide-react';
 
 export default function ProgramsAdminPage() {
+	type ProgramCategory = Program['category'];
 	const router = useRouter();
 	const [programs, setPrograms] = useState<Program[]>([]);
 	const [activeTab, setActiveTab] = useState<'program' | 'ekskul'>('program');
@@ -411,7 +412,7 @@ export default function ProgramsAdminPage() {
 										<label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Kategori</label>
 										<select
 											value={form.category}
-											onChange={(e) => setForm({ ...form, category: e.target.value as any })}
+											onChange={(e) => setForm({ ...form, category: e.target.value as ProgramCategory })}
 											className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold appearance-none"
 										>
 											<option value="program">Program Unggulan</option>

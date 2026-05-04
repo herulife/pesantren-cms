@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowRight, BookOpen, CircleHelp, ExternalLink, LayoutList } from 'lucide-react';
@@ -10,12 +10,7 @@ function PortalHelpContent() {
   const searchParams = useSearchParams();
   const ref = searchParams.get('ref');
   const [query, setQuery] = useState('');
-  const [activeTab, setActiveTab] = useState(portalDocSections[0].id);
-
-  useEffect(() => {
-    const current = getPortalDocById(ref);
-    setActiveTab(current.id);
-  }, [ref]);
+  const [selectedTab, setSelectedTab] = useState(portalDocSections[0].id);
 
   const filteredSections = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -39,14 +34,12 @@ function PortalHelpContent() {
     });
   }, [query]);
 
+  const requestedTab = getPortalDocById(ref).id;
+  const resolvedTab = ref ? requestedTab : selectedTab;
+  const activeTab = filteredSections.some((section) => section.id === resolvedTab)
+    ? resolvedTab
+    : (filteredSections[0]?.id ?? requestedTab);
   const currentSection = getPortalDocById(activeTab);
-
-  useEffect(() => {
-    const visible = filteredSections.some((section) => section.id === currentSection.id);
-    if (!visible && filteredSections.length > 0) {
-      setActiveTab(filteredSections[0].id);
-    }
-  }, [currentSection.id, filteredSections]);
 
   return (
     <div className="space-y-8">
@@ -96,7 +89,7 @@ function PortalHelpContent() {
               {filteredSections.map((section) => (
                 <button
                   key={section.id}
-                  onClick={() => setActiveTab(section.id)}
+                        onClick={() => setSelectedTab(section.id)}
                   className={`w-full rounded-2xl px-4 py-3 text-left transition ${
                     activeTab === section.id
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/15'

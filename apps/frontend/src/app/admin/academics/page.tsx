@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -97,13 +97,13 @@ export default function AcademicsPage() {
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [deleteState, setDeleteState] = useState<{ type: DeleteType; id: number | null }>({ type: 'grade', id: null });
 
-  const loadRefs = async () => {
+  const loadRefs = useCallback(async () => {
     const [subjectData, studentData] = await Promise.all([getSubjects(), getAcademicStudents()]);
     setSubjects(subjectData);
     setStudents(studentData);
-  };
+  }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       if (['dashboard', 'grades', 'recap', 'reports', 'subjects'].includes(activeTab)) setGrades(await getGrades(selectedSemester, selectedYear));
@@ -114,10 +114,10 @@ export default function AcademicsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab, selectedDate, selectedSemester, selectedYear, showToast]);
 
-  useEffect(() => { loadRefs(); }, []);
-  useEffect(() => { loadData(); }, [activeTab, selectedSemester, selectedYear, selectedDate]);
+  useEffect(() => { loadRefs(); }, [loadRefs]);
+  useEffect(() => { loadData(); }, [loadData]);
   const filteredGrades = useMemo(() => grades.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.subject_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [grades, searchQuery]);
   const filteredAttendance = useMemo(() => attendance.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [attendance, searchQuery]);
   const filteredTahfidz = useMemo(() => tahfidz.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || v.surah_name.toLowerCase().includes(searchQuery.toLowerCase())), [tahfidz, searchQuery]);

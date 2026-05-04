@@ -36,8 +36,8 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedUrl(null); // Reset selection when opened
       const timer = setTimeout(() => {
+        setSelectedUrl(null);
         fetchGallery(searchQuery, selectedCategory, 0);
       }, 500);
       return () => clearTimeout(timer);

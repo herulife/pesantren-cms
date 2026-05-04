@@ -8,6 +8,7 @@ import { Plus, Search, Trash2, Pencil, RotateCcw, Calendar, User, Tag, Eye, EyeO
 import Link from 'next/link';
 
 export default function NewsAdminPage() {
+  type NewsCategoryValue = { Valid?: boolean; String?: string };
   const [news, setNews] = useState<News[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [trashCount, setTrashCount] = useState(0);
@@ -178,10 +179,10 @@ export default function NewsAdminPage() {
     }
   };
 
-  const getCategoryName = (item: any) => {
+  const getCategoryName = (item: News) => {
     if (item.category_name) {
-      if (typeof item.category_name === 'object' && item.category_name.Valid) {
-        return item.category_name.String;
+      if (typeof item.category_name === 'object' && (item.category_name as NewsCategoryValue).Valid) {
+        return (item.category_name as NewsCategoryValue).String || 'Berita';
       } else if (typeof item.category_name === 'string') {
         return item.category_name;
       }

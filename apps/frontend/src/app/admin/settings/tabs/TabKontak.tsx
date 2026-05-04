@@ -12,8 +12,6 @@ export default function TabKontak() {
 
   const KEYS = ['school_address', 'school_phone', 'school_email', 'school_website', 'whatsapp_admin_numbers'];
 
-  useEffect(() => { fetchData(); }, []);
-
   const fetchData = async () => {
     setIsLoading(true);
     const sData = await getSettings();
@@ -23,6 +21,14 @@ export default function TabKontak() {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   const handleChange = (k: string, v: string) => setFormValues(p => ({ ...p, [k]: v }));
 
   const handleSaveAll = async () => {
@@ -30,7 +36,7 @@ export default function TabKontak() {
     try {
       await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
       showToast('success', 'Informasi Kontak berhasil disimpan');
-    } catch (e) {
+    } catch {
       showToast('error', 'Gagal menyimpan pengaturan');
     }
     setIsSaving(false);

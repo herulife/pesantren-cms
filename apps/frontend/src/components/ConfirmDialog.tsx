@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 
 interface ConfirmDialogProps {
@@ -26,23 +26,19 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   const isDanger = type === 'danger';
   const managesAsyncClose = typeof isLoading === 'boolean';
-  const [show, setShow] = useState(isOpen);
 
   useEffect(() => {
-    if (isOpen) {
-      setShow(true);
-      document.body.style.overflow = 'hidden';
-    } else {
-      const timer = setTimeout(() => setShow(false), 300);
-      document.body.style.overflow = 'unset';
-      return () => clearTimeout(timer);
+    if (!isOpen) {
+      return;
     }
+
+    document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
-  if (!isOpen && !show) return null;
+  if (!isOpen) return null;
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 sm:px-0 transition-opacity duration-300 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}>

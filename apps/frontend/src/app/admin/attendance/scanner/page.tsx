@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { ArrowLeft, Camera, CheckCircle, Loader2, XCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -11,6 +11,31 @@ export default function AttendanceScannerPage() {
   const [isScanning, setIsScanning] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+
+  const onScanSuccess = useCallback(async (decodedText: string) => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.pause(true);
+      } catch {}
+    }
+
+    try {
+      const resp = await scanAttendanceQR(decodedText);
+      setScanResult(resp);
+      setIsScanning(false);
+    } catch {
+      setScanResult({ success: false, message: "Terjadi kesalahan koneksi" });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing]);
+
+  const onScanFailure = useCallback(() => {
+    // We don't want to spam errors for every failed frame.
+  }, []);
 
   useEffect(() => {
     // Only initialize scanner if we are in "scanning" mode and don't have a result
@@ -32,39 +57,12 @@ export default function AttendanceScannerPage() {
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(error => {
-          console.error("Failed to clear scanner", error);
+        scannerRef.current.clear().catch((clearError: unknown) => {
+          console.error("Failed to clear scanner", clearError);
         });
       }
     };
-  }, [isScanning, scanResult]);
-
-  const onScanSuccess = async (decodedText: string) => {
-    if (isProcessing) return;
-    
-    setIsProcessing(true);
-    // Pause scanner
-    if (scannerRef.current) {
-      try {
-        scannerRef.current.pause(true);
-      } catch (e) {}
-    }
-
-    try {
-      const resp = await scanAttendanceQR(decodedText);
-      setScanResult(resp);
-      setIsScanning(false);
-    } catch (error) {
-      setScanResult({ success: false, message: "Terjadi kesalahan koneksi" });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const onScanFailure = (error: any) => {
-    // We don't really want to spam errors for every failed frame
-    // console.warn(`Code scan error = ${error}`);
-  };
+  }, [isScanning, onScanFailure, onScanSuccess, scanResult]);
 
   const resetScanner = () => {
     setScanResult(null);

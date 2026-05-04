@@ -81,6 +81,118 @@ html, body {
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
+.hero-swiper .swiper-button-prev,
+.hero-swiper .swiper-button-next {
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.45);
+  opacity: 0.35;
+  transition: opacity 0.25s ease, background-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
+}
+
+.hero-swiper .swiper-button-prev:hover,
+.hero-swiper .swiper-button-next:hover {
+  opacity: 0.72;
+  background: rgba(15, 23, 42, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+  transform: scale(1.03);
+}
+
+.hero-swiper .swiper-button-prev::after,
+.hero-swiper .swiper-button-next::after {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Public site corner normalization */
+.public-site-shell .rounded-lg {
+  border-radius: 0.6rem !important;
+}
+
+.public-site-shell .rounded-xl {
+  border-radius: 0.8rem !important;
+}
+
+.public-site-shell .rounded-2xl {
+  border-radius: 0.95rem !important;
+}
+
+.public-site-shell .rounded-3xl {
+  border-radius: 1.1rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.15rem]"] {
+  border-radius: 0.7rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.35rem]"] {
+  border-radius: 0.78rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.4rem]"] {
+  border-radius: 0.82rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.45rem]"] {
+  border-radius: 0.84rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.5rem]"] {
+  border-radius: 0.9rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.6rem]"] {
+  border-radius: 0.95rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.65rem]"] {
+  border-radius: 1rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.7rem]"] {
+  border-radius: 1rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.75rem]"] {
+  border-radius: 1.02rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.8rem]"] {
+  border-radius: 1.06rem !important;
+}
+
+.public-site-shell [class*="rounded-[1.9rem]"] {
+  border-radius: 1.1rem !important;
+}
+
+.public-site-shell [class*="rounded-[2rem]"] {
+  border-radius: 1.15rem !important;
+}
+
+.public-site-shell [class*="rounded-[2.2rem]"] {
+  border-radius: 1.25rem !important;
+}
+
+.public-site-shell [class*="rounded-[2.25rem]"] {
+  border-radius: 1.28rem !important;
+}
+
+.public-site-shell [class*="rounded-[2.3rem]"] {
+  border-radius: 1.3rem !important;
+}
+
+.public-site-shell [class*="rounded-[2.5rem]"] {
+  border-radius: 1.4rem !important;
+}
+
+.public-site-shell [class*="rounded-[3rem]"] {
+  border-radius: 1.55rem !important;
+}
+
 /* Admin panel corner normalization */
 .admin-panel-shell .rounded-xl {
   border-radius: 0.8rem !important;

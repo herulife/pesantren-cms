@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { updateNews, getNewsById, uploadImage, generateArticleAI, normalizeApiAssetUrl, resolveDisplayImageUrl, type NewsPayload } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { useEffect } from 'react';
-import { Sparkles, Image as ImageIcon, Loader2, ArrowLeft, Send, Save } from 'lucide-react';
+import { Sparkles, Image as ImageIcon, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import ImageCropperModal from '@/components/ImageCropperModal';
@@ -16,6 +16,38 @@ const SunEditor = dynamic(() => import('suneditor-react'), {
 });
 
 import GallerySelectionModal from '@/components/GallerySelectionModal';
+
+type NullableString = { String: string; Valid: boolean };
+type NullableInt = { Int64: number; Valid: boolean };
+type NewsFormData = {
+  title: string;
+  content: string;
+  excerpt: string;
+  image_url: NullableString;
+  status: string;
+  slug: string;
+  category_id: NullableInt;
+};
+type AiDraftResponse = {
+  data?: {
+    result?: string;
+    suggestedImage?: string;
+  };
+  result?: string;
+  suggestedImage?: string;
+};
+type EditorInstance = {
+  insertHTML: (html: string) => void;
+};
+type UploadErrorHandler = (message: string) => void;
+type UploadSuccessHandler = (result: {
+  result: Array<{
+    url: string;
+    name: string;
+    size: number;
+  }>;
+}) => void;
+type SunEditorUploadHandler = UploadErrorHandler & UploadSuccessHandler;
 
 function normalizeNullableString(value: unknown) {
   if (typeof value === 'string') {
@@ -47,19 +79,20 @@ function normalizeNullableInt(value: unknown) {
   return { Int64: 0, Valid: false };
 }
 
-function normalizeNewsFormData(data: any) {
+function normalizeNewsFormData(data: unknown): NewsFormData {
+  const candidate = data && typeof data === 'object' ? data as Partial<NewsFormData> : {};
   return {
-    title: data?.title || '',
-    content: data?.content || '',
-    excerpt: data?.excerpt || '',
-    image_url: normalizeNullableString(data?.image_url),
-    status: data?.status || 'published',
-    slug: data?.slug || '',
-    category_id: normalizeNullableInt(data?.category_id)
+    title: typeof candidate.title === 'string' ? candidate.title : '',
+    content: typeof candidate.content === 'string' ? candidate.content : '',
+    excerpt: typeof candidate.excerpt === 'string' ? candidate.excerpt : '',
+    image_url: normalizeNullableString(candidate.image_url),
+    status: typeof candidate.status === 'string' ? candidate.status : 'published',
+    slug: typeof candidate.slug === 'string' ? candidate.slug : '',
+    category_id: normalizeNullableInt(candidate.category_id)
   };
 }
 
-function extractAiDraft(response: any) {
+function extractAiDraft(response: AiDraftResponse) {
   const payload = response?.data ?? response;
   return {
     result: typeof payload?.result === 'string' ? payload.result : '',
@@ -67,15 +100,7 @@ function extractAiDraft(response: any) {
   };
 }
 
-function buildNewsPayload(formData: {
-  title: string;
-  content: string;
-  excerpt: string;
-  image_url: { String: string; Valid: boolean };
-  status: string;
-  slug: string;
-  category_id: { Int64: number; Valid: boolean };
-}): NewsPayload {
+function buildNewsPayload(formData: NewsFormData): NewsPayload {
   return {
     title: formData.title,
     content: formData.content,
@@ -122,7 +147,7 @@ export default function EditNewsPage() {
         setIsLoading(false);
       });
     }
-  }, [id, router]);
+  }, [id, router, showToast]);
 
   const [aiTopic, setAiTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -130,7 +155,7 @@ export default function EditNewsPage() {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isEditorGalleryOpen, setIsEditorGalleryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<EditorInstance | null>(null);
 
   // States untuk Cropper Model
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
@@ -372,11 +397,11 @@ export default function EditNewsPage() {
                             ['preview', 'print']
                         ]
                     }}
-                    onImageUploadBefore={(files: any[], info: object, uploadHandler: Function) => {
+                    onImageUploadBefore={(files: File[], _info: object, uploadHandler: SunEditorUploadHandler) => {
                         try {
                             const file = files[0];
                             const reader = new FileReader();
-                            reader.onload = (e) => {
+                            reader.onload = () => {
                                 const img = new Image();
                                 img.onload = () => {
                                     const canvas = document.createElement('canvas');
@@ -421,17 +446,17 @@ export default function EditNewsPage() {
                                             } else {
                                                 uploadHandler('Upload API failed');
                                             }
-                                        } catch(err) {
+                                        } catch {
                                             uploadHandler('Upload catch error');
                                         }
                                     }, 'image/webp', 0.85);
                                 };
                                 img.onerror = () => uploadHandler('Image load error');
-                                img.src = e.target?.result as string;
+                                img.src = typeof reader.result === 'string' ? reader.result : '';
                             };
                             reader.onerror = () => uploadHandler('File read error');
                             reader.readAsDataURL(file);
-                        } catch (err) {
+                        } catch {
                             uploadHandler('Outer try catch error');
                         }
                         return undefined;

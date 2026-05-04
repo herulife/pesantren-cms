@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/Toast';
 import {
   CreateViolationPayload,
@@ -11,7 +11,7 @@ import {
   getSettings,
   getViolationLogs,
 } from '@/lib/api';
-import { AlertTriangle, ClipboardList, FileWarning, MessageCircle, MessageSquare, Phone, Plus, RefreshCw, Search, Shield, ShieldAlert, ShieldCheck, Users, X } from 'lucide-react';
+import { AlertTriangle, ClipboardList, FileWarning, MessageCircle, MessageSquare, Plus, RefreshCw, Search, Shield, ShieldAlert, ShieldCheck, Users, X } from 'lucide-react';
 
 const VIOLATION_CATEGORIES = [
   { value: 'Aqidah', label: 'Aqidah' },
@@ -96,7 +96,7 @@ export default function DisciplinesPage() {
   const [form, setForm] = useState<CreateViolationPayload>(formInit);
   const [templates, setTemplates] = useState<Record<string, string>>({});
 
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       const sData = await getSettings();
       const mapped: Record<string, string> = {};
@@ -105,9 +105,9 @@ export default function DisciplinesPage() {
     } catch (e) {
       console.error('Failed to load WA templates', e);
     }
-  };
+  }, []);
 
-  const loadPoints = async () => {
+  const loadPoints = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await getDisciplinePoints({ limit: 200 });
@@ -117,9 +117,9 @@ export default function DisciplinesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await getViolationLogs({ limit: 200 });
@@ -129,13 +129,13 @@ export default function DisciplinesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     if (activeTab === 'overview') loadPoints();
     if (activeTab === 'logs') loadLogs();
     loadTemplates();
-  }, [activeTab]);
+  }, [activeTab, loadLogs, loadPoints, loadTemplates]);
 
   const filteredPoints = useMemo(
     () => points.filter((p) => (p.student_name || '').toLowerCase().includes(searchQuery.toLowerCase())),

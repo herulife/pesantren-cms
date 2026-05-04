@@ -17,8 +17,6 @@ export default function TabSambutan() {
     'welcome_speech_image'
   ];
 
-  useEffect(() => { fetchData(); }, []);
-
   const fetchData = async () => {
     setIsLoading(true);
     const sData = await getSettings();
@@ -28,6 +26,14 @@ export default function TabSambutan() {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   const handleChange = (k: string, v: string) => setFormValues(p => ({ ...p, [k]: v }));
 
   const handleSaveAll = async () => {
@@ -35,7 +41,7 @@ export default function TabSambutan() {
     try {
       await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
       showToast('success', 'Sambutan berhasil disimpan');
-    } catch (e) {
+    } catch {
       showToast('error', 'Gagal menyimpan pengaturan');
     }
     setIsSaving(false);

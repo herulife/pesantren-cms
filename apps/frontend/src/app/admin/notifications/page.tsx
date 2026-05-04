@@ -1,22 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { getNotificationStatus, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs } from '@/lib/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { getNotificationStatus, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs, type ActivityLog } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { 
   Bell, 
   Send, 
   Smartphone, 
   CheckCircle2, 
-  AlertCircle, 
   MessageSquare, 
   History,
   Zap,
   Users,
-  GraduationCap,
   BookOpen,
   ClipboardList,
-  Check
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 
@@ -24,31 +21,28 @@ export default function NotificationsPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const [status, setStatus] = useState({ success: false, configured: false });
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [broadcastingTagihan, setBroadcastingTagihan] = useState(false);
   const [broadcastingNilai, setBroadcastingNilai] = useState(false);
   const [broadcastingPSB, setBroadcastingPSB] = useState(false);
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
   
   // Form states
   const [target, setTarget] = useState('');
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    fetchData();
-  }, [user?.role]);
-
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = useCallback(async () => {
     const [statusData, logsData] = await Promise.all([
       getNotificationStatus(),
       user?.role === 'superadmin' ? getLogs('SEND_WA') : Promise.resolve([])
     ]);
     setStatus(statusData);
     setLogs(logsData);
-    setLoading(false);
-  };
+  }, [user?.role]);
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const handleSendManual = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,10 +55,11 @@ export default function NotificationsPage() {
         showToast('success', 'Pesan WhatsApp terkirim!');
         setTarget('');
         setMessage('');
-        fetchData();
+        void fetchData();
       }
-    } catch (e: any) {
-      showToast('error', e.message || 'Gagal mengirim pesan');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Gagal mengirim pesan';
+      showToast('error', message);
     } finally {
       setSending(false);
     }
@@ -79,10 +74,11 @@ export default function NotificationsPage() {
       const res = await broadcastTagihan();
       if (res.success) {
         showToast('success', `${res.count} pesan broadcast tagihan berhasil dikirim!`);
-        fetchData();
+        void fetchData();
       }
-    } catch (e: any) {
-      showToast('error', e.message || 'Gagal mengirim broadcast');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Gagal mengirim broadcast';
+      showToast('error', message);
     } finally {
       setBroadcastingTagihan(false);
     }
@@ -97,10 +93,11 @@ export default function NotificationsPage() {
       const res = await broadcastNilai();
       if (res.success) {
         showToast('success', `${res.count} pesan broadcast nilai berhasil dikirim!`);
-        fetchData();
+        void fetchData();
       }
-    } catch (e: any) {
-      showToast('error', e.message || 'Gagal mengirim broadcast nilai');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Gagal mengirim broadcast nilai';
+      showToast('error', message);
     } finally {
       setBroadcastingNilai(false);
     }
@@ -115,10 +112,11 @@ export default function NotificationsPage() {
       const res = await broadcastPSB();
       if (res.success) {
         showToast('success', `${res.count} pesan broadcast PSB berhasil dikirim!`);
-        fetchData();
+        void fetchData();
       }
-    } catch (e: any) {
-      showToast('error', e.message || 'Gagal mengirim broadcast PSB');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Gagal mengirim broadcast PSB';
+      showToast('error', message);
     } finally {
       setBroadcastingPSB(false);
     }

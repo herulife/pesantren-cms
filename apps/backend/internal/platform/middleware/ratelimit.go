@@ -10,34 +10,39 @@ import (
 )
 
 type RateLimiter struct {
-	mu      sync.Mutex
-	window  time.Duration
-	limit   int
-	clients map[string][]time.Time
+	mu              sync.Mutex
+	window          time.Duration
+	limit           int
+	clients         map[string][]time.Time
+	now             func() time.Time
+	lastCleanup     time.Time
+	cleanupInterval time.Duration
 }
 
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
+	cleanupInterval := window
+	if cleanupInterval <= 0 || cleanupInterval > time.Minute {
+		cleanupInterval = time.Minute
+	}
+
 	return &RateLimiter{
-		window:  window,
-		limit:   limit,
-		clients: make(map[string][]time.Time),
+		window:          window,
+		limit:           limit,
+		clients:         make(map[string][]time.Time),
+		now:             time.Now,
+		cleanupInterval: cleanupInterval,
 	}
 }
 
 func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		now := time.Now()
+		now := rl.now()
 		key := fmt.Sprintf("%s:%s", clientIP(r), r.URL.Path)
 
 		rl.mu.Lock()
+		rl.cleanupExpiredClientsLocked(now)
 		requests := rl.clients[key]
-		cutoff := now.Add(-rl.window)
-		filtered := requests[:0]
-		for _, ts := range requests {
-			if ts.After(cutoff) {
-				filtered = append(filtered, ts)
-			}
-		}
+		filtered := rl.filterRecentRequests(requests, now)
 
 		if len(filtered) >= rl.limit {
 			retryAfter := int(filtered[0].Add(rl.window).Sub(now).Seconds())
@@ -58,6 +63,34 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 		rl.mu.Unlock()
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (rl *RateLimiter) cleanupExpiredClientsLocked(now time.Time) {
+	if !rl.lastCleanup.IsZero() && now.Sub(rl.lastCleanup) < rl.cleanupInterval {
+		return
+	}
+
+	for key, requests := range rl.clients {
+		filtered := rl.filterRecentRequests(requests, now)
+		if len(filtered) == 0 {
+			delete(rl.clients, key)
+			continue
+		}
+		rl.clients[key] = filtered
+	}
+
+	rl.lastCleanup = now
+}
+
+func (rl *RateLimiter) filterRecentRequests(requests []time.Time, now time.Time) []time.Time {
+	cutoff := now.Add(-rl.window)
+	filtered := requests[:0]
+	for _, ts := range requests {
+		if ts.After(cutoff) {
+			filtered = append(filtered, ts)
+		}
+	}
+	return filtered
 }
 
 func clientIP(r *http.Request) string {

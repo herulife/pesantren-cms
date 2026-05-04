@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import PublicLayout from '@/components/PublicLayout';
-import { ClipboardCheck, FileText, Calendar, MapPin, ArrowRight } from 'lucide-react';
+import { ArrowRight, Calendar, CheckCircle2, ClipboardCheck, FileText, MapPin, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PSBPage() {
@@ -16,63 +17,87 @@ export default function PSBPage() {
 
   return (
     <PublicLayout>
-      {/* Hero Header */}
-      <section className="relative py-20 bg-emerald-900 border-b border-emerald-800 overflow-hidden text-center">
-        <div className="absolute inset-0 bg-[url('/assets/img/psb-banner.png')] bg-cover bg-center opacity-30 blur-sm" />
-        <div className="container mx-auto px-4 relative z-10">
-          <span className="inline-block px-4 py-1 rounded-full bg-amber-400 text-emerald-950 font-black text-xs uppercase tracking-widest mb-6">Pendaftaran Dibuka</span>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-4 font-outfit uppercase tracking-tight leading-tight">Penerimaan Santri Baru<br />TP 2026/2027</h1>
-          <p className="text-emerald-100 text-lg max-w-2xl mx-auto opacity-90">Mari bergabung bersama keluarga penghafal Al-Qur'an di Darussunnah.</p>
+      <section className="relative overflow-hidden border-b border-emerald-900/80 bg-slate-950 py-24 text-white">
+        <div className="absolute inset-0 bg-[url('/assets/img/psb-banner.png')] bg-cover bg-center opacity-25" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/88 to-emerald-950/78" />
+        <div className="relative mx-auto max-w-6xl px-4">
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
+            <Sparkles size={14} />
+            Pendaftaran Santri Baru
+          </p>
+          <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
+            Penerimaan santri baru Darussunnah untuk tahun pelajaran 2026/2027.
+          </h1>
+          <p className="mt-6 max-w-3xl text-lg leading-8 text-emerald-50/90">
+            Kenali persyaratan, jadwal gelombang, dan langkah awal pendaftaran untuk bergabung
+            bersama keluarga besar penghafal Al-Quran di Darussunnah.
+          </p>
         </div>
       </section>
 
-      {/* Info Sections */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Persyaratan */}
-            <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden relative group">
-              <div className="absolute -top-10 -right-10 p-4 opacity-5 group-hover:scale-110 transition-transform">
-                <FileText size={200} />
+      <section className="bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f3_100%)] py-16 md:py-20">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-10">
+            <div className="relative overflow-hidden rounded-[2.3rem] border border-white/70 bg-white/92 p-8 shadow-[0_22px_50px_-35px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+              <div className="absolute -right-8 -top-8 rounded-full bg-emerald-50 p-6 opacity-80">
+                <FileText size={84} className="text-emerald-200" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 mb-8 font-outfit flex items-center gap-4">
+              <h2 className="mb-8 flex items-center gap-4 text-3xl font-black tracking-tight text-slate-900">
                 <ClipboardCheck className="text-emerald-600" /> Persyaratan
               </h2>
-              <ul className="space-y-4 relative z-10">
+              <ul className="relative z-10 space-y-4">
                 {requirements.map((req, i) => (
-                  <li key={i} className="flex gap-4 items-center p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <p className="text-slate-700 font-medium">{req}</p>
+                  <li key={i} className="flex items-center gap-4 rounded-[1.35rem] border border-slate-100 bg-[#fbfcfb] p-4 shadow-sm">
+                    <div className="rounded-full bg-emerald-50 p-2 text-emerald-600">
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <p className="font-medium text-slate-700">{req}</p>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Jadwal & Lokasi */}
             <div className="space-y-8">
-              <div className="p-10 bg-emerald-50 rounded-[3rem] border border-emerald-100">
-                <h2 className="text-2xl font-extrabold text-emerald-950 mb-6 font-outfit flex items-center gap-4">
+              <div className="rounded-[2.3rem] border border-emerald-100 bg-emerald-50 p-8">
+                <h2 className="mb-6 flex items-center gap-4 text-2xl font-black text-emerald-950">
                   <Calendar className="text-emerald-600" /> Gelombang Pendaftaran
                 </h2>
                 <div className="space-y-4">
-                  <div className="p-5 bg-white rounded-2xl border border-emerald-100 shadow-sm">
-                    <p className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">Gelombang I</p>
+                  <div className="rounded-[1.4rem] border border-emerald-100 bg-white p-5 shadow-sm">
+                    <p className="mb-1 text-xs font-black uppercase tracking-widest text-emerald-600">Gelombang I</p>
                     <p className="text-lg font-bold text-slate-800">1 Januari - 31 Maret 2026</p>
                   </div>
-                  <div className="p-5 bg-white/50 rounded-2xl border border-dashed border-emerald-200">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Gelombang II</p>
+                  <div className="rounded-[1.4rem] border border-dashed border-emerald-200 bg-white/50 p-5">
+                    <p className="mb-1 text-xs font-black uppercase tracking-widest text-slate-400">Gelombang II</p>
                     <p className="text-lg font-bold text-slate-400">1 April - 30 Juni 2026 (Opsional)</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-10 bg-sky-50 rounded-[3rem] border border-sky-100">
-                <h2 className="text-2xl font-extrabold text-sky-950 mb-6 font-outfit flex items-center gap-4">
-                  <MapPin className="text-sky-600" /> Lokasi Pendaftaran
+              <div className="rounded-[2.3rem] border border-slate-200 bg-white p-8 shadow-sm">
+                <h2 className="mb-6 flex items-center gap-4 text-2xl font-black text-slate-900">
+                  <MapPin className="text-emerald-600" /> Lokasi Pendaftaran
                 </h2>
-                <p className="text-slate-700 font-medium mb-4">Jl. Raya Parung No. 123, Kabupaten Bogor, Jawa Barat</p>
-                <div className="w-full h-48 bg-white rounded-2xl border border-sky-100 overflow-hidden relative shadow-sm">
-                   <div className="absolute inset-0 flex items-center justify-center text-slate-300 text-xs font-bold uppercase tracking-widest">Peta Lokasi Placeholder</div>
+                <p className="mb-4 font-medium text-slate-700">
+                  Kp. Lengkong Barang RT.01/02, Ds. Iwul, Kec. Parung, Bogor 16330
+                </p>
+                <div className="relative h-52 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 shadow-sm">
+                  <Image
+                    src="/assets/img/info-pendaftaran.jpg"
+                    alt="Informasi pendaftaran Darussunnah"
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">Lokasi Pondok</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-200">
+                      Hubungi panitia pendaftaran untuk petunjuk lokasi, jadwal kunjungan, dan
+                      informasi survei pondok.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -80,15 +105,14 @@ export default function PSBPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-emerald-900 to-teal-900 border-t border-emerald-800">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-8 tracking-tight font-outfit">SIAP MENJADI PENGHAFAL AL-QUR'AN?</h2>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link href="/psb-daftar" className="px-10 py-5 bg-white text-emerald-900 font-black rounded-full hover:bg-emerald-50 hover:-translate-y-1 transition-all shadow-xl shadow-white/10 text-lg flex items-center gap-2">
+      <section className="border-t border-emerald-800 bg-gradient-to-br from-emerald-900 to-teal-900 py-24">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+          <h2 className="mb-8 text-4xl font-black tracking-tight text-white md:text-5xl">Siap menjadi penghafal Al-Quran?</h2>
+          <div className="flex flex-col justify-center gap-6 sm:flex-row">
+            <Link href="/psb-daftar" className="flex items-center gap-2 rounded-full bg-white px-10 py-5 text-lg font-black text-emerald-900 shadow-xl shadow-white/10 transition-all hover:-translate-y-1 hover:bg-emerald-50">
               Daftar Online Sekarang <ArrowRight />
             </Link>
-            <a href="https://wa.me/6281413241748" className="px-10 py-5 bg-white/10 backdrop-blur-md border border-white/20 text-white font-black rounded-full hover:bg-white/20 transition-all text-lg">
+            <a href="https://wa.me/6281413241748" className="rounded-full border border-white/20 bg-white/10 px-10 py-5 text-lg font-black text-white backdrop-blur-md transition-all hover:bg-white/20">
               Hubungi Panitia (WhatsApp)
             </a>
           </div>

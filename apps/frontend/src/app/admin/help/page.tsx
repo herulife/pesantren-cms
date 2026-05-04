@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowRight, BookOpen, CircleHelp, ExternalLink, LayoutList, ShieldCheck } from 'lucide-react';
@@ -10,12 +10,7 @@ function HelpContent() {
   const searchParams = useSearchParams();
   const ref = searchParams.get('ref');
   const [query, setQuery] = useState('');
-  const [activeTab, setActiveTab] = useState(adminDocSections[0].id);
-
-  useEffect(() => {
-    const current = getAdminDocById(ref);
-    setActiveTab(current.id);
-  }, [ref]);
+  const [selectedTab, setSelectedTab] = useState(adminDocSections[0].id);
 
   const filteredSections = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -52,14 +47,11 @@ function HelpContent() {
     }, {});
   }, [filteredSections]);
 
+  const requestedTab = getAdminDocById(ref).id;
+  const activeTab = filteredSections.some((section) => section.id === (ref ? requestedTab : selectedTab))
+    ? (ref ? requestedTab : selectedTab)
+    : (filteredSections[0]?.id ?? requestedTab);
   const currentSection = getAdminDocById(activeTab);
-
-  useEffect(() => {
-    const visible = filteredSections.some((section) => section.id === currentSection.id);
-    if (!visible && filteredSections.length > 0) {
-      setActiveTab(filteredSections[0].id);
-    }
-  }, [currentSection.id, filteredSections]);
 
   return (
     <div className="space-y-8">
@@ -127,7 +119,7 @@ function HelpContent() {
                     {sections.map((section) => (
                       <button
                         key={section.id}
-                        onClick={() => setActiveTab(section.id)}
+                        onClick={() => setSelectedTab(section.id)}
                         className={`w-full rounded-xl px-4 py-3 text-left transition ${
                           activeTab === section.id
                             ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/15'

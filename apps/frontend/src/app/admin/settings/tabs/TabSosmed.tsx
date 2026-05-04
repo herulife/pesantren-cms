@@ -12,8 +12,6 @@ export default function TabSosmed() {
 
   const KEYS = ['social_facebook', 'social_instagram', 'social_youtube'];
 
-  useEffect(() => { fetchData(); }, []);
-
   const fetchData = async () => {
     setIsLoading(true);
     const sData = await getSettings();
@@ -23,6 +21,14 @@ export default function TabSosmed() {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   const handleChange = (k: string, v: string) => setFormValues(p => ({ ...p, [k]: v }));
 
   const handleSaveAll = async () => {
@@ -30,7 +36,7 @@ export default function TabSosmed() {
     try {
       await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
       showToast('success', 'Media Sosial berhasil disimpan');
-    } catch (e) {
+    } catch {
       showToast('error', 'Gagal menyimpan pengaturan');
     }
     setIsSaving(false);

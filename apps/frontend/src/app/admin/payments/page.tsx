@@ -19,6 +19,14 @@ export default function PaymentsAdminPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const { showToast } = useToast();
 
+  const fetchData = async () => {
+    setIsLoading(true);
+    const [pData, uData] = await Promise.all([getPayments(), getPaymentUsers()]);
+    setPayments(pData);
+    setUsers(uData);
+    setIsLoading(false);
+  };
+
   // Form State
   const [formData, setFormData] = useState({
     user_id: '',
@@ -30,16 +38,25 @@ export default function PaymentsAdminPage() {
   });
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    let cancelled = false;
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    const [pData, uData] = await Promise.all([getPayments(), getPaymentUsers()]);
-    setPayments(pData);
-    setUsers(uData);
-    setIsLoading(false);
-  };
+    const loadData = async () => {
+      setIsLoading(true);
+      const [pData, uData] = await Promise.all([getPayments(), getPaymentUsers()]);
+      if (cancelled) {
+        return;
+      }
+      setPayments(pData);
+      setUsers(uData);
+      setIsLoading(false);
+    };
+
+    void loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleDelete = async () => {
     if (!selectedId) return;
@@ -51,8 +68,9 @@ export default function PaymentsAdminPage() {
       } else {
         showToast('error', res.message || 'Gagal menghapus data.');
       }
-    } catch (e: any) {
-      showToast('error', e.message || 'Terjadi kesalahan sistem.');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
     }
   };
 
@@ -88,8 +106,9 @@ export default function PaymentsAdminPage() {
       } else {
         showToast('error', res.message || 'Gagal menyimpan data.');
       }
-    } catch (e: any) {
-      showToast('error', e.message || 'Terjadi kesalahan sistem.');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
     }
   };
 

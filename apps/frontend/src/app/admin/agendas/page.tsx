@@ -5,11 +5,12 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { getAgendas, deleteAgenda, updateAgenda, addAgenda, Agenda } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { Plus, Trash2, Calendar, MapPin, Clock, Search, X, Save, Pencil, Filter, Info } from 'lucide-react';
+import { Plus, Trash2, Calendar, MapPin, Clock, Search, X, Save, Pencil, Info } from 'lucide-react';
 
 const CATEGORIES = ['Akademik', 'PSB', 'Libur', 'Event', 'Umum'];
 
 function AgendasAdminPageContent() {
+  type AgendaMutationPayload = Omit<Agenda, 'id'>;
   const [agendas, setAgendas] = useState<Agenda[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,16 +120,16 @@ function AgendasAdminPageContent() {
 
     setIsSubmitting(true);
     try {
-      const payload = {
+      const payload: AgendaMutationPayload = {
         ...form,
-        end_date: form.end_date || null,
-        time_info: form.time_info || null,
-        location: form.location || null,
-        description: form.description || null
+        end_date: form.end_date || '',
+        time_info: form.time_info || '',
+        location: form.location || '',
+        description: form.description || ''
       };
 
       if (isEditing && selectedId) {
-        const res = await updateAgenda(selectedId, payload as any);
+        const res = await updateAgenda(selectedId, payload);
         if (res.success) {
           showToast('success', 'Agenda berhasil diperbarui.');
           setIsFormOpen(false);
@@ -137,7 +138,7 @@ function AgendasAdminPageContent() {
           showToast('error', 'Gagal memperbarui agenda.');
         }
       } else {
-        const res = await addAgenda(payload as any);
+        const res = await addAgenda(payload);
         if (res.success) {
           showToast('success', 'Agenda baru berhasil ditambahkan.');
           setIsFormOpen(false);

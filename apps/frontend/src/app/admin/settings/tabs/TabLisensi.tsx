@@ -11,10 +11,6 @@ export default function TabLisensi() {
   const [isSavingLicense, setIsSavingLicense] = useState(false);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchLicense();
-  }, []);
-
   const fetchLicense = async () => {
     setIsLoading(true);
     const [lData, settingsMap] = await Promise.all([
@@ -25,6 +21,14 @@ export default function TabLisensi() {
     setLicenseKeyInput(settingsMap['app_license_key'] || '');
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchLicense();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   const handleUpdateLicense = async (e: React.FormEvent) => {
     e.preventDefault();

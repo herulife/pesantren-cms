@@ -136,7 +136,7 @@ export default function AvailableExamsPage() {
             <li>Pastikan koneksi internet stabil sebelum akses ujian.</li>
             <li>Dilarang membuka tab/aplikasi lain selama ujian.</li>
             <li>Jawaban otomatis tersimpan ke server secara real-time.</li>
-            <li>Waktu ujian dihitung dari saat tombol 'Mulai Mengerjakan' ditekan.</li>
+            <li>Waktu ujian dihitung dari saat tombol &apos;Mulai Mengerjakan&apos; ditekan.</li>
           </ul>
         </div>
       </div>

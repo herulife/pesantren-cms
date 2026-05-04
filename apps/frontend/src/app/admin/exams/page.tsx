@@ -18,6 +18,7 @@ export default function AdminExamManagement() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [showAddExam, setShowAddExam] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   // Form State
   const [newExam, setNewExam] = useState<Partial<Exam>>({
@@ -28,16 +29,25 @@ export default function AdminExamManagement() {
     semester: 'Ganjil'
   });
 
-  const fetchExams = async () => {
-    setIsLoading(true);
-    const data = await getAvailableExams();
-    setExams(data);
-    setIsLoading(false);
-  };
-
   useEffect(() => {
-    fetchExams();
-  }, []);
+    let cancelled = false;
+
+    const loadExams = async () => {
+      setIsLoading(true);
+      const data = await getAvailableExams();
+      if (cancelled) {
+        return;
+      }
+      setExams(data);
+      setIsLoading(false);
+    };
+
+    void loadExams();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTick]);
 
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +64,7 @@ export default function AdminExamManagement() {
       });
       if (res.ok) {
         setShowAddExam(false);
-        fetchExams();
+        setRefreshTick((value) => value + 1);
       }
     } catch (err) {
       console.error(err);
