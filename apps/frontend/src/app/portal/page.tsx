@@ -272,9 +272,9 @@ export default function PortalDashboard() {
           </Link>
         </div>
 
-        <div className="md:col-span-1">
+        <div className="md:col-span-3 md:grid md:grid-cols-2 md:items-start md:gap-6 xl:items-stretch">
           <StudentQRCard />
-          <div className="mt-6">
+          <div className="mt-6 md:mt-0 md:h-full">
             <WalletCard />
           </div>
         </div>

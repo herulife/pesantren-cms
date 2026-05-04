@@ -47,7 +47,7 @@ export default function WalletCard() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full flex-col gap-4">
       {/* The "Physical" Card */}
       <div className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 shadow-2xl transition-all hover:shadow-cyan-500/20">
         {/* Glow Effects */}
