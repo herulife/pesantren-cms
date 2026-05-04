@@ -281,6 +281,7 @@ func main() {
 				r.Use(auth.RequireRole("superadmin"))
 				r.Post("/users", authHandler.CreateUser)
 				r.Get("/users", authHandler.GetAllUsers)
+				r.Put("/users/{id}/password", authHandler.ResetUserPassword)
 				r.Put("/users/{id}/role", authHandler.UpdateUserRole)
 				r.Delete("/users/{id}", authHandler.DeleteUser)
 				r.Mount("/settings", settingHandler.Routes())

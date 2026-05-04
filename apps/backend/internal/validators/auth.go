@@ -20,6 +20,10 @@ type CreateUserRequest struct {
 	Role     string `json:"role"`
 }
 
+type ResetUserPasswordRequest struct {
+	Password string `json:"password"`
+}
+
 type RoleUpdateRequest struct {
 	Role string `json:"role"`
 }
@@ -83,6 +87,17 @@ func ValidateCreateUserRequest(req *CreateUserRequest) ValidationErrors {
 	}
 	if !validRoles[req.Role] {
 		errs.Add("role", "Role tidak valid")
+	}
+
+	return errs
+}
+
+func ValidateResetUserPasswordRequest(req *ResetUserPasswordRequest) ValidationErrors {
+	errs := ValidationErrors{}
+	req.Password = strings.TrimSpace(req.Password)
+
+	if len(req.Password) < 8 {
+		errs.Add("password", "Password minimal 8 karakter")
 	}
 
 	return errs

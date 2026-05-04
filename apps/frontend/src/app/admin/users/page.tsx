@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUsers, updateUserRole, deleteUser, createUser } from '@/lib/api';
+import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -23,7 +23,8 @@ import {
   UserCheck,
   Plus,
   Mail,
-  Lock
+  Lock,
+  KeyRound
 } from 'lucide-react';
 
 interface UserRow {
@@ -78,6 +79,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [updating, setUpdating] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,6 +95,12 @@ export default function UsersPage() {
   // Modal states
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+  const [resetPasswordForm, setResetPasswordForm] = useState({
+    password: '',
+    confirmPassword: '',
+  });
 
   const fetchUsers = useCallback(async (search = searchQuery) => {
     setIsLoading(true);
@@ -158,6 +166,48 @@ export default function UsersPage() {
       showToast('error', message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const openResetPasswordDialog = (userRow: UserRow) => {
+    setSelectedUser(userRow);
+    setResetPasswordForm({
+      password: '',
+      confirmPassword: '',
+    });
+    setIsResetPasswordOpen(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUser) return;
+    if (resetPasswordForm.password.length < 8) {
+      showToast('error', 'Password baru minimal 8 karakter.');
+      return;
+    }
+    if (resetPasswordForm.password !== resetPasswordForm.confirmPassword) {
+      showToast('error', 'Konfirmasi password belum sama.');
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const res = await resetUserPassword(selectedUser.id, resetPasswordForm.password);
+      if (res.success) {
+        showToast('success', `Password untuk ${selectedUser.name} berhasil direset.`);
+        setIsResetPasswordOpen(false);
+        setSelectedUser(null);
+        setResetPasswordForm({
+          password: '',
+          confirmPassword: '',
+        });
+      } else {
+        showToast('error', 'Gagal mereset password pengguna.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -446,6 +496,16 @@ export default function UsersPage() {
                           )}
 
                           {!isSelf && (
+                            <button
+                              onClick={() => openResetPasswordDialog(u)}
+                              className="p-3 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
+                              title="Reset password"
+                            >
+                              <KeyRound size={20} />
+                            </button>
+                          )}
+
+                          {!isSelf && (
                             <button 
                               onClick={() => { setSelectedId(u.id); setIsDeleteOpen(true); }}
                               className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
@@ -522,6 +582,90 @@ export default function UsersPage() {
         message="Data personel ini akan dihapus permanen dari sistem otentikasi Darussunnah. Akses mereka akan segera terblokir."
         confirmText="YA, HAPUS PERMANEN"
       />
+
+      {isResetPasswordOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => {
+              setIsResetPasswordOpen(false);
+              setSelectedUser(null);
+            }}
+          />
+          <div className="relative w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">Reset Password</p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+                  {selectedUser?.name || 'User'}
+                </h3>
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+                  Masukkan password baru untuk akun ini. Setelah disimpan, user bisa langsung login memakai password baru tersebut.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResetPasswordOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  <Lock size={14} /> Password Baru
+                </span>
+                <input
+                  type="password"
+                  value={resetPasswordForm.password}
+                  onChange={(e) => setResetPasswordForm((prev) => ({ ...prev, password: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                  placeholder="Minimal 8 karakter"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  <Lock size={14} /> Konfirmasi Password
+                </span>
+                <input
+                  type="password"
+                  value={resetPasswordForm.confirmPassword}
+                  onChange={(e) => setResetPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                  placeholder="Ulangi password baru"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResetPasswordOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="rounded-2xl bg-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition hover:bg-slate-200"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isResettingPassword}
+                onClick={handleResetPassword}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isResettingPassword ? <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <KeyRound size={16} />}
+                {isResettingPassword ? 'Menyimpan...' : 'Reset Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

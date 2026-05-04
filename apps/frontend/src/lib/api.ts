@@ -1322,6 +1322,15 @@ export async function createUser(payload: { name: string; email: string; passwor
 	return parseResponse(res);
 }
 
+export async function resetUserPassword(id: number, password: string) {
+	const res = await fetch(`${API_BASE_URL}/users/${id}/password`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ password })
+	});
+	return parseResponse(res);
+}
+
 export async function deleteUser(id: number) {
 	const res = await fetch(`${API_BASE_URL}/users/${id}`, {
 		method: 'DELETE',

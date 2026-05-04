@@ -428,6 +428,59 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// PUT /api/users/{id}/password — reset user password (superadmin only)
+func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
+	correlationID := logger.CorrelationID(r)
+	idStr := r.PathValue("id")
+	if idStr == "" {
+		idStr = chi.URLParam(r, "id")
+	}
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Invalid user ID", nil)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+
+	var req validators.ResetUserPasswordRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	if validationErrs := validators.ValidateResetUserPasswordRequest(&req); len(validationErrs) > 0 {
+		writeValidationError(w, correlationID, validationErrs)
+		return
+	}
+
+	if err := h.repo.UpdatePassword(id, req.Password); err != nil {
+		logger.Error(r.Context(), "failed resetting user password", logger.Field{
+			"user_id": id,
+			"error":   err.Error(),
+		})
+		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal memperbarui password", nil)
+		return
+	}
+
+	adminID := 0
+	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
+		if cid, ok := claims["id"].(float64); ok {
+			adminID = int(cid)
+		}
+	}
+	logger.RecordActivity(&adminID, "RESET_USER_PASSWORD", fmt.Sprintf("Mereset password User ID %d", id), r.RemoteAddr, r.UserAgent())
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Password user berhasil diperbarui",
+	})
+}
+
 // DELETE /api/users/{id} — delete user (superadmin only)
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -546,6 +599,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Post("/users", h.CreateUser)
 			r.Get("/users", h.GetAllUsers)
+			r.Put("/users/{id}/password", h.ResetUserPassword)
 			r.Put("/users/{id}/role", h.UpdateUserRole)
 			r.Delete("/users/{id}", h.DeleteUser)
 		})
