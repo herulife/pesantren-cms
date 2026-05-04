@@ -1313,6 +1313,15 @@ export async function getUsers(search: string = '') {
 	}
 }
 
+export async function createUser(payload: { name: string; email: string; password: string; role: string }) {
+	const res = await fetch(`${API_BASE_URL}/users`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
 export async function deleteUser(id: number) {
 	const res = await fetch(`${API_BASE_URL}/users/${id}`, {
 		method: 'DELETE',

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUsers, updateUserRole, deleteUser } from '@/lib/api';
+import { getUsers, updateUserRole, deleteUser, createUser } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -20,7 +20,10 @@ import {
   Clock,
   Trash2,
   X,
-  UserCheck
+  UserCheck,
+  Plus,
+  Mail,
+  Lock
 } from 'lucide-react';
 
 interface UserRow {
@@ -74,10 +77,18 @@ export default function UsersPage() {
   
   const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [updating, setUpdating] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user',
+  });
   
   // Modal states
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -101,6 +112,34 @@ export default function UsersPage() {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery, fetchUsers]);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      const res = await createUser(createForm);
+      if (res.success) {
+        showToast('success', 'Akun baru berhasil dibuat.');
+        setCreateForm({
+          name: '',
+          email: '',
+          password: '',
+          role: 'user',
+        });
+        setShowCreateForm(false);
+        await fetchUsers('');
+        setSearchQuery('');
+        setRoleFilter('');
+      } else {
+        showToast('error', 'Gagal membuat akun baru.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!selectedId) return;
@@ -163,6 +202,103 @@ export default function UsersPage() {
            <UserCheck size={20} className="text-emerald-500" />
            <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Sistem RBAC Terintegrasi</span>
         </div>
+      </div>
+
+      <div className="mb-10 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Bootstrap Akun</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Tambah User Dari Dashboard</h2>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
+              Superadmin bisa membuat akun baru langsung dari panel tanpa menunggu pendaftaran publik. Cocok untuk staf internal seperti bendahara, panitia PSB, dan tim media.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCreateForm((prev) => !prev)}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
+          >
+            {showCreateForm ? <X size={16} /> : <Plus size={16} />}
+            {showCreateForm ? 'Tutup Form' : 'Tambah User'}
+          </button>
+        </div>
+
+        {showCreateForm ? (
+          <form onSubmit={handleCreateUser} className="mt-6 grid gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5 md:grid-cols-2 xl:grid-cols-4">
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                <UserCheck size={14} /> Nama
+              </span>
+              <input
+                required
+                value={createForm.name}
+                onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                placeholder="Nama pengguna"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                <Mail size={14} /> Email
+              </span>
+              <input
+                type="email"
+                required
+                value={createForm.email}
+                onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                placeholder="nama@darussunnah.com"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                <Lock size={14} /> Password
+              </span>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={createForm.password}
+                onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                placeholder="Minimal 8 karakter"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                <Shield size={14} /> Role
+              </span>
+              <select
+                value={createForm.role}
+                onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+              >
+                {ROLE_OPTIONS.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="md:col-span-2 xl:col-span-4 flex flex-col gap-3 border-t border-emerald-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs font-medium leading-6 text-slate-500">
+                Akun baru akan langsung masuk ke tabel user dan bisa dipakai login sesuai role yang dipilih.
+              </p>
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCreating ? <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Plus size={16} />}
+                {isCreating ? 'Menyimpan...' : 'Simpan User'}
+              </button>
+            </div>
+          </form>
+        ) : null}
       </div>
 
       {/* Role Distribution Cards */}

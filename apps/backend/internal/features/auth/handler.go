@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"darussunnah-api/internal/platform/logger"
 	"darussunnah-api/internal/platform/database"
+	"darussunnah-api/internal/platform/logger"
 	"darussunnah-api/internal/validators"
 	"database/sql"
 	"encoding/json"
@@ -365,6 +365,69 @@ func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// POST /api/users — create user (superadmin only)
+func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	correlationID := logger.CorrelationID(r)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+
+	var req validators.CreateUserRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	if validationErrs := validators.ValidateCreateUserRequest(&req); len(validationErrs) > 0 {
+		writeValidationError(w, correlationID, validationErrs)
+		return
+	}
+
+	existing, _ := h.repo.FindByEmail(req.Email)
+	if existing != nil {
+		writeAPIError(w, http.StatusConflict, correlationID, "Email sudah terdaftar", nil)
+		return
+	}
+
+	newUser := User{
+		Name:         req.Name,
+		Email:        req.Email,
+		PasswordHash: req.Password,
+		Role:         req.Role,
+	}
+
+	if err := h.repo.CreateUser(&newUser); err != nil {
+		logger.Error(r.Context(), "failed creating user via admin panel", logger.Field{
+			"email": req.Email,
+			"role":  req.Role,
+			"error": err.Error(),
+		})
+		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal membuat akun", nil)
+		return
+	}
+
+	adminID := 0
+	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
+		if cid, ok := claims["id"].(float64); ok {
+			adminID = int(cid)
+		}
+	}
+	logger.RecordActivity(&adminID, "CREATE_USER", fmt.Sprintf("Membuat user baru %s dengan role %s", newUser.Email, newUser.Role), r.RemoteAddr, r.UserAgent())
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "User berhasil dibuat",
+		"data": map[string]interface{}{
+			"id":    newUser.ID,
+			"name":  newUser.Name,
+			"email": newUser.Email,
+			"role":  newUser.Role,
+		},
+	})
+}
+
 // DELETE /api/users/{id} — delete user (superadmin only)
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -481,6 +544,7 @@ func (h *Handler) Routes() chi.Router {
 
 		// Admin/Superadmin only
 		r.Group(func(r chi.Router) {
+			r.Post("/users", h.CreateUser)
 			r.Get("/users", h.GetAllUsers)
 			r.Put("/users/{id}/role", h.UpdateUserRole)
 			r.Delete("/users/{id}", h.DeleteUser)
