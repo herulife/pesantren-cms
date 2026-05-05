@@ -448,7 +448,7 @@ export default function LandingPage() {
             const slideImage = resolveDisplayImageUrl(slide.image_url || '/assets/img/gedung.webp');
             return (
               <SwiperSlide key={slide.id}>
-                <div className="relative min-h-[680px] overflow-hidden lg:min-h-[780px]">
+                <div className="relative min-h-[610px] overflow-hidden sm:min-h-[660px] lg:min-h-[780px]">
                   <div
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url('${slideImage}')` }}
@@ -456,7 +456,7 @@ export default function LandingPage() {
                   <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(2,6,23,0.92)_8%,rgba(2,6,23,0.62)_40%,rgba(2,6,23,0.14)_76%,rgba(2,6,23,0.03)_100%)]" />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.14),transparent_24%)]" />
 
-                  <div className="container relative z-10 mx-auto max-w-6xl px-4 pb-20 pt-20 lg:pb-24 lg:pt-24">
+                  <div className="container relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-10 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-24">
                     <div className="grid items-center gap-10 lg:grid-cols-[1.08fr_0.92fr]">
                       <motion.div
                         initial={{ opacity: 0, y: 24 }}
@@ -469,13 +469,13 @@ export default function LandingPage() {
                             <Sparkles size={14} />
                             Darussunnah Parung
                           </span>
-                          <h1 className="mt-6 line-clamp-3 max-w-[19ch] text-balance text-[2.45rem] font-black leading-[0.96] tracking-[-0.045em] text-white sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
+                          <h1 className="mt-4 line-clamp-3 max-w-[19ch] text-balance text-[2.45rem] font-black leading-[0.96] tracking-[-0.045em] text-white sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
                             {slide.title}
                           </h1>
-                          <p className="mt-5 line-clamp-2 max-w-[34rem] text-sm font-medium leading-7 text-slate-200 sm:text-base md:line-clamp-3 md:text-lg">
+                          <p className="mt-4 line-clamp-2 max-w-[34rem] text-sm font-medium leading-7 text-slate-200 sm:mt-5 sm:text-base md:line-clamp-3 md:text-lg">
                             {slide.subtitle}
                           </p>
-                          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                          <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
                             <Link
                               href={slide.button_url || '/psb'}
                               className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-emerald-600 px-5 py-3 text-xs font-bold text-white shadow-[0_18px_45px_-20px_rgba(16,185,129,0.6)] transition-all hover:-translate-y-1 hover:bg-emerald-500 sm:px-8 sm:py-4 sm:text-sm"
