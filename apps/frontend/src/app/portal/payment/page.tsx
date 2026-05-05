@@ -74,6 +74,7 @@ export default function PortalPaymentPage() {
   const [amount, setAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(getTodayDate());
   const [proofUrl, setProofUrl] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     const fetchRegistration = async () => {
@@ -137,6 +138,7 @@ export default function PortalPaymentPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setSuccessMessage('');
     const parsedAmount = Number(amount);
     if (!canUploadPayment) {
       showToast('error', 'Lengkapi biodata dan dokumen terlebih dahulu.');
@@ -172,7 +174,9 @@ export default function PortalPaymentPage() {
       setProofUrl(nextRegistration?.payment_proof_url || url);
       setAmount(nextRegistration?.payment_amount ? String(nextRegistration.payment_amount) : String(parsedAmount));
       setPaymentDate(nextRegistration?.payment_date || paymentDate);
-      showToast('success', 'Bukti pembayaran berhasil dikirim.');
+      const message = 'Bukti pembayaran berhasil dikirim. Status pembayaran sekarang menunggu verifikasi panitia.';
+      setSuccessMessage(message);
+      showToast('success', message);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.';
       showToast('error', message);
@@ -251,6 +255,21 @@ export default function PortalPaymentPage() {
           </span>
         </div>
       </div>
+
+      {successMessage ? (
+        <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+              <CheckCircle2 size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Upload Berhasil</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Bukti Pembayaran Terkirim</h4>
+              <p className="mt-2 text-sm font-semibold leading-7">{successMessage}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {hasPaymentWarning && paymentNote ? (
         <div className="relative mb-8 overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6 text-amber-950 shadow-lg shadow-amber-900/5">
