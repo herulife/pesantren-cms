@@ -4,11 +4,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight, Camera, ThumbsUp, Play } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { getPublicSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+type PublicLayoutProps = {
+  children: React.ReactNode;
+  hideNavbar?: boolean;
+};
+
+export default function PublicLayout({ children, hideNavbar = false }: PublicLayoutProps) {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,15 +77,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const schoolWebsite = settings.school_website || '';
   const whatsappNumber = schoolPhone.replace(/\D/g, '') || '6281413241748';
   const socialLinks = [
-    { href: settings.social_instagram || 'https://instagram.com/darussunnahparung', label: 'IG' },
-    { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'FB' },
-    { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YT' },
+    { href: settings.social_instagram || 'https://instagram.com/darussunnahparung', label: 'Instagram', icon: <Camera size={18} /> },
+    { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'Facebook', icon: <ThumbsUp size={18} /> },
+    { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YouTube', icon: <Play size={18} /> },
   ].filter((item) => item.href);
   const isProfileActive = pathname === '/profil' || pathname.startsWith('/teachers') || pathname.startsWith('/facilities');
   const isProgramActive = pathname.startsWith('/program');
   const isPsbActive = pathname.startsWith('/psb');
   const isInformationActive = pathname.startsWith('/galeri') || pathname.startsWith('/videos') || pathname.startsWith('/news');
   const isContactActive = pathname.startsWith('/kontak');
+  const isPortalPage = pathname.startsWith('/portal');
   const toggleDesktopDropdown = (menu: 'profil' | 'informasi') => {
     setOpenDesktopDropdown((current) => (current === menu ? null : menu));
   };
@@ -88,6 +94,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <div className="public-site-shell min-h-screen bg-white font-sans antialiased">
       {/* ═══════════════════ NAVBAR ═══════════════════ */}
+      {!hideNavbar ? (
       <nav className="sticky top-0 z-[1000] border-b border-emerald-900/80 bg-emerald-950/95 shadow-[0_10px_30px_rgba(2,6,23,0.2)] backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-[4.25rem] items-center justify-between md:h-20">
@@ -362,6 +369,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
         )}
       </nav>
+      ) : null}
 
       {/* ═══════════════════ MAIN CONTENT ═══════════════════ */}
       <main>{children}</main>
@@ -394,11 +402,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center md:max-w-sm md:justify-end">
+            <div className="flex items-center justify-center gap-3 md:max-w-sm md:justify-end">
               {socialLinks.map((s) => (
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex h-11 min-w-[3.25rem] items-center justify-center rounded-full border border-emerald-800/90 bg-emerald-950/35 px-4 text-xs font-black tracking-[0.18em] text-emerald-200 transition-all hover:-translate-y-1 hover:border-emerald-400/60 hover:bg-emerald-900/60 hover:text-white" aria-label={s.label}>
-                  {s.label}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-800/90 bg-emerald-950/35 text-emerald-200 transition-all hover:-translate-y-1 hover:border-emerald-400/60 hover:bg-emerald-900/60 hover:text-white" aria-label={s.label}>
+                  {s.icon}
                 </a>
               ))}
             </div>
@@ -481,7 +489,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* ═══════════════════ WHATSAPP FLOAT ═══════════════════ */}
       <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer"
-        className="fixed bottom-4 right-4 z-[9995] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-600/30 ring-4 ring-white/25 transition-all duration-300 hover:scale-110 hover:shadow-emerald-600/50 md:bottom-6 md:right-6 md:h-14 md:w-14 md:ring-white/30"
+        className={`fixed right-4 z-[9995] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-600/30 ring-4 ring-white/25 transition-all duration-300 hover:scale-110 hover:shadow-emerald-600/50 md:right-6 md:h-14 md:w-14 md:ring-white/30 ${
+          isPortalPage ? 'bottom-28 md:bottom-6' : 'bottom-4 md:bottom-6'
+        }`}
         aria-label="Chat via WhatsApp">
         <MessageCircle size={24} className="md:h-7 md:w-7" />
         <span className="absolute w-full h-full rounded-full bg-emerald-400 opacity-20 animate-ping -z-10" />
@@ -490,7 +500,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       {/* ═══════════════════ BACK TO TOP ═══════════════════ */}
       {showBackToTop && (
         <button onClick={scrollToTop}
-          className="fixed bottom-[4.5rem] right-4 z-[9990] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-emerald-600 shadow-lg transition-all hover:scale-110 hover:text-emerald-500 md:bottom-24 md:right-6 md:h-10 md:w-10"
+          className={`fixed right-4 z-[9990] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-emerald-600 shadow-lg transition-all hover:scale-110 hover:text-emerald-500 md:right-6 md:h-10 md:w-10 ${
+            isPortalPage ? 'bottom-[11.5rem] md:bottom-24' : 'bottom-[4.5rem] md:bottom-24'
+          }`}
           aria-label="Kembali ke atas">
           <ChevronUp size={20} className="md:h-6 md:w-6" />
         </button>

@@ -4,15 +4,19 @@ import React, { useEffect, useState } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock } from 'lucide-react';
+import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal } from 'lucide-react';
 import { getMyPSBRegistration, type Registration } from '@/lib/api';
+
+function isFilled(value?: string | null) {
+  return Boolean(value && value.trim());
+}
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isRaportPage = pathname.startsWith('/portal/raport');
+  const isPortalDashboard = pathname === '/portal';
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [mobileNavTab, setMobileNavTab] = useState<'registration' | 'services'>(pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams') ? 'services' : 'registration');
 
   useEffect(() => {
     let cancelled = false;
@@ -41,10 +45,23 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const registrationStatus = registration?.status || 'pending';
   const hasStudentAccess = registrationStatus === 'accepted';
   const isServicePath = pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams');
-
-  useEffect(() => {
-    setMobileNavTab(isServicePath ? 'services' : 'registration');
-  }, [isServicePath]);
+  const biodataCompleted = [
+    registration?.full_name,
+    registration?.gender,
+    registration?.nik,
+    registration?.birth_place,
+    registration?.birth_date,
+    registration?.address,
+    registration?.school_origin,
+    registration?.program_choice,
+    registration?.father_name,
+    registration?.father_job,
+    registration?.father_phone,
+    registration?.mother_name,
+    registration?.mother_job,
+    registration?.mother_phone,
+  ].every(isFilled);
+  const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
 
   const registrationItems = [
     {
@@ -101,33 +118,119 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     },
   ];
 
-  const navGroups = [
-    {
-      id: 'registration',
-      label: 'Pendaftaran',
-      description: 'Menu inti untuk calon santri sampai proses diterima.',
-      active: !isServicePath,
-      items: registrationItems,
-    },
-    {
-      id: 'services',
-      label: 'Layanan Santri',
-      description: hasStudentAccess
-        ? 'Menu aktif setelah pendaftaran diterima.'
-        : 'Aktif setelah pendaftaran kamu diterima sebagai santri.',
-      active: isServicePath,
-      items: serviceItems,
-      locked: !hasStudentAccess,
-    },
-  ];
+  const dashboardItem = registrationItems[0];
+  const helpItem = registrationItems[3];
+  const studentItems = [dashboardItem, ...serviceItems, helpItem];
+  const navGroups = hasStudentAccess
+    ? [
+        {
+          id: 'services',
+          label: 'Layanan Santri',
+          description: 'Menu utama untuk santri aktif.',
+          active: true,
+          items: studentItems,
+        },
+      ]
+    : [
+        {
+          id: 'registration',
+          label: 'Pendaftaran',
+          description:
+            biodataCompleted && documentsCompleted
+              ? 'Berkas utama sudah lengkap. Pantau status review dari dasbor.'
+              : 'Menu inti untuk melengkapi biodata dan dokumen.',
+          active: !isServicePath,
+          items: registrationItems,
+        },
+        {
+          id: 'services',
+          label: 'Layanan Santri',
+          description: 'Aktif setelah pendaftaran kamu diterima sebagai santri.',
+          active: isServicePath,
+          items: serviceItems,
+          locked: true,
+        },
+      ];
 
-  const activeMobileGroup = navGroups.find((group) => group.id === mobileNavTab) || navGroups[0];
+  const mobilePortalTabs = hasStudentAccess
+    ? [
+        {
+          href: '/portal',
+          label: 'Dasbor',
+          icon: <LayoutDashboard size={18} />,
+          active: pathname === '/portal',
+        },
+        {
+          href: '/portal/raport',
+          label: 'Raport',
+          icon: <GraduationCap size={18} />,
+          active: pathname.startsWith('/portal/raport'),
+        },
+        {
+          href: '/portal/wallet',
+          label: 'Wallet',
+          icon: <Wallet size={18} />,
+          active: pathname.startsWith('/portal/wallet'),
+        },
+        {
+          href: '/portal/exams',
+          label: 'CBT',
+          icon: <QrCode size={18} />,
+          active: pathname.startsWith('/portal/exams'),
+        },
+        {
+          href: '/portal/help',
+          label: 'Lainnya',
+          icon: <MoreHorizontal size={18} />,
+          active: pathname.startsWith('/portal/help'),
+        },
+      ]
+    : [
+        {
+          href: '/portal',
+          label: 'Dasbor',
+          icon: <LayoutDashboard size={18} />,
+          active: pathname === '/portal',
+        },
+        {
+          href: '/portal/biodata',
+          label: 'Biodata',
+          icon: <User size={18} />,
+          active: pathname.startsWith('/portal/biodata'),
+        },
+        {
+          href: '/portal/documents',
+          label: 'Dokumen',
+          icon: <Folder size={18} />,
+          active: pathname.startsWith('/portal/documents'),
+        },
+        {
+          href: '/portal/raport',
+          label: 'Layanan',
+          icon: <GraduationCap size={18} />,
+          active: isServicePath,
+          locked: true,
+        },
+        {
+          href: '/portal/help',
+          label: 'Lainnya',
+          icon: <MoreHorizontal size={18} />,
+          active: pathname.startsWith('/portal/help'),
+        },
+      ];
 
   return (
-    <PublicLayout>
+    <PublicLayout hideNavbar>
       <div className="bg-slate-50 min-h-screen py-8 lg:py-10">
         <div className="container mx-auto max-w-7xl px-4">
-          <div className="mb-6 flex justify-end">
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <Home size={14} />
+              Beranda
+            </Link>
             <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-600">
                Portal Wali Santri
             </div>
@@ -210,7 +313,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           ) : (
           <div className="bg-white rounded-[2rem] lg:rounded-[3rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col md:flex-row">
             {/* Sidebar Portal */}
-            <div className="w-full md:w-72 lg:w-80 bg-slate-100 p-6 lg:p-8 border-b md:border-b-0 md:border-r border-slate-200 shrink-0">
+            <div className="hidden shrink-0 border-r border-slate-200 bg-slate-100 p-6 md:block md:w-72 md:border-b-0 lg:w-80 lg:p-8">
                <div className="mb-8">
                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Navigasi Portal</p>
                  <h2 className="mt-2 text-2xl font-black text-slate-900 font-outfit tracking-tight">Portal Pendaftaran & Santri</h2>
@@ -315,112 +418,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             </div>
 
             {/* Content Area */}
-            <div className="min-w-0 flex-1 p-5 md:p-8 lg:p-10">
-               {isLoading ? (
+            <div className="min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
+               {isLoading && !isPortalDashboard ? (
                  <div className="mb-6 flex items-center gap-3 rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-500">
                    <RefreshCw size={16} className="animate-spin text-blue-600" />
                    Menyiapkan struktur portal sesuai status akunmu...
                  </div>
                ) : null}
-
-               <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 md:hidden">
-                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Tab Portal</p>
-                 <div className="mt-3">
-                   <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-1">
-                     {navGroups.map((group) => {
-                       const isActive = mobileNavTab === group.id;
-                       return (
-                         <button
-                           key={`mobile-tab-${group.id}`}
-                           type="button"
-                           onClick={() => setMobileNavTab(group.id as 'registration' | 'services')}
-                           className={`rounded-[1rem] px-3 py-3 text-left text-xs font-black uppercase tracking-[0.18em] transition ${
-                             isActive
-                               ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                               : 'bg-white text-slate-500'
-                           }`}
-                         >
-                           <div>{group.label}</div>
-                           <div className={`mt-1 text-[9px] font-bold normal-case tracking-normal ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
-                             {group.locked ? 'Aktif setelah diterima' : 'Siap dipakai'}
-                           </div>
-                         </button>
-                       );
-                     })}
-                   </div>
-
-                   <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-white p-4">
-                     <div className="mb-3 flex items-start justify-between gap-3">
-                       <div>
-                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{activeMobileGroup.label}</p>
-                         <p className="mt-1 text-xs leading-relaxed text-slate-500">{activeMobileGroup.description}</p>
-                       </div>
-                       {activeMobileGroup.locked ? (
-                         <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">
-                           Terkunci
-                         </span>
-                       ) : null}
-                     </div>
-
-                     <div className="flex gap-2 overflow-x-auto pb-1">
-                       {activeMobileGroup.items.map((item) => {
-                         const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
-                         const itemClasses = isActive
-                           ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                           : activeMobileGroup.locked
-                             ? 'border-amber-200 bg-amber-50 text-amber-800'
-                             : 'border-slate-200 bg-slate-50 text-slate-700';
-
-                         if (activeMobileGroup.locked) {
-                           return (
-                             <span
-                               key={`mobile-tab-${item.href}`}
-                               className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em] ${itemClasses}`}
-                             >
-                               <span className={isActive ? 'text-blue-100' : 'text-amber-600'}>{item.icon}</span>
-                               <span>{item.label}</span>
-                             </span>
-                           );
-                         }
-
-                         return (
-                           <Link
-                             key={`mobile-tab-${item.href}`}
-                             href={item.href}
-                             className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em] transition ${itemClasses}`}
-                           >
-                             <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
-                             <span>{item.label}</span>
-                           </Link>
-                         );
-                       })}
-                     </div>
-
-                     {activeMobileGroup.locked ? (
-                       <div className="mt-4 rounded-[1.25rem] border border-amber-200 bg-amber-50 p-4">
-                         <div className="flex items-start gap-3">
-                           <div className="rounded-2xl bg-amber-100 p-2 text-amber-700">
-                             <Lock size={18} />
-                           </div>
-                           <div>
-                             <p className="text-sm font-bold text-amber-950">Menu santri belum aktif untuk akunmu</p>
-                             <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
-                               Setelah pendaftaran diterima, tab layanan santri baru akan terbuka penuh. Untuk sekarang, fokuskan dulu ke tab pendaftaran.
-                             </p>
-                           </div>
-                         </div>
-
-                         <Link
-                           href="/portal/documents"
-                           className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-amber-400"
-                         >
-                           Lanjutkan Pendaftaran Dulu
-                         </Link>
-                       </div>
-                     ) : null}
-                   </div>
-                 </div>
-               </div>
 
                {!isLoading && !hasStudentAccess && isServicePath ? (
                  <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -452,6 +456,57 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </div>
           )}
         </div>
+      </div>
+      <div className="fixed inset-x-0 bottom-4 z-[1000] px-4 md:hidden">
+        {isLoading ? (
+          <div className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur">
+            <div className="grid grid-cols-5 gap-1">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={`mobile-bottom-tab-skeleton-${index}`}
+                  className="h-12 animate-pulse rounded-2xl bg-slate-100"
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <nav
+            aria-label="Menu portal mobile"
+            className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur"
+          >
+            <div className="grid grid-cols-5 gap-1">
+              {mobilePortalTabs.map((item) => {
+                if (item.locked) {
+                  return (
+                    <span
+                      key={`mobile-bottom-tab-${item.href}`}
+                      className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold text-slate-400"
+                      title="Aktif setelah pendaftaran diterima"
+                    >
+                      <span className="text-slate-400">{item.icon}</span>
+                      <span className="w-full truncate text-center">{item.label}</span>
+                    </span>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={`mobile-bottom-tab-${item.href}`}
+                    href={item.href}
+                    className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold transition-all duration-300 ${
+                      item.active
+                        ? 'bg-emerald-50 text-emerald-700 shadow-sm'
+                        : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                    }`}
+                  >
+                    <span className={item.active ? 'text-emerald-700' : 'text-slate-400'}>{item.icon}</span>
+                    <span className="w-full truncate text-center">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        )}
       </div>
     </PublicLayout>
   );

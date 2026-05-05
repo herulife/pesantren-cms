@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Activity, AlertCircle, CheckCircle2, ChevronRight, FileText, RefreshCw, Upload, User, GraduationCap, Wallet, BookOpen } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, ChevronRight, FileText, Upload, User, GraduationCap, Wallet, BookOpen } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import StudentQRCard from '@/components/StudentQRCard';
 import WalletCard from '@/components/WalletCard';
@@ -35,8 +35,8 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
     title: 'Pendaftaran Diterima',
     description: 'Selamat, berkas kamu sudah dinyatakan diterima. Ikuti arahan panitia untuk langkah berikutnya.',
     accent: 'from-emerald-600 to-green-600',
-    actionLabel: 'Lihat Biodata',
-    actionHref: '/portal/biodata',
+    actionLabel: 'Buka Raport',
+    actionHref: '/portal/raport',
   },
   rejected: {
     title: 'Perlu Perbaikan Berkas',
@@ -264,8 +264,48 @@ export default function PortalDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-blue-600" />
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="h-5 w-32 animate-pulse rounded-full bg-slate-100" />
+          <div className="h-12 w-3/4 animate-pulse rounded-3xl bg-slate-100" />
+          <div className="h-5 w-full animate-pulse rounded-full bg-slate-100" />
+          <div className="h-5 w-5/6 animate-pulse rounded-full bg-slate-100" />
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:col-span-2">
+            <div className="h-4 w-32 animate-pulse rounded-full bg-slate-100" />
+            <div className="mt-5 h-10 w-4/5 animate-pulse rounded-3xl bg-slate-100" />
+            <div className="mt-4 h-4 w-full animate-pulse rounded-full bg-slate-100" />
+            <div className="mt-2 h-4 w-3/4 animate-pulse rounded-full bg-slate-100" />
+            <div className="mt-8 h-3 w-full animate-pulse rounded-full bg-slate-100" />
+          </div>
+
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="h-14 w-14 animate-pulse rounded-2xl bg-slate-100" />
+            <div className="mt-6 h-6 w-2/3 animate-pulse rounded-full bg-slate-100" />
+            <div className="mt-4 h-4 w-full animate-pulse rounded-full bg-slate-100" />
+            <div className="mt-2 h-4 w-4/5 animate-pulse rounded-full bg-slate-100" />
+            <div className="mt-8 h-12 w-full animate-pulse rounded-xl bg-slate-100" />
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="h-4 w-24 animate-pulse rounded-full bg-slate-100" />
+          <div className="mt-4 h-8 w-2/3 animate-pulse rounded-full bg-slate-100" />
+          <div className="mt-3 h-4 w-full animate-pulse rounded-full bg-slate-100" />
+          <div className="mt-2 h-4 w-5/6 animate-pulse rounded-full bg-slate-100" />
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div key={`loading-card-${index}`} className="rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5">
+                <div className="h-12 w-12 animate-pulse rounded-2xl bg-white" />
+                <div className="mt-4 h-5 w-1/2 animate-pulse rounded-full bg-white" />
+                <div className="mt-3 h-4 w-full animate-pulse rounded-full bg-white" />
+                <div className="mt-2 h-4 w-4/5 animate-pulse rounded-full bg-white" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -366,21 +406,21 @@ export default function PortalDashboard() {
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
             <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-              {hasStudentAccess ? 'Pilih Menu Sesuai Tahapmu' : 'Fokus ke Menu Pendaftaran'}
+              {hasStudentAccess ? 'Layanan Harian Santri' : 'Fokus ke Menu Pendaftaran'}
             </h4>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               {hasStudentAccess
-                ? 'Portal sekarang dibagi antara menu pendaftaran dan layanan santri supaya lebih jelas dipakai sehari-hari.'
+                ? 'Setelah diterima sebagai santri, menu utama difokuskan ke layanan harian seperti raport, dompet, dan ujian.'
                 : 'Supaya tidak bingung, gunakan blok ini untuk menyelesaikan pendaftaran dulu. Layanan santri akan aktif setelah diterima.'}
             </p>
           </div>
           <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {hasStudentAccess ? 'Tahap aktif' : 'Tahap pendaftaran'}
+            {hasStudentAccess ? 'Santri aktif' : 'Tahap pendaftaran'}
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {registrationQuickMenus.map((item) => (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {(hasStudentAccess ? studentQuickMenus : registrationQuickMenus).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -398,166 +438,134 @@ export default function PortalDashboard() {
             </Link>
           ))}
         </div>
+      </div>
 
-        {hasStudentAccess ? (
-          <div className="mt-8 border-t border-slate-100 pt-6">
-            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
-                <h5 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
-                  Menu Harian Setelah Menjadi Santri
-                </h5>
-              </div>
-              <div className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
-                Sudah aktif
-              </div>
-            </div>
+      {!hasStudentAccess ? (
+      <div className="mb-10">
+        <h4 className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
+          <FileText className="text-slate-400" size={18} />
+          Daftar Tugas
+        </h4>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {studentQuickMenus.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
-                >
-                  <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+        <div className="mb-10 space-y-4">
+          {portalState.checklist.map((item, index) => {
+            const cardClasses = item.completed
+              ? 'border-emerald-100 bg-white shadow-sm'
+              : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
+            const iconClasses = item.completed
+              ? 'bg-emerald-50 text-emerald-500'
+              : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
+
+            const content = (
+              <>
+                <div className="flex items-center gap-5">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${iconClasses}`}>
                     {item.icon}
                   </div>
-                  <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-                  <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
-                    Buka Menu
-                    <ChevronRight size={14} />
+                  <div>
+                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-blue-700'}`}>
+                      {item.title}
+                    </h5>
+                    <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
                   </div>
+                </div>
+
+                {item.completed ? (
+                  <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                    Selesai
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
+                      Langkah {index + 1}
+                    </span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white">
+                      <ChevronRight size={20} />
+                    </span>
+                  </div>
+                )}
+              </>
+            );
+
+            if (item.href && !item.completed) {
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className={`group flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 transition-colors ${cardClasses}`}
+                >
+                  {content}
                 </Link>
+              );
+            }
+
+            return (
+              <div key={item.title} className={`flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 ${cardClasses}`}>
+                {content}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          <div className="rounded-[2rem] border border-emerald-100 bg-white p-8 shadow-sm">
+            <div className="mb-5">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Yang Sudah Selesai</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Progress Pendaftaran</h4>
+            </div>
+            <div className="space-y-3">
+              {completedItems.map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <p className="text-sm font-medium text-emerald-900">{item}</p>
+                </div>
               ))}
             </div>
           </div>
-        ) : null}
-      </div>
 
-      <h4 className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
-        <FileText className="text-slate-400" size={18} />
-        Daftar Tugas
-      </h4>
-
-      <div className="mb-10 space-y-4">
-        {portalState.checklist.map((item, index) => {
-          const cardClasses = item.completed
-            ? 'border-emerald-100 bg-white shadow-sm'
-            : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
-          const iconClasses = item.completed
-            ? 'bg-emerald-50 text-emerald-500'
-            : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
-
-          const content = (
-            <>
-              <div className="flex items-center gap-5">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${iconClasses}`}>
-                  {item.icon}
-                </div>
-                <div>
-                  <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-blue-700'}`}>
-                    {item.title}
-                  </h5>
-                  <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
-                </div>
-              </div>
-
-              {item.completed ? (
-                <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                  Selesai
-                </span>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
-                    Langkah {index + 1}
-                  </span>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white">
-                    <ChevronRight size={20} />
-                  </span>
-                </div>
-              )}
-            </>
-          );
-
-          if (item.href && !item.completed) {
-            return (
-              <Link
-                key={item.title}
-                href={item.href}
-                className={`group flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 transition-colors ${cardClasses}`}
-              >
-                {content}
-              </Link>
-            );
-          }
-
-          return (
-            <div key={item.title} className={`flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 ${cardClasses}`}>
-              {content}
+          <div className="rounded-[2rem] border border-amber-100 bg-white p-8 shadow-sm">
+            <div className="mb-5">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-600">Yang Masih Kurang</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Checklist Yang Perlu Dilengkapi</h4>
             </div>
-          );
-        })}
-      </div>
 
-      <div className="mb-10 grid grid-cols-1 gap-6">
-        <div className="rounded-[2rem] border border-emerald-100 bg-white p-8 shadow-sm">
-          <div className="mb-5">
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Yang Sudah Selesai</p>
-            <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Progress Pendaftaran</h4>
-          </div>
-          <div className="space-y-3">
-            {completedItems.map((item) => (
-              <div key={item} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-                <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
-                <p className="text-sm font-medium text-emerald-900">{item}</p>
+            {missingBiodataItems.length === 0 && missingDocumentItems.length === 0 ? (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
+                Semua data inti dan dokumen utama sudah lengkap. Tinggal menunggu proses panitia.
               </div>
-            ))}
+            ) : (
+              <div className="space-y-5">
+                {missingBiodataItems.length > 0 ? (
+                  <div>
+                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Biodata</div>
+                    <div className="space-y-2">
+                      {missingBiodataItems.map((item) => (
+                        <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {missingDocumentItems.length > 0 ? (
+                  <div>
+                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Dokumen</div>
+                    <div className="space-y-2">
+                      {missingDocumentItems.map((item) => (
+                        <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
-
-        <div className="rounded-[2rem] border border-amber-100 bg-white p-8 shadow-sm">
-          <div className="mb-5">
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-600">Yang Masih Kurang</p>
-            <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Checklist Yang Perlu Dilengkapi</h4>
-          </div>
-
-          {missingBiodataItems.length === 0 && missingDocumentItems.length === 0 ? (
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
-              Semua data inti dan dokumen utama sudah lengkap. Tinggal menunggu proses panitia.
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {missingBiodataItems.length > 0 ? (
-                <div>
-                  <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Biodata</div>
-                  <div className="space-y-2">
-                    {missingBiodataItems.map((item) => (
-                      <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {missingDocumentItems.length > 0 ? (
-                <div>
-                  <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Dokumen</div>
-                  <div className="space-y-2">
-                    {missingDocumentItems.map((item) => (
-                      <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
       </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
