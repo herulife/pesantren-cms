@@ -16,6 +16,8 @@ type ChecklistItem = {
   icon: React.ReactNode;
 };
 
+type MobilePortalTab = 'overview' | 'registration' | 'student';
+
 const statusMeta: Record<string, { title: string; description: string; accent: string; actionLabel: string; actionHref: string }> = {
   pending: {
     title: 'Pendaftaran Sedang Disiapkan',
@@ -72,6 +74,7 @@ export default function PortalDashboard() {
   const { user } = useAuth();
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobilePortalTab, setMobilePortalTab] = useState<MobilePortalTab>('overview');
 
   useEffect(() => {
     const fetchRegistration = async () => {
@@ -270,321 +273,356 @@ export default function PortalDashboard() {
     );
   }
 
-  return (
-    <>
-      <div className="mb-8">
-        <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
-          Ahlan Wa Sahlan, <br /> <span className="text-blue-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
-        </h3>
-        <p className="text-lg text-slate-500">
-          {hasStudentAccess
-            ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
-            : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
-        </p>
-      </div>
+  const mobileTabMeta: Array<{ id: MobilePortalTab; label: string; description: string; badge: string }> = [
+    {
+      id: 'overview',
+      label: 'Ringkasan',
+      description: 'Status dan langkah paling penting hari ini.',
+      badge: `${portalState.progress}%`,
+    },
+    {
+      id: 'registration',
+      label: 'Pendaftaran',
+      description: 'Biodata, dokumen, dan checklist PSB.',
+      badge: portalState.documentsCompleted ? 'Lengkap' : 'Aktif',
+    },
+    {
+      id: 'student',
+      label: 'Layanan Santri',
+      description: hasStudentAccess ? 'Raport, wallet, dan presensi harian.' : 'Aktif setelah diterima.',
+      badge: hasStudentAccess ? 'Aktif' : 'Terkunci',
+    },
+  ];
 
-      <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${portalState.meta.accent} p-8 text-white shadow-xl md:col-span-2`}>
-          <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-white/10 blur-3xl" />
+  const statusCardsSection = (
+    <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${portalState.meta.accent} p-8 text-white shadow-xl md:col-span-2`}>
+        <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-white/10 blur-3xl" />
 
-          <div className="relative z-10 flex h-full flex-col justify-between">
-            <div>
-              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
-                <Activity size={12} /> Status Pendaftaran
-              </span>
-              <h4 className="mb-2 text-2xl font-black uppercase tracking-tight">{portalState.meta.title}</h4>
-              <p className="max-w-sm text-sm leading-relaxed text-white/80">{portalState.meta.description}</p>
-            </div>
-
-            <div className="mt-8">
-              <div className="mb-2 flex items-end justify-between">
-                <span className="text-xs font-bold uppercase tracking-widest text-white/70">Progress Penyelesaian</span>
-                <span className="text-2xl font-black">{portalState.progress}%</span>
-              </div>
-              <div className="h-3 w-full overflow-hidden rounded-full border border-white/20 bg-slate-950/20">
-                <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${portalState.progress}%` }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-8 shadow-sm">
-          <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-            <AlertCircle size={28} />
-          </div>
-          <h4 className="mb-2 font-outfit text-lg font-black uppercase tracking-tight text-slate-800">Tindakan Berikutnya</h4>
-          <p className="mb-6 flex-1 text-sm text-slate-500">{portalState.actionCopy}</p>
-
-          <Link
-            href={portalState.actionHref}
-            className="w-full rounded-xl border-2 border-amber-200 bg-white py-4 text-center text-xs font-bold uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50"
-          >
-            {portalState.actionLabel}
-          </Link>
-        </div>
-
-        {hasStudentAccess ? (
-          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
-                <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-                  Presensi & Dompet Santri
-                </h4>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
-                </p>
-              </div>
-              <div className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
-                Live tools untuk akses harian
-              </div>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
-              <StudentQRCard />
-              <div className="md:h-full">
-                <WalletCard />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="md:col-span-3 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700">Layanan Santri</p>
-            <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-amber-950">
-              Presensi, Dompet, dan Raport Akan Aktif Setelah Diterima
-            </h4>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-amber-900/80">
-              Supaya portal tidak membingungkan, fitur harian santri seperti QR presensi, Darussunnah Pay, raport akademik, dan CBT baru akan dibuka
-              setelah status pendaftaranmu diterima. Untuk sekarang, fokuskan dulu ke biodata, dokumen, dan status pendaftaran.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div className="relative z-10 flex h-full flex-col justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
-            <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-              {hasStudentAccess ? 'Pilih Menu Sesuai Tahapmu' : 'Fokus ke Menu Pendaftaran'}
-            </h4>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              {hasStudentAccess
-                ? 'Portal sekarang dibagi antara menu pendaftaran dan layanan santri supaya lebih jelas dipakai sehari-hari.'
-                : 'Supaya tidak bingung, gunakan blok ini untuk menyelesaikan pendaftaran dulu. Layanan santri akan aktif setelah diterima.'}
-            </p>
+            <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
+              <Activity size={12} /> Status Pendaftaran
+            </span>
+            <h4 className="mb-2 text-2xl font-black uppercase tracking-tight">{portalState.meta.title}</h4>
+            <p className="max-w-sm text-sm leading-relaxed text-white/80">{portalState.meta.description}</p>
           </div>
-          <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {hasStudentAccess ? 'Tahap aktif' : 'Tahap pendaftaran'}
+
+          <div className="mt-8">
+            <div className="mb-2 flex items-end justify-between">
+              <span className="text-xs font-bold uppercase tracking-widest text-white/70">Progress Penyelesaian</span>
+              <span className="text-2xl font-black">{portalState.progress}%</span>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full border border-white/20 bg-slate-950/20">
+              <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${portalState.progress}%` }} />
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+      <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-8 shadow-sm">
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+          <AlertCircle size={28} />
+        </div>
+        <h4 className="mb-2 font-outfit text-lg font-black uppercase tracking-tight text-slate-800">Tindakan Berikutnya</h4>
+        <p className="mb-6 flex-1 text-sm text-slate-500">{portalState.actionCopy}</p>
+
+        <Link
+          href={portalState.actionHref}
+          className="w-full rounded-xl border-2 border-amber-200 bg-white py-4 text-center text-xs font-bold uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50"
+        >
+          {portalState.actionLabel}
+        </Link>
+      </div>
+    </div>
+  );
+
+  const studentServiceSection = hasStudentAccess ? (
+    <div className="mb-10 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
+      <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
+          <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+            Presensi & Dompet Santri
+          </h4>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
+          </p>
+        </div>
+        <div className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+          Live tools untuk akses harian
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
+        <StudentQRCard />
+        <div className="md:h-full">
+          <WalletCard />
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className="mb-10 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-sm">
+      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700">Layanan Santri</p>
+      <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-amber-950">
+        Presensi, Dompet, dan Raport Akan Aktif Setelah Diterima
+      </h4>
+      <p className="mt-3 max-w-3xl text-sm leading-7 text-amber-900/80">
+        Supaya portal tidak membingungkan, fitur harian santri seperti QR presensi, Darussunnah Pay, raport akademik, dan CBT baru akan dibuka
+        setelah status pendaftaranmu diterima. Untuk sekarang, fokuskan dulu ke biodata, dokumen, dan status pendaftaran.
+      </p>
+    </div>
+  );
+
+  const desktopQuickMenusSection = (
+    <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
+          <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+            {hasStudentAccess ? 'Pilih Menu Sesuai Tahapmu' : 'Fokus ke Menu Pendaftaran'}
+          </h4>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            {hasStudentAccess
+              ? 'Portal sekarang dibagi antara menu pendaftaran dan layanan santri supaya lebih jelas dipakai sehari-hari.'
+              : 'Supaya tidak bingung, gunakan blok ini untuk menyelesaikan pendaftaran dulu. Layanan santri akan aktif setelah diterima.'}
+          </p>
+        </div>
+        <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          {hasStudentAccess ? 'Tahap aktif' : 'Tahap pendaftaran'}
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {registrationQuickMenus.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
+          >
+            <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+              {item.icon}
+            </div>
+            <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
+            <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
+            <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
+              Buka Menu
+              <ChevronRight size={14} />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {hasStudentAccess ? (
+        <div className="mt-8 border-t border-slate-100 pt-6">
+          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
+              <h5 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
+                Menu Harian Setelah Menjadi Santri
+              </h5>
+            </div>
+            <div className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
+              Sudah aktif
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {studentQuickMenus.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
+              >
+                <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+                  {item.icon}
+                </div>
+                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
+                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
+                  Buka Menu
+                  <ChevronRight size={14} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const mobileRegistrationSection = (
+    <div className="space-y-6">
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Tahap Pendaftaran</p>
+          <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
+            Fokus Ke Biodata dan Dokumen
+          </h4>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Supaya tidak melebar ke mana-mana, tab ini hanya memuat semua yang perlu kamu selesaikan untuk proses PSB.
+          </p>
+        </div>
+
+        <div className="space-y-4">
           {registrationQuickMenus.map((item) => (
             <Link
-              key={item.href}
+              key={`mobile-registration-${item.href}`}
               href={item.href}
-              className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
+              className="group block rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 hover:bg-white"
             >
               <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
                 {item.icon}
               </div>
               <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
               <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-              <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
-                Buka Menu
-                <ChevronRight size={14} />
-              </div>
             </Link>
           ))}
         </div>
+      </div>
 
-        {hasStudentAccess ? (
-          <div className="mt-8 border-t border-slate-100 pt-6">
-            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
-                <h5 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
-                  Menu Harian Setelah Menjadi Santri
-                </h5>
-              </div>
-              <div className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
-                Sudah aktif
-              </div>
-            </div>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <h4 className="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
+          <FileText className="text-slate-400" size={18} />
+          Daftar Tugas
+        </h4>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {studentQuickMenus.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
-                >
-                  <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+        <div className="space-y-4">
+          {portalState.checklist.map((item, index) => {
+            const cardClasses = item.completed
+              ? 'border-emerald-100 bg-white shadow-sm'
+              : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
+            const iconClasses = item.completed
+              ? 'bg-emerald-50 text-emerald-500'
+              : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
+
+            const content = (
+              <>
+                <div className="flex items-center gap-4">
+                  <div className={`h-12 w-12 shrink-0 rounded-2xl transition-colors flex items-center justify-center ${iconClasses}`}>
                     {item.icon}
                   </div>
-                  <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-                  <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
-                    Buka Menu
-                    <ChevronRight size={14} />
+                  <div className="min-w-0">
+                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-blue-700'}`}>
+                      {item.title}
+                    </h5>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{item.description}</p>
                   </div>
+                </div>
+
+                {item.completed ? (
+                  <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                    Selesai
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      Langkah {index + 1}
+                    </span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white">
+                      <ChevronRight size={20} />
+                    </span>
+                  </div>
+                )}
+              </>
+            );
+
+            if (item.href && !item.completed) {
+              return (
+                <Link
+                  key={`mobile-task-${item.title}`}
+                  href={item.href}
+                  className={`group flex items-center justify-between gap-4 rounded-[1.5rem] border p-4 transition-colors ${cardClasses}`}
+                >
+                  {content}
                 </Link>
+              );
+            }
+
+            return (
+              <div key={`mobile-task-${item.title}`} className={`flex items-center justify-between gap-4 rounded-[1.5rem] border p-4 ${cardClasses}`}>
+                {content}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="space-y-5">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Yang Sudah Selesai</p>
+            <div className="mt-3 space-y-3">
+              {completedItems.map((item) => (
+                <div key={`mobile-completed-${item}`} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <p className="text-sm font-medium text-emerald-900">{item}</p>
+                </div>
               ))}
             </div>
           </div>
-        ) : null}
-      </div>
 
-      <h4 className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
-        <FileText className="text-slate-400" size={18} />
-        Daftar Tugas
-      </h4>
-
-      <div className="mb-10 space-y-4">
-        {portalState.checklist.map((item, index) => {
-          const cardClasses = item.completed
-            ? 'border-emerald-100 bg-white shadow-sm'
-            : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
-          const iconClasses = item.completed
-            ? 'bg-emerald-50 text-emerald-500'
-            : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
-
-          const content = (
-            <>
-              <div className="flex items-center gap-5">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${iconClasses}`}>
-                  {item.icon}
-                </div>
-                <div>
-                  <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-blue-700'}`}>
-                    {item.title}
-                  </h5>
-                  <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
-                </div>
-              </div>
-
-              {item.completed ? (
-                <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                  Selesai
-                </span>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
-                    Langkah {index + 1}
-                  </span>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white">
-                    <ChevronRight size={20} />
-                  </span>
-                </div>
-              )}
-            </>
-          );
-
-          if (item.href && !item.completed) {
-            return (
-              <Link
-                key={item.title}
-                href={item.href}
-                className={`group flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 transition-colors ${cardClasses}`}
-              >
-                {content}
-              </Link>
-            );
-          }
-
-          return (
-            <div key={item.title} className={`flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 ${cardClasses}`}>
-              {content}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mb-10 grid grid-cols-1 gap-6">
-        <div className="rounded-[2rem] border border-emerald-100 bg-white p-8 shadow-sm">
-          <div className="mb-5">
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Yang Sudah Selesai</p>
-            <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Progress Pendaftaran</h4>
-          </div>
-          <div className="space-y-3">
-            {completedItems.map((item) => (
-              <div key={item} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-                <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
-                <p className="text-sm font-medium text-emerald-900">{item}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-amber-100 bg-white p-8 shadow-sm">
-          <div className="mb-5">
+          <div className="border-t border-slate-100 pt-5">
             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-600">Yang Masih Kurang</p>
-            <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Checklist Yang Perlu Dilengkapi</h4>
+            {missingBiodataItems.length === 0 && missingDocumentItems.length === 0 ? (
+              <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
+                Semua data inti dan dokumen utama sudah lengkap. Tinggal menunggu proses panitia.
+              </div>
+            ) : (
+              <div className="mt-3 space-y-5">
+                {missingBiodataItems.length > 0 ? (
+                  <div>
+                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Biodata</div>
+                    <div className="space-y-2">
+                      {missingBiodataItems.map((item) => (
+                        <div key={`mobile-missing-biodata-${item}`} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {missingDocumentItems.length > 0 ? (
+                  <div>
+                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Dokumen</div>
+                    <div className="space-y-2">
+                      {missingDocumentItems.map((item) => (
+                        <div key={`mobile-missing-document-${item}`} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
-
-          {missingBiodataItems.length === 0 && missingDocumentItems.length === 0 ? (
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
-              Semua data inti dan dokumen utama sudah lengkap. Tinggal menunggu proses panitia.
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {missingBiodataItems.length > 0 ? (
-                <div>
-                  <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Biodata</div>
-                  <div className="space-y-2">
-                    {missingBiodataItems.map((item) => (
-                      <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {missingDocumentItems.length > 0 ? (
-                <div>
-                  <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Dokumen</div>
-                  <div className="space-y-2">
-                    {missingDocumentItems.map((item) => (
-                      <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="space-y-6">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 flex flex-col gap-4">
             <div className="min-w-0">
               <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Biodata</h4>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 Cek kembali data inti calon santri dan orang tua sebelum panitia menyelesaikan proses verifikasi.
               </p>
             </div>
             <Link
               href="/portal/biodata"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition-colors hover:bg-blue-100 md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition-colors hover:bg-blue-100"
             >
               Edit Biodata
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4">
             {biodataSummary.map((item) => (
-              <div key={item.label} className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <div key={`mobile-biodata-summary-${item.label}`} className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
-                <p
-                  className={`min-h-[3rem] break-words text-sm font-bold leading-relaxed ${
-                    item.value === '-' ? 'text-slate-400' : 'text-slate-800'
-                  }`}
-                >
+                <p className={`break-words text-sm font-bold leading-relaxed ${item.value === '-' ? 'text-slate-400' : 'text-slate-800'}`}>
                   {item.value}
                 </p>
               </div>
@@ -596,17 +634,17 @@ export default function PortalDashboard() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 flex flex-col gap-4">
             <div className="min-w-0">
               <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Dokumen</h4>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 Pastikan semua dokumen penting sudah terunggah agar proses review berjalan lancar.
               </p>
             </div>
             <Link
               href="/portal/documents"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors hover:bg-emerald-100 md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors hover:bg-emerald-100"
             >
               Kelola Dokumen
             </Link>
@@ -614,7 +652,7 @@ export default function PortalDashboard() {
 
           <div className="space-y-4">
             {documentSummary.map((item) => (
-              <div key={item.label} className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div key={`mobile-document-summary-${item.label}`} className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4">
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-slate-800">{item.label}</p>
                   <p className="mt-1 text-xs text-slate-500">
@@ -632,6 +670,352 @@ export default function PortalDashboard() {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const mobileStudentSection = (
+    <div className="space-y-6">
+      {studentServiceSection}
+      {hasStudentAccess ? (
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
+            <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
+              Menu Harian Setelah Menjadi Santri
+            </h4>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Semua akses harian santri dikumpulkan di sini supaya lebih cepat dibuka dari HP.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {studentQuickMenus.map((item) => (
+              <Link
+                key={`mobile-student-${item.href}`}
+                href={item.href}
+                className="group block rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 hover:bg-white"
+              >
+                <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+                  {item.icon}
+                </div>
+                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  return (
+    <>
+      <div className="mb-8">
+        <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
+          Ahlan Wa Sahlan, <br /> <span className="text-blue-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
+        </h3>
+        <p className="text-lg text-slate-500">
+          {hasStudentAccess
+            ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
+            : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
+        </p>
+      </div>
+
+      <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-3 shadow-sm md:hidden">
+        <div className="grid grid-cols-3 gap-2">
+          {mobileTabMeta.map((tab) => {
+            const isActive = mobilePortalTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setMobilePortalTab(tab.id)}
+                className={`rounded-[1.25rem] px-3 py-3 text-left transition ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                    : 'bg-slate-50 text-slate-600'
+                }`}
+              >
+                <div className="text-[10px] font-black uppercase tracking-[0.18em]">{tab.label}</div>
+                <div className={`mt-1 text-[10px] font-bold ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
+                  {tab.badge}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-3 px-1 text-xs leading-relaxed text-slate-500">
+          {mobileTabMeta.find((tab) => tab.id === mobilePortalTab)?.description}
+        </p>
+      </div>
+
+      <div className="md:hidden">
+        {mobilePortalTab === 'overview' ? (
+          <>
+            {statusCardsSection}
+            <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="space-y-5">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Yang Sudah Selesai</p>
+                  <div className="mt-3 space-y-3">
+                    {completedItems.map((item) => (
+                      <div key={`overview-completed-${item}`} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                        <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                        <p className="text-sm font-medium text-emerald-900">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-5">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-600">Yang Masih Kurang</p>
+                  {missingBiodataItems.length === 0 && missingDocumentItems.length === 0 ? (
+                    <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
+                      Semua data inti dan dokumen utama sudah lengkap. Tinggal menunggu proses panitia.
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-5">
+                      {missingBiodataItems.length > 0 ? (
+                        <div>
+                          <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Biodata</div>
+                          <div className="space-y-2">
+                            {missingBiodataItems.map((item) => (
+                              <div key={`overview-missing-biodata-${item}`} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                                {item}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {missingDocumentItems.length > 0 ? (
+                        <div>
+                          <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Dokumen</div>
+                          <div className="space-y-2">
+                            {missingDocumentItems.map((item) => (
+                              <div key={`overview-missing-document-${item}`} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                                {item}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {mobilePortalTab === 'registration' ? mobileRegistrationSection : null}
+        {mobilePortalTab === 'student' ? mobileStudentSection : null}
+      </div>
+
+      <div className="hidden md:block">
+        {statusCardsSection}
+        {studentServiceSection}
+        {desktopQuickMenusSection}
+
+        <h4 className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
+          <FileText className="text-slate-400" size={18} />
+          Daftar Tugas
+        </h4>
+
+        <div className="mb-10 space-y-4">
+          {portalState.checklist.map((item, index) => {
+            const cardClasses = item.completed
+              ? 'border-emerald-100 bg-white shadow-sm'
+              : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
+            const iconClasses = item.completed
+              ? 'bg-emerald-50 text-emerald-500'
+              : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
+
+            const content = (
+              <>
+                <div className="flex items-center gap-5">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${iconClasses}`}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-blue-700'}`}>
+                      {item.title}
+                    </h5>
+                    <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
+                  </div>
+                </div>
+
+                {item.completed ? (
+                  <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                    Selesai
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
+                      Langkah {index + 1}
+                    </span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white">
+                      <ChevronRight size={20} />
+                    </span>
+                  </div>
+                )}
+              </>
+            );
+
+            if (item.href && !item.completed) {
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className={`group flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 transition-colors ${cardClasses}`}
+                >
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <div key={item.title} className={`flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 ${cardClasses}`}>
+                {content}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mb-10 grid grid-cols-1 gap-6">
+          <div className="rounded-[2rem] border border-emerald-100 bg-white p-8 shadow-sm">
+            <div className="mb-5">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Yang Sudah Selesai</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Progress Pendaftaran</h4>
+            </div>
+            <div className="space-y-3">
+              {completedItems.map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <p className="text-sm font-medium text-emerald-900">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-amber-100 bg-white p-8 shadow-sm">
+            <div className="mb-5">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-600">Yang Masih Kurang</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Checklist Yang Perlu Dilengkapi</h4>
+            </div>
+
+            {missingBiodataItems.length === 0 && missingDocumentItems.length === 0 ? (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
+                Semua data inti dan dokumen utama sudah lengkap. Tinggal menunggu proses panitia.
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {missingBiodataItems.length > 0 ? (
+                  <div>
+                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Biodata</div>
+                    <div className="space-y-2">
+                      {missingBiodataItems.map((item) => (
+                        <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {missingDocumentItems.length > 0 ? (
+                  <div>
+                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Dokumen</div>
+                    <div className="space-y-2">
+                      {missingDocumentItems.map((item) => (
+                        <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Biodata</h4>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                  Cek kembali data inti calon santri dan orang tua sebelum panitia menyelesaikan proses verifikasi.
+                </p>
+              </div>
+              <Link
+                href="/portal/biodata"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition-colors hover:bg-blue-100 md:w-auto md:shrink-0"
+              >
+                Edit Biodata
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {biodataSummary.map((item) => (
+                <div key={item.label} className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                  <p
+                    className={`min-h-[3rem] break-words text-sm font-bold leading-relaxed ${
+                      item.value === '-' ? 'text-slate-400' : 'text-slate-800'
+                    }`}
+                  >
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-xs font-medium text-slate-500">
+              Terakhir diperbarui: <span className="font-bold text-slate-700">{formatDateLabel(registration?.updated_at)}</span>
+            </div>
+          </div>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Dokumen</h4>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                  Pastikan semua dokumen penting sudah terunggah agar proses review berjalan lancar.
+                </p>
+              </div>
+              <Link
+                href="/portal/documents"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors hover:bg-emerald-100 md:w-auto md:shrink-0"
+              >
+                Kelola Dokumen
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {documentSummary.map((item) => (
+                <div key={item.label} className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800">{item.label}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {item.uploaded ? 'Dokumen sudah tersimpan di akun PSB kamu.' : 'Dokumen ini masih perlu diunggah.'}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex w-fit rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest ${
+                      item.uploaded
+                        ? 'border border-emerald-100 bg-emerald-50 text-emerald-600'
+                        : 'border border-amber-100 bg-amber-50 text-amber-600'
+                    }`}
+                  >
+                    {item.uploaded ? 'Sudah Ada' : 'Belum Ada'}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
