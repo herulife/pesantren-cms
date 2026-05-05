@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
+import { getPublicSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,7 +27,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     async function fetchSettings() {
-      const data = await getSettingsMap({ silentUnauthorized: true });
+      const data = await getPublicSettingsMap();
       setSettings(data || {});
     }
 

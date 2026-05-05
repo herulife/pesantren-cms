@@ -7,7 +7,7 @@ import {
   getNews,
   getAgendas,
   getGallery,
-  getSettingsMap,
+  getPublicSettingsMap,
   getVideos,
   News,
   Agenda,
@@ -409,7 +409,7 @@ export default function LandingPage() {
           getAgendas(),
           getGallery({ limit: 24, offset: 0 }),
           getVideos({ limit: 24, offset: 0 }),
-          getSettingsMap({ silentUnauthorized: true }),
+          getPublicSettingsMap(),
         ]);
 
         setNews(extractListItems(newsData).slice(0, 3));

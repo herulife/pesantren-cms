@@ -5,6 +5,7 @@ import (
 	"darussunnah-api/internal/validators"
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -35,6 +36,48 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSONResponse(w, http.StatusOK, true, "Pengaturan berhasil dimuat", list)
+}
+
+func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
+	list, err := h.repo.FindAll()
+	if err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+
+	allowedKeys := []string{
+		"school_name",
+		"web_logo_url",
+		"web_welcome_text",
+		"school_address",
+		"school_phone",
+		"school_email",
+		"school_website",
+		"whatsapp_admin_numbers",
+		"social_instagram",
+		"social_facebook",
+		"social_youtube",
+		"welcome_speech_name",
+		"welcome_speech_role",
+		"welcome_speech_image",
+		"welcome_speech_text",
+		"hero_slides",
+		"banner_title",
+		"banner_subtitle",
+		"banner_image_url",
+		"banner_button_text",
+		"banner_button_url",
+	}
+
+	publicList := make([]Setting, 0, len(allowedKeys))
+	for _, setting := range list {
+		if slices.Contains(allowedKeys, setting.Key) {
+			publicList = append(publicList, setting)
+		}
+	}
+
+	writeJSONResponse(w, http.StatusOK, true, "Pengaturan publik berhasil dimuat", publicList)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {

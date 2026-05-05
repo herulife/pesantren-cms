@@ -269,6 +269,8 @@ func main() {
 		})
 
 		// ── Other Authenticated Groups ──────────
+		r.Get("/settings/public", settingHandler.GetPublic)
+
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
 			r.Use(auth.RequireLicense(database.DB))

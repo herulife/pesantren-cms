@@ -1784,6 +1784,27 @@ export async function getSettingsMap(options: { silentUnauthorized?: boolean } =
 	}, {});
 }
 
+export async function getPublicSettings() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/settings/public`, {
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as Setting[];
+	} catch (e) {
+		console.error(`[API] Fetch public settings error:`, e);
+		return [];
+	}
+}
+
+export async function getPublicSettingsMap() {
+	const settings = await getPublicSettings();
+	return settings.reduce<SettingsMap>((acc, setting) => {
+		acc[setting.key] = setting.value || '';
+		return acc;
+	}, {});
+}
+
 export async function updateSetting(key: string, value: string) {
 	const res = await fetch(`${API_BASE_URL}/settings/${key}`, {
 		method: 'PUT',

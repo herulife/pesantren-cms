@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
+import { getPublicSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 import PublicLayout from '@/components/PublicLayout';
 import { GraduationCap, Quote, Clock, Share2, Printer, ChevronRight } from 'lucide-react';
 
@@ -15,7 +15,7 @@ export default function SambutanPage() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const settingsData = await getSettingsMap({ silentUnauthorized: true });
+        const settingsData = await getPublicSettingsMap();
         setSettings(settingsData || {});
       } catch (e) {
         console.error('Error fetching settings:', e);

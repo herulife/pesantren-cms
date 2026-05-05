@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createContactMessage, getSettingsMap, SettingsMap } from '@/lib/api';
+import { createContactMessage, getPublicSettingsMap, SettingsMap } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import PublicLayout from '@/components/PublicLayout';
 import { Send, MapPin, Phone, Clock, RefreshCw, MessageCircle } from 'lucide-react';
@@ -20,7 +20,7 @@ export default function ContactPage() {
 
   useEffect(() => {
     async function fetchSettings() {
-      const data = await getSettingsMap({ silentUnauthorized: true });
+      const data = await getPublicSettingsMap();
       setSettings(data || {});
     }
 
