@@ -12,6 +12,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const isRaportPage = pathname.startsWith('/portal/raport');
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileNavTab, setMobileNavTab] = useState<'registration' | 'services'>(pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams') ? 'services' : 'registration');
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +41,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const registrationStatus = registration?.status || 'pending';
   const hasStudentAccess = registrationStatus === 'accepted';
   const isServicePath = pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams');
+
+  useEffect(() => {
+    setMobileNavTab(isServicePath ? 'services' : 'registration');
+  }, [isServicePath]);
 
   const registrationItems = [
     {
@@ -115,6 +120,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       locked: !hasStudentAccess,
     },
   ];
+
+  const activeMobileGroup = navGroups.find((group) => group.id === mobileNavTab) || navGroups[0];
 
   return (
     <PublicLayout>
@@ -318,38 +325,68 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
                <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 md:hidden">
                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
-                 <div className="mt-3 space-y-4">
-                   {navGroups.map((group) => (
-                     <div key={`mobile-group-${group.id}`}>
-                       <div className="mb-2 flex items-center gap-2">
-                         <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{group.label}</span>
-                         {group.locked ? (
-                           <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">
-                             Aktif nanti
-                           </span>
-                         ) : null}
+                 <div className="mt-3">
+                   <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-1">
+                     {navGroups.map((group) => {
+                       const isActive = mobileNavTab === group.id;
+                       return (
+                         <button
+                           key={`mobile-tab-${group.id}`}
+                           type="button"
+                           onClick={() => setMobileNavTab(group.id as 'registration' | 'services')}
+                           className={`rounded-[1rem] px-3 py-3 text-left text-xs font-black uppercase tracking-[0.18em] transition ${
+                             isActive
+                               ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                               : 'bg-white text-slate-500'
+                           }`}
+                         >
+                           <div>{group.label}</div>
+                           <div className={`mt-1 text-[9px] font-bold normal-case tracking-normal ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
+                             {group.locked ? 'Aktif setelah diterima' : 'Siap dipakai'}
+                           </div>
+                         </button>
+                       );
+                     })}
+                   </div>
+
+                   <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                     <div className="mb-3 flex items-start justify-between gap-3">
+                       <div>
+                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{activeMobileGroup.label}</p>
+                         <p className="mt-1 text-xs leading-relaxed text-slate-500">{activeMobileGroup.description}</p>
                        </div>
-                       <div className="flex gap-3 overflow-x-auto pb-1">
-                         {group.items.map((item) => {
-                           const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
-                           return (
-                             <Link
-                               key={`mobile-${item.href}`}
-                               href={group.locked ? '/portal' : item.href}
-                               className={`inline-flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                                 isActive
-                                   ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                   : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                               } ${group.locked ? 'opacity-70' : ''}`}
-                             >
-                               <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
-                               <span>{item.label}</span>
-                             </Link>
-                           );
-                         })}
-                       </div>
+                       {activeMobileGroup.locked ? (
+                         <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-amber-700">
+                           Terkunci
+                         </span>
+                       ) : null}
                      </div>
-                   ))}
+
+                     <div className="space-y-3">
+                       {activeMobileGroup.items.map((item) => {
+                         const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
+                         return (
+                           <Link
+                             key={`mobile-${item.href}`}
+                             href={activeMobileGroup.locked ? '/portal' : item.href}
+                             className={`flex items-center gap-3 rounded-[1.25rem] border px-4 py-4 transition ${
+                               isActive
+                                 ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                 : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'
+                             } ${activeMobileGroup.locked ? 'opacity-70' : ''}`}
+                           >
+                             <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
+                             <div className="min-w-0">
+                               <div className="text-sm font-bold">{item.label}</div>
+                               <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-blue-100/80' : 'text-slate-500'}`}>
+                                 {item.description}
+                               </div>
+                             </div>
+                           </Link>
+                         );
+                       })}
+                     </div>
+                   </div>
                  </div>
                </div>
 
