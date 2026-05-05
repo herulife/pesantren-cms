@@ -4,13 +4,38 @@ import React, { useEffect, useState } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut } from 'lucide-react';
+import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard } from 'lucide-react';
 import { getMyPSBRegistration, type Registration } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
 function isFilled(value?: string | null) {
   return Boolean(value && value.trim());
 }
+
+type MobilePortalTab = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  active: boolean;
+  locked?: boolean;
+};
+
+type PortalNavItem = {
+  href: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  docRef: string;
+};
+
+type PortalNavGroup = {
+  id: string;
+  label: string;
+  description: string;
+  active: boolean;
+  items: PortalNavItem[];
+  locked?: boolean;
+};
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -68,8 +93,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     registration?.mother_phone,
   ].every(isFilled);
   const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
+  const paymentCompleted = registration?.payment_status === 'paid';
 
-  const registrationItems = [
+  const registrationItems: PortalNavItem[] = [
     {
       href: '/portal',
       label: 'Dashboard Pendaftaran',
@@ -92,6 +118,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       docRef: 'documents',
     },
     {
+      href: '/portal/payment',
+      label: 'Bayar Pendaftaran',
+      description: 'Upload bukti transfer biaya pendaftaran.',
+      icon: <CreditCard size={20} />,
+      docRef: 'dashboard',
+    },
+    {
       href: '/portal/help',
       label: 'Panduan Portal',
       description: 'Baca langkah penggunaan setiap menu portal.',
@@ -100,7 +133,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     },
   ];
 
-  const serviceItems = [
+  const serviceItems: PortalNavItem[] = [
     {
       href: '/portal/raport',
       label: 'Raport Akademik',
@@ -125,13 +158,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   ];
 
   const dashboardItem = registrationItems[0];
-  const helpItem = registrationItems[3];
+  const helpItem = registrationItems[4];
   const studentItems = [dashboardItem, ...serviceItems, helpItem];
-  const navGroups = hasStudentAccess
+  const navGroups: PortalNavGroup[] = hasStudentAccess
     ? [
         {
           id: 'services',
-          label: 'Layanan Santri',
+          label: 'Akses Santri',
           description: 'Menu utama untuk santri aktif.',
           active: true,
           items: studentItems,
@@ -142,23 +175,17 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           id: 'registration',
           label: 'Pendaftaran',
           description:
-            biodataCompleted && documentsCompleted
-              ? 'Berkas utama sudah lengkap. Pantau status review dari dasbor.'
+            biodataCompleted && documentsCompleted && paymentCompleted
+              ? 'Biodata, dokumen, dan pembayaran sudah lengkap. Pantau status review dari dasbor.'
+              : biodataCompleted && documentsCompleted
+                ? 'Berkas utama sudah lengkap. Lanjutkan pembayaran pendaftaran.'
               : 'Menu inti untuk melengkapi biodata dan dokumen.',
           active: !isServicePath,
           items: registrationItems,
         },
-        {
-          id: 'services',
-          label: 'Layanan Santri',
-          description: 'Aktif setelah pendaftaran kamu diterima sebagai santri.',
-          active: isServicePath,
-          items: serviceItems,
-          locked: true,
-        },
       ];
 
-  const mobilePortalTabs = hasStudentAccess
+  const mobilePortalTabs: MobilePortalTab[] = hasStudentAccess
     ? [
         {
           href: '/portal',
@@ -211,11 +238,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           active: pathname.startsWith('/portal/documents'),
         },
         {
-          href: '/portal/raport',
-          label: 'Layanan',
-          icon: <GraduationCap size={18} />,
-          active: isServicePath,
-          locked: true,
+          href: '/portal/payment',
+          label: 'Bayar',
+          icon: <CreditCard size={18} />,
+          active: pathname.startsWith('/portal/payment'),
         },
         {
           href: '/portal/help',
@@ -334,7 +360,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Navigasi Portal</p>
                  <h2 className="mt-2 text-2xl font-black text-slate-900 font-outfit tracking-tight">Portal Pendaftaran & Santri</h2>
                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                   Portal dibagi dua tahap: pendaftaran untuk calon santri, lalu layanan santri setelah status diterima.
+                   Selesaikan pendaftaran, pantau status, dan buka menu yang tersedia dari satu tempat.
                  </p>
                </div>
                
@@ -427,8 +453,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   <h4 className="font-black text-amber-900 text-xs uppercase tracking-widest mb-2">Informasi Penting</h4>
                   <p className="text-amber-800 text-xs leading-relaxed font-medium">
                     {hasStudentAccess
-                      ? 'Akunmu sudah masuk tahap santri aktif. Gunakan menu layanan santri untuk presensi, dompet, raport, dan ujian.'
-                      : 'Mohon isikan data yang valid dan unggah dokumen asli hasil scan berwarna. Menu layanan santri akan aktif setelah pendaftaran diterima.'}
+                      ? 'Akunmu sudah masuk tahap santri aktif. Gunakan fitur harian sesuai kebutuhan.'
+                      : 'Mohon isikan data yang valid dan unggah dokumen asli hasil scan berwarna.'}
                   </p>
                </div>
 
@@ -453,13 +479,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
                {!isLoading && !hasStudentAccess && isServicePath ? (
                  <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-sm">
-                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700">Layanan Santri Belum Aktif</p>
+                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700">Menu Belum Aktif</p>
                    <h3 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-amber-950">
-                     Menu Ini Baru Aktif Setelah Pendaftaran Diterima
+                     Selesaikan Pendaftaran Terlebih Dahulu
                    </h3>
                    <p className="mt-3 max-w-2xl text-sm leading-7 text-amber-900/80">
-                     Untuk saat ini, fokuskan dulu ke kelengkapan biodata, dokumen, dan status pendaftaran. Setelah statusmu diterima sebagai santri,
-                     menu raport, dompet, presensi, dan ujian akan dibuka penuh.
+                     Halaman ini belum bisa dibuka dari akun pendaftaran. Lengkapi biodata, dokumen, dan pembayaran agar panitia bisa memproses statusmu.
                    </p>
                    <div className="mt-5 flex flex-wrap gap-3">
                      <Link

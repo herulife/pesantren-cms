@@ -287,6 +287,11 @@ func createTables() {
 		kk_url TEXT,
 		ijazah_url TEXT,
 		pasfoto_url TEXT,
+		payment_proof_url TEXT DEFAULT '',
+		payment_amount INTEGER DEFAULT 0,
+		payment_date TEXT DEFAULT '',
+		payment_status TEXT DEFAULT 'unpaid',
+		payment_note TEXT DEFAULT '',
 		status TEXT DEFAULT 'pending',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -430,6 +435,11 @@ func createTables() {
 	addColumnIfNotExists("registrations", "kk_url", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "ijazah_url", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "pasfoto_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "payment_proof_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "payment_amount", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("registrations", "payment_date", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "payment_status", "TEXT DEFAULT 'unpaid'")
+	addColumnIfNotExists("registrations", "payment_note", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "updated_at", "DATETIME")
 	addColumnIfNotExists("settings", "value", "TEXT")
 	addColumnIfNotExists("settings", "description", "TEXT")

@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -18,6 +20,8 @@ type PSBRepository interface {
 	FindByUserID(ctx context.Context, userID int) (*Registration, error)
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
 	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL string) (*Registration, error)
+	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
+	UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error
 	UpdateStatus(ctx context.Context, id int, status string) error
 	Delete(ctx context.Context, id int) error
 }
@@ -56,6 +60,12 @@ type portalDocumentsRequest struct {
 	KKURL      string `json:"kk_url"`
 	IjazahURL  string `json:"ijazah_url"`
 	PasfotoURL string `json:"pasfoto_url"`
+}
+
+type portalPaymentRequest struct {
+	PaymentProofURL string `json:"payment_proof_url"`
+	PaymentAmount   int    `json:"payment_amount"`
+	PaymentDate     string `json:"payment_date"`
 }
 
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -222,6 +232,88 @@ func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
 	SendSuccessResponse(w, http.StatusOK, reg, "Dokumen PSB berhasil diperbarui")
 }
 
+func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
+	userID, ok := currentUserID(r)
+	if !ok {
+		SendErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	var req portalPaymentRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	proofURL := strings.TrimSpace(req.PaymentProofURL)
+	paymentDate := strings.TrimSpace(req.PaymentDate)
+	if proofURL == "" {
+		SendErrorResponse(w, http.StatusBadRequest, "Bukti pembayaran wajib diunggah")
+		return
+	}
+	if req.PaymentAmount <= 0 {
+		SendErrorResponse(w, http.StatusBadRequest, "Nominal pembayaran wajib diisi")
+		return
+	}
+	if paymentDate == "" {
+		paymentDate = time.Now().Format("2006-01-02")
+	}
+
+	reg, err := h.repo.UpdatePaymentByUserID(r.Context(), userID, proofURL, req.PaymentAmount, paymentDate)
+	if err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Lengkapi biodata PSB terlebih dahulu sebelum unggah bukti pembayaran")
+		return
+	}
+
+	SendSuccessResponse(w, http.StatusOK, reg, "Bukti pembayaran berhasil dikirim dan menunggu verifikasi")
+}
+
+func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
+	logger := NewRequestLogger(r)
+	logger.LogInfo("UpdatePaymentStatus request started")
+	defer logger.LogDuration("UpdatePaymentStatus request completed")
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid ID format")
+		return
+	}
+	if id <= 0 {
+		SendErrorResponse(w, http.StatusBadRequest, "ID must be a positive integer")
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	var req validators.RegistrationPaymentStatusRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if validationErrs := validators.ValidateRegistrationPaymentStatusRequest(&req); len(validationErrs) > 0 {
+		SendErrorResponse(w, http.StatusBadRequest, validationErrs["payment_status"])
+		return
+	}
+
+	if err := h.repo.UpdatePaymentStatus(r.Context(), id, req.PaymentStatus, req.PaymentNote); err != nil {
+		logger.LogError("Failed to update payment status for ID %d: %v", id, err)
+		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses permintaan (Internal Server Error)")
+		return
+	}
+
+	SendSuccessResponse(w, http.StatusOK, nil, "Status pembayaran berhasil diperbarui")
+}
+
 func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	logger := NewRequestLogger(r)
 	logger.LogInfo("UpdateStatus request started")
@@ -257,6 +349,18 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		logger.LogWarning("Registration status validation failed: %+v", validationErrs)
 		SendErrorResponse(w, http.StatusBadRequest, validationErrs["status"])
 		return
+	}
+
+	if req.Status == "accepted" {
+		reg, err := h.repo.FindByID(r.Context(), id)
+		if err != nil {
+			SendErrorResponse(w, http.StatusNotFound, "Registration not found")
+			return
+		}
+		if strings.ToLower(strings.TrimSpace(reg.PaymentStatus)) != "paid" {
+			SendErrorResponse(w, http.StatusBadRequest, "Pembayaran pendaftaran harus lunas sebelum santri diterima")
+			return
+		}
 	}
 
 	if err := h.repo.UpdateStatus(r.Context(), id, req.Status); err != nil {
@@ -309,7 +413,9 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/me", h.GetMine)
 	r.Put("/me", h.SaveMine)
 	r.Put("/me/documents", h.SaveMyDocuments)
+	r.Put("/me/payment", h.SaveMyPayment)
 	r.Get("/{id}", h.GetByID)
+	r.Put("/{id}/payment-status", h.UpdatePaymentStatus)
 	r.Put("/{id}/status", h.UpdateStatus)
 	r.Delete("/{id}", h.Delete)
 	return r
@@ -324,6 +430,8 @@ type IRepository interface {
 	FindByUserID(ctx context.Context, userID int) (*Registration, error)
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
 	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL string) (*Registration, error)
+	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
+	UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error
 	UpdateStatus(ctx context.Context, id int, status string) error
 	Delete(ctx context.Context, id int) error
 }

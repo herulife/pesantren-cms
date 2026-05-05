@@ -462,6 +462,11 @@ export interface Registration {
 	kk_url?: string;
 	ijazah_url?: string;
 	pasfoto_url?: string;
+	payment_proof_url?: string;
+	payment_amount?: number;
+	payment_date?: string;
+	payment_status?: string;
+	payment_note?: string;
 	status: string;
 	created_at: string;
 	updated_at?: string;
@@ -1357,6 +1362,15 @@ export async function updatePSBStatus(id: number, status: string) {
 	return parseResponse(res);
 }
 
+export async function updatePSBPaymentStatus(id: number, payload: { payment_status: string; payment_note?: string }) {
+	const res = await fetch(`${API_BASE_URL}/psb/${id}/payment-status`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
 export async function deletePSBRegistration(id: number) {
 	const res = await fetch(`${API_BASE_URL}/psb/${id}`, {
 		method: 'DELETE',
@@ -1394,6 +1408,19 @@ export async function saveMyPSBDocuments(payload: {
 	pasfoto_url?: string;
 }) {
 	const res = await fetch(`${API_BASE_URL}/psb/me/documents`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
+export async function saveMyPSBPayment(payload: {
+	payment_proof_url: string;
+	payment_amount: number;
+	payment_date: string;
+}) {
+	const res = await fetch(`${API_BASE_URL}/psb/me/payment`, {
 		method: 'PUT',
 		headers: getAuthHeaders(),
 		body: JSON.stringify(payload)

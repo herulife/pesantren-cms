@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getRegistrations, updatePSBStatus, Registration, resolveDisplayImageUrl } from '@/lib/api';
+import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, Registration, resolveDisplayImageUrl } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { 
   CheckCircle, 
@@ -15,7 +15,8 @@ import {
   Loader2,
   FileText,
   Eye,
-  Download
+  Download,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -25,6 +26,8 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
+  const [paymentNote, setPaymentNote] = useState('');
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -34,6 +37,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
         const data = await getRegistrations();
         const found = data.find((r: Registration) => r.id === Number(id));
         setRegistration(found || null);
+        setPaymentNote(found?.payment_note || '');
         setIsLoading(false);
       };
 
@@ -47,6 +51,10 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     if (!registration) return;
 
     if (registration.status === newStatus || isUpdatingStatus) return;
+    if (newStatus === 'accepted' && registration.payment_status !== 'paid') {
+      showToast('error', 'Tandai pembayaran pendaftaran sebagai lunas terlebih dahulu.');
+      return;
+    }
 
     setIsUpdatingStatus(true);
     try {
@@ -60,6 +68,29 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       showToast('error', 'Gagal memperbarui status.');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handlePaymentStatusUpdate = async (newStatus: string) => {
+    if (!registration) return;
+
+    if (registration.payment_status === newStatus && (registration.payment_note || '') === paymentNote) return;
+
+    setIsUpdatingPayment(true);
+    try {
+      const res = await updatePSBPaymentStatus(registration.id, {
+        payment_status: newStatus,
+        payment_note: paymentNote,
+      });
+      if (res.success) {
+        showToast('success', `Status pembayaran berhasil diubah.`);
+        setRegistration({ ...registration, payment_status: newStatus, payment_note: paymentNote });
+        return;
+      }
+
+      showToast('error', 'Gagal memperbarui status pembayaran.');
+    } finally {
+      setIsUpdatingPayment(false);
     }
   };
 
@@ -88,6 +119,18 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       default: return 'bg-amber-100 text-amber-700 border-amber-200';
     }
   };
+
+  const getPaymentStatusStyle = (status?: string) => {
+    switch ((status || '').toLowerCase()) {
+      case 'paid': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'pending': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'rejected': return 'bg-rose-100 text-rose-700 border-rose-200';
+      default: return 'bg-amber-100 text-amber-700 border-amber-200';
+    }
+  };
+
+  const formatCurrency = (value?: number | null) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value || 0);
 
   if (isLoading) {
      return (
@@ -151,6 +194,51 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       value: 'accepted',
       label: 'Diterima',
       description: 'Calon santri dinyatakan diterima.',
+      icon: <CheckCircle size={18} />,
+      selectedClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 shadow-[0_18px_44px_-32px_rgba(16,185,129,0.7)]',
+      radioClass: 'border-emerald-500 text-emerald-500',
+    },
+  ];
+
+  const paymentStatus = registration.payment_status || 'unpaid';
+  const paymentStatusLabel = paymentStatus === 'paid'
+    ? 'Lunas'
+    : paymentStatus === 'pending'
+      ? 'Menunggu Verifikasi'
+      : paymentStatus === 'rejected'
+        ? 'Ditolak'
+        : 'Belum Bayar';
+  const paymentProofUrl = getDocumentUrl(registration.payment_proof_url);
+
+  const paymentOptions = [
+    {
+      value: 'unpaid',
+      label: 'Belum Bayar',
+      description: 'Belum ada pembayaran yang bisa diverifikasi.',
+      icon: <Clock size={18} />,
+      selectedClass: 'border-amber-300 bg-amber-50 text-amber-700 shadow-[0_18px_44px_-32px_rgba(245,158,11,0.7)]',
+      radioClass: 'border-amber-500 text-amber-500',
+    },
+    {
+      value: 'pending',
+      label: 'Menunggu',
+      description: 'Bukti transfer sudah masuk dan perlu dicek.',
+      icon: <Clock size={18} />,
+      selectedClass: 'border-blue-300 bg-blue-50 text-blue-700 shadow-[0_18px_44px_-32px_rgba(59,130,246,0.7)]',
+      radioClass: 'border-blue-500 text-blue-500',
+    },
+    {
+      value: 'rejected',
+      label: 'Tolak Bukti',
+      description: 'Bukti belum valid dan perlu upload ulang.',
+      icon: <XCircle size={18} />,
+      selectedClass: 'border-rose-300 bg-rose-50 text-rose-700 shadow-[0_18px_44px_-32px_rgba(244,63,94,0.7)]',
+      radioClass: 'border-rose-500 text-rose-500',
+    },
+    {
+      value: 'paid',
+      label: 'Lunas',
+      description: 'Pembayaran pendaftaran sudah terverifikasi.',
       icon: <CheckCircle size={18} />,
       selectedClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 shadow-[0_18px_44px_-32px_rgba(16,185,129,0.7)]',
       radioClass: 'border-emerald-500 text-emerald-500',
@@ -252,6 +340,116 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
             </div>
          </div>
 
+         <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm mb-10">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                <CreditCard size={16} />
+                Pembayaran Pendaftaran
+              </label>
+
+              <div className={`inline-flex items-center gap-2 self-start px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.18em] border shadow-sm ${getPaymentStatusStyle(paymentStatus)}`}>
+                {isUpdatingPayment ? <Loader2 size={15} className="animate-spin" /> : null}
+                Status bayar: {paymentStatusLabel}
+              </div>
+            </div>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nominal</p>
+                <p className="mt-2 text-lg font-black text-slate-900">{formatCurrency(registration.payment_amount)}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tanggal Bayar</p>
+                <p className="mt-2 text-lg font-black text-slate-900">{registration.payment_date || '-'}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bukti Transfer</p>
+                {paymentProofUrl ? (
+                  <a
+                    href={paymentProofUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-700 ring-1 ring-emerald-100 transition hover:bg-emerald-50"
+                  >
+                    <Eye size={14} /> Preview
+                  </a>
+                ) : (
+                  <p className="mt-2 text-sm font-bold text-slate-400">Belum ada bukti</p>
+                )}
+              </div>
+            </div>
+
+            <fieldset className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" disabled={isUpdatingPayment}>
+              <legend className="sr-only">Pilih status pembayaran pendaftaran</legend>
+              {paymentOptions.map((option) => {
+                const isSelected = paymentStatus === option.value;
+
+                return (
+                  <label
+                    key={option.value}
+                    className={`relative flex cursor-pointer items-start gap-4 rounded-2xl border p-5 pr-16 transition-all ${
+                      isSelected
+                        ? option.selectedClass
+                        : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50'
+                    } ${isUpdatingPayment ? 'pointer-events-none opacity-70' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="registration-payment-status"
+                      value={option.value}
+                      checked={isSelected}
+                      disabled={isUpdatingPayment}
+                      onChange={() => handlePaymentStatusUpdate(option.value)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 bg-white ${
+                        isSelected ? option.radioClass : 'border-slate-300 text-transparent'
+                      }`}
+                    >
+                      {isSelected ? <span className="h-2.5 w-2.5 rounded-full bg-current" /> : null}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em]">
+                        {option.icon}
+                        {option.label}
+                      </span>
+                      <span className="mt-2 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
+                    </span>
+                    {isSelected ? (
+                      <span className="absolute right-4 top-4 rounded-full bg-white/80 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-current">
+                        Aktif
+                      </span>
+                    ) : null}
+                  </label>
+                );
+              })}
+            </fieldset>
+
+            <div className="mt-5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Catatan untuk wali</label>
+              <textarea
+                rows={3}
+                value={paymentNote}
+                onChange={(event) => setPaymentNote(event.target.value)}
+                placeholder="Contoh: Bukti transfer kurang jelas, mohon upload ulang."
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+              />
+              <p className="mt-2 text-xs font-semibold text-slate-500">
+                Catatan ikut tersimpan saat status pembayaran dipilih. Gunakan terutama jika bukti ditolak.
+              </p>
+              <button
+                type="button"
+                onClick={() => handlePaymentStatusUpdate(paymentStatus)}
+                disabled={isUpdatingPayment}
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-emerald-600 disabled:opacity-50"
+              >
+                {isUpdatingPayment ? <Loader2 size={14} className="animate-spin" /> : null}
+                Simpan Catatan
+              </button>
+            </div>
+         </div>
+
          <div className="bg-slate-50 p-8 rounded-xl border border-slate-100">
             <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -269,6 +467,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
               <legend className="sr-only">Pilih status pendaftaran santri</legend>
               {statusOptions.map((option) => {
                 const isSelected = registration.status === option.value;
+                const isOptionDisabled = isUpdatingStatus || (option.value === 'accepted' && paymentStatus !== 'paid');
 
                 return (
                   <label
@@ -277,14 +476,14 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                       isSelected
                         ? option.selectedClass
                         : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50'
-                    } ${isUpdatingStatus ? 'pointer-events-none opacity-70' : ''}`}
+                    } ${isOptionDisabled ? 'pointer-events-none opacity-55' : ''}`}
                   >
                     <input
                       type="radio"
                       name="registration-status"
                       value={option.value}
                       checked={isSelected}
-                      disabled={isUpdatingStatus}
+                      disabled={isOptionDisabled}
                       onChange={() => handleStatusUpdate(option.value)}
                       className="sr-only"
                     />
@@ -301,6 +500,11 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                         {option.label}
                       </span>
                       <span className="mt-2 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
+                      {option.value === 'accepted' && paymentStatus !== 'paid' ? (
+                        <span className="mt-2 block text-[11px] font-black uppercase tracking-widest text-rose-500">
+                          Lunasi pembayaran dulu
+                        </span>
+                      ) : null}
                     </span>
                     {isSelected ? (
                       <span className="absolute right-4 top-4 rounded-full bg-white/80 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-current">

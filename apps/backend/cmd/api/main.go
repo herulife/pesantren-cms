@@ -317,6 +317,7 @@ func main() {
 				r.Get("/psb/me", psbHandler.GetMine)
 				r.Put("/psb/me", psbHandler.SaveMine)
 				r.Put("/psb/me/documents", psbHandler.SaveMyDocuments)
+				r.Put("/psb/me/payment", psbHandler.SaveMyPayment)
 				r.Get("/portal/academics/grades", academicHandler.GetMyGrades)
 				r.Get("/portal/academics/attendance-summary", academicHandler.GetMyAttendanceSummary)
 				r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)

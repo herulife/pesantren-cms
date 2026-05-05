@@ -3,6 +3,7 @@ package auth
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -150,6 +151,14 @@ func (r *Repository) DeleteUser(id int) error {
 		args  []interface{}
 	}{
 		{query: "UPDATE subjects SET teacher_id = NULL WHERE teacher_id = ?", args: []interface{}{id}},
+		{query: "UPDATE news SET author_id = NULL WHERE author_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM exam_answers WHERE session_id IN (SELECT id FROM exam_sessions WHERE student_id = ?)", args: []interface{}{id}},
+		{query: "DELETE FROM exam_sessions WHERE student_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM user_wallets WHERE user_id = ?)", args: []interface{}{id}},
+		{query: "DELETE FROM user_wallets WHERE user_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM user_qr_tokens WHERE user_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM student_points WHERE student_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM violation_logs WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM grades WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM attendance WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM tahfidz_progress WHERE student_id = ?", args: []interface{}{id}},
@@ -160,6 +169,10 @@ func (r *Repository) DeleteUser(id int) error {
 
 	for _, stmt := range statements {
 		if _, err = tx.Exec(stmt.query, stmt.args...); err != nil {
+			if isMissingTableError(err) {
+				err = nil
+				continue
+			}
 			return err
 		}
 	}
@@ -179,6 +192,10 @@ func (r *Repository) DeleteUser(id int) error {
 
 	err = tx.Commit()
 	return err
+}
+
+func isMissingTableError(err error) bool {
+	return strings.Contains(strings.ToLower(err.Error()), "no such table")
 }
 
 func (r *Repository) UpdateRole(userID int, role string) error {

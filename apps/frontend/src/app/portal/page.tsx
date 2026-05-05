@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Activity, AlertCircle, CheckCircle2, ChevronRight, FileText, Upload, User, GraduationCap, Wallet, BookOpen } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, ChevronRight, CreditCard, FileText, Upload, User, GraduationCap, Wallet, BookOpen } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import StudentQRCard from '@/components/StudentQRCard';
 import WalletCard from '@/components/WalletCard';
@@ -112,18 +112,40 @@ export default function PortalDashboard() {
 
     const biodataCompleted = biodataFields.every(isFilled);
     const documentsCompleted = documentFields.every(isFilled);
-    const completedSteps = 1 + (biodataCompleted ? 1 : 0) + (documentsCompleted ? 1 : 0);
-    const progress = Math.round((completedSteps / 3) * 100);
+    const paymentStatus = registration?.payment_status || 'unpaid';
+    const paymentNote = registration?.payment_note?.trim() || '';
+    const paymentSubmitted = isFilled(registration?.payment_proof_url) && Number(registration?.payment_amount || 0) > 0;
+    const paymentRejected = paymentStatus === 'rejected';
+    const paymentCompleted = paymentStatus === 'paid';
+    const paymentNeedsAttention = !paymentCompleted && (paymentRejected || Boolean(paymentNote));
+    const completedSteps = 1 + (biodataCompleted ? 1 : 0) + (documentsCompleted ? 1 : 0) + (paymentCompleted ? 1 : 0);
+    const progress = Math.round((completedSteps / 4) * 100);
     const status = normalizeStatus(registration?.status);
     const meta = statusMeta[status];
 
-    const actionHref = !biodataCompleted ? '/portal/biodata' : !documentsCompleted ? '/portal/documents' : meta.actionHref;
-    const actionLabel = !biodataCompleted ? 'Lengkapi Biodata' : !documentsCompleted ? 'Unggah Dokumen' : meta.actionLabel;
+    const actionHref = !biodataCompleted ? '/portal/biodata' : !documentsCompleted ? '/portal/documents' : !paymentCompleted ? '/portal/payment' : meta.actionHref;
+    const actionLabel = !biodataCompleted
+      ? 'Lengkapi Biodata'
+      : !documentsCompleted
+        ? 'Unggah Dokumen'
+        : !paymentCompleted
+          ? paymentSubmitted
+            ? paymentNeedsAttention || paymentRejected
+              ? 'Upload Ulang Bukti'
+              : 'Cek Pembayaran'
+            : 'Bayar Pendaftaran'
+          : meta.actionLabel;
     const actionCopy = !biodataCompleted
       ? 'Masih ada biodata inti yang perlu dilengkapi agar panitia bisa memeriksa pendaftaran kamu.'
       : !documentsCompleted
         ? 'Dokumen PSB belum lengkap. Unggah semua berkas agar proses review bisa dimulai.'
-        : meta.description;
+        : !paymentCompleted
+          ? paymentNeedsAttention || paymentRejected
+            ? 'Ada catatan panitia yang perlu ditindaklanjuti. Upload ulang bukti transfer bila diminta.'
+            : paymentSubmitted
+              ? 'Bukti pembayaran sudah dikirim dan sedang menunggu verifikasi panitia.'
+              : 'Kirim bukti transfer biaya pendaftaran agar panitia bisa melanjutkan verifikasi.'
+          : meta.description;
 
     const checklist: ChecklistItem[] = [
       {
@@ -150,6 +172,21 @@ export default function PortalDashboard() {
         completed: documentsCompleted,
         icon: <Upload size={24} />,
       },
+      {
+        href: '/portal/payment',
+        title: 'Bayar Pendaftaran',
+        description: paymentCompleted
+          ? 'Pembayaran pendaftaran sudah diverifikasi dan dinyatakan lunas.'
+          : paymentNeedsAttention || paymentRejected
+            ? paymentNote
+              ? `Catatan panitia: ${paymentNote}`
+              : 'Bukti pembayaran perlu diupload ulang.'
+          : paymentSubmitted
+            ? 'Bukti pembayaran sudah masuk dan menunggu verifikasi panitia.'
+            : 'Isi nominal transfer dan unggah bukti pembayaran pendaftaran.',
+        completed: paymentCompleted,
+        icon: <CreditCard size={24} />,
+      },
     ];
 
     if (status === 'accepted') {
@@ -167,6 +204,11 @@ export default function PortalDashboard() {
       meta,
       biodataCompleted,
       documentsCompleted,
+      paymentSubmitted,
+      paymentRejected,
+      paymentNeedsAttention,
+      paymentNote,
+      paymentCompleted,
       progress,
       actionHref,
       actionLabel,
@@ -174,37 +216,6 @@ export default function PortalDashboard() {
       checklist,
     };
   }, [registration]);
-
-  const missingBiodataItems = [
-    !isFilled(registration?.full_name) ? 'Nama lengkap calon santri' : null,
-    !isFilled(registration?.gender) ? 'Jenis kelamin' : null,
-    !isFilled(registration?.nik) ? 'NIK calon santri' : null,
-    !isFilled(registration?.birth_place) ? 'Tempat lahir' : null,
-    !isFilled(registration?.birth_date) ? 'Tanggal lahir' : null,
-    !isFilled(registration?.address) ? 'Alamat lengkap' : null,
-    !isFilled(registration?.school_origin) ? 'Asal sekolah' : null,
-    !isFilled(registration?.program_choice) ? 'Pilihan program' : null,
-    !isFilled(registration?.father_name) ? 'Nama ayah' : null,
-    !isFilled(registration?.father_job) ? 'Pekerjaan ayah' : null,
-    !isFilled(registration?.father_phone) ? 'No. HP ayah' : null,
-    !isFilled(registration?.mother_name) ? 'Nama ibu' : null,
-    !isFilled(registration?.mother_job) ? 'Pekerjaan ibu' : null,
-    !isFilled(registration?.mother_phone) ? 'No. HP ibu' : null,
-  ].filter(Boolean) as string[];
-
-  const missingDocumentItems = [
-    !isFilled(registration?.kk_url) ? 'Kartu Keluarga (KK)' : null,
-    !isFilled(registration?.ijazah_url) ? 'Ijazah / raport terakhir' : null,
-    !isFilled(registration?.pasfoto_url) ? 'Pas foto 3x4' : null,
-  ].filter(Boolean) as string[];
-
-  const completedItems = [
-    'Akun portal sudah aktif',
-    ...(portalState.biodataCompleted ? ['Biodata PSB sudah lengkap'] : []),
-    ...(portalState.documentsCompleted ? ['Dokumen persyaratan sudah lengkap'] : []),
-    ...(portalState.status === 'review' ? ['Berkas sedang direview panitia'] : []),
-    ...(portalState.status === 'accepted' ? ['Pendaftaran sudah diterima'] : []),
-  ];
 
   const biodataSummary = [
     { label: 'Nama Lengkap', value: registration?.full_name || user?.name || '-' },
@@ -219,23 +230,6 @@ export default function PortalDashboard() {
     { label: 'Kartu Keluarga', uploaded: isFilled(registration?.kk_url) },
     { label: 'Ijazah / Raport', uploaded: isFilled(registration?.ijazah_url) },
     { label: 'Pas Foto', uploaded: isFilled(registration?.pasfoto_url) },
-  ];
-
-  const registrationQuickMenus = [
-    {
-      href: '/portal/biodata',
-      title: 'Lengkapi Biodata',
-      description: 'Isi data calon santri dan orang tua.',
-      icon: <User size={20} />,
-      accent: 'border-blue-100 bg-blue-50 text-blue-700',
-    },
-    {
-      href: '/portal/documents',
-      title: 'Unggah Dokumen',
-      description: 'Kirim KK, ijazah, raport, dan pas foto.',
-      icon: <Upload size={20} />,
-      accent: 'border-emerald-100 bg-emerald-50 text-emerald-700',
-    },
   ];
 
   const studentQuickMenus = [
@@ -336,6 +330,42 @@ export default function PortalDashboard() {
               <p className="max-w-sm text-sm leading-relaxed text-white/80">{portalState.meta.description}</p>
             </div>
 
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              {portalState.checklist.slice(0, 4).map((item) => {
+                const isAttentionPaymentStep = item.title === 'Bayar Pendaftaran' && portalState.paymentNeedsAttention;
+                return (
+                  <div
+                    key={`status-progress-${item.title}`}
+                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur ${
+                      item.completed
+                        ? 'border-white/30 bg-white/20'
+                        : isAttentionPaymentStep
+                          ? 'border-rose-200 bg-white text-rose-800 shadow-lg shadow-rose-950/20'
+                          : 'border-white/15 bg-slate-950/15'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                        item.completed
+                          ? 'bg-white text-emerald-600'
+                          : isAttentionPaymentStep
+                            ? 'bg-rose-600 text-white'
+                            : 'bg-white/10 text-white/80'
+                      }`}
+                    >
+                      {item.completed ? <CheckCircle2 size={17} /> : <AlertCircle size={17} />}
+                    </span>
+                    <div className="min-w-0">
+                      <p className={`truncate text-sm font-black leading-tight ${isAttentionPaymentStep ? 'text-rose-950' : 'text-white'}`}>{item.title}</p>
+                      <p className={`mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] ${isAttentionPaymentStep ? 'text-rose-600' : 'text-white/70'}`}>
+                        {item.completed ? 'Selesai' : isAttentionPaymentStep ? 'Perlu diperbaiki' : 'Belum selesai'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="mt-8">
               <div className="mb-2 flex items-end justify-between">
                 <span className="text-xs font-bold uppercase tracking-widest text-white/70">Progress Penyelesaian</span>
@@ -354,6 +384,20 @@ export default function PortalDashboard() {
           </div>
           <h4 className="mb-2 font-outfit text-lg font-black uppercase tracking-tight text-slate-800">Tindakan Berikutnya</h4>
           <p className="mb-6 flex-1 text-sm text-slate-500">{portalState.actionCopy}</p>
+          {portalState.paymentNeedsAttention && portalState.paymentNote ? (
+            <div className="mb-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-rose-800">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 shrink-0 text-rose-600" size={18} />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-600">Catatan Panitia</p>
+                  <p className="mt-1 text-sm font-black leading-6 text-rose-950">{portalState.paymentNote}</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-rose-700">
+                    Upload ulang bukti transfer agar panitia bisa memverifikasi pembayaran.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <Link
             href={portalState.actionHref}
@@ -367,9 +411,9 @@ export default function PortalDashboard() {
           <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Akses Santri</p>
                 <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-                  Presensi & Dompet Santri
+                  Presensi & Dompet
                 </h4>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                   Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
@@ -387,58 +431,47 @@ export default function PortalDashboard() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="md:col-span-3 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700">Layanan Santri</p>
-            <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-amber-950">
-              Presensi, Dompet, dan Raport Akan Aktif Setelah Diterima
-            </h4>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-amber-900/80">
-              Supaya portal tidak membingungkan, fitur harian santri seperti QR presensi, Darussunnah Pay, raport akademik, dan CBT baru akan dibuka
-              setelah status pendaftaranmu diterima. Untuk sekarang, fokuskan dulu ke biodata, dokumen, dan status pendaftaran.
-            </p>
-          </div>
-        )}
+        ) : null}
       </div>
 
-      <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
-            <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-              {hasStudentAccess ? 'Layanan Harian Santri' : 'Fokus ke Menu Pendaftaran'}
-            </h4>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              {hasStudentAccess
-                ? 'Setelah diterima sebagai santri, menu utama difokuskan ke layanan harian seperti raport, dompet, dan ujian.'
-                : 'Supaya tidak bingung, gunakan blok ini untuk menyelesaikan pendaftaran dulu. Layanan santri akan aktif setelah diterima.'}
-            </p>
+      {hasStudentAccess ? (
+        <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Akses Santri</p>
+              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+                Raport, Dompet, dan Ujian
+              </h4>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                Pilih layanan yang ingin dibuka dari portal santri aktif.
+              </p>
+            </div>
+            <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              Santri aktif
+            </div>
           </div>
-          <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {hasStudentAccess ? 'Santri aktif' : 'Tahap pendaftaran'}
-          </div>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {(hasStudentAccess ? studentQuickMenus : registrationQuickMenus).map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
-            >
-              <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
-                {item.icon}
-              </div>
-              <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
-              <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-              <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
-                Buka Menu
-                <ChevronRight size={14} />
-              </div>
-            </Link>
-          ))}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {studentQuickMenus.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
+              >
+                <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+                  {item.icon}
+                </div>
+                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
+                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
+                  Buka Menu
+                  <ChevronRight size={14} />
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {!hasStudentAccess ? (
       <div className="mb-10">
@@ -507,63 +540,6 @@ export default function PortalDashboard() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          <div className="rounded-[2rem] border border-emerald-100 bg-white p-8 shadow-sm">
-            <div className="mb-5">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Yang Sudah Selesai</p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Progress Pendaftaran</h4>
-            </div>
-            <div className="space-y-3">
-              {completedItems.map((item) => (
-                <div key={item} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
-                  <p className="text-sm font-medium text-emerald-900">{item}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] border border-amber-100 bg-white p-8 shadow-sm">
-            <div className="mb-5">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-600">Yang Masih Kurang</p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Checklist Yang Perlu Dilengkapi</h4>
-            </div>
-
-            {missingBiodataItems.length === 0 && missingDocumentItems.length === 0 ? (
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
-                Semua data inti dan dokumen utama sudah lengkap. Tinggal menunggu proses panitia.
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {missingBiodataItems.length > 0 ? (
-                  <div>
-                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Biodata</div>
-                    <div className="space-y-2">
-                      {missingBiodataItems.map((item) => (
-                        <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {missingDocumentItems.length > 0 ? (
-                  <div>
-                    <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Dokumen</div>
-                    <div className="space-y-2">
-                      {missingDocumentItems.map((item) => (
-                        <div key={item} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
       ) : null}
 

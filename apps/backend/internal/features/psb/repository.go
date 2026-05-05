@@ -7,31 +7,36 @@ import (
 )
 
 type Registration struct {
-	ID            int       `json:"id"`
-	UserID        int       `json:"user_id"`
-	FullName      string    `json:"full_name"`
-	Nickname      string    `json:"nickname"`
-	Gender        string    `json:"gender"`
-	NIK           string    `json:"nik"`
-	BirthPlace    string    `json:"birth_place"`
-	BirthDate     string    `json:"birth_date"`
-	Address       string    `json:"address"`
-	ParentName    string    `json:"parent_name"`
-	ParentPhone   string    `json:"parent_phone"`
-	FatherName    string    `json:"father_name"`
-	FatherJob     string    `json:"father_job"`
-	FatherPhone   string    `json:"father_phone"`
-	MotherName    string    `json:"mother_name"`
-	MotherJob     string    `json:"mother_job"`
-	MotherPhone   string    `json:"mother_phone"`
-	SchoolOrigin  string    `json:"school_origin"`
-	ProgramChoice string    `json:"program_choice"`
-	KKURL         string    `json:"kk_url"`
-	IjazahURL     string    `json:"ijazah_url"`
-	PasfotoURL    string    `json:"pasfoto_url"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID              int       `json:"id"`
+	UserID          int       `json:"user_id"`
+	FullName        string    `json:"full_name"`
+	Nickname        string    `json:"nickname"`
+	Gender          string    `json:"gender"`
+	NIK             string    `json:"nik"`
+	BirthPlace      string    `json:"birth_place"`
+	BirthDate       string    `json:"birth_date"`
+	Address         string    `json:"address"`
+	ParentName      string    `json:"parent_name"`
+	ParentPhone     string    `json:"parent_phone"`
+	FatherName      string    `json:"father_name"`
+	FatherJob       string    `json:"father_job"`
+	FatherPhone     string    `json:"father_phone"`
+	MotherName      string    `json:"mother_name"`
+	MotherJob       string    `json:"mother_job"`
+	MotherPhone     string    `json:"mother_phone"`
+	SchoolOrigin    string    `json:"school_origin"`
+	ProgramChoice   string    `json:"program_choice"`
+	KKURL           string    `json:"kk_url"`
+	IjazahURL       string    `json:"ijazah_url"`
+	PasfotoURL      string    `json:"pasfoto_url"`
+	PaymentProofURL string    `json:"payment_proof_url"`
+	PaymentAmount   int       `json:"payment_amount"`
+	PaymentDate     string    `json:"payment_date"`
+	PaymentStatus   string    `json:"payment_status"`
+	PaymentNote     string    `json:"payment_note"`
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type Repository struct {
@@ -65,6 +70,11 @@ const registrationSelectColumns = `
 	COALESCE(kk_url, ''),
 	COALESCE(ijazah_url, ''),
 	COALESCE(pasfoto_url, ''),
+	COALESCE(payment_proof_url, ''),
+	COALESCE(payment_amount, 0),
+	COALESCE(payment_date, ''),
+	COALESCE(payment_status, 'unpaid'),
+	COALESCE(payment_note, ''),
 	COALESCE(status, 'pending'),
 	COALESCE(created_at, CURRENT_TIMESTAMP),
 	COALESCE(updated_at, COALESCE(created_at, CURRENT_TIMESTAMP))
@@ -100,6 +110,11 @@ func scanRegistration(scanner interface {
 		&reg.KKURL,
 		&reg.IjazahURL,
 		&reg.PasfotoURL,
+		&reg.PaymentProofURL,
+		&reg.PaymentAmount,
+		&reg.PaymentDate,
+		&reg.PaymentStatus,
+		&reg.PaymentNote,
 		&reg.Status,
 		&createdAt,
 		&updatedAt,
@@ -251,6 +266,32 @@ func (r *Repository) UpdateDocumentsByUserID(ctx context.Context, userID int, kk
 	}
 
 	return r.FindByUserID(ctx, userID)
+}
+
+func (r *Repository) UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error) {
+	if _, err := r.FindByUserID(ctx, userID); err != nil {
+		return nil, err
+	}
+
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE registrations
+		SET payment_proof_url = ?, payment_amount = ?, payment_date = ?, payment_status = 'pending', payment_note = '', updated_at = CURRENT_TIMESTAMP
+		WHERE user_id = ?
+	`, proofURL, amount, paymentDate, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.FindByUserID(ctx, userID)
+}
+
+func (r *Repository) UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE registrations
+		SET payment_status = ?, payment_note = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, status, note, id)
+	return err
 }
 
 func (r *Repository) UpdateStatus(ctx context.Context, id int, status string) error {
