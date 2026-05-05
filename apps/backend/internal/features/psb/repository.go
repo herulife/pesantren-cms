@@ -166,16 +166,16 @@ func (r *Repository) FindByUserID(ctx context.Context, userID int) (*Registratio
 }
 
 func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error) {
+	existing, err := r.FindByUserID(ctx, userID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	existing, err := r.FindByUserID(ctx, userID)
-	if err != nil && err != sql.ErrNoRows {
-		return nil, err
-	}
 
 	parentName := reg.ParentName
 	if parentName == "" {
