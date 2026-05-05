@@ -362,30 +362,65 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                        ) : null}
                      </div>
 
-                     <div className="space-y-3">
-                       {activeMobileGroup.items.map((item) => {
-                         const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
-                         return (
-                           <Link
-                             key={`mobile-${item.href}`}
-                             href={activeMobileGroup.locked ? '/portal' : item.href}
-                             className={`flex items-center gap-3 rounded-[1.25rem] border px-4 py-4 transition ${
-                               isActive
-                                 ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                 : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'
-                             } ${activeMobileGroup.locked ? 'opacity-70' : ''}`}
-                           >
-                             <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
-                             <div className="min-w-0">
-                               <div className="text-sm font-bold">{item.label}</div>
-                               <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-blue-100/80' : 'text-slate-500'}`}>
-                                 {item.description}
+                     {activeMobileGroup.locked ? (
+                       <div className="rounded-[1.25rem] border border-amber-200 bg-amber-50 p-4">
+                         <div className="flex items-start gap-3">
+                           <div className="rounded-2xl bg-amber-100 p-2 text-amber-700">
+                             <Lock size={18} />
+                           </div>
+                           <div>
+                             <p className="text-sm font-bold text-amber-950">Menu ini belum aktif untuk akunmu</p>
+                             <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
+                               Supaya tidak membingungkan, layanan santri baru dibuka setelah pendaftaran diterima. Untuk sekarang, fokuskan dulu ke biodata dan dokumen.
+                             </p>
+                           </div>
+                         </div>
+
+                         <div className="mt-4 flex flex-wrap gap-2">
+                           {activeMobileGroup.items.map((item) => (
+                             <span
+                               key={`mobile-locked-${item.href}`}
+                               className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-amber-800"
+                             >
+                               <span className="text-amber-600">{item.icon}</span>
+                               <span>{item.label}</span>
+                             </span>
+                           ))}
+                         </div>
+
+                         <Link
+                           href="/portal/documents"
+                           className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-amber-400"
+                         >
+                           Lanjutkan Pendaftaran Dulu
+                         </Link>
+                       </div>
+                     ) : (
+                       <div className="space-y-3">
+                         {activeMobileGroup.items.map((item) => {
+                           const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
+                           return (
+                             <Link
+                               key={`mobile-${item.href}`}
+                               href={item.href}
+                               className={`flex items-center gap-3 rounded-[1.25rem] border px-4 py-4 transition ${
+                                 isActive
+                                   ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                   : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'
+                               }`}
+                             >
+                               <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
+                               <div className="min-w-0">
+                                 <div className="text-sm font-bold">{item.label}</div>
+                                 <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-blue-100/80' : 'text-slate-500'}`}>
+                                   {item.description}
+                                 </div>
                                </div>
-                             </div>
-                           </Link>
-                         );
-                       })}
-                     </div>
+                             </Link>
+                           );
+                         })}
+                       </div>
+                     )}
                    </div>
                  </div>
                </div>
