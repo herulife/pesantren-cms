@@ -87,6 +87,9 @@ export default function PortalDashboard() {
     void fetchRegistration();
   }, []);
 
+  const registrationStatus = registration?.status || 'pending';
+  const hasStudentAccess = registrationStatus === 'accepted';
+
   const portalState = useMemo(() => {
     const biodataFields = [
       registration?.full_name,
@@ -147,14 +150,17 @@ export default function PortalDashboard() {
         completed: documentsCompleted,
         icon: <Upload size={24} />,
       },
-      {
+    ];
+
+    if (status === 'accepted') {
+      checklist.push({
         href: '/portal/exams',
         title: 'Ujian Daring (CBT)',
         description: 'Akses ujian semester, kuis, dan tes akademik secara online.',
-        completed: false, // Always show as actionable
+        completed: false,
         icon: <GraduationCap size={24} />,
-      },
-    ];
+      });
+    }
 
     return {
       status,
@@ -215,7 +221,7 @@ export default function PortalDashboard() {
     { label: 'Pas Foto', uploaded: isFilled(registration?.pasfoto_url) },
   ];
 
-  const quickMenus = [
+  const registrationQuickMenus = [
     {
       href: '/portal/biodata',
       title: 'Lengkapi Biodata',
@@ -230,6 +236,9 @@ export default function PortalDashboard() {
       icon: <Upload size={20} />,
       accent: 'border-emerald-100 bg-emerald-50 text-emerald-700',
     },
+  ];
+
+  const studentQuickMenus = [
     {
       href: '/portal/raport',
       title: 'Raport Akademik',
@@ -243,6 +252,13 @@ export default function PortalDashboard() {
       description: 'Pantau saldo dan mutasi dompet santri.',
       icon: <Wallet size={20} />,
       accent: 'border-slate-200 bg-slate-100 text-slate-700',
+    },
+    {
+      href: '/portal/exams',
+      title: 'CBT & Ujian',
+      description: 'Buka ujian online dan tes akademik.',
+      icon: <GraduationCap size={20} />,
+      accent: 'border-violet-100 bg-violet-50 text-violet-700',
     },
   ];
 
@@ -260,7 +276,11 @@ export default function PortalDashboard() {
         <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
           Ahlan Wa Sahlan, <br /> <span className="text-blue-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
         </h3>
-        <p className="text-lg text-slate-500">Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.</p>
+        <p className="text-lg text-slate-500">
+          {hasStudentAccess
+            ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
+            : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
+        </p>
       </div>
 
       <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -303,29 +323,42 @@ export default function PortalDashboard() {
           </Link>
         </div>
 
-        <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
-          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Akses Cepat</p>
-              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-                Presensi & Dompet Santri
-              </h4>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
-              </p>
+        {hasStudentAccess ? (
+          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
+                <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+                  Presensi & Dompet Santri
+                </h4>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                  Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
+                </p>
+              </div>
+              <div className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+                Live tools untuk akses harian
+              </div>
             </div>
-            <div className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
-              Live tools untuk akses harian
-            </div>
-          </div>
 
-          <div className="grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
-            <StudentQRCard />
-            <div className="md:h-full">
-              <WalletCard />
+            <div className="grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
+              <StudentQRCard />
+              <div className="md:h-full">
+                <WalletCard />
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="md:col-span-3 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700">Layanan Santri</p>
+            <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-amber-950">
+              Presensi, Dompet, dan Raport Akan Aktif Setelah Diterima
+            </h4>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-amber-900/80">
+              Supaya portal tidak membingungkan, fitur harian santri seperti QR presensi, Darussunnah Pay, raport akademik, dan CBT baru akan dibuka
+              setelah status pendaftaranmu diterima. Untuk sekarang, fokuskan dulu ke biodata, dokumen, dan status pendaftaran.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -333,19 +366,21 @@ export default function PortalDashboard() {
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
             <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-              Pilih Tujuan Dengan Cepat
+              {hasStudentAccess ? 'Pilih Menu Sesuai Tahapmu' : 'Fokus ke Menu Pendaftaran'}
             </h4>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Supaya tidak bingung, gunakan blok ini untuk langsung masuk ke menu utama yang paling sering dipakai.
+              {hasStudentAccess
+                ? 'Portal sekarang dibagi antara menu pendaftaran dan layanan santri supaya lebih jelas dipakai sehari-hari.'
+                : 'Supaya tidak bingung, gunakan blok ini untuk menyelesaikan pendaftaran dulu. Layanan santri akan aktif setelah diterima.'}
             </p>
           </div>
           <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            Shortcut portal
+            {hasStudentAccess ? 'Tahap aktif' : 'Tahap pendaftaran'}
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {quickMenus.map((item) => (
+        <div className="grid gap-4 md:grid-cols-2">
+          {registrationQuickMenus.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -363,6 +398,42 @@ export default function PortalDashboard() {
             </Link>
           ))}
         </div>
+
+        {hasStudentAccess ? (
+          <div className="mt-8 border-t border-slate-100 pt-6">
+            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Layanan Santri</p>
+                <h5 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
+                  Menu Harian Setelah Menjadi Santri
+                </h5>
+              </div>
+              <div className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
+                Sudah aktif
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {studentQuickMenus.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
+                >
+                  <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+                    {item.icon}
+                  </div>
+                  <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
+                  <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
+                    Buka Menu
+                    <ChevronRight size={14} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <h4 className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
