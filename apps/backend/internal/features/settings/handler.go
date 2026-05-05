@@ -68,6 +68,12 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 		"banner_image_url",
 		"banner_button_text",
 		"banner_button_url",
+		"psb_payment_bank_name",
+		"psb_payment_account_number",
+		"psb_payment_account_name",
+		"psb_payment_amount",
+		"psb_payment_note",
+		"psb_payment_instructions",
 	}
 
 	publicList := make([]Setting, 0, len(allowedKeys))

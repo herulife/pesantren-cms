@@ -5,15 +5,25 @@ import Link from 'next/link';
 import {
   AlertCircle,
   ArrowRight,
+  Banknote,
   CheckCircle2,
   CreditCard,
   Eye,
+  Landmark,
   RefreshCw,
   ShieldCheck,
   UploadCloud,
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
-import { getMyPSBRegistration, resolveDisplayImageUrl, saveMyPSBPayment, uploadImage, type Registration } from '@/lib/api';
+import {
+  getMyPSBRegistration,
+  getPublicSettingsMap,
+  resolveDisplayImageUrl,
+  saveMyPSBPayment,
+  uploadImage,
+  type Registration,
+  type SettingsMap,
+} from '@/lib/api';
 
 type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'rejected';
 
@@ -75,14 +85,18 @@ export default function PortalPaymentPage() {
   const [paymentDate, setPaymentDate] = useState(getTodayDate());
   const [proofUrl, setProofUrl] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [settings, setSettings] = useState<SettingsMap>({});
+  const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchRegistration = async () => {
       setIsLoading(true);
       try {
-        const data = await getMyPSBRegistration();
+        const [data, publicSettings] = await Promise.all([getMyPSBRegistration(), getPublicSettingsMap()]);
+        const configuredAmount = Number(publicSettings.psb_payment_amount || 0);
         setRegistration(data);
-        setAmount(data?.payment_amount ? String(data.payment_amount) : '');
+        setSettings(publicSettings);
+        setAmount(data?.payment_amount ? String(data.payment_amount) : configuredAmount > 0 ? String(configuredAmount) : '');
         setPaymentDate(data?.payment_date || getTodayDate());
         setProofUrl(data?.payment_proof_url || '');
       } finally {
@@ -126,6 +140,49 @@ export default function PortalPaymentPage() {
         className: 'border-amber-200 bg-amber-50 text-amber-900',
       }
     : statusMeta;
+  const configuredBankName = settings.psb_payment_bank_name?.trim() || '';
+  const configuredAccountNumber = settings.psb_payment_account_number?.trim() || '';
+  const configuredAccountName = settings.psb_payment_account_name?.trim() || '';
+  const configuredPaymentNote = settings.psb_payment_note?.trim() || '';
+  const configuredInstructions = settings.psb_payment_instructions?.trim() || '';
+  const configuredAmount = Number(settings.psb_payment_amount || 0);
+  const hasBankInfo = Boolean(configuredBankName || configuredAccountNumber || configuredAccountName || configuredAmount > 0);
+  const parsedAmount = Number(amount);
+  const amountAndDateCompleted = Number.isFinite(parsedAmount) && parsedAmount > 0 && Boolean(paymentDate);
+  const proofReady = Boolean(selectedProofFile || proofUrl);
+  const proofSent = Boolean(proofUrl) && !selectedProofFile && (paymentStatus === 'pending' || paymentStatus === 'paid') && !hasPaymentWarning;
+  const canSubmitPayment =
+    canUploadPayment &&
+    !isLocked &&
+    amountAndDateCompleted &&
+    Boolean(selectedProofFile || (proofUrl && !hasPaymentWarning));
+  const paymentSteps = [
+    {
+      title: 'Biodata',
+      description: biodataCompleted ? 'Biodata sudah lengkap.' : 'Lengkapi biodata calon santri.',
+      completed: biodataCompleted,
+    },
+    {
+      title: 'Dokumen',
+      description: documentsCompleted ? 'Dokumen wajib sudah lengkap.' : 'Unggah dokumen wajib terlebih dahulu.',
+      completed: documentsCompleted,
+    },
+    {
+      title: 'Nominal & Tanggal',
+      description: amountAndDateCompleted ? 'Nominal dan tanggal transfer sudah diisi.' : 'Isi nominal dan tanggal transfer.',
+      completed: amountAndDateCompleted,
+    },
+    {
+      title: 'Bukti Transfer',
+      description: selectedProofFile ? 'Bukti baru sudah dipilih.' : proofUrl ? 'Bukti transfer sudah tersimpan.' : 'Pilih foto bukti transfer.',
+      completed: proofReady,
+    },
+    {
+      title: 'Kirim ke Panitia',
+      description: proofSent ? 'Bukti sedang menunggu verifikasi panitia.' : 'Klik tombol kirim setelah bukti dipilih.',
+      completed: proofSent || paymentStatus === 'paid',
+    },
+  ];
 
   useEffect(() => {
     if (hasPaymentWarning && paymentNote && !hasShownRejectedNotice.current) {
@@ -134,12 +191,11 @@ export default function PortalPaymentPage() {
     }
   }, [hasPaymentWarning, paymentNote, showToast]);
 
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProofSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setSuccessMessage('');
-    const parsedAmount = Number(amount);
     if (!canUploadPayment) {
       showToast('error', 'Lengkapi biodata dan dokumen terlebih dahulu.');
       event.target.value = '';
@@ -156,24 +212,52 @@ export default function PortalPaymentPage() {
       return;
     }
 
+    setSelectedProofFile(file);
+    showToast('info', 'Bukti transfer sudah dipilih. Klik Kirim Bukti Pembayaran untuk mengirim ke panitia.');
+    event.target.value = '';
+  };
+
+  const handleSubmitPayment = async () => {
+    setSuccessMessage('');
+    if (!canUploadPayment) {
+      showToast('error', 'Lengkapi biodata dan dokumen terlebih dahulu.');
+      return;
+    }
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      showToast('error', 'Isi nominal pembayaran terlebih dahulu.');
+      return;
+    }
+    if (!paymentDate) {
+      showToast('error', 'Isi tanggal pembayaran terlebih dahulu.');
+      return;
+    }
+    if (!selectedProofFile && (!proofUrl || hasPaymentWarning)) {
+      showToast('error', 'Pilih foto bukti transfer terlebih dahulu.');
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const uploadResult = await uploadImage(file);
-      const url = uploadResult?.url || uploadResult?.data?.url || '';
-      if (!url) {
-        throw new Error('URL bukti pembayaran tidak ditemukan setelah upload.');
+      let nextProofUrl = proofUrl;
+      if (selectedProofFile) {
+        const uploadResult = await uploadImage(selectedProofFile);
+        nextProofUrl = uploadResult?.url || uploadResult?.data?.url || '';
+        if (!nextProofUrl) {
+          throw new Error('URL bukti pembayaran tidak ditemukan setelah upload.');
+        }
       }
 
       const result = await saveMyPSBPayment({
-        payment_proof_url: url,
+        payment_proof_url: nextProofUrl,
         payment_amount: parsedAmount,
         payment_date: paymentDate,
       });
       const nextRegistration = (result.data || null) as Registration | null;
       setRegistration(nextRegistration);
-      setProofUrl(nextRegistration?.payment_proof_url || url);
+      setProofUrl(nextRegistration?.payment_proof_url || nextProofUrl);
       setAmount(nextRegistration?.payment_amount ? String(nextRegistration.payment_amount) : String(parsedAmount));
       setPaymentDate(nextRegistration?.payment_date || paymentDate);
+      setSelectedProofFile(null);
       const message = 'Bukti pembayaran berhasil dikirim. Status pembayaran sekarang menunggu verifikasi panitia.';
       setSuccessMessage(message);
       showToast('success', message);
@@ -182,7 +266,6 @@ export default function PortalPaymentPage() {
       showToast('error', message);
     } finally {
       setIsUploading(false);
-      event.target.value = '';
     }
   };
 
@@ -253,6 +336,41 @@ export default function PortalPaymentPage() {
           <span className="inline-flex w-fit rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]">
             {proofUrl ? 'Bukti sudah ada' : 'Belum ada bukti'}
           </span>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Checklist Pembayaran</p>
+            <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Langkah Yang Sudah Dilalui</h4>
+          </div>
+          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            {paymentSteps.filter((step) => step.completed).length}/{paymentSteps.length} selesai
+          </span>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-5">
+          {paymentSteps.map((step) => (
+            <div
+              key={step.title}
+              className={`rounded-2xl border px-4 py-4 ${
+                step.completed
+                  ? 'border-emerald-100 bg-emerald-50 text-emerald-900'
+                  : 'border-slate-200 bg-slate-50 text-slate-500'
+              }`}
+            >
+              <div
+                className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
+                  step.completed ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'
+                }`}
+              >
+                {step.completed ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              </div>
+              <p className="text-sm font-black leading-tight">{step.title}</p>
+              <p className="mt-2 text-xs font-semibold leading-5 opacity-75">{step.description}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -333,12 +451,54 @@ export default function PortalPaymentPage() {
           </div>
           <div className="space-y-4 text-sm leading-7 text-slate-600">
             <p>
-              Silakan transfer biaya pendaftaran sesuai arahan panitia PSB. Setelah transfer, isi nominal dan tanggal bayar di form sebelah kanan,
-              lalu unggah foto bukti transfer.
+              Silakan transfer biaya pendaftaran ke rekening berikut. Setelah transfer, isi nominal dan tanggal bayar, pilih foto bukti transfer,
+              lalu klik tombol kirim.
             </p>
-            <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 font-semibold text-slate-700">
-              Jika rekening atau nominal belum tampil di sini, gunakan informasi yang diberikan panitia melalui WhatsApp atau brosur PSB.
-            </p>
+
+            {hasBankInfo ? (
+              <div className="grid gap-3">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                    <Landmark size={13} /> Bank Tujuan
+                  </p>
+                  <p className="mt-2 text-lg font-black text-emerald-950">{configuredBankName || '-'}</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Nomor Rekening</p>
+                    <p className="mt-2 break-all font-mono text-xl font-black tracking-wide text-slate-900">{configuredAccountNumber || '-'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Atas Nama</p>
+                    <p className="mt-2 text-sm font-black leading-6 text-slate-900">{configuredAccountName || '-'}</p>
+                  </div>
+                </div>
+                {configuredAmount > 0 ? (
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                    <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                      <Banknote size={13} /> Nominal Pendaftaran
+                    </p>
+                    <p className="mt-2 text-xl font-black text-amber-950">{formatCurrency(configuredAmount)}</p>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-semibold text-amber-900">
+                Nomor rekening belum diatur oleh admin. Silakan hubungi panitia PSB sebelum transfer.
+              </p>
+            )}
+
+            {configuredPaymentNote ? (
+              <p className="rounded-2xl border border-blue-100 bg-blue-50 p-4 font-semibold text-blue-900">
+                {configuredPaymentNote}
+              </p>
+            ) : null}
+
+            {configuredInstructions ? (
+              <p className="whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 font-semibold text-slate-700">
+                {configuredInstructions}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -374,11 +534,16 @@ export default function PortalPaymentPage() {
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Bukti Transfer</p>
                 <h5 className="mt-2 font-bold text-slate-900">
-                  {proofUrl ? 'Bukti pembayaran sudah tersimpan' : 'Unggah foto bukti pembayaran'}
+                  {selectedProofFile ? 'Bukti baru siap dikirim' : proofUrl ? 'Bukti pembayaran sudah tersimpan' : 'Pilih foto bukti pembayaran'}
                 </h5>
                 <p className="mt-2 text-xs leading-6 text-slate-500">
-                  Format yang didukung: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
+                  Pilih file dulu, lalu klik Kirim Bukti Pembayaran. Format: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
                 </p>
+                {selectedProofFile ? (
+                  <p className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-emerald-700">
+                    File dipilih: {selectedProofFile.name}
+                  </p>
+                ) : null}
                 {registration?.payment_amount ? (
                   <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-400">
                     Nominal tersimpan: {formatCurrency(registration.payment_amount)}
@@ -403,7 +568,7 @@ export default function PortalPaymentPage() {
                     type="file"
                     accept=".jpg,.jpeg,.png,.gif,.webp"
                     disabled={!canUploadPayment || isUploading || isLocked}
-                    onChange={(event) => void handleUpload(event)}
+                    onChange={handleProofSelect}
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
                   />
                   <button
@@ -416,8 +581,8 @@ export default function PortalPaymentPage() {
                           : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                     }`}
                   >
-                    {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <UploadCloud size={16} />}
-                    {isUploading ? 'Mengunggah' : proofUrl ? 'Upload Ulang' : 'Upload Bukti'}
+                    <UploadCloud size={16} />
+                    {selectedProofFile ? 'Ganti Bukti' : proofUrl ? 'Ganti Bukti' : 'Pilih Bukti'}
                   </button>
                 </div>
               </div>
@@ -426,14 +591,25 @@ export default function PortalPaymentPage() {
 
           <div className="mt-6 flex flex-col gap-3 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5 md:flex-row md:items-center md:justify-between">
             <p className="text-sm font-semibold leading-6 text-slate-600">
-              Setelah bukti dikirim, status akan berubah menjadi menunggu verifikasi panitia.
+              Setelah bukti dipilih, klik tombol kirim agar status berubah menjadi menunggu verifikasi panitia.
             </p>
-            <Link
-              href="/portal"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-emerald-600"
-            >
-              Kembali ke Dasbor <ArrowRight size={16} />
-            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => void handleSubmitPayment()}
+                disabled={!canSubmitPayment || isUploading}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+              >
+                {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
+              </button>
+              <Link
+                href="/portal"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-emerald-600"
+              >
+                Kembali ke Dasbor <ArrowRight size={16} />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
