@@ -324,7 +324,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                ) : null}
 
                <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 md:hidden">
-                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
+                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Tab Portal</p>
                  <div className="mt-3">
                    <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-1">
                      {navGroups.map((group) => {
@@ -362,30 +362,52 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                        ) : null}
                      </div>
 
+                     <div className="flex gap-2 overflow-x-auto pb-1">
+                       {activeMobileGroup.items.map((item) => {
+                         const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
+                         const itemClasses = isActive
+                           ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                           : activeMobileGroup.locked
+                             ? 'border-amber-200 bg-amber-50 text-amber-800'
+                             : 'border-slate-200 bg-slate-50 text-slate-700';
+
+                         if (activeMobileGroup.locked) {
+                           return (
+                             <span
+                               key={`mobile-tab-${item.href}`}
+                               className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em] ${itemClasses}`}
+                             >
+                               <span className={isActive ? 'text-blue-100' : 'text-amber-600'}>{item.icon}</span>
+                               <span>{item.label}</span>
+                             </span>
+                           );
+                         }
+
+                         return (
+                           <Link
+                             key={`mobile-tab-${item.href}`}
+                             href={item.href}
+                             className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em] transition ${itemClasses}`}
+                           >
+                             <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
+                             <span>{item.label}</span>
+                           </Link>
+                         );
+                       })}
+                     </div>
+
                      {activeMobileGroup.locked ? (
-                       <div className="rounded-[1.25rem] border border-amber-200 bg-amber-50 p-4">
+                       <div className="mt-4 rounded-[1.25rem] border border-amber-200 bg-amber-50 p-4">
                          <div className="flex items-start gap-3">
                            <div className="rounded-2xl bg-amber-100 p-2 text-amber-700">
                              <Lock size={18} />
                            </div>
                            <div>
-                             <p className="text-sm font-bold text-amber-950">Menu ini belum aktif untuk akunmu</p>
+                             <p className="text-sm font-bold text-amber-950">Menu santri belum aktif untuk akunmu</p>
                              <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
-                               Supaya tidak membingungkan, layanan santri baru dibuka setelah pendaftaran diterima. Untuk sekarang, fokuskan dulu ke biodata dan dokumen.
+                               Setelah pendaftaran diterima, tab layanan santri baru akan terbuka penuh. Untuk sekarang, fokuskan dulu ke tab pendaftaran.
                              </p>
                            </div>
-                         </div>
-
-                         <div className="mt-4 flex flex-wrap gap-2">
-                           {activeMobileGroup.items.map((item) => (
-                             <span
-                               key={`mobile-locked-${item.href}`}
-                               className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-amber-800"
-                             >
-                               <span className="text-amber-600">{item.icon}</span>
-                               <span>{item.label}</span>
-                             </span>
-                           ))}
                          </div>
 
                          <Link
@@ -395,32 +417,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                            Lanjutkan Pendaftaran Dulu
                          </Link>
                        </div>
-                     ) : (
-                       <div className="space-y-3">
-                         {activeMobileGroup.items.map((item) => {
-                           const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
-                           return (
-                             <Link
-                               key={`mobile-${item.href}`}
-                               href={item.href}
-                               className={`flex items-center gap-3 rounded-[1.25rem] border px-4 py-4 transition ${
-                                 isActive
-                                   ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                   : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'
-                               }`}
-                             >
-                               <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
-                               <div className="min-w-0">
-                                 <div className="text-sm font-bold">{item.label}</div>
-                                 <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-blue-100/80' : 'text-slate-500'}`}>
-                                   {item.description}
-                                 </div>
-                               </div>
-                             </Link>
-                           );
-                         })}
-                       </div>
-                     )}
+                     ) : null}
                    </div>
                  </div>
                </div>
