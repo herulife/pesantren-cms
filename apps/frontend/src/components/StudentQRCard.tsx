@@ -84,8 +84,8 @@ export default function StudentQRCard() {
       </div>
 
       {/* QR Code Section */}
-      <div className="flex flex-col items-center bg-white p-8">
-        <div className="relative flex aspect-square w-full max-w-[200px] items-center justify-center rounded-3xl bg-white p-4 shadow-[0_0_40px_rgb(0,0,0,0.05)] ring-1 ring-slate-100 mb-6 group-hover:scale-105 transition-transform duration-500">
+      <div className="flex flex-col items-center bg-white p-8 md:min-h-[22rem] md:justify-center">
+        <div className="relative mb-6 flex aspect-square w-full max-w-[200px] items-center justify-center rounded-3xl bg-white p-4 shadow-[0_0_40px_rgb(0,0,0,0.05)] ring-1 ring-slate-100 transition-transform duration-500 group-hover:scale-105 md:max-w-[220px]">
           {isLoading ? (
             <div className="flex flex-col items-center gap-3">
               <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
@@ -116,7 +116,7 @@ export default function StudentQRCard() {
         </div>
 
         {/* Dynamic Progress Bar for Token Expiry */}
-        <div className="w-full max-w-[200px]">
+        <div className="w-full max-w-[200px] md:max-w-[220px]">
           <div className="mb-2 flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
               <Clock size={12} /> Auto Refresh

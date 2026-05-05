@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Activity, AlertCircle, CheckCircle2, ChevronRight, FileText, RefreshCw, Upload, User, QrCode, GraduationCap } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, ChevronRight, FileText, RefreshCw, Upload, User, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import StudentQRCard from '@/components/StudentQRCard';
 import WalletCard from '@/components/WalletCard';
@@ -272,10 +272,27 @@ export default function PortalDashboard() {
           </Link>
         </div>
 
-        <div className="md:col-span-3 md:grid md:grid-cols-2 md:items-start md:gap-6 xl:items-stretch">
-          <StudentQRCard />
-          <div className="mt-6 md:mt-0 md:h-full">
-            <WalletCard />
+        <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Akses Cepat</p>
+              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+                Presensi & Dompet Santri
+              </h4>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
+              </p>
+            </div>
+            <div className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+              Live tools untuk akses harian
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
+            <StudentQRCard />
+            <div className="md:h-full">
+              <WalletCard />
+            </div>
           </div>
         </div>
       </div>
