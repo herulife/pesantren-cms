@@ -4,8 +4,9 @@ import React, { useEffect, useState } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal } from 'lucide-react';
+import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut } from 'lucide-react';
 import { getMyPSBRegistration, type Registration } from '@/lib/api';
+import { useAuth } from '@/components/AuthProvider';
 
 function isFilled(value?: string | null) {
   return Boolean(value && value.trim());
@@ -13,10 +14,15 @@ function isFilled(value?: string | null) {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { logout } = useAuth();
   const isRaportPage = pathname.startsWith('/portal/raport');
   const isPortalDashboard = pathname === '/portal';
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleLogout = () => {
+    void logout();
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -223,7 +229,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     <PublicLayout hideNavbar>
       <div className="bg-slate-50 min-h-screen py-8 lg:py-10">
         <div className="container mx-auto max-w-7xl px-4">
-          <div className="mb-6 flex items-center justify-between gap-3">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <Link
               href="/"
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
@@ -231,8 +237,18 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <Home size={14} />
               Beranda
             </Link>
-            <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-600">
-               Portal Wali Santri
+            <div className="flex items-center gap-2">
+              <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-600">
+                 Portal Wali Santri
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 text-xs font-bold text-rose-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+              >
+                <LogOut size={14} />
+                Keluar
+              </button>
             </div>
           </div>
 
@@ -415,6 +431,15 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                       : 'Mohon isikan data yang valid dan unggah dokumen asli hasil scan berwarna. Menu layanan santri akan aktif setelah pendaftaran diterima.'}
                   </p>
                </div>
+
+               <button
+                 type="button"
+                 onClick={handleLogout}
+                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm font-bold text-rose-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+               >
+                 <LogOut size={17} />
+                 Keluar dari Portal
+               </button>
             </div>
 
             {/* Content Area */}

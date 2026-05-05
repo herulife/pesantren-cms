@@ -215,8 +215,8 @@ const buildHeroSlideId = (overrides: Partial<HeroSlide> = {}, fallbackKey = 'sli
 
 const createHeroSlide = (overrides: Partial<HeroSlide> = {}, fallbackKey?: string): HeroSlide => ({
   id: buildHeroSlideId(overrides, fallbackKey),
-  title: 'Pondok Tahfidz yang menumbuhkan ilmu, adab, dan kemandirian santri.',
-  subtitle: 'Darussunnah Parung membina generasi muslim berkualitas dengan pendekatan Al-Quran dan manajemen terpadu.',
+  title: 'Tahfidz, Adab, dan Ilmu dalam Satu Pembinaan',
+  subtitle: 'Darussunnah Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.',
   image_url: '/assets/img/gedung.webp',
   button_text: 'Lihat Info PSB',
   button_url: '/psb',
@@ -239,9 +239,9 @@ const formatAgendaFullDate = (dateStr: string) =>
 const defaultHeroSlides = [
   createHeroSlide(
     {
-      title: 'Membentuk generasi Qurani yang berilmu, berakhlak, dan siap berkarya.',
+      title: 'Menghafal Al-Quran, Tumbuh dengan Adab',
       subtitle:
-        'Darussunnah Parung menghadirkan pembinaan Al-Quran, adab, akademik, dan kemandirian dalam satu lingkungan pesantren yang terarah.',
+        'Lingkungan pesantren yang menata hafalan, ilmu, ibadah, dan kemandirian santri.',
       image_url: '/assets/img/gedung.webp',
       button_text: 'Daftar Santri Baru',
       button_url: '/psb',
@@ -250,9 +250,9 @@ const defaultHeroSlides = [
   ),
   createHeroSlide(
     {
-      title: 'Program tahfidz, kurikulum terpadu, dan pembinaan karakter berjalan seimbang.',
+      title: 'Tahfidz dan Kurikulum yang Seimbang',
       subtitle:
-        'Santri dibina melalui target hafalan, pembelajaran diniyah, pendidikan formal, serta kebiasaan hidup tertib yang konsisten.',
+        'Target hafalan, diniyah, akademik, dan karakter berjalan dalam ritme pembinaan harian.',
       image_url: '/assets/img/gedung.webp',
       button_text: 'Lihat Program',
       button_url: '/program',
@@ -261,9 +261,9 @@ const defaultHeroSlides = [
   ),
   createHeroSlide(
     {
-      title: 'Lingkungan pondok yang mendukung ibadah, belajar, dan tumbuhnya life skill santri.',
+      title: 'Belajar, Beribadah, dan Mandiri',
       subtitle:
-        'Fasilitas pondok dirancang untuk menunjang kenyamanan belajar, pembiasaan ibadah, kegiatan olahraga, dan keterampilan santri.',
+        'Fasilitas pondok mendukung kegiatan ibadah, belajar, olahraga, dan life skill santri.',
       image_url: '/assets/img/gedung.webp',
       button_text: 'Lihat Fasilitas',
       button_url: '/facilities',
@@ -465,14 +465,16 @@ export default function LandingPage() {
                         className="max-w-3xl"
                       >
                         <div className="rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(2,6,23,0.42)_0%,rgba(2,6,23,0.28)_100%)] p-5 shadow-[0_28px_70px_-40px_rgba(2,6,23,0.75)] backdrop-blur-[3px] sm:p-7 lg:max-w-[46rem]">
-                          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-emerald-100 backdrop-blur-md">
+                          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-100 backdrop-blur-md sm:text-[11px]">
                             <Sparkles size={14} />
-                            Pondok Pesantren Darussunnah Parung
+                            Darussunnah Parung
                           </span>
-                          <h1 className="mt-6 max-w-2xl text-4xl font-black leading-[1.02] tracking-tight text-white md:text-6xl lg:text-[4.15rem]">
+                          <h1 className="mt-6 line-clamp-3 max-w-[19ch] text-balance text-[2.45rem] font-black leading-[0.96] tracking-[-0.045em] text-white sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
                             {slide.title}
                           </h1>
-                          <p className="mt-5 max-w-xl text-base leading-8 text-slate-200 md:text-lg">{slide.subtitle}</p>
+                          <p className="mt-5 line-clamp-2 max-w-[34rem] text-sm font-medium leading-7 text-slate-200 sm:text-base md:line-clamp-3 md:text-lg">
+                            {slide.subtitle}
+                          </p>
                           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                             <Link
                               href={slide.button_url || '/psb'}

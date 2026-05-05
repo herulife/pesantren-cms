@@ -24,18 +24,19 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const id = resolvedParams.id;
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { showToast } = useToast();
-
-  const fetchRegistration = async () => {
-    setIsLoading(true);
-    const data = await getRegistrations();
-    const found = data.find((r: Registration) => r.id === Number(id));
-    setRegistration(found || null);
-    setIsLoading(false);
-  };
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      const fetchRegistration = async () => {
+        setIsLoading(true);
+        const data = await getRegistrations();
+        const found = data.find((r: Registration) => r.id === Number(id));
+        setRegistration(found || null);
+        setIsLoading(false);
+      };
+
       void fetchRegistration();
     }, 0);
 
@@ -44,13 +45,21 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!registration) return;
-    
-    const res = await updatePSBStatus(registration.id, newStatus);
-    if (res.success) {
-      showToast('success', `Status pendaftaran berhasil diubah ke ${newStatus.toUpperCase()}`);
-      setRegistration({ ...registration, status: newStatus });
-    } else {
+
+    if (registration.status === newStatus || isUpdatingStatus) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const res = await updatePSBStatus(registration.id, newStatus);
+      if (res.success) {
+        showToast('success', `Status pendaftaran berhasil diubah ke ${newStatus.toUpperCase()}`);
+        setRegistration({ ...registration, status: newStatus });
+        return;
+      }
+
       showToast('error', 'Gagal memperbarui status.');
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -112,6 +121,41 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       : registration.status === 'rejected'
         ? 'Ditolak'
         : 'Menunggu';
+
+  const statusOptions = [
+    {
+      value: 'pending',
+      label: 'Menunggu',
+      description: 'Data masuk dan belum mulai diperiksa.',
+      icon: <Clock size={18} />,
+      selectedClass: 'border-amber-300 bg-amber-50 text-amber-700 shadow-[0_18px_44px_-32px_rgba(245,158,11,0.7)]',
+      radioClass: 'border-amber-500 text-amber-500',
+    },
+    {
+      value: 'review',
+      label: 'Review Berkas',
+      description: 'Berkas sedang dicek oleh admin PSB.',
+      icon: <Clock size={18} />,
+      selectedClass: 'border-blue-300 bg-blue-50 text-blue-700 shadow-[0_18px_44px_-32px_rgba(59,130,246,0.7)]',
+      radioClass: 'border-blue-500 text-blue-500',
+    },
+    {
+      value: 'rejected',
+      label: 'Ditolak',
+      description: 'Pendaftaran belum dapat diterima.',
+      icon: <XCircle size={18} />,
+      selectedClass: 'border-rose-300 bg-rose-50 text-rose-700 shadow-[0_18px_44px_-32px_rgba(244,63,94,0.7)]',
+      radioClass: 'border-rose-500 text-rose-500',
+    },
+    {
+      value: 'accepted',
+      label: 'Diterima',
+      description: 'Calon santri dinyatakan diterima.',
+      icon: <CheckCircle size={18} />,
+      selectedClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 shadow-[0_18px_44px_-32px_rgba(16,185,129,0.7)]',
+      radioClass: 'border-emerald-500 text-emerald-500',
+    },
+  ];
 
   return (
     <>
@@ -209,40 +253,68 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
          </div>
 
          <div className="bg-slate-50 p-8 rounded-xl border border-slate-100">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                <Clock size={16} />
                Manajemen Status Pendaftaran
-            </label>
-            
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-               <div className={`px-8 py-4 rounded-lg text-sm font-black uppercase tracking-[0.2em] border-2 shadow-sm ${getStatusStyle(registration.status)}`}>
-                  {statusLabel}
-               </div>
-               
-               <div className="flex gap-4 w-full md:w-auto">
-                  <button 
-                     onClick={() => handleStatusUpdate('review')}
-                     disabled={registration.status === 'review'}
-                     className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-blue-500 text-white rounded-lg text-sm font-black uppercase tracking-widest hover:bg-blue-600 disabled:opacity-50 transition-all shadow-xl shadow-blue-500/20"
-                  >
-                     <Clock size={18} /> Review Berkas
-                  </button>
-                  <button 
-                     onClick={() => handleStatusUpdate('rejected')}
-                     disabled={registration.status === 'rejected'}
-                     className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-rose-500 text-white rounded-lg text-sm font-black uppercase tracking-widest hover:bg-rose-600 disabled:opacity-50 transition-all shadow-xl shadow-rose-500/20"
-                  >
-                     <XCircle size={18} /> Tolak Santri
-                  </button>
-                  <button 
-                     onClick={() => handleStatusUpdate('accepted')}
-                     disabled={registration.status === 'accepted'}
-                     className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-emerald-600 text-white rounded-lg text-sm font-black uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-xl shadow-emerald-600/30"
-                  >
-                     <CheckCircle size={18} /> Terima Santri
-                  </button>
-               </div>
+              </label>
+
+              <div className={`inline-flex items-center gap-2 self-start px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.18em] border shadow-sm ${getStatusStyle(registration.status)}`}>
+                {isUpdatingStatus ? <Loader2 size={15} className="animate-spin" /> : null}
+                Status saat ini: {statusLabel}
+              </div>
             </div>
+
+            <fieldset className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" disabled={isUpdatingStatus}>
+              <legend className="sr-only">Pilih status pendaftaran santri</legend>
+              {statusOptions.map((option) => {
+                const isSelected = registration.status === option.value;
+
+                return (
+                  <label
+                    key={option.value}
+                    className={`relative flex cursor-pointer items-start gap-4 rounded-2xl border p-5 pr-16 transition-all ${
+                      isSelected
+                        ? option.selectedClass
+                        : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50'
+                    } ${isUpdatingStatus ? 'pointer-events-none opacity-70' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="registration-status"
+                      value={option.value}
+                      checked={isSelected}
+                      disabled={isUpdatingStatus}
+                      onChange={() => handleStatusUpdate(option.value)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 bg-white ${
+                        isSelected ? option.radioClass : 'border-slate-300 text-transparent'
+                      }`}
+                    >
+                      {isSelected ? <span className="h-2.5 w-2.5 rounded-full bg-current" /> : null}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em]">
+                        {option.icon}
+                        {option.label}
+                      </span>
+                      <span className="mt-2 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
+                    </span>
+                    {isSelected ? (
+                      <span className="absolute right-4 top-4 rounded-full bg-white/80 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-current">
+                        Aktif
+                      </span>
+                    ) : null}
+                  </label>
+                );
+              })}
+            </fieldset>
+
+            <p className="mt-4 text-xs font-semibold leading-6 text-slate-500">
+              Pilih salah satu status. Perubahan akan tersimpan otomatis setelah pilihan diganti.
+            </p>
          </div>
 
          <div className="mt-10 bg-white border border-slate-200 rounded-xl p-8">
