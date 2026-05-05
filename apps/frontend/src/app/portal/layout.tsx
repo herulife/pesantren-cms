@@ -120,10 +120,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     <PublicLayout>
       <div className="bg-slate-50 min-h-screen py-8 lg:py-10">
         <div className="container mx-auto max-w-7xl px-4">
-          <div className="mb-6 flex items-center justify-between">
-            <Link href="/" className="inline-flex items-center gap-2 text-slate-500 font-bold hover:text-blue-600 transition-colors text-sm">
-              <ArrowLeft size={16} /> Kembali ke Beranda
-            </Link>
+          <div className="mb-6 flex justify-end">
             <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-600">
                Portal Wali Santri
             </div>
