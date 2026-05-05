@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { BookOpen, Download, Eye, FileText, Printer, RefreshCw, Sparkles, Target, TrendingUp } from 'lucide-react';
 import { getMyAcademicGrades, getMyAttendanceSummary, getMyTahfidz, type Grade, type TahfidzProgress } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
@@ -137,6 +138,21 @@ export default function PortalRaportPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Navigasi Cepat</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Setelah selesai membaca raport, kamu bisa kembali ke dashboard atau pindah ke menu akademik lain tanpa bingung.
+          </p>
+        </div>
+        <Link
+          href="/portal"
+          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          Kembali ke Dashboard Portal
+        </Link>
+      </div>
+
       <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm print:shadow-none">
         <div className="flex flex-col gap-5 border-b border-slate-100 px-5 py-5 lg:flex-row lg:items-start lg:justify-between lg:px-6">
           <div className="min-w-0">

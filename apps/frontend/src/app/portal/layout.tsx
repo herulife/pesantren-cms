@@ -14,30 +14,35 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     {
       href: '/portal',
       label: 'Dashboard Portal',
+      description: 'Lihat progres, tugas, QR, dan dompet santri.',
       icon: <LayoutDashboard size={20} />,
       docRef: 'dashboard',
     },
     {
       href: '/portal/biodata',
       label: 'Biodata Lengkap',
+      description: 'Isi data calon santri dan data orang tua.',
       icon: <User size={20} />,
       docRef: 'biodata',
     },
     {
       href: '/portal/documents',
       label: 'Unggah Dokumen',
+      description: 'Kirim KK, ijazah, raport, dan pas foto.',
       icon: <Upload size={20} />,
       docRef: 'documents',
     },
     {
       href: '/portal/raport',
       label: 'Raport Akademik',
+      description: 'Lihat nilai, presensi, dan progres tahfidz.',
       icon: <GraduationCap size={20} />,
       docRef: 'academics',
     },
     {
       href: '/portal/help',
       label: 'Panduan Portal',
+      description: 'Baca langkah penggunaan setiap menu portal.',
       icon: <HelpCircle size={20} />,
       docRef: 'dashboard',
     },
@@ -70,8 +75,17 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         Halaman raport dibuat lebih lega agar nilai, presensi, dan progres tahfidz lebih nyaman dibaca.
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-                      Tampilan fokus tanpa sidebar samping
+                    <div className="flex flex-col gap-3 sm:items-end">
+                      <Link
+                        href="/portal"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                      >
+                        <ArrowLeft size={16} />
+                        Kembali ke Dashboard Portal
+                      </Link>
+                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                        Tampilan fokus tanpa sidebar samping
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -107,7 +121,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           <div className="bg-white rounded-[2rem] lg:rounded-[3rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col md:flex-row">
             {/* Sidebar Portal */}
             <div className="w-full md:w-72 lg:w-80 bg-slate-100 p-6 lg:p-8 border-b md:border-b-0 md:border-r border-slate-200 shrink-0">
-               <h2 className="text-2xl font-black text-slate-900 mb-8 font-outfit tracking-tight">Kelengkapan Data</h2>
+               <div className="mb-8">
+                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Navigasi Portal</p>
+                 <h2 className="mt-2 text-2xl font-black text-slate-900 font-outfit tracking-tight">Menu Portal Santri</h2>
+                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                   Pilih menu sesuai kebutuhanmu. Mulai dari dashboard untuk melihat progres dan arah langkah berikutnya.
+                 </p>
+               </div>
                
                <nav className="space-y-3">
                  {navItems.map((item) => {
@@ -124,7 +144,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                      >
                        <Link href={item.href} className="flex flex-1 items-center gap-4 p-4">
                          <span className={isActive ? 'text-blue-200' : 'text-slate-400'}>{item.icon}</span>
-                         <span className="font-bold text-sm tracking-wide">{item.label}</span>
+                         <div className="min-w-0">
+                           <div className="font-bold text-sm tracking-wide">{item.label}</div>
+                           <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-blue-100/80' : 'text-slate-500'}`}>
+                             {item.description}
+                           </div>
+                         </div>
                        </Link>
                        <Link
                          href={`/portal/help?ref=${item.docRef}`}
@@ -151,6 +176,28 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
             {/* Content Area */}
             <div className="min-w-0 flex-1 p-5 md:p-8 lg:p-10">
+               <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 md:hidden">
+                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Menu Cepat</p>
+                 <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+                   {navItems.map((item) => {
+                     const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
+                     return (
+                       <Link
+                         key={`mobile-${item.href}`}
+                         href={item.href}
+                         className={`inline-flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                           isActive
+                             ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                         }`}
+                       >
+                         <span className={isActive ? 'text-blue-100' : 'text-slate-400'}>{item.icon}</span>
+                         <span>{item.label}</span>
+                       </Link>
+                     );
+                   })}
+                 </div>
+               </div>
                {children}
             </div>
           </div>
