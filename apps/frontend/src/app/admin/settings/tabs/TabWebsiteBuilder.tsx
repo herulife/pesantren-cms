@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Eye,
   Globe2,
+  GripVertical,
   Image as ImageIcon,
   LayoutDashboard,
   Loader2,
@@ -366,6 +367,8 @@ export default function TabWebsiteBuilder() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
+  const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
@@ -498,6 +501,24 @@ export default function TabWebsiteBuilder() {
     });
   };
 
+  const reorderSections = useCallback((sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+
+    setHomeDraft((current) => {
+      const sourceIndex = current.sections.findIndex((section) => section.id === sourceId);
+      const targetIndex = current.sections.findIndex((section) => section.id === targetId);
+
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+        return current;
+      }
+
+      const sections = [...current.sections];
+      const [movedSection] = sections.splice(sourceIndex, 1);
+      sections.splice(targetIndex, 0, movedSection);
+      return { ...current, sections };
+    });
+  }, []);
+
   const deleteSection = (id: string) => {
     setHomeDraft((current) => {
       const sections = current.sections.filter((section) => section.id !== id);
@@ -512,6 +533,23 @@ export default function TabWebsiteBuilder() {
     const section = createSection(type);
     setHomeDraft((current) => ({ ...current, sections: [...current.sections, section] }));
     setSelectedSectionId(section.id);
+  };
+
+  const handleDragStart = (sectionId: string) => {
+    setDraggingSectionId(sectionId);
+    setDragOverSectionId(sectionId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingSectionId(null);
+    setDragOverSectionId(null);
+  };
+
+  const handleDropSection = (targetSectionId: string) => {
+    if (draggingSectionId && draggingSectionId !== targetSectionId) {
+      reorderSections(draggingSectionId, targetSectionId);
+    }
+    handleDragEnd();
   };
 
   if (isLoading) {
@@ -734,13 +772,48 @@ export default function TabWebsiteBuilder() {
                   ))}
                 </div>
                 <div className="space-y-3">
-              {homeDraft.sections.map((section) => (
-                    <div key={section.id} className={`rounded-2xl border p-4 ${selectedSectionId === section.id ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'}`}>
-                      <button onClick={() => setSelectedSectionId(section.id)} className="block w-full text-left">
+                  {homeDraft.sections.map((section) => (
+                    <div
+                      key={section.id}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        if (dragOverSectionId !== section.id) {
+                          setDragOverSectionId(section.id);
+                        }
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        handleDropSection(section.id);
+                      }}
+                      className={`rounded-2xl border p-4 transition-all ${
+                        selectedSectionId === section.id ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'
+                      } ${
+                        dragOverSectionId === section.id && draggingSectionId !== section.id
+                          ? 'ring-2 ring-emerald-300 ring-offset-2 ring-offset-white'
+                          : ''
+                      } ${draggingSectionId === section.id ? 'opacity-65' : ''}`}
+                    >
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <button onClick={() => setSelectedSectionId(section.id)} className="block flex-1 text-left">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{section.type}</p>
                         <p className="mt-1 font-black text-slate-950">{sectionLabels[section.type] || section.type}</p>
                         <p className="mt-1 text-xs font-bold text-slate-500">{section.enabled ? 'Aktif' : 'Nonaktif'} • {section.variant}</p>
-                      </button>
+                        </button>
+                        <div
+                          draggable
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('text/plain', section.id);
+                            handleDragStart(section.id);
+                          }}
+                          onDragEnd={handleDragEnd}
+                          className="inline-flex cursor-grab items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 active:cursor-grabbing"
+                          title="Drag untuk ubah urutan"
+                        >
+                          <GripVertical size={14} />
+                          Drag
+                        </div>
+                      </div>
                       <div className="mt-3 flex gap-2">
                         <button onClick={() => moveSection(section.id, 'up')} className="rounded-lg bg-white p-2 text-slate-500"><ArrowUp size={14} /></button>
                         <button onClick={() => moveSection(section.id, 'down')} className="rounded-lg bg-white p-2 text-slate-500"><ArrowDown size={14} /></button>
