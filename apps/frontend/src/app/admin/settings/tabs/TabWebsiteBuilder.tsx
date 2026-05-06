@@ -663,6 +663,21 @@ export default function TabWebsiteBuilder() {
     });
   }, []);
 
+  const duplicateShellListItem = useCallback((listKey: ShellListKey, index: number) => {
+    setShellDraft((current) => {
+      const items = [...readShellList(current, listKey)];
+      const sourceItem = items[index];
+      if (!sourceItem) return current;
+      const duplicateItem = {
+        ...sourceItem,
+        label: sourceItem.label ? `${sourceItem.label} Copy` : 'Item Copy',
+      };
+      items.splice(index + 1, 0, duplicateItem);
+      return writeShellList(current, listKey, items);
+    });
+    showToast('success', 'Item berhasil diduplikasi.');
+  }, [showToast]);
+
   const moveShellListItem = useCallback((listKey: ShellListKey, index: number, direction: 'up' | 'down') => {
     setShellDraft((current) => {
       const items = [...readShellList(current, listKey)];
@@ -764,7 +779,7 @@ export default function TabWebsiteBuilder() {
                 event.preventDefault();
                 handleShellDrop(listKey, index);
               }}
-              className={`grid gap-3 rounded-xl border p-3 transition-all md:grid-cols-[auto_1fr_1fr_auto_auto_auto] ${
+              className={`grid gap-3 rounded-xl border p-3 transition-all md:grid-cols-[auto_1fr_1fr_auto_auto_auto_auto] ${
                 isDragTarget ? 'border-emerald-300 bg-emerald-50/60 ring-2 ring-emerald-200' : 'border-slate-200 bg-slate-50'
               } ${isDragging ? 'opacity-60' : ''}`}
             >
@@ -798,6 +813,9 @@ export default function TabWebsiteBuilder() {
               </button>
               <button onClick={() => moveShellListItem(listKey, index, 'down')} className="rounded-lg bg-white p-2 text-slate-500">
                 <ArrowDown size={14} />
+              </button>
+              <button onClick={() => duplicateShellListItem(listKey, index)} className="rounded-lg bg-white p-2 text-slate-500" title="Duplikat item">
+                <Copy size={14} />
               </button>
               <button onClick={() => removeShellListItem(listKey, index)} className="rounded-lg bg-rose-50 p-2 text-rose-600">
                 <Trash2 size={14} />

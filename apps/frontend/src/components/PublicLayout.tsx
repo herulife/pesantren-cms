@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight, Camera, ThumbsUp, Play } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { getPublicSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
+import { getPublicSettingsMap, getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 import { parseWebsiteBuilderState } from '@/lib/website-builder';
 import WebsiteShellRenderer from '@/components/website-builder/WebsiteShellRenderer';
 
@@ -17,6 +17,7 @@ type PublicLayoutProps = {
 
 export default function PublicLayout({ children, hideNavbar = false }: PublicLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -26,6 +27,9 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const desktopDropdownRef = useRef<HTMLUListElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
+  const isBuilderPreview = pathname.startsWith('/builder-preview');
+  const effectivePathname = isBuilderPreview ? (pathname.replace(/^\/builder-preview/, '') || '/') : pathname;
+
   useEffect(() => {
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -33,13 +37,36 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   }, []);
 
   useEffect(() => {
+    if (isBuilderPreview && loading) {
+      return;
+    }
+
+    if (isBuilderPreview && (!user || user.role === 'user')) {
+      return;
+    }
+
     async function fetchSettings() {
-      const data = await getPublicSettingsMap();
+      const data = isBuilderPreview ? await getSettingsMap() : await getPublicSettingsMap();
       setSettings(data || {});
     }
 
     fetchSettings();
-  }, []);
+  }, [isBuilderPreview, loading, user]);
+
+  useEffect(() => {
+    if (!isBuilderPreview || loading) {
+      return;
+    }
+
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    if (user.role === 'user') {
+      router.replace('/portal');
+    }
+  }, [isBuilderPreview, loading, router, user]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -83,25 +110,45 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'Facebook', icon: <ThumbsUp size={18} /> },
     { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YouTube', icon: <Play size={18} /> },
   ].filter((item) => item.href);
-  const isProfileActive = pathname === '/profil' || pathname.startsWith('/teachers') || pathname.startsWith('/facilities');
-  const isProgramActive = pathname.startsWith('/program');
-  const isPsbActive = pathname.startsWith('/psb');
-  const isInformationActive = pathname.startsWith('/galeri') || pathname.startsWith('/videos') || pathname.startsWith('/news');
-  const isContactActive = pathname.startsWith('/kontak');
-  const isPortalPage = pathname.startsWith('/portal');
+  const isProfileActive = effectivePathname === '/profil' || effectivePathname.startsWith('/teachers') || effectivePathname.startsWith('/facilities');
+  const isProgramActive = effectivePathname.startsWith('/program');
+  const isPsbActive = effectivePathname.startsWith('/psb');
+  const isInformationActive = effectivePathname.startsWith('/galeri') || effectivePathname.startsWith('/videos') || effectivePathname.startsWith('/news');
+  const isContactActive = effectivePathname.startsWith('/kontak');
+  const isPortalPage = effectivePathname.startsWith('/portal');
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
-  const useBuilderShell = builderState.enabled;
+  const useBuilderShell = builderState.enabled || isBuilderPreview;
   const toggleDesktopDropdown = (menu: 'profil' | 'informasi') => {
     setOpenDesktopDropdown((current) => (current === menu ? null : menu));
   };
+
+  const previewLinks = [
+    { label: 'Home', href: '/builder-preview/home' },
+    { label: 'Profil', href: '/builder-preview/profil' },
+    { label: 'Program', href: '/builder-preview/program' },
+    { label: 'PSB', href: '/builder-preview/psb' },
+    { label: 'Kontak', href: '/builder-preview/kontak' },
+    { label: 'Berita', href: '/builder-preview/news' },
+  ];
+
+  if (isBuilderPreview && (loading || !user || user.role === 'user')) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" />
+          <p className="mt-4 text-sm font-bold text-emerald-100">Menyiapkan preview builder...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (useBuilderShell) {
     return (
       <WebsiteShellRenderer
         hideNavbar={hideNavbar}
-        shell={builderState.shellPublished}
-        theme={builderState.themePublished}
-        pathname={pathname}
+        shell={isBuilderPreview ? builderState.shellDraft : builderState.shellPublished}
+        theme={isBuilderPreview ? builderState.themeDraft : builderState.themePublished}
+        pathname={effectivePathname}
         logoUrl={logoUrl}
         schoolName={schoolName}
         welcomeText={welcomeText}
@@ -118,6 +165,35 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
         scrollToTop={scrollToTop}
         isPortalPage={isPortalPage}
       >
+        {isBuilderPreview ? (
+          <div className="sticky top-0 z-[1200] border-b border-amber-300 bg-amber-50/95 backdrop-blur-md">
+            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700">Preview Draft Builder</p>
+                <p className="mt-1 text-sm font-bold text-slate-900">Halaman ini memakai shell `draft`, belum live ke pengunjung.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {previewLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${
+                      pathname === item.href ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                <Link href="/admin/settings" className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
+                  Settings
+                </Link>
+                <Link href={effectivePathname} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white">
+                  Live <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : null}
         {children}
       </WebsiteShellRenderer>
     );

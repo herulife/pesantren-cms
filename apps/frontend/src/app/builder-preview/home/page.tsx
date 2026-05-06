@@ -162,6 +162,14 @@ export default function BuilderPreviewHomePage() {
     { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'Facebook', icon: <ThumbsUp size={18} /> },
     { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YouTube', icon: <Play size={18} /> },
   ].filter((item) => item.href);
+  const previewLinks = [
+    { label: 'Home', href: '/builder-preview/home' },
+    { label: 'Profil', href: '/builder-preview/profil' },
+    { label: 'Program', href: '/builder-preview/program' },
+    { label: 'PSB', href: '/builder-preview/psb' },
+    { label: 'Kontak', href: '/builder-preview/kontak' },
+    { label: 'Berita', href: '/builder-preview/news' },
+  ];
 
   if (loading || (!user && !isLoading)) {
     return (
@@ -174,7 +182,7 @@ export default function BuilderPreviewHomePage() {
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="sticky top-0 z-[1200] border-b border-amber-300 bg-amber-50/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-amber-950">
               <Eye size={18} />
@@ -184,7 +192,18 @@ export default function BuilderPreviewHomePage() {
               <p className="text-sm font-bold text-slate-900">Tampilan ini membaca `draft`, belum live ke pengunjung.</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {previewLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${
+                  item.href === '/builder-preview/home' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
             <Link href="/admin/settings" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
               Kembali ke Settings
             </Link>
