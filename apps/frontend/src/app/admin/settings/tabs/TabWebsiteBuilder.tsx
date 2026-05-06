@@ -426,6 +426,14 @@ export default function TabWebsiteBuilder() {
                 {isPublishing ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />}
                 Publish
               </button>
+              <button
+                type="button"
+                onClick={() => window.open('/builder-preview/home', '_blank', 'noopener,noreferrer')}
+                className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+              >
+                <Eye size={16} />
+                Preview Draft
+              </button>
               <button onClick={() => void publishDraft(true)} disabled={isPublishing} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-slate-800 disabled:opacity-60">
                 <CheckCircle2 size={16} />
                 Publish & Aktifkan
