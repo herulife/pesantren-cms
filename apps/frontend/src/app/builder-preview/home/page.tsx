@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, Eye, Loader2 } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import HomePageRenderer from '@/components/website-builder/HomePageRenderer';
+import BuilderPreviewToolbar, { BuilderPreviewMode } from '@/components/website-builder/BuilderPreviewToolbar';
 import WebsiteShellRenderer from '@/components/website-builder/WebsiteShellRenderer';
 import {
   Agenda,
@@ -42,6 +42,7 @@ function extractListItems<T>(payload: MaybeListResponse<T>): T[] {
 }
 
 export default function BuilderPreviewHomePage() {
+  const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [settings, setSettings] = useState<SettingsMap>({});
@@ -162,19 +163,12 @@ export default function BuilderPreviewHomePage() {
   const schoolEmail = settings.school_email || '';
   const schoolWebsite = settings.school_website || '';
   const whatsappNumber = schoolPhone.replace(/\D/g, '') || '6281413241748';
+  const previewMode: BuilderPreviewMode = pathname.startsWith('/builder-compare') ? 'compare' : 'draft';
   const socialLinks = [
     { href: settings.social_instagram || 'https://instagram.com/darussunnahparung', label: 'Instagram', icon: <Camera size={18} /> },
     { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'Facebook', icon: <ThumbsUp size={18} /> },
     { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YouTube', icon: <Play size={18} /> },
   ].filter((item) => item.href);
-  const previewLinks = [
-    { label: 'Home', href: '/builder-preview/home' },
-    { label: 'Profil', href: '/builder-preview/profil' },
-    { label: 'Program', href: '/builder-preview/program' },
-    { label: 'PSB', href: '/builder-preview/psb' },
-    { label: 'Kontak', href: '/builder-preview/kontak' },
-    { label: 'Berita', href: '/builder-preview/news' },
-  ];
 
   if (loading || (!user && !isLoading)) {
     return (
@@ -184,73 +178,93 @@ export default function BuilderPreviewHomePage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="sticky top-0 z-[1200] border-b border-amber-300 bg-amber-50/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-amber-950">
-              <Eye size={18} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700">Preview Draft Builder</p>
-              <p className="text-sm font-bold text-slate-900">Tampilan ini membaca `draft`, belum live ke pengunjung.</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {previewLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${
-                  item.href === '/builder-preview/home' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'
-                }`}
+  const shellRendererProps = {
+    pathname: '/',
+    logoUrl,
+    schoolName,
+    welcomeText,
+    schoolAddress,
+    schoolPhone,
+    schoolEmail,
+    schoolWebsite,
+    whatsappNumber,
+    socialLinks,
+    user,
+    loading,
+    logout,
+    showBackToTop,
+    scrollToTop: () => window.scrollTo({ top: 0, behavior: 'smooth' as ScrollBehavior }),
+    isPortalPage: false,
+  };
+
+  const homeDataSources = {
+    news,
+    agendas,
+    programs,
+    galleryAlbums,
+    videoSeries,
+    settings,
+    isLoading,
+  };
+
+  if (previewMode === 'compare') {
+    return (
+      <div className="min-h-screen bg-slate-100">
+        <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname="/" mode={previewMode} />
+
+        <div className="mx-auto max-w-[1720px] px-4 py-6 md:px-6">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Published</p>
+                <h3 className="mt-2 text-lg font-black text-slate-950">Homepage Live Sekarang</h3>
+                <p className="mt-1 text-sm font-medium text-slate-600">
+                  Ini versi yang sedang aktif untuk pengunjung website.
+                </p>
+              </div>
+
+              <WebsiteShellRenderer
+                {...shellRendererProps}
+                shell={builderState.shellPublished}
+                theme={builderState.themePublished}
               >
-                {item.label}
-              </Link>
-            ))}
-            <Link href="/admin/settings" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
-              Kembali ke Settings
-            </Link>
-            <Link href="/" className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white">
-              Lihat Live <ArrowRight size={14} />
-            </Link>
+                <HomePageRenderer layout={builderState.homePublished} dataSources={homeDataSources} />
+              </WebsiteShellRenderer>
+            </div>
+
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700">Draft</p>
+                <h3 className="mt-2 text-lg font-black text-slate-950">Homepage Builder Yang Belum Live</h3>
+                <p className="mt-1 text-sm font-medium text-slate-600">
+                  Bandingkan perubahan hero, urutan block, navbar, dan footer sebelum publish.
+                </p>
+              </div>
+
+              <WebsiteShellRenderer
+                {...shellRendererProps}
+                shell={builderState.shellDraft}
+                theme={builderState.themeDraft}
+              >
+                <HomePageRenderer layout={builderState.homeDraft} dataSources={homeDataSources} />
+              </WebsiteShellRenderer>
+            </div>
           </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname="/" mode={previewMode} />
 
       <WebsiteShellRenderer
+        {...shellRendererProps}
         shell={builderState.shellDraft}
         theme={builderState.themeDraft}
-        pathname="/"
-        logoUrl={logoUrl}
-        schoolName={schoolName}
-        welcomeText={welcomeText}
-        schoolAddress={schoolAddress}
-        schoolPhone={schoolPhone}
-        schoolEmail={schoolEmail}
-        schoolWebsite={schoolWebsite}
-        whatsappNumber={whatsappNumber}
-        socialLinks={socialLinks}
-        user={user}
-        loading={loading}
-        logout={logout}
-        showBackToTop={showBackToTop}
-        scrollToTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        isPortalPage={false}
       >
-        <HomePageRenderer
-          layout={builderState.homeDraft}
-          dataSources={{
-            news,
-            agendas,
-            programs,
-            galleryAlbums,
-            videoSeries,
-            settings,
-            isLoading,
-          }}
-        />
+        <HomePageRenderer layout={builderState.homeDraft} dataSources={homeDataSources} />
       </WebsiteShellRenderer>
     </div>
   );

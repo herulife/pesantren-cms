@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut
 import { useAuth } from '@/components/AuthProvider';
 import { getPublicSettingsMap, getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 import { parseWebsiteBuilderState } from '@/lib/website-builder';
+import BuilderPreviewToolbar, { BuilderPreviewMode } from '@/components/website-builder/BuilderPreviewToolbar';
 import WebsiteShellRenderer from '@/components/website-builder/WebsiteShellRenderer';
 
 type PublicLayoutProps = {
@@ -27,8 +28,9 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const desktopDropdownRef = useRef<HTMLUListElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const isBuilderPreview = pathname.startsWith('/builder-preview');
-  const effectivePathname = isBuilderPreview ? (pathname.replace(/^\/builder-preview/, '') || '/') : pathname;
+  const isBuilderCompare = pathname.startsWith('/builder-compare');
+  const isBuilderPreview = pathname.startsWith('/builder-preview') || isBuilderCompare;
+  const effectivePathname = isBuilderPreview ? (pathname.replace(/^\/builder-(preview|compare)/, '') || '/') : pathname;
 
   useEffect(() => {
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
@@ -118,18 +120,10 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const isPortalPage = effectivePathname.startsWith('/portal');
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
   const useBuilderShell = builderState.enabled || isBuilderPreview;
+  const previewMode: BuilderPreviewMode = isBuilderCompare ? 'compare' : 'draft';
   const toggleDesktopDropdown = (menu: 'profil' | 'informasi') => {
     setOpenDesktopDropdown((current) => (current === menu ? null : menu));
   };
-
-  const previewLinks = [
-    { label: 'Home', href: '/builder-preview/home' },
-    { label: 'Profil', href: '/builder-preview/profil' },
-    { label: 'Program', href: '/builder-preview/program' },
-    { label: 'PSB', href: '/builder-preview/psb' },
-    { label: 'Kontak', href: '/builder-preview/kontak' },
-    { label: 'Berita', href: '/builder-preview/news' },
-  ];
 
   if (isBuilderPreview && (loading || !user || user.role === 'user')) {
     return (
@@ -142,57 +136,83 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     );
   }
 
+  const shellRendererProps = {
+    hideNavbar,
+    pathname: effectivePathname,
+    logoUrl,
+    schoolName,
+    welcomeText,
+    schoolAddress,
+    schoolPhone,
+    schoolEmail,
+    schoolWebsite,
+    whatsappNumber,
+    socialLinks,
+    user,
+    loading,
+    logout,
+    showBackToTop,
+    scrollToTop,
+    isPortalPage,
+  };
+
   if (useBuilderShell) {
-    return (
-      <WebsiteShellRenderer
-        hideNavbar={hideNavbar}
-        shell={isBuilderPreview ? builderState.shellDraft : builderState.shellPublished}
-        theme={isBuilderPreview ? builderState.themeDraft : builderState.themePublished}
-        pathname={effectivePathname}
-        logoUrl={logoUrl}
-        schoolName={schoolName}
-        welcomeText={welcomeText}
-        schoolAddress={schoolAddress}
-        schoolPhone={schoolPhone}
-        schoolEmail={schoolEmail}
-        schoolWebsite={schoolWebsite}
-        whatsappNumber={whatsappNumber}
-        socialLinks={socialLinks}
-        user={user}
-        loading={loading}
-        logout={logout}
-        showBackToTop={showBackToTop}
-        scrollToTop={scrollToTop}
-        isPortalPage={isPortalPage}
-      >
-        {isBuilderPreview ? (
-          <div className="sticky top-0 z-[1200] border-b border-amber-300 bg-amber-50/95 backdrop-blur-md">
-            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700">Preview Draft Builder</p>
-                <p className="mt-1 text-sm font-bold text-slate-900">Halaman ini memakai shell `draft`, belum live ke pengunjung.</p>
+    if (isBuilderPreview && previewMode === 'compare') {
+      return (
+        <div className="min-h-screen bg-slate-100">
+          <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname={effectivePathname} mode={previewMode} />
+
+          <div className="mx-auto max-w-[1720px] px-4 py-6 md:px-6">
+            <div className="grid gap-6 xl:grid-cols-2">
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Published</p>
+                  <h3 className="mt-2 text-lg font-black text-slate-950">Versi Live Sekarang</h3>
+                  <p className="mt-1 text-sm font-medium text-slate-600">
+                    Ini yang sedang dilihat pengunjung di website publik.
+                  </p>
+                </div>
+
+                <WebsiteShellRenderer
+                  {...shellRendererProps}
+                  shell={builderState.shellPublished}
+                  theme={builderState.themePublished}
+                >
+                  {children}
+                </WebsiteShellRenderer>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {previewLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${
-                      pathname === item.href ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-                <Link href="/admin/settings" className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
-                  Settings
-                </Link>
-                <Link href={effectivePathname} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white">
-                  Live <ArrowRight size={14} />
-                </Link>
+
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700">Draft</p>
+                  <h3 className="mt-2 text-lg font-black text-slate-950">Versi Builder Yang Belum Live</h3>
+                  <p className="mt-1 text-sm font-medium text-slate-600">
+                    Cek perubahan shell dan halaman di sini sebelum dipublish.
+                  </p>
+                </div>
+
+                <WebsiteShellRenderer
+                  {...shellRendererProps}
+                  shell={builderState.shellDraft}
+                  theme={builderState.themeDraft}
+                >
+                  {children}
+                </WebsiteShellRenderer>
               </div>
             </div>
           </div>
+        </div>
+      );
+    }
+
+    return (
+      <WebsiteShellRenderer
+        {...shellRendererProps}
+        shell={isBuilderPreview ? builderState.shellDraft : builderState.shellPublished}
+        theme={isBuilderPreview ? builderState.themeDraft : builderState.themePublished}
+      >
+        {isBuilderPreview ? (
+          <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname={effectivePathname} mode={previewMode} />
         ) : null}
         {children}
       </WebsiteShellRenderer>

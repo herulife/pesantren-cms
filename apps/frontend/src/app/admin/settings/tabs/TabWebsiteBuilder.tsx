@@ -6,6 +6,7 @@ import {
   ArrowDown,
   ArrowUp,
   CheckCircle2,
+  Columns2,
   Copy,
   Eye,
   Globe2,
@@ -1585,6 +1586,14 @@ export default function TabWebsiteBuilder() {
               >
                 <Eye size={16} />
                 Preview Draft
+              </button>
+              <button
+                type="button"
+                onClick={() => window.open('/builder-compare/home', '_blank', 'noopener,noreferrer')}
+                className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-amber-700 transition hover:border-amber-300 hover:bg-amber-50"
+              >
+                <Columns2 size={16} />
+                Bandingkan
               </button>
               <button onClick={() => void publishDraft(true)} disabled={isPublishing} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-slate-800 disabled:opacity-60">
                 <CheckCircle2 size={16} />
