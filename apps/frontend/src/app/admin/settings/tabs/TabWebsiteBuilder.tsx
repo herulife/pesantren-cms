@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import Image from 'next/image';
 import {
   ArrowDown,
   ArrowUp,
   CheckCircle2,
   Eye,
   Globe2,
+  Image as ImageIcon,
   LayoutDashboard,
   Loader2,
   MonitorSmartphone,
@@ -17,8 +19,9 @@ import {
   Save,
   Send,
   Trash2,
+  UploadCloud,
 } from 'lucide-react';
-import { getSettingsMap, updateSetting } from '@/lib/api';
+import { getSettingsMap, resolveDisplayImageUrl, updateSetting, uploadImage } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import {
   defaultHomeBuilderLayout,
@@ -106,12 +109,94 @@ function updatePrimaryHeroButton(section: HomeSection, key: 'label' | 'url', val
   return updateSectionSetting(section, 'buttons', buttons);
 }
 
+function updatePrimaryHeroSlide(section: HomeSection, key: 'title' | 'subtitle' | 'image_url', value: string): HomeSection {
+  const rawSlides = Array.isArray(section.settings.slides) ? section.settings.slides : [];
+  const slides = rawSlides.length > 0 ? [...rawSlides] : [{ title: '', subtitle: '', image_url: '' }];
+  const firstSlide = slides[0] && typeof slides[0] === 'object' ? { ...(slides[0] as Record<string, unknown>) } : {};
+  firstSlide[key] = value;
+  slides[0] = firstSlide;
+  return updateSectionSetting(section, 'slides', slides);
+}
+
+function ImageUploadField({
+  label,
+  value,
+  placeholder,
+  onChange,
+  onUpload,
+  isUploading = false,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  onUpload: (file: File) => Promise<void>;
+  isUploading?: boolean;
+}) {
+  const inputId = useId();
+  const previewUrl = value ? resolveDisplayImageUrl(value) : '';
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</span>
+        <label
+          htmlFor={inputId}
+          className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] transition ${
+            isUploading ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+          }`}
+        >
+          {isUploading ? <RefreshCw size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+          {isUploading ? 'Uploading...' : 'Upload Gambar'}
+        </label>
+        <input
+          id={inputId}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          disabled={isUploading}
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            await onUpload(file);
+            event.currentTarget.value = '';
+          }}
+        />
+      </div>
+
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+      />
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+        {previewUrl ? (
+          <div className="relative h-40 w-full">
+            <Image src={previewUrl} alt={label} fill unoptimized className="object-cover" />
+          </div>
+        ) : (
+          <div className="flex h-40 items-center justify-center gap-2 text-slate-400">
+            <ImageIcon size={18} />
+            <span className="text-sm font-bold">Belum ada gambar</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SectionEditor({
   section,
   onChange,
+  onUploadImage,
+  isUploadingImage = false,
 }: {
   section: HomeSection;
   onChange: (section: HomeSection) => void;
+  onUploadImage?: (file: File) => Promise<void>;
+  isUploadingImage?: boolean;
 }) {
   const title = typeof section.settings.title === 'string' ? section.settings.title : '';
   const subtitle = typeof section.settings.subtitle === 'string' ? section.settings.subtitle : '';
@@ -182,7 +267,11 @@ function SectionEditor({
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Judul</span>
         <input
           value={title || heroTitle}
-          onChange={(event) => onChange(updateSectionSetting(section, 'title', event.target.value))}
+          onChange={(event) => {
+            const nextTitle = event.target.value;
+            const next = updateSectionSetting(section, 'title', nextTitle);
+            onChange(section.type === 'hero' ? updatePrimaryHeroSlide(next, 'title', nextTitle) : next);
+          }}
           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
         />
       </label>
@@ -192,22 +281,33 @@ function SectionEditor({
         <textarea
           rows={3}
           value={subtitle || heroSubtitle}
-          onChange={(event) => onChange(updateSectionSetting(section, 'subtitle', event.target.value))}
+          onChange={(event) => {
+            const nextSubtitle = event.target.value;
+            const next = updateSectionSetting(section, 'subtitle', nextSubtitle);
+            onChange(section.type === 'hero' ? updatePrimaryHeroSlide(next, 'subtitle', nextSubtitle) : next);
+          }}
           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800"
         />
       </label>
 
       {section.type === 'hero' ? (
         <div className="grid gap-4 md:grid-cols-3">
-          <label className="space-y-2 md:col-span-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">URL Gambar</span>
-            <input
+          <div className="md:col-span-2">
+            <ImageUploadField
+              label="Gambar Hero"
               value={imageUrl}
-              onChange={(event) => onChange(updateSectionSetting(section, 'image_url', event.target.value))}
+              onChange={(value) => {
+                const next = updateSectionSetting(section, 'image_url', value);
+                onChange(updatePrimaryHeroSlide(next, 'image_url', value));
+              }}
+              onUpload={async (file) => {
+                if (!onUploadImage) return;
+                await onUploadImage(file);
+              }}
+              isUploading={isUploadingImage}
               placeholder="/uploads/hero.jpg atau /assets/img/gedung.webp"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
             />
-          </label>
+          </div>
           <label className="space-y-2">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Overlay</span>
             <select
@@ -265,6 +365,7 @@ export default function TabWebsiteBuilder() {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
@@ -294,6 +395,28 @@ export default function TabWebsiteBuilder() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  const uploadBuilderAsset = useCallback(
+    async (target: string, file: File) => {
+      setUploadingTarget(target);
+      try {
+        const result = await uploadImage(file);
+        const uploadedUrl = result?.url || result?.data?.url || '';
+        if (!uploadedUrl) {
+          throw new Error('URL gambar upload tidak ditemukan.');
+        }
+        showToast('success', 'Gambar berhasil diunggah.');
+        return uploadedUrl;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Gagal mengunggah gambar.';
+        showToast('error', message);
+        return '';
+      } finally {
+        setUploadingTarget(null);
+      }
+    },
+    [showToast]
+  );
 
   const saveDraft = async () => {
     setIsSavingDraft(true);
@@ -537,6 +660,29 @@ export default function TabWebsiteBuilder() {
 
           {activeArea === 'Navbar' ? (
             <div className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <ImageUploadField
+                  label="Logo Navbar"
+                  value={shellDraft.navbar.logo_url}
+                  onChange={(value) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, logo_url: value } }))}
+                  onUpload={async (file) => {
+                    const uploadedUrl = await uploadBuilderAsset('navbar-logo', file);
+                    if (!uploadedUrl) return;
+                    setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, logo_url: uploadedUrl } }));
+                  }}
+                  isUploading={uploadingTarget === 'navbar-logo'}
+                  placeholder="/uploads/logo-navbar.png"
+                />
+                <label className="space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Override Nama Sekolah</span>
+                  <input
+                    value={shellDraft.navbar.school_name_override}
+                    onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, school_name_override: event.target.value } }))}
+                    placeholder="Kosongkan untuk pakai nama sekolah utama"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold"
+                  />
+                </label>
+              </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <label className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Variant Navbar</span>
@@ -588,7 +734,7 @@ export default function TabWebsiteBuilder() {
                   ))}
                 </div>
                 <div className="space-y-3">
-                  {homeDraft.sections.map((section) => (
+              {homeDraft.sections.map((section) => (
                     <div key={section.id} className={`rounded-2xl border p-4 ${selectedSectionId === section.id ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'}`}>
                       <button onClick={() => setSelectedSectionId(section.id)} className="block w-full text-left">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{section.type}</p>
@@ -605,7 +751,19 @@ export default function TabWebsiteBuilder() {
                   ))}
                 </div>
               </div>
-              {selectedSection ? <SectionEditor section={selectedSection} onChange={updateSelectedSection} /> : null}
+              {selectedSection ? (
+                <SectionEditor
+                  section={selectedSection}
+                  onChange={updateSelectedSection}
+                  onUploadImage={async (file) => {
+                    const uploadedUrl = await uploadBuilderAsset(`section-${selectedSection.id}-image`, file);
+                    if (!uploadedUrl) return;
+                    const next = updateSectionSetting(selectedSection, 'image_url', uploadedUrl);
+                    updateSelectedSection(updatePrimaryHeroSlide(next, 'image_url', uploadedUrl));
+                  }}
+                  isUploadingImage={uploadingTarget === `section-${selectedSection.id}-image`}
+                />
+              ) : null}
             </div>
           ) : null}
 
@@ -624,6 +782,18 @@ export default function TabWebsiteBuilder() {
 
           {activeArea === 'Footer' ? (
             <div className="grid gap-5 md:grid-cols-2">
+              <ImageUploadField
+                label="Logo Footer"
+                value={shellDraft.footer.logo_url}
+                onChange={(value) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, logo_url: value } }))}
+                onUpload={async (file) => {
+                  const uploadedUrl = await uploadBuilderAsset('footer-logo', file);
+                  if (!uploadedUrl) return;
+                  setShellDraft((current) => ({ ...current, footer: { ...current.footer, logo_url: uploadedUrl } }));
+                }}
+                isUploading={uploadingTarget === 'footer-logo'}
+                placeholder="/uploads/logo-footer.png"
+              />
               <label className="space-y-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Variant Footer</span>
                 <select value={shellDraft.footer.variant} onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, variant: event.target.value as WebsiteBuilderShell['footer']['variant'] } }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold">
@@ -645,6 +815,15 @@ export default function TabWebsiteBuilder() {
               <label className="space-y-2 md:col-span-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Deskripsi Footer</span>
                 <textarea rows={4} value={shellDraft.footer.description} onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, description: event.target.value } }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium" />
+              </label>
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Copyright</span>
+                <input
+                  value={shellDraft.footer.copyright_text}
+                  onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, copyright_text: event.target.value } }))}
+                  placeholder={`© ${new Date().getFullYear()} Darussunnah Parung.`}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold"
+                />
               </label>
             </div>
           ) : null}
