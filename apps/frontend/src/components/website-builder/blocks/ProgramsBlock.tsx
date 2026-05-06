@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, BookOpen, HeartHandshake } from 'lucide-react';
 import { HomeSection } from '@/lib/website-builder';
 import { resolveDisplayImageUrl } from '@/lib/api';
-import { getString } from './helpers';
+import { getNumber, getString } from './helpers';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 
 const programCards = [
@@ -29,6 +29,9 @@ type ProgramsBlockProps = {
 export default function ProgramsBlock({ section, mode }: ProgramsBlockProps) {
   const isProgram = mode === 'programs';
   const cards = isProgram ? programCards : extracurricularCards;
+  const limit = Math.max(1, Math.min(cards.length, getNumber(section, 'limit', 4)));
+  const visibleCards = cards.slice(0, limit);
+  const eyebrow = getString(section, 'eyebrow', isProgram ? 'Program Inti' : 'Kegiatan Penunjang');
   const title = getString(section, 'title', isProgram ? 'Program Inti' : 'Ekstrakurikuler');
   const subtitle = getString(
     section,
@@ -45,15 +48,15 @@ export default function ProgramsBlock({ section, mode }: ProgramsBlockProps) {
     <section className={`relative overflow-hidden ${isProgram ? 'bg-white' : 'bg-slate-950'} py-16 md:py-24`}>
       <div className="container mx-auto max-w-6xl px-4">
         <PublicSectionIntro
-          eyebrow={isProgram ? 'Program Inti' : 'Kegiatan Penunjang'}
+          eyebrow={eyebrow}
           title={title}
           description={subtitle}
           theme={isProgram ? 'light' : 'dark'}
           actionHref={buttonUrl}
           actionLabel={buttonLabel}
         />
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {cards.map((card) => (
+        <div className={`mt-8 grid gap-4 sm:grid-cols-2 ${section.variant === 'compact-grid' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
+          {visibleCards.map((card) => (
             <article
               key={card.title}
               className={`group overflow-hidden rounded-[1.8rem] border shadow-[0_26px_64px_-42px_rgba(15,23,42,0.3)] ${

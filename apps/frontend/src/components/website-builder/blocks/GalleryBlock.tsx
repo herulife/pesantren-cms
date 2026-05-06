@@ -7,24 +7,27 @@ import { resolveDisplayImageUrl } from '@/lib/api';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import { GalleryAlbumSummary } from '../HomePageRenderer';
-import { getString } from './helpers';
+import { getNumber, getString } from './helpers';
 
 export default function GalleryBlock({ section, albums, isLoading }: { section: HomeSection; albums: GalleryAlbumSummary[]; isLoading: boolean }) {
+  const eyebrow = getString(section, 'eyebrow', 'Galeri');
   const title = getString(section, 'title', 'Galeri Kegiatan');
   const subtitle = getString(section, 'subtitle', 'Dokumentasi kegiatan pondok, pembelajaran, dan keseharian santri.');
   const buttonLabel = getString(section, 'button_label', 'Lihat galeri');
   const buttonUrl = getString(section, 'button_url', '/galeri');
+  const limit = Math.max(1, getNumber(section, 'limit', 3));
+  const items = albums.slice(0, limit);
 
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] py-16 md:py-24">
       <div className="container mx-auto max-w-6xl px-4">
-        <PublicSectionIntro eyebrow="Galeri" title={title} description={subtitle} actionHref={buttonUrl} actionLabel={buttonLabel} />
+        <PublicSectionIntro eyebrow={eyebrow} title={title} description={subtitle} actionHref={buttonUrl} actionLabel={buttonLabel} />
         {isLoading ? (
-          <PublicGridSkeleton count={3} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3" itemClassName="h-52 rounded-[1.75rem]" />
-        ) : albums.length > 0 ? (
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {albums.slice(0, 3).map((album) => (
-              <Link key={album.key} href={`/galeri/${album.slug}`} className="group relative h-72 overflow-hidden rounded-[1.9rem] bg-slate-200 shadow-[0_28px_70px_-42px_rgba(15,23,42,0.3)]">
+          <PublicGridSkeleton count={limit} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3" itemClassName="h-52 rounded-[1.75rem]" />
+        ) : items.length > 0 ? (
+          <div className={`mt-8 grid gap-4 ${section.variant === 'cards' ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'}`}>
+            {items.map((album) => (
+              <Link key={album.key} href={`/galeri/${album.slug}`} className={`group relative overflow-hidden rounded-[1.9rem] bg-slate-200 shadow-[0_28px_70px_-42px_rgba(15,23,42,0.3)] ${section.variant === 'cards' ? 'h-60' : 'h-72'}`}>
                 <Image
                   src={resolveDisplayImageUrl(album.cover.image_url)}
                   alt={album.title}

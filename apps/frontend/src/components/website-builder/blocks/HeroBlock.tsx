@@ -90,28 +90,57 @@ function buttonClass(style: string) {
   return 'bg-emerald-600 text-white shadow-[0_18px_45px_-20px_rgba(16,185,129,0.6)] hover:bg-emerald-500';
 }
 
-function HeroContent({ section, slide, variant }: { section: HomeSection; slide: BuilderHeroSlide; variant: string }) {
+function contentPositionClass(textPosition: string, variant: string) {
+  if (variant === 'minimal') return 'mx-auto text-center';
+  if (textPosition === 'center') return 'mx-auto text-center';
+  if (textPosition === 'right') return 'ml-auto text-right';
+  return '';
+}
+
+function buttonRowClass(textPosition: string, variant: string) {
+  if (variant === 'minimal' || textPosition === 'center') return 'sm:justify-center';
+  if (textPosition === 'right') return 'sm:justify-end';
+  return '';
+}
+
+function measureAlignClass(textPosition: string, variant: string) {
+  if (variant === 'minimal' || textPosition === 'center') return 'mx-auto';
+  if (textPosition === 'right') return 'ml-auto';
+  return '';
+}
+
+function HeroContent({
+  section,
+  slide,
+  variant,
+  textPosition,
+}: {
+  section: HomeSection;
+  slide: BuilderHeroSlide;
+  variant: string;
+  textPosition: string;
+}) {
   const buttons = getButtons(section);
   const kicker = getString(section, 'kicker', 'Darussunnah Parung');
 
   return (
-    <div className={`max-w-3xl ${variant === 'minimal' ? 'mx-auto text-center' : ''}`}>
+    <div className={`max-w-3xl ${contentPositionClass(textPosition, variant)}`}>
       <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-100 backdrop-blur-md sm:text-[11px]">
         <Sparkles size={14} />
         {kicker}
       </span>
-      <h1 className="mt-4 max-w-[19ch] text-balance text-[2.45rem] font-black leading-[0.96] tracking-[-0.045em] text-white drop-shadow-[0_4px_18px_rgba(2,6,23,0.48)] sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
+      <h1 className={`mt-4 max-w-[19ch] text-balance text-[2.45rem] font-black leading-[0.96] tracking-[-0.045em] text-white drop-shadow-[0_4px_18px_rgba(2,6,23,0.48)] sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem] ${measureAlignClass(textPosition, variant)}`}>
         {slide.title}
       </h1>
-      <p className="mt-4 max-w-[34rem] text-sm font-medium leading-7 text-slate-200 drop-shadow-[0_2px_10px_rgba(2,6,23,0.46)] sm:mt-5 sm:text-base md:text-lg">
+      <p className={`mt-4 max-w-[34rem] text-sm font-medium leading-7 text-slate-200 drop-shadow-[0_2px_10px_rgba(2,6,23,0.46)] sm:mt-5 sm:text-base md:text-lg ${measureAlignClass(textPosition, variant)}`}>
         {slide.subtitle}
       </p>
-      <div className={`mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row ${variant === 'minimal' ? 'sm:justify-center' : ''}`}>
+      <div className={`mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row ${buttonRowClass(textPosition, variant)}`}>
         {buttons.map((button) => (
           <Link
             key={`${button.label}-${button.url}`}
             href={button.url}
-            className={`inline-flex items-center justify-center gap-2 self-start rounded-full px-5 py-3 text-xs font-bold transition-all hover:-translate-y-1 sm:px-8 sm:py-4 sm:text-sm ${buttonClass(button.style)} ${variant === 'minimal' ? 'sm:self-center' : ''}`}
+            className={`inline-flex items-center justify-center gap-2 self-start rounded-full px-5 py-3 text-xs font-bold transition-all hover:-translate-y-1 sm:px-8 sm:py-4 sm:text-sm ${buttonClass(button.style)} ${variant === 'minimal' || textPosition === 'center' ? 'sm:self-center' : textPosition === 'right' ? 'sm:self-end' : ''}`}
           >
             {button.label} <ArrowRight size={16} />
           </Link>
@@ -136,6 +165,7 @@ export default function HeroBlock({ section, settings }: HeroBlockProps) {
         ];
   const overlay = getString(section, 'overlay', 'medium');
   const mobileHeight = getString(section, 'mobile_height', 'compact');
+  const textPosition = getString(section, 'text_position', 'left-top');
   const canSlide = variant === 'slider' && slides.length > 1;
 
   if (variant === 'psb-campaign') {
@@ -145,7 +175,7 @@ export default function HeroBlock({ section, settings }: HeroBlockProps) {
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
         <div className={`absolute inset-0 ${overlayClass(overlay)}`} />
         <div className="container relative z-10 mx-auto grid min-h-[inherit] max-w-6xl items-center gap-8 px-4 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
-          <HeroContent section={section} slide={slide} variant={variant} />
+          <HeroContent section={section} slide={slide} variant={variant} textPosition={textPosition} />
           <div className="rounded-[2rem] border border-white/15 bg-white/10 p-6 text-white shadow-[0_30px_80px_-45px_rgba(0,0,0,0.65)] backdrop-blur-md">
             <div className="inline-flex rounded-2xl bg-amber-400 p-3 text-amber-950">
               <CalendarDays size={24} />
@@ -170,7 +200,7 @@ export default function HeroBlock({ section, settings }: HeroBlockProps) {
       <div className={`absolute inset-0 ${overlayClass(overlay)}`} />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.14),transparent_24%)]" />
       <div className={`container relative z-10 mx-auto grid min-h-[inherit] max-w-6xl items-center gap-10 px-4 pb-16 pt-10 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-24 ${variant === 'split' ? 'lg:grid-cols-[1fr_0.9fr]' : ''}`}>
-        <HeroContent section={section} slide={slide} variant={variant} />
+        <HeroContent section={section} slide={slide} variant={variant} textPosition={textPosition} />
         {variant === 'split' ? (
           <div className="hidden overflow-hidden rounded-[2.2rem] border border-white/15 bg-white/10 p-3 shadow-[0_30px_80px_-50px_rgba(0,0,0,0.72)] backdrop-blur-sm lg:block">
             <div className="relative h-[420px] overflow-hidden rounded-[1.7rem]">

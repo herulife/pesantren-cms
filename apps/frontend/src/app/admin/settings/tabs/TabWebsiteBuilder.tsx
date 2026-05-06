@@ -43,6 +43,11 @@ import {
 
 type BuilderArea = 'Theme' | 'Navbar' | 'Home' | 'Floating' | 'Footer';
 type ShellListKey = 'navbar-menu' | 'footer-quick-links' | 'footer-contact-items';
+type HeroSlideDraft = {
+  title: string;
+  subtitle: string;
+  image_url: string;
+};
 
 const builderAreas: Array<{ title: BuilderArea; description: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
   { title: 'Theme', description: 'Warna, font, radius, shadow, dan background global.', icon: Paintbrush },
@@ -73,6 +78,10 @@ const sectionLabels: Record<HomeSectionType, string> = blockCatalog.reduce(
 
 function cloneSectionSettings(settings: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(settings)) as Record<string, unknown>;
+}
+
+function cloneValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 function createSectionId(type: HomeSectionType): string {
@@ -117,6 +126,189 @@ function writeShellList(shell: WebsiteBuilderShell, listKey: ShellListKey, items
   }
 }
 
+const defaultHeroSlide: HeroSlideDraft = {
+  title: 'Tahfidz, Adab, dan Ilmu dalam Satu Pembinaan',
+  subtitle: 'Darussunnah Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.',
+  image_url: '/assets/img/gedung.webp',
+};
+
+function getSectionStringSetting(section: HomeSection, key: string, fallback = '') {
+  const value = section.settings[key];
+  return typeof value === 'string' ? value : fallback;
+}
+
+function getSectionNumberSetting(section: HomeSection, key: string, fallback: number) {
+  const value = section.settings[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function getSectionBooleanSetting(section: HomeSection, key: string, fallback: boolean) {
+  const value = section.settings[key];
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function getHeroSlidesDraft(section: HomeSection): HeroSlideDraft[] {
+  const rawSlides = Array.isArray(section.settings.slides) ? section.settings.slides : [];
+  const slides = rawSlides
+    .filter((slide) => slide && typeof slide === 'object')
+    .map((slide) => {
+      const record = slide as Record<string, unknown>;
+      return {
+        title: typeof record.title === 'string' ? record.title : '',
+        subtitle: typeof record.subtitle === 'string' ? record.subtitle : '',
+        image_url: typeof record.image_url === 'string' ? record.image_url : '',
+      };
+    });
+
+  if (slides.length > 0) return slides;
+
+  return [
+    {
+      title: getSectionStringSetting(section, 'title', defaultHeroSlide.title),
+      subtitle: getSectionStringSetting(section, 'subtitle', defaultHeroSlide.subtitle),
+      image_url: getSectionStringSetting(section, 'image_url', defaultHeroSlide.image_url),
+    },
+  ];
+}
+
+function syncSectionFromPrimaryHeroSlide(section: HomeSection, slide: HeroSlideDraft): HomeSection {
+  let next = updateSectionSetting(section, 'title', slide.title);
+  next = updateSectionSetting(next, 'subtitle', slide.subtitle);
+  next = updateSectionSetting(next, 'image_url', slide.image_url);
+  return next;
+}
+
+function updateHeroSlides(section: HomeSection, updater: (slides: HeroSlideDraft[]) => HeroSlideDraft[]): HomeSection {
+  const currentSlides = getHeroSlidesDraft(section);
+  const nextSlides = updater(cloneValue(currentSlides)).map((slide) => ({
+    title: slide.title,
+    subtitle: slide.subtitle,
+    image_url: slide.image_url,
+  }));
+  const safeSlides = nextSlides.length > 0 ? nextSlides : [cloneValue(defaultHeroSlide)];
+  let nextSection = updateSectionSetting(section, 'slides', safeSlides);
+  nextSection = syncSectionFromPrimaryHeroSlide(nextSection, safeSlides[0]);
+  return nextSection;
+}
+
+function updateHeroSlideField(section: HomeSection, index: number, key: keyof HeroSlideDraft, value: string): HomeSection {
+  return updateHeroSlides(section, (slides) => {
+    if (!slides[index]) return slides;
+    slides[index] = { ...slides[index], [key]: value };
+    return slides;
+  });
+}
+
+function addHeroSlide(section: HomeSection): HomeSection {
+  return updateHeroSlides(section, (slides) => [...slides, cloneValue(defaultHeroSlide)]);
+}
+
+function removeHeroSlide(section: HomeSection, index: number): HomeSection {
+  return updateHeroSlides(section, (slides) => slides.filter((_, slideIndex) => slideIndex !== index));
+}
+
+function moveHeroSlide(section: HomeSection, index: number, direction: 'up' | 'down'): HomeSection {
+  return updateHeroSlides(section, (slides) => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= slides.length) return slides;
+    [slides[index], slides[targetIndex]] = [slides[targetIndex], slides[index]];
+    return slides;
+  });
+}
+
+function getHeroButtonsDraft(section: HomeSection) {
+  const rawButtons = Array.isArray(section.settings.buttons) ? section.settings.buttons : [];
+  const defaultButtons = [
+    { label: 'Lihat Info PSB', url: '/psb', style: 'primary' as const },
+    { label: 'Lihat Program', url: '/program', style: 'secondary' as const },
+  ];
+
+  return [0, 1].map((index) => {
+    const record = rawButtons[index] && typeof rawButtons[index] === 'object' ? (rawButtons[index] as Record<string, unknown>) : {};
+    return {
+      label: typeof record.label === 'string' ? record.label : defaultButtons[index].label,
+      url: typeof record.url === 'string' ? record.url : defaultButtons[index].url,
+      style:
+        record.style === 'secondary' || record.style === 'ghost' || record.style === 'light' || record.style === 'primary'
+          ? record.style
+          : defaultButtons[index].style,
+    };
+  });
+}
+
+function updateHeroButtonField(section: HomeSection, index: number, key: 'label' | 'url' | 'style', value: string): HomeSection {
+  const buttons = getHeroButtonsDraft(section);
+  buttons[index] = {
+    ...buttons[index],
+    [key]: value,
+  };
+  return updateSectionSetting(section, 'buttons', buttons);
+}
+
+function getDefaultLimit(type: HomeSectionType) {
+  switch (type) {
+    case 'programs':
+    case 'extracurriculars':
+      return 4;
+    case 'gallery':
+    case 'videos':
+    case 'news':
+    case 'agendas':
+      return 3;
+    default:
+      return 3;
+  }
+}
+
+function getVariantOptions(section: HomeSection): Array<{ value: string; label: string }> {
+  switch (section.type) {
+    case 'hero':
+      return [
+        { value: 'slider', label: 'Hero Slider' },
+        { value: 'photo-single', label: 'Foto Tunggal' },
+        { value: 'split', label: 'Split' },
+        { value: 'psb-campaign', label: 'PSB Campaign' },
+        { value: 'minimal', label: 'Minimal' },
+      ];
+    case 'news':
+      return [
+        { value: 'featured-side', label: 'Featured Side' },
+        { value: 'grid', label: 'Grid' },
+        { value: 'list', label: 'List' },
+      ];
+    case 'agendas':
+      return [
+        { value: 'featured-card', label: 'Featured Card' },
+        { value: 'compact-grid', label: 'Compact Grid' },
+        { value: 'list', label: 'List' },
+      ];
+    case 'gallery':
+      return [
+        { value: 'featured-grid', label: 'Featured Grid' },
+        { value: 'cards', label: 'Cards' },
+      ];
+    case 'videos':
+      return [
+        { value: 'cards', label: 'Cards' },
+        { value: 'spotlight', label: 'Spotlight' },
+      ];
+    case 'programs':
+    case 'extracurriculars':
+      return [
+        { value: 'featured-grid', label: 'Featured Grid' },
+        { value: 'compact-grid', label: 'Compact Grid' },
+      ];
+    case 'cta':
+      return [
+        { value: 'gradient', label: 'Gradient' },
+        { value: 'panel', label: 'Panel' },
+        { value: 'minimal', label: 'Minimal' },
+      ];
+    default:
+      return [{ value: section.variant, label: section.variant }];
+  }
+}
+
 function freshHomeLayout(): HomeBuilderLayout {
   return {
     ...defaultHomeBuilderLayout,
@@ -149,15 +341,6 @@ function updateSectionSetting(section: HomeSection, key: string, value: unknown)
       [key]: value,
     },
   };
-}
-
-function updatePrimaryHeroButton(section: HomeSection, key: 'label' | 'url', value: string): HomeSection {
-  const rawButtons = Array.isArray(section.settings.buttons) ? section.settings.buttons : [];
-  const buttons = rawButtons.length > 0 ? [...rawButtons] : [{ label: 'Lihat Info PSB', url: '/psb', style: 'primary' }];
-  const firstButton = buttons[0] && typeof buttons[0] === 'object' ? { ...(buttons[0] as Record<string, unknown>) } : {};
-  firstButton[key] = value;
-  buttons[0] = firstButton;
-  return updateSectionSetting(section, 'buttons', buttons);
 }
 
 function updatePrimaryHeroSlide(section: HomeSection, key: 'title' | 'subtitle' | 'image_url', value: string): HomeSection {
@@ -242,30 +425,44 @@ function SectionEditor({
   section,
   onChange,
   onUploadImage,
+  onUploadSlideImage,
+  uploadingTarget,
   isUploadingImage = false,
 }: {
   section: HomeSection;
   onChange: (section: HomeSection) => void;
   onUploadImage?: (file: File) => Promise<void>;
+  onUploadSlideImage?: (slideIndex: number, file: File) => Promise<void>;
+  uploadingTarget?: string | null;
   isUploadingImage?: boolean;
 }) {
-  const title = typeof section.settings.title === 'string' ? section.settings.title : '';
-  const subtitle = typeof section.settings.subtitle === 'string' ? section.settings.subtitle : '';
-  const rawButtons = Array.isArray(section.settings.buttons) ? section.settings.buttons : [];
-  const firstButton = rawButtons[0] && typeof rawButtons[0] === 'object' ? (rawButtons[0] as Record<string, unknown>) : {};
-  const buttonLabel = typeof section.settings.button_label === 'string' && section.settings.button_label
-    ? section.settings.button_label
-    : typeof firstButton.label === 'string'
-      ? firstButton.label
-      : '';
-  const buttonUrl = typeof section.settings.button_url === 'string' && section.settings.button_url
-    ? section.settings.button_url
-    : typeof firstButton.url === 'string'
-      ? firstButton.url
-      : '';
-  const heroTitle = typeof section.settings.title === 'string' ? section.settings.title : '';
-  const heroSubtitle = typeof section.settings.subtitle === 'string' ? section.settings.subtitle : '';
-  const imageUrl = typeof section.settings.image_url === 'string' ? section.settings.image_url : '';
+  const title = getSectionStringSetting(section, 'title');
+  const subtitle = getSectionStringSetting(section, 'subtitle');
+  const eyebrow = getSectionStringSetting(section, 'eyebrow');
+  const buttonLabel = getSectionStringSetting(section, 'button_label');
+  const buttonUrl = getSectionStringSetting(section, 'button_url');
+  const imageUrl = getSectionStringSetting(section, 'image_url');
+  const heroSlides = getHeroSlidesDraft(section);
+  const heroButtons = getHeroButtonsDraft(section);
+  const secondaryButtonLabel = getSectionStringSetting(section, 'secondary_button_label');
+  const secondaryButtonUrl = getSectionStringSetting(section, 'secondary_button_url');
+  const kicker = getSectionStringSetting(section, 'kicker');
+  const limit = getSectionNumberSetting(section, 'limit', getDefaultLimit(section.type));
+  const featuredFirst = getSectionBooleanSetting(section, 'featured_first', true);
+  const showDate = getSectionBooleanSetting(section, 'show_date', true);
+  const showLocation = getSectionBooleanSetting(section, 'show_location', true);
+  const overlay = getSectionStringSetting(section, 'overlay', 'medium');
+  const mobileHeight = getSectionStringSetting(section, 'mobile_height', 'compact');
+  const textPosition = getSectionStringSetting(section, 'text_position', 'left-top');
+  const showGenericText = !['info-cards', 'spacer'].includes(section.type);
+  const showButtonFields = !['info-cards', 'spacer'].includes(section.type);
+  const showEyebrowField = !['info-cards', 'spacer'].includes(section.type);
+  const showLimitField = ['programs', 'extracurriculars', 'gallery', 'videos', 'news', 'agendas'].includes(section.type);
+  const showNewsFields = section.type === 'news';
+  const showAgendaFields = section.type === 'agendas';
+  const showCtaFields = section.type === 'cta';
+  const showHeroFields = section.type === 'hero';
+  const variantOptions = getVariantOptions(section);
 
   return (
     <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5">
@@ -282,23 +479,11 @@ function SectionEditor({
             onChange={(event) => onChange({ ...section, variant: event.target.value })}
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
           >
-            {section.type === 'hero' ? (
-              <>
-                <option value="slider">Hero Slider</option>
-                <option value="photo-single">Foto Tunggal</option>
-                <option value="split">Split</option>
-                <option value="psb-campaign">PSB Campaign</option>
-                <option value="minimal">Minimal</option>
-              </>
-            ) : null}
-            {section.type === 'news' ? (
-              <>
-                <option value="featured-side">Featured Side</option>
-                <option value="grid">Grid</option>
-                <option value="list">List</option>
-              </>
-            ) : null}
-            {section.type !== 'hero' && section.type !== 'news' ? <option value={section.variant}>{section.variant}</option> : null}
+            {variantOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -314,77 +499,306 @@ function SectionEditor({
         </label>
       </div>
 
-      <label className="space-y-2">
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Judul</span>
-        <input
-          value={title || heroTitle}
-          onChange={(event) => {
-            const nextTitle = event.target.value;
-            const next = updateSectionSetting(section, 'title', nextTitle);
-            onChange(section.type === 'hero' ? updatePrimaryHeroSlide(next, 'title', nextTitle) : next);
-          }}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
-        />
-      </label>
+      {showEyebrowField ? (
+        <label className="space-y-2">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Eyebrow / Label Kecil</span>
+          <input
+            value={showHeroFields ? kicker : eyebrow}
+            onChange={(event) =>
+              onChange(updateSectionSetting(section, showHeroFields ? 'kicker' : 'eyebrow', event.target.value))
+            }
+            placeholder={showHeroFields ? 'Darussunnah Parung' : 'Berita Pondok / Agenda / Program'}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+          />
+        </label>
+      ) : null}
 
-      <label className="space-y-2">
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Subtitle / Deskripsi</span>
-        <textarea
-          rows={3}
-          value={subtitle || heroSubtitle}
-          onChange={(event) => {
-            const nextSubtitle = event.target.value;
-            const next = updateSectionSetting(section, 'subtitle', nextSubtitle);
-            onChange(section.type === 'hero' ? updatePrimaryHeroSlide(next, 'subtitle', nextSubtitle) : next);
-          }}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800"
-        />
-      </label>
-
-      {section.type === 'hero' ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="md:col-span-2">
-            <ImageUploadField
-              label="Gambar Hero"
-              value={imageUrl}
-              onChange={(value) => {
-                const next = updateSectionSetting(section, 'image_url', value);
-                onChange(updatePrimaryHeroSlide(next, 'image_url', value));
-              }}
-              onUpload={async (file) => {
-                if (!onUploadImage) return;
-                await onUploadImage(file);
-              }}
-              isUploading={isUploadingImage}
-              placeholder="/uploads/hero.jpg atau /assets/img/gedung.webp"
-            />
-          </div>
+      {showGenericText ? (
+        <>
           <label className="space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Overlay</span>
-            <select
-              value={typeof section.settings.overlay === 'string' ? section.settings.overlay : 'medium'}
-              onChange={(event) => onChange(updateSectionSetting(section, 'overlay', event.target.value))}
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Judul</span>
+            <input
+              value={title}
+              onChange={(event) => {
+                const nextTitle = event.target.value;
+                const next = updateSectionSetting(section, 'title', nextTitle);
+                onChange(showHeroFields ? updatePrimaryHeroSlide(next, 'title', nextTitle) : next);
+              }}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
-            >
-              <option value="none">Tanpa Overlay</option>
-              <option value="soft">Soft</option>
-              <option value="medium">Medium</option>
-              <option value="strong">Strong</option>
-            </select>
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Subtitle / Deskripsi</span>
+            <textarea
+              rows={3}
+              value={subtitle}
+              onChange={(event) => {
+                const nextSubtitle = event.target.value;
+                const next = updateSectionSetting(section, 'subtitle', nextSubtitle);
+                onChange(showHeroFields ? updatePrimaryHeroSlide(next, 'subtitle', nextSubtitle) : next);
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800"
+            />
+          </label>
+        </>
+      ) : null}
+
+      {showHeroFields ? (
+        <>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-2">
+              <ImageUploadField
+                label="Gambar Hero Utama"
+                value={imageUrl}
+                onChange={(value) => {
+                  const next = updateSectionSetting(section, 'image_url', value);
+                  onChange(updatePrimaryHeroSlide(next, 'image_url', value));
+                }}
+                onUpload={async (file) => {
+                  if (!onUploadImage) return;
+                  await onUploadImage(file);
+                }}
+                isUploading={isUploadingImage}
+                placeholder="/uploads/hero.jpg atau /assets/img/gedung.webp"
+              />
+            </div>
+            <div className="space-y-4">
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Overlay</span>
+                <select
+                  value={overlay}
+                  onChange={(event) => onChange(updateSectionSetting(section, 'overlay', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+                >
+                  <option value="none">Tanpa Overlay</option>
+                  <option value="soft">Soft</option>
+                  <option value="medium">Medium</option>
+                  <option value="strong">Strong</option>
+                </select>
+              </label>
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Tinggi Hero Mobile</span>
+                <select
+                  value={mobileHeight}
+                  onChange={(event) => onChange(updateSectionSetting(section, 'mobile_height', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+                >
+                  <option value="compact">Compact</option>
+                  <option value="normal">Normal</option>
+                  <option value="tall">Tall</option>
+                </select>
+              </label>
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Posisi Konten</span>
+                <select
+                  value={textPosition}
+                  onChange={(event) => onChange(updateSectionSetting(section, 'text_position', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+                >
+                  <option value="left-top">Kiri</option>
+                  <option value="center">Tengah</option>
+                  <option value="right">Kanan</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Hero Slides</p>
+                <p className="mt-1 text-sm text-slate-500">Tambah beberapa slide untuk variant `slider`, atau tetap satu slide untuk model lain.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onChange(addHeroSlide(section))}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700"
+              >
+                <Plus size={14} /> Tambah Slide
+              </button>
+            </div>
+            <div className="space-y-4">
+              {heroSlides.map((slide, index) => (
+                <div key={`${section.id}-slide-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Slide {index + 1}</p>
+                      <p className="mt-1 text-sm font-black text-slate-900">{slide.title || 'Judul slide belum diisi'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => onChange(moveHeroSlide(section, index, 'up'))} className="rounded-lg bg-slate-50 p-2 text-slate-500" disabled={index === 0}>
+                        <ArrowUp size={14} />
+                      </button>
+                      <button onClick={() => onChange(moveHeroSlide(section, index, 'down'))} className="rounded-lg bg-slate-50 p-2 text-slate-500" disabled={index === heroSlides.length - 1}>
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        onClick={() => onChange(removeHeroSlide(section, index))}
+                        className="rounded-lg bg-rose-50 p-2 text-rose-600"
+                        disabled={heroSlides.length === 1}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid gap-4">
+                    <label className="space-y-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Judul Slide</span>
+                      <input
+                        value={slide.title}
+                        onChange={(event) => onChange(updateHeroSlideField(section, index, 'title', event.target.value))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Subtitle Slide</span>
+                      <textarea
+                        rows={3}
+                        value={slide.subtitle}
+                        onChange={(event) => onChange(updateHeroSlideField(section, index, 'subtitle', event.target.value))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800"
+                      />
+                    </label>
+                    <ImageUploadField
+                      label={`Gambar Slide ${index + 1}`}
+                      value={slide.image_url}
+                      onChange={(value) => onChange(updateHeroSlideField(section, index, 'image_url', value))}
+                      onUpload={async (file) => {
+                        if (!onUploadSlideImage) return;
+                        await onUploadSlideImage(index, file);
+                      }}
+                      isUploading={uploadingTarget === `section-${section.id}-slide-${index}-image`}
+                      placeholder="/uploads/hero-slide.jpg atau /assets/img/gedung.webp"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Tombol Hero</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Tombol Utama</span>
+                <input
+                  value={heroButtons[0].label}
+                  onChange={(event) => onChange(updateHeroButtonField(section, 0, 'label', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">URL Tombol Utama</span>
+                <input
+                  value={heroButtons[0].url}
+                  onChange={(event) => onChange(updateHeroButtonField(section, 0, 'url', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Style Tombol Utama</span>
+                <select
+                  value={heroButtons[0].style}
+                  onChange={(event) => onChange(updateHeroButtonField(section, 0, 'style', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+                >
+                  <option value="primary">Primary</option>
+                  <option value="secondary">Secondary</option>
+                  <option value="ghost">Ghost</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
+              <div />
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Tombol Kedua</span>
+                <input
+                  value={heroButtons[1].label}
+                  onChange={(event) => onChange(updateHeroButtonField(section, 1, 'label', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">URL Tombol Kedua</span>
+                <input
+                  value={heroButtons[1].url}
+                  onChange={(event) => onChange(updateHeroButtonField(section, 1, 'url', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Style Tombol Kedua</span>
+                <select
+                  value={heroButtons[1].style}
+                  onChange={(event) => onChange(updateHeroButtonField(section, 1, 'style', event.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+                >
+                  <option value="primary">Primary</option>
+                  <option value="secondary">Secondary</option>
+                  <option value="ghost">Ghost</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {showLimitField ? (
+        <label className="space-y-2">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Jumlah Item</span>
+          <input
+            type="number"
+            min={1}
+            max={12}
+            value={limit}
+            onChange={(event) =>
+              onChange(updateSectionSetting(section, 'limit', Math.max(1, Number(event.target.value) || getDefaultLimit(section.type))))
+            }
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+          />
+        </label>
+      ) : null}
+
+      {showNewsFields ? (
+        <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <span className="font-black text-slate-900">Jadikan item pertama sebagai featured</span>
+          <input
+            type="checkbox"
+            checked={featuredFirst}
+            onChange={(event) => onChange(updateSectionSetting(section, 'featured_first', event.target.checked))}
+          />
+        </label>
+      ) : null}
+
+      {showAgendaFields ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <span className="font-black text-slate-900">Tampilkan Tanggal</span>
+            <input
+              type="checkbox"
+              checked={showDate}
+              onChange={(event) => onChange(updateSectionSetting(section, 'show_date', event.target.checked))}
+            />
+          </label>
+          <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <span className="font-black text-slate-900">Tampilkan Lokasi</span>
+            <input
+              type="checkbox"
+              checked={showLocation}
+              onChange={(event) => onChange(updateSectionSetting(section, 'show_location', event.target.checked))}
+            />
           </label>
         </div>
       ) : null}
 
-      {section.type !== 'info-cards' && section.type !== 'spacer' ? (
+      {showButtonFields && !showHeroFields ? (
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Label Tombol</span>
             <input
               value={buttonLabel}
-              onChange={(event) => {
-                const next = updateSectionSetting(section, 'button_label', event.target.value);
-                onChange(section.type === 'hero' ? updatePrimaryHeroButton(next, 'label', event.target.value) : next);
-              }}
+              onChange={(event) => onChange(updateSectionSetting(section, 'button_label', event.target.value))}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
             />
           </label>
@@ -392,10 +806,28 @@ function SectionEditor({
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">URL Tombol</span>
             <input
               value={buttonUrl}
-              onChange={(event) => {
-                const next = updateSectionSetting(section, 'button_url', event.target.value);
-                onChange(section.type === 'hero' ? updatePrimaryHeroButton(next, 'url', event.target.value) : next);
-              }}
+              onChange={(event) => onChange(updateSectionSetting(section, 'button_url', event.target.value))}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+            />
+          </label>
+        </div>
+      ) : null}
+
+      {showCtaFields ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Label Tombol Kedua</span>
+            <input
+              value={secondaryButtonLabel}
+              onChange={(event) => onChange(updateSectionSetting(section, 'secondary_button_label', event.target.value))}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">URL Tombol Kedua</span>
+            <input
+              value={secondaryButtonUrl}
+              onChange={(event) => onChange(updateSectionSetting(section, 'secondary_button_url', event.target.value))}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
             />
           </label>
@@ -1142,6 +1574,12 @@ export default function TabWebsiteBuilder() {
                     const next = updateSectionSetting(selectedSection, 'image_url', uploadedUrl);
                     updateSelectedSection(updatePrimaryHeroSlide(next, 'image_url', uploadedUrl));
                   }}
+                  onUploadSlideImage={async (slideIndex, file) => {
+                    const uploadedUrl = await uploadBuilderAsset(`section-${selectedSection.id}-slide-${slideIndex}-image`, file);
+                    if (!uploadedUrl) return;
+                    updateSelectedSection(updateHeroSlideField(selectedSection, slideIndex, 'image_url', uploadedUrl));
+                  }}
+                  uploadingTarget={uploadingTarget}
                   isUploadingImage={uploadingTarget === `section-${selectedSection.id}-image`}
                 />
               ) : null}

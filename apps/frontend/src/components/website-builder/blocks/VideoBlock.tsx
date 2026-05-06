@@ -7,27 +7,30 @@ import { getYouTubeThumbnailUrl, resolveDisplayImageUrl } from '@/lib/api';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import { VideoSeriesSummary } from '../HomePageRenderer';
-import { getString } from './helpers';
+import { getNumber, getString } from './helpers';
 
 export default function VideoBlock({ section, series, isLoading }: { section: HomeSection; series: VideoSeriesSummary[]; isLoading: boolean }) {
+  const eyebrow = getString(section, 'eyebrow', 'Video');
   const title = getString(section, 'title', 'Video Pondok');
   const subtitle = getString(section, 'subtitle', 'Rekaman kegiatan, kajian, dan dokumentasi video Darussunnah.');
   const buttonLabel = getString(section, 'button_label', 'Lihat video');
   const buttonUrl = getString(section, 'button_url', '/videos');
+  const limit = Math.max(1, getNumber(section, 'limit', 3));
+  const items = series.slice(0, limit);
 
   return (
     <section className="bg-slate-950 py-16 md:py-24">
       <div className="container mx-auto max-w-6xl px-4">
-        <PublicSectionIntro eyebrow="Video" title={title} description={subtitle} actionHref={buttonUrl} actionLabel={buttonLabel} theme="dark" />
+        <PublicSectionIntro eyebrow={eyebrow} title={title} description={subtitle} actionHref={buttonUrl} actionLabel={buttonLabel} theme="dark" />
         {isLoading ? (
-          <PublicGridSkeleton count={3} className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3" itemClassName="h-56 rounded-[1.75rem] bg-white/10" />
-        ) : series.length > 0 ? (
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {series.slice(0, 3).map((item) => {
+          <PublicGridSkeleton count={limit} className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3" itemClassName="h-56 rounded-[1.75rem] bg-white/10" />
+        ) : items.length > 0 ? (
+          <div className={`mt-8 grid gap-4 ${section.variant === 'spotlight' ? 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]' : 'md:grid-cols-3'}`}>
+            {items.map((item, index) => {
               const thumbnail = item.lead.thumbnail || getYouTubeThumbnailUrl(item.lead.url);
               return (
-                <Link key={item.key} href={`/videos/${item.slug}`} className="group overflow-hidden rounded-[1.9rem] border border-white/10 bg-white/8 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.6)]">
-                  <div className="relative h-52 overflow-hidden bg-slate-900">
+                <Link key={item.key} href={`/videos/${item.slug}`} className={`group overflow-hidden rounded-[1.9rem] border border-white/10 bg-white/8 shadow-[0_28px_70px_-42px_rgba(0,0,0,0.6)] ${section.variant === 'spotlight' && index === 0 ? 'lg:row-span-2' : ''}`}>
+                  <div className={`relative overflow-hidden bg-slate-900 ${section.variant === 'spotlight' && index === 0 ? 'h-72 lg:h-full' : 'h-52'}`}>
                     {thumbnail ? (
                       <Image src={resolveDisplayImageUrl(thumbnail)} alt={item.title} fill unoptimized className="object-cover transition-transform duration-700 group-hover:scale-105" />
                     ) : null}
