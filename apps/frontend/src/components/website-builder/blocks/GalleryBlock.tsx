@@ -7,7 +7,7 @@ import { resolveDisplayImageUrl } from '@/lib/api';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import { GalleryAlbumSummary } from '../HomePageRenderer';
-import { getNumber, getString } from './helpers';
+import { getArray, getNumber, getString } from './helpers';
 
 export default function GalleryBlock({ section, albums, isLoading }: { section: HomeSection; albums: GalleryAlbumSummary[]; isLoading: boolean }) {
   const eyebrow = getString(section, 'eyebrow', 'Galeri');
@@ -16,7 +16,15 @@ export default function GalleryBlock({ section, albums, isLoading }: { section: 
   const buttonLabel = getString(section, 'button_label', 'Lihat galeri');
   const buttonUrl = getString(section, 'button_url', '/galeri');
   const limit = Math.max(1, getNumber(section, 'limit', 3));
-  const items = albums.slice(0, limit);
+  const source = getString(section, 'source', 'latest');
+  const manualIds = getArray<string>(section, 'manual_ids').map((item) => String(item));
+  const sourceItems =
+    source === 'manual' && manualIds.length > 0
+      ? manualIds
+          .map((id) => albums.find((item) => item.slug === id || item.key === id))
+          .filter((item): item is GalleryAlbumSummary => Boolean(item))
+      : albums;
+  const items = sourceItems.slice(0, limit);
 
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] py-16 md:py-24">

@@ -5,7 +5,7 @@ import { HomeSection } from '@/lib/website-builder';
 import NewsCard from '@/components/NewsCard';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
-import { getBoolean, getNumber, getString } from './helpers';
+import { getArray, getBoolean, getNumber, getString } from './helpers';
 
 export default function NewsBlock({ section, news, isLoading }: { section: HomeSection; news: News[]; isLoading: boolean }) {
   const eyebrow = getString(section, 'eyebrow', 'Berita Pondok');
@@ -15,7 +15,15 @@ export default function NewsBlock({ section, news, isLoading }: { section: HomeS
   const buttonUrl = getString(section, 'button_url', '/news');
   const limit = Math.max(1, getNumber(section, 'limit', 3));
   const featuredFirst = getBoolean(section, 'featured_first', true);
-  const items = news.slice(0, limit);
+  const source = getString(section, 'source', 'latest');
+  const manualIds = getArray<string>(section, 'manual_ids').map((item) => String(item));
+  const sourceItems =
+    source === 'manual' && manualIds.length > 0
+      ? manualIds
+          .map((id) => news.find((item) => String(item.id) === id))
+          .filter((item): item is News => Boolean(item))
+      : news;
+  const items = sourceItems.slice(0, limit);
   const primaryItem = featuredFirst ? items[0] : null;
   const secondaryItems = featuredFirst ? items.slice(1) : items;
   const useFeaturedLayout = section.variant === 'featured-side' && featuredFirst && items.length > 1;

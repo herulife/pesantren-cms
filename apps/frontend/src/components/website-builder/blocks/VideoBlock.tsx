@@ -7,7 +7,7 @@ import { getYouTubeThumbnailUrl, resolveDisplayImageUrl } from '@/lib/api';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import { VideoSeriesSummary } from '../HomePageRenderer';
-import { getNumber, getString } from './helpers';
+import { getArray, getNumber, getString } from './helpers';
 
 export default function VideoBlock({ section, series, isLoading }: { section: HomeSection; series: VideoSeriesSummary[]; isLoading: boolean }) {
   const eyebrow = getString(section, 'eyebrow', 'Video');
@@ -16,7 +16,15 @@ export default function VideoBlock({ section, series, isLoading }: { section: Ho
   const buttonLabel = getString(section, 'button_label', 'Lihat video');
   const buttonUrl = getString(section, 'button_url', '/videos');
   const limit = Math.max(1, getNumber(section, 'limit', 3));
-  const items = series.slice(0, limit);
+  const source = getString(section, 'source', 'latest');
+  const manualIds = getArray<string>(section, 'manual_ids').map((item) => String(item));
+  const sourceItems =
+    source === 'manual' && manualIds.length > 0
+      ? manualIds
+          .map((id) => series.find((item) => item.slug === id || item.key === id))
+          .filter((item): item is VideoSeriesSummary => Boolean(item))
+      : series;
+  const items = sourceItems.slice(0, limit);
 
   return (
     <section className="bg-slate-950 py-16 md:py-24">

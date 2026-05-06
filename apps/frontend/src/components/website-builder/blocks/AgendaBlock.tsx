@@ -4,7 +4,7 @@ import { Agenda } from '@/lib/api';
 import { HomeSection } from '@/lib/website-builder';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
-import { getBoolean, getNumber, getString } from './helpers';
+import { getArray, getBoolean, getNumber, getString } from './helpers';
 
 const formatDay = (dateStr: string) => new Date(dateStr).getDate();
 const formatMonth = (dateStr: string) => new Date(dateStr).toLocaleDateString('id-ID', { month: 'short' });
@@ -18,7 +18,15 @@ export default function AgendaBlock({ section, agendas, isLoading }: { section: 
   const showDate = getBoolean(section, 'show_date', true);
   const showLocation = getBoolean(section, 'show_location', true);
   const limit = Math.max(1, getNumber(section, 'limit', 3));
-  const items = agendas.slice(0, limit);
+  const source = getString(section, 'source', 'latest');
+  const manualIds = getArray<string>(section, 'manual_ids').map((item) => String(item));
+  const sourceItems =
+    source === 'manual' && manualIds.length > 0
+      ? manualIds
+          .map((id) => agendas.find((item) => String(item.id) === id))
+          .filter((item): item is Agenda => Boolean(item))
+      : agendas;
+  const items = sourceItems.slice(0, limit);
 
   return (
     <section className="bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] py-16 md:py-24">

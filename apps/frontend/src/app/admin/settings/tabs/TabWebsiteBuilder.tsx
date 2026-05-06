@@ -24,7 +24,22 @@ import {
   Trash2,
   UploadCloud,
 } from 'lucide-react';
-import { getSettingsMap, resolveDisplayImageUrl, updateSetting, uploadImage } from '@/lib/api';
+import {
+  Agenda,
+  formatGalleryAlbumTitle,
+  GalleryItem,
+  getAgendas,
+  getGallery,
+  getGallerySortTimestamp,
+  getNews,
+  getSettingsMap,
+  getVideos,
+  News,
+  resolveDisplayImageUrl,
+  updateSetting,
+  uploadImage,
+  Video,
+} from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import {
   defaultHomeBuilderLayout,
@@ -47,6 +62,18 @@ type HeroSlideDraft = {
   title: string;
   subtitle: string;
   image_url: string;
+};
+type ManualSourceBlockType = 'news' | 'agendas' | 'gallery' | 'videos';
+type BuilderContentOption = {
+  id: string;
+  label: string;
+  meta: string;
+};
+type BuilderContentCatalog = {
+  news: BuilderContentOption[];
+  agendas: BuilderContentOption[];
+  gallery: BuilderContentOption[];
+  videos: BuilderContentOption[];
 };
 
 const builderAreas: Array<{ title: BuilderArea; description: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
@@ -260,6 +287,116 @@ function getDefaultLimit(type: HomeSectionType) {
   }
 }
 
+function formatBuilderDateLabel(value?: string | null) {
+  if (!value) return '';
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return '';
+  return new Date(timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function createContentCatalog(
+  newsItems: News[],
+  agendaItems: Agenda[],
+  galleryItems: GalleryItem[],
+  videoItems: Video[]
+): BuilderContentCatalog {
+  const groupedGallery = new Map<string, GalleryItem[]>();
+  for (const item of galleryItems) {
+    const key = item.album_slug || item.album_name || `single-${item.id}`;
+    const current = groupedGallery.get(key) || [];
+    current.push(item);
+    groupedGallery.set(key, current);
+  }
+
+  const groupedVideos = new Map<string, Video[]>();
+  for (const item of videoItems) {
+    const key = item.series_slug || item.series_name || `single-${item.id}`;
+    const current = groupedVideos.get(key) || [];
+    current.push(item);
+    groupedVideos.set(key, current);
+  }
+
+  return {
+    news: newsItems.map((item) => ({
+      id: String(item.id),
+      label: item.title,
+      meta: formatBuilderDateLabel(item.created_at) || item.slug || 'Berita',
+    })),
+    agendas: agendaItems.map((item) => ({
+      id: String(item.id),
+      label: item.title,
+      meta: [formatBuilderDateLabel(item.start_date), item.location].filter(Boolean).join(' • ') || 'Agenda',
+    })),
+    gallery: Array.from(groupedGallery.entries())
+      .map(([key, items]) => {
+        const sorted = [...items].sort((a, b) => Number(b.is_album_cover) - Number(a.is_album_cover));
+        const cover = sorted[0];
+        return {
+          id: cover.album_slug || key,
+          label: formatGalleryAlbumTitle(cover.album_name || cover.title),
+          meta: `${items.length} foto`,
+          sortTs: getGallerySortTimestamp(cover.event_date, cover.created_at),
+        };
+      })
+      .sort((a, b) => b.sortTs - a.sortTs)
+      .map((item) => ({
+        id: item.id,
+        label: item.label,
+        meta: item.meta,
+      })),
+    videos: Array.from(groupedVideos.entries())
+      .map(([key, items]) => {
+        const sorted = [...items].sort((a, b) => Number(b.is_featured) - Number(a.is_featured));
+        const lead = sorted[0];
+        return {
+          id: lead.series_slug || key,
+          label: formatGalleryAlbumTitle(lead.series_name || lead.title),
+          meta: `${items.length} video`,
+          sortTs: getGallerySortTimestamp(lead.event_date, lead.created_at),
+        };
+      })
+      .sort((a, b) => b.sortTs - a.sortTs)
+      .map((item) => ({
+        id: item.id,
+        label: item.label,
+        meta: item.meta,
+      })),
+  };
+}
+
+function isManualSourceBlockType(type: HomeSectionType): type is ManualSourceBlockType {
+  return type === 'news' || type === 'agendas' || type === 'gallery' || type === 'videos';
+}
+
+function getSectionSource(section: HomeSection) {
+  const value = section.settings.source;
+  return value === 'manual' ? 'manual' : 'latest';
+}
+
+function getSectionManualIds(section: HomeSection) {
+  const value = section.settings.manual_ids;
+  return Array.isArray(value) ? value.map((item) => String(item)).filter(Boolean) : [];
+}
+
+function updateSectionManualIds(section: HomeSection, ids: string[]) {
+  return updateSectionSetting(section, 'manual_ids', ids);
+}
+
+function toggleSectionManualId(section: HomeSection, id: string) {
+  const currentIds = getSectionManualIds(section);
+  const nextIds = currentIds.includes(id) ? currentIds.filter((item) => item !== id) : [...currentIds, id];
+  return updateSectionManualIds(section, nextIds);
+}
+
+function moveSectionManualId(section: HomeSection, id: string, direction: 'up' | 'down') {
+  const currentIds = [...getSectionManualIds(section)];
+  const index = currentIds.indexOf(id);
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (index < 0 || targetIndex < 0 || targetIndex >= currentIds.length) return section;
+  [currentIds[index], currentIds[targetIndex]] = [currentIds[targetIndex], currentIds[index]];
+  return updateSectionManualIds(section, currentIds);
+}
+
 function getVariantOptions(section: HomeSection): Array<{ value: string; label: string }> {
   switch (section.type) {
     case 'hero':
@@ -426,6 +563,7 @@ function SectionEditor({
   onChange,
   onUploadImage,
   onUploadSlideImage,
+  contentCatalog,
   uploadingTarget,
   isUploadingImage = false,
 }: {
@@ -433,6 +571,7 @@ function SectionEditor({
   onChange: (section: HomeSection) => void;
   onUploadImage?: (file: File) => Promise<void>;
   onUploadSlideImage?: (slideIndex: number, file: File) => Promise<void>;
+  contentCatalog: BuilderContentCatalog;
   uploadingTarget?: string | null;
   isUploadingImage?: boolean;
 }) {
@@ -462,6 +601,14 @@ function SectionEditor({
   const showAgendaFields = section.type === 'agendas';
   const showCtaFields = section.type === 'cta';
   const showHeroFields = section.type === 'hero';
+  const showSourceSelector = isManualSourceBlockType(section.type);
+  const manualSourceType: ManualSourceBlockType | null = showSourceSelector ? (section.type as ManualSourceBlockType) : null;
+  const source = getSectionSource(section);
+  const manualIds = getSectionManualIds(section);
+  const selectableOptions: BuilderContentOption[] = manualSourceType ? contentCatalog[manualSourceType] : [];
+  const selectedManualOptions = manualIds
+    .map((id) => selectableOptions.find((item) => item.id === id))
+    .filter((item): item is BuilderContentOption => Boolean(item));
   const variantOptions = getVariantOptions(section);
 
   return (
@@ -760,6 +907,89 @@ function SectionEditor({
         </label>
       ) : null}
 
+      {showSourceSelector ? (
+        <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <label className="space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Sumber Data</span>
+            <select
+              value={source}
+              onChange={(event) => onChange(updateSectionSetting(section, 'source', event.target.value))}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+            >
+              <option value="latest">Otomatis Terbaru</option>
+              <option value="manual">Pilih Manual</option>
+            </select>
+          </label>
+
+          {source === 'manual' ? (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Urutan Item Terpilih</p>
+                {selectedManualOptions.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {selectedManualOptions.map((item, index) => (
+                      <div key={`${section.id}-manual-${item.id}`} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                        <div className="flex-1">
+                          <p className="text-sm font-black text-slate-900">{item.label}</p>
+                          <p className="mt-1 text-xs font-medium text-slate-500">{item.meta}</p>
+                        </div>
+                        <button onClick={() => onChange(moveSectionManualId(section, item.id, 'up'))} className="rounded-lg bg-white p-2 text-slate-500" disabled={index === 0}>
+                          <ArrowUp size={14} />
+                        </button>
+                        <button onClick={() => onChange(moveSectionManualId(section, item.id, 'down'))} className="rounded-lg bg-white p-2 text-slate-500" disabled={index === selectedManualOptions.length - 1}>
+                          <ArrowDown size={14} />
+                        </button>
+                        <button onClick={() => onChange(toggleSectionManualId(section, item.id))} className="rounded-lg bg-rose-50 p-2 text-rose-600">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-500">Belum ada item dipilih. Centang item di daftar bawah.</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Pilih Item</p>
+                <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {selectableOptions.length > 0 ? (
+                    selectableOptions.map((option) => {
+                      const checked = manualIds.includes(option.id);
+                      return (
+                        <label
+                          key={`${section.id}-option-${option.id}`}
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
+                            checked ? 'border-emerald-300 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-emerald-200'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => onChange(toggleSectionManualId(section, option.id))}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-black text-slate-900">{option.label}</p>
+                            <p className="mt-1 text-xs font-medium text-slate-500">{option.meta}</p>
+                          </div>
+                        </label>
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
+                      Belum ada data tersedia untuk dipilih.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">Block ini akan mengambil item terbaru secara otomatis dari data website.</p>
+          )}
+        </div>
+      ) : null}
+
       {showNewsFields ? (
         <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <span className="font-black text-slate-900">Jadikan item pertama sebagai featured</span>
@@ -839,6 +1069,12 @@ function SectionEditor({
 
 export default function TabWebsiteBuilder() {
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [contentCatalog, setContentCatalog] = useState<BuilderContentCatalog>({
+    news: [],
+    agendas: [],
+    gallery: [],
+    videos: [],
+  });
   const [activeArea, setActiveArea] = useState<BuilderArea>('Home');
   const [themeDraft, setThemeDraft] = useState<WebsiteBuilderTheme>(defaultWebsiteBuilderTheme);
   const [shellDraft, setShellDraft] = useState<WebsiteBuilderShell>(defaultWebsiteBuilderShell);
@@ -871,9 +1107,18 @@ export default function TabWebsiteBuilder() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const settingsMap = await getSettingsMap();
+      const [settingsMap, newsItems, agendaItems, galleryResult, videosResult] = await Promise.all([
+        getSettingsMap(),
+        getNews(),
+        getAgendas(),
+        getGallery({ limit: 60, offset: 0 }),
+        getVideos({ limit: 60, offset: 0 }),
+      ]);
       setSettings(settingsMap);
       syncFromSettings(settingsMap);
+      setContentCatalog(
+        createContentCatalog(newsItems, agendaItems, galleryResult.data || [], videosResult.data || [])
+      );
     } finally {
       setIsLoading(false);
     }
@@ -1579,6 +1824,7 @@ export default function TabWebsiteBuilder() {
                     if (!uploadedUrl) return;
                     updateSelectedSection(updateHeroSlideField(selectedSection, slideIndex, 'image_url', uploadedUrl));
                   }}
+                  contentCatalog={contentCatalog}
                   uploadingTarget={uploadingTarget}
                   isUploadingImage={uploadingTarget === `section-${selectedSection.id}-image`}
                 />
