@@ -78,6 +78,7 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 		"website_builder_theme_published",
 		"website_builder_shell_published",
 		"website_builder_home_published",
+		"website_builder_pages_published",
 	}
 
 	publicList := make([]Setting, 0, len(allowedKeys))

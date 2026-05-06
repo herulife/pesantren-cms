@@ -6,6 +6,9 @@ export const WEBSITE_BUILDER_KEYS = {
   shellPublished: 'website_builder_shell_published',
   homeDraft: 'website_builder_home_draft',
   homePublished: 'website_builder_home_published',
+  pagesDraft: 'website_builder_pages_draft',
+  pagesPublished: 'website_builder_pages_published',
+  revisions: 'website_builder_revisions',
 } as const;
 
 export type WebsiteBuilderKey = (typeof WEBSITE_BUILDER_KEYS)[keyof typeof WEBSITE_BUILDER_KEYS];
@@ -16,6 +19,28 @@ export type BuilderButton = {
   label: string;
   url: string;
   style: BuilderButtonStyle;
+};
+
+export type BuilderStatItem = {
+  value: string;
+  label: string;
+};
+
+export type BuilderFactItem = {
+  label: string;
+  value: string;
+};
+
+export type BuilderImageCard = {
+  title: string;
+  description: string;
+  image_url: string;
+};
+
+export type PsbWaveItem = {
+  label: string;
+  date_text: string;
+  active: boolean;
 };
 
 export type WebsiteBuilderTheme = {
@@ -126,6 +151,191 @@ export type HomeBuilderLayout = {
   sections: HomeSection[];
 };
 
+export type ProfilPageBuilderContent = {
+  version: 1;
+  hero: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    background_image_url: string;
+    highlights: BuilderStatItem[];
+  };
+  about: {
+    eyebrow: string;
+    title: string;
+    paragraphs: string[];
+    location_chip: string;
+    phone_chip: string;
+    institution_facts: BuilderFactItem[];
+    address_title: string;
+    address_text: string;
+  };
+  vision: {
+    eyebrow: string;
+    title: string;
+    description: string;
+  };
+  mission: {
+    eyebrow: string;
+    items: string[];
+  };
+  cta: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    primary_button: BuilderButton;
+    secondary_button: BuilderButton;
+  };
+};
+
+export type ProgramPageBuilderContent = {
+  version: 1;
+  hero: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    background_image_url: string;
+    tags: string[];
+    highlights: BuilderStatItem[];
+  };
+  featured: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    cards: BuilderImageCard[];
+  };
+  curriculum: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    tracks: string[];
+  };
+  extracurricular: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    tags: string[];
+  };
+  listing: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    empty_state: string;
+    card_badge: string;
+  };
+  cta: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    primary_button: BuilderButton;
+    secondary_button: BuilderButton;
+  };
+};
+
+export type PsbPageBuilderContent = {
+  version: 1;
+  hero: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    background_image_url: string;
+  };
+  requirements: {
+    eyebrow: string;
+    title: string;
+    items: string[];
+  };
+  schedule: {
+    eyebrow: string;
+    title: string;
+    waves: PsbWaveItem[];
+  };
+  location: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    address_text: string;
+    image_url: string;
+  };
+  cta: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    primary_button: BuilderButton;
+    secondary_button: BuilderButton;
+  };
+};
+
+export type ContactPageBuilderContent = {
+  version: 1;
+  hero: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+  };
+  summary: {
+    address_title: string;
+    address_supporting: string;
+    contact_title: string;
+    contact_supporting: string;
+    hours_title: string;
+    hours_supporting: string;
+  };
+  info_cards: {
+    address_title: string;
+    contact_title: string;
+    hours_title: string;
+  };
+  form: {
+    title: string;
+    subtitle: string;
+    success_title: string;
+    success_message: string;
+    submit_label: string;
+    submitting_label: string;
+    reset_label: string;
+  };
+  map: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    button_label: string;
+    button_url: string;
+    embed_url: string;
+  };
+};
+
+export type BuilderPageKey = 'profil' | 'program' | 'psb' | 'kontak';
+
+export type WebsiteBuilderPages = {
+  version: 1;
+  profil: ProfilPageBuilderContent;
+  program: ProgramPageBuilderContent;
+  psb: PsbPageBuilderContent;
+  kontak: ContactPageBuilderContent;
+};
+
+export type WebsiteBuilderSnapshot = {
+  theme: WebsiteBuilderTheme;
+  shell: WebsiteBuilderShell;
+  home: HomeBuilderLayout;
+  pages: WebsiteBuilderPages;
+};
+
+export type WebsiteBuilderRevisionAction =
+  | 'save-draft'
+  | 'publish'
+  | 'rollback-draft'
+  | 'rollback-publish';
+
+export type WebsiteBuilderRevision = {
+  id: string;
+  created_at: string;
+  action: WebsiteBuilderRevisionAction;
+  label: string;
+  snapshot: WebsiteBuilderSnapshot;
+};
+
 export type WebsiteBuilderState = {
   enabled: boolean;
   themeDraft: WebsiteBuilderTheme;
@@ -134,4 +344,7 @@ export type WebsiteBuilderState = {
   shellPublished: WebsiteBuilderShell;
   homeDraft: HomeBuilderLayout;
   homePublished: HomeBuilderLayout;
+  pagesDraft: WebsiteBuilderPages;
+  pagesPublished: WebsiteBuilderPages;
+  revisions: WebsiteBuilderRevision[];
 };

@@ -9,8 +9,10 @@ import {
   Columns2,
   Copy,
   Eye,
+  FileText,
   Globe2,
   GripVertical,
+  History,
   Image as ImageIcon,
   LayoutDashboard,
   Loader2,
@@ -44,8 +46,14 @@ import {
   Video,
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import PageBuilderEditor from '@/components/website-builder/PageBuilderEditor';
 import {
+  appendWebsiteBuilderRevision,
+  BuilderPageKey,
+  createWebsiteBuilderRevision,
+  createWebsiteBuilderSnapshot,
   defaultHomeBuilderLayout,
+  defaultWebsiteBuilderPages,
   defaultWebsiteBuilderShell,
   defaultWebsiteBuilderTheme,
   HomeBuilderLayout,
@@ -55,11 +63,13 @@ import {
   parseWebsiteBuilderState,
   serializeBuilderJson,
   WEBSITE_BUILDER_KEYS,
+  WebsiteBuilderPages,
+  WebsiteBuilderRevision,
   WebsiteBuilderShell,
   WebsiteBuilderTheme,
 } from '@/lib/website-builder';
 
-type BuilderArea = 'Theme' | 'Navbar' | 'Home' | 'Floating' | 'Footer';
+type BuilderArea = 'Theme' | 'Navbar' | 'Home' | 'Pages' | 'Floating' | 'Footer' | 'Revisions';
 type ShellListKey = 'navbar-menu' | 'footer-quick-links' | 'footer-contact-items';
 type HeroSlideDraft = {
   title: string;
@@ -85,9 +95,25 @@ const builderAreas: Array<{ title: BuilderArea; description: string; icon: React
   { title: 'Theme', description: 'Warna, font, radius, shadow, dan background global.', icon: Paintbrush },
   { title: 'Navbar', description: 'Logo, menu utama, tombol PSB, dan perilaku mobile menu.', icon: Navigation },
   { title: 'Home', description: 'Susunan block Home dari hero sampai CTA pendaftaran.', icon: LayoutDashboard },
+  { title: 'Pages', description: 'Konten halaman Profil, Program, PSB, dan Kontak.', icon: FileText },
   { title: 'Floating', description: 'WhatsApp, back-to-top, dan jarak tombol di tampilan HP.', icon: MonitorSmartphone },
   { title: 'Footer', description: 'Kolom link, kontak, sosial media, dan copyright.', icon: Globe2 },
+  { title: 'Revisions', description: 'Riwayat snapshot builder untuk rollback draft atau publish.', icon: History },
 ];
+
+const builderPageOptions: Array<{ key: BuilderPageKey; label: string; route: string; description: string }> = [
+  { key: 'profil', label: 'Profil', route: '/profil', description: 'Hero, about, visi misi, dan CTA halaman profil.' },
+  { key: 'program', label: 'Program', route: '/program', description: 'Hero, highlight program, kurikulum, dan CTA.' },
+  { key: 'psb', label: 'PSB', route: '/psb', description: 'Hero, syarat, gelombang, lokasi, dan CTA pendaftaran.' },
+  { key: 'kontak', label: 'Kontak', route: '/kontak', description: 'Hero, info kontak, form pesan, dan peta lokasi.' },
+];
+
+const revisionActionLabels: Record<WebsiteBuilderRevision['action'], string> = {
+  'save-draft': 'Simpan Draft',
+  publish: 'Publish',
+  'rollback-draft': 'Pulihkan Draft',
+  'rollback-publish': 'Pulihkan Publish',
+};
 
 const blockCatalog: Array<{ type: HomeSectionType; label: string; variant: string }> = [
   { type: 'hero', label: 'Hero', variant: 'photo-single' },
@@ -297,6 +323,19 @@ function formatBuilderDateLabel(value?: string | null) {
   const timestamp = Date.parse(value);
   if (Number.isNaN(timestamp)) return '';
   return new Date(timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatBuilderDateTimeLabel(value?: string | null) {
+  if (!value) return '';
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return '';
+  return new Date(timestamp).toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function createContentCatalog(
@@ -1112,12 +1151,16 @@ export default function TabWebsiteBuilder() {
   const [themeDraft, setThemeDraft] = useState<WebsiteBuilderTheme>(defaultWebsiteBuilderTheme);
   const [shellDraft, setShellDraft] = useState<WebsiteBuilderShell>(defaultWebsiteBuilderShell);
   const [homeDraft, setHomeDraft] = useState<HomeBuilderLayout>(freshHomeLayout());
+  const [pagesDraft, setPagesDraft] = useState<WebsiteBuilderPages>(defaultWebsiteBuilderPages);
   const [selectedSectionId, setSelectedSectionId] = useState(defaultHomeBuilderLayout.sections[0]?.id || '');
+  const [selectedPageKey, setSelectedPageKey] = useState<BuilderPageKey>('profil');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
+  const [revisions, setRevisions] = useState<WebsiteBuilderRevision[]>([]);
+  const [restoringRevisionId, setRestoringRevisionId] = useState<string | null>(null);
   const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [draggingShellItem, setDraggingShellItem] = useState<{ listKey: ShellListKey; index: number } | null>(null);
@@ -1126,6 +1169,7 @@ export default function TabWebsiteBuilder() {
 
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
   const selectedSection = homeDraft.sections.find((section) => section.id === selectedSectionId) || homeDraft.sections[0] || null;
+  const selectedPageOption = builderPageOptions.find((page) => page.key === selectedPageKey) || builderPageOptions[0];
   const draftSectionCount = homeDraft.sections.filter((section) => section.enabled).length;
   const publishedSectionCount = builderState.homePublished.sections.filter((section) => section.enabled).length;
 
@@ -1134,6 +1178,8 @@ export default function TabWebsiteBuilder() {
     setThemeDraft(state.themeDraft);
     setShellDraft(state.shellDraft);
     setHomeDraft(state.homeDraft);
+    setPagesDraft(state.pagesDraft);
+    setRevisions(state.revisions);
     setSelectedSectionId(state.homeDraft.sections[0]?.id || '');
   }, []);
 
@@ -1190,14 +1236,35 @@ export default function TabWebsiteBuilder() {
     [showToast]
   );
 
+  const persistBuilderSettings = useCallback(async (entries: Array<[string, string]>) => {
+    await Promise.all(entries.map(([key, value]) => updateSetting(key, value)));
+  }, []);
+
   const saveDraft = async () => {
     setIsSavingDraft(true);
     try {
       const nextHome = { ...homeDraft, updated_at: new Date().toISOString() };
-      await Promise.all([
-        updateSetting(WEBSITE_BUILDER_KEYS.themeDraft, serializeBuilderJson(themeDraft)),
-        updateSetting(WEBSITE_BUILDER_KEYS.shellDraft, serializeBuilderJson(shellDraft)),
-        updateSetting(WEBSITE_BUILDER_KEYS.homeDraft, serializeBuilderJson(nextHome)),
+      const nextPages = cloneValue(pagesDraft);
+      const snapshot = createWebsiteBuilderSnapshot({
+        theme: themeDraft,
+        shell: shellDraft,
+        home: nextHome,
+        pages: nextPages,
+      });
+      const nextRevisions = appendWebsiteBuilderRevision(
+        revisions,
+        createWebsiteBuilderRevision({
+          action: 'save-draft',
+          label: 'Simpan Draft Website Builder',
+          snapshot,
+        })
+      );
+      await persistBuilderSettings([
+        [WEBSITE_BUILDER_KEYS.themeDraft, serializeBuilderJson(themeDraft)],
+        [WEBSITE_BUILDER_KEYS.shellDraft, serializeBuilderJson(shellDraft)],
+        [WEBSITE_BUILDER_KEYS.homeDraft, serializeBuilderJson(nextHome)],
+        [WEBSITE_BUILDER_KEYS.pagesDraft, serializeBuilderJson(nextPages)],
+        [WEBSITE_BUILDER_KEYS.revisions, serializeBuilderJson(nextRevisions)],
       ]);
       showToast('success', 'Draft Website Builder berhasil disimpan.');
       await fetchData();
@@ -1212,14 +1279,32 @@ export default function TabWebsiteBuilder() {
     setIsPublishing(true);
     try {
       const nextHome = { ...homeDraft, updated_at: new Date().toISOString() };
-      await Promise.all([
-        updateSetting(WEBSITE_BUILDER_KEYS.themePublished, serializeBuilderJson(themeDraft)),
-        updateSetting(WEBSITE_BUILDER_KEYS.shellPublished, serializeBuilderJson(shellDraft)),
-        updateSetting(WEBSITE_BUILDER_KEYS.homePublished, serializeBuilderJson(nextHome)),
-        updateSetting(WEBSITE_BUILDER_KEYS.themeDraft, serializeBuilderJson(themeDraft)),
-        updateSetting(WEBSITE_BUILDER_KEYS.shellDraft, serializeBuilderJson(shellDraft)),
-        updateSetting(WEBSITE_BUILDER_KEYS.homeDraft, serializeBuilderJson(nextHome)),
-        ...(enableAfterPublish ? [updateSetting(WEBSITE_BUILDER_KEYS.enabled, 'true')] : []),
+      const nextPages = cloneValue(pagesDraft);
+      const snapshot = createWebsiteBuilderSnapshot({
+        theme: themeDraft,
+        shell: shellDraft,
+        home: nextHome,
+        pages: nextPages,
+      });
+      const nextRevisions = appendWebsiteBuilderRevision(
+        revisions,
+        createWebsiteBuilderRevision({
+          action: 'publish',
+          label: enableAfterPublish ? 'Publish & Aktifkan Website Builder' : 'Publish Website Builder',
+          snapshot,
+        })
+      );
+      await persistBuilderSettings([
+        [WEBSITE_BUILDER_KEYS.themePublished, serializeBuilderJson(themeDraft)],
+        [WEBSITE_BUILDER_KEYS.shellPublished, serializeBuilderJson(shellDraft)],
+        [WEBSITE_BUILDER_KEYS.homePublished, serializeBuilderJson(nextHome)],
+        [WEBSITE_BUILDER_KEYS.pagesPublished, serializeBuilderJson(nextPages)],
+        [WEBSITE_BUILDER_KEYS.themeDraft, serializeBuilderJson(themeDraft)],
+        [WEBSITE_BUILDER_KEYS.shellDraft, serializeBuilderJson(shellDraft)],
+        [WEBSITE_BUILDER_KEYS.homeDraft, serializeBuilderJson(nextHome)],
+        [WEBSITE_BUILDER_KEYS.pagesDraft, serializeBuilderJson(nextPages)],
+        [WEBSITE_BUILDER_KEYS.revisions, serializeBuilderJson(nextRevisions)],
+        ...(enableAfterPublish ? [[WEBSITE_BUILDER_KEYS.enabled, 'true'] as [string, string]] : []),
       ]);
       showToast('success', enableAfterPublish ? 'Website Builder berhasil dipublish dan diaktifkan.' : 'Konfigurasi builder berhasil dipublish.');
       await fetchData();
@@ -1227,6 +1312,54 @@ export default function TabWebsiteBuilder() {
       showToast('error', 'Gagal mempublish konfigurasi builder.');
     } finally {
       setIsPublishing(false);
+    }
+  };
+
+  const restoreRevision = async (revision: WebsiteBuilderRevision, publish: boolean) => {
+    setRestoringRevisionId(revision.id);
+    try {
+      const snapshot = cloneValue(revision.snapshot);
+      const nextRevisions = appendWebsiteBuilderRevision(
+        revisions,
+        createWebsiteBuilderRevision({
+          action: publish ? 'rollback-publish' : 'rollback-draft',
+          label: publish
+            ? `Pulihkan & Publish dari ${revisionActionLabels[revision.action]}`
+            : `Pulihkan Draft dari ${revisionActionLabels[revision.action]}`,
+          snapshot,
+        })
+      );
+
+      const entries: Array<[string, string]> = publish
+        ? [
+            [WEBSITE_BUILDER_KEYS.themePublished, serializeBuilderJson(snapshot.theme)],
+            [WEBSITE_BUILDER_KEYS.shellPublished, serializeBuilderJson(snapshot.shell)],
+            [WEBSITE_BUILDER_KEYS.homePublished, serializeBuilderJson(snapshot.home)],
+            [WEBSITE_BUILDER_KEYS.pagesPublished, serializeBuilderJson(snapshot.pages)],
+            [WEBSITE_BUILDER_KEYS.themeDraft, serializeBuilderJson(snapshot.theme)],
+            [WEBSITE_BUILDER_KEYS.shellDraft, serializeBuilderJson(snapshot.shell)],
+            [WEBSITE_BUILDER_KEYS.homeDraft, serializeBuilderJson(snapshot.home)],
+            [WEBSITE_BUILDER_KEYS.pagesDraft, serializeBuilderJson(snapshot.pages)],
+            [WEBSITE_BUILDER_KEYS.revisions, serializeBuilderJson(nextRevisions)],
+          ]
+        : [
+            [WEBSITE_BUILDER_KEYS.themeDraft, serializeBuilderJson(snapshot.theme)],
+            [WEBSITE_BUILDER_KEYS.shellDraft, serializeBuilderJson(snapshot.shell)],
+            [WEBSITE_BUILDER_KEYS.homeDraft, serializeBuilderJson(snapshot.home)],
+            [WEBSITE_BUILDER_KEYS.pagesDraft, serializeBuilderJson(snapshot.pages)],
+            [WEBSITE_BUILDER_KEYS.revisions, serializeBuilderJson(nextRevisions)],
+          ];
+
+      await persistBuilderSettings(entries);
+      showToast(
+        'success',
+        publish ? 'Revision berhasil dipulihkan dan dipublish.' : 'Revision berhasil dipulihkan ke draft.'
+      );
+      await fetchData();
+    } catch {
+      showToast('error', 'Gagal memulihkan revision Website Builder.');
+    } finally {
+      setRestoringRevisionId(null);
     }
   };
 
@@ -1248,6 +1381,7 @@ export default function TabWebsiteBuilder() {
     setThemeDraft(defaultWebsiteBuilderTheme);
     setShellDraft(defaultWebsiteBuilderShell);
     setHomeDraft(nextHome);
+    setPagesDraft(defaultWebsiteBuilderPages);
     setSelectedSectionId(nextHome.sections[0]?.id || '');
     showToast('success', 'Draft dikembalikan ke default. Klik Simpan Draft untuk menyimpan.');
   };
@@ -1630,6 +1764,14 @@ export default function TabWebsiteBuilder() {
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Published Home</p>
                 <p className="mt-1 font-black text-slate-900">{publishedSectionCount} block aktif</p>
               </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Pages Builder</p>
+                <p className="mt-1 font-black text-slate-900">{builderPageOptions.length} halaman siap edit</p>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Revision</p>
+                <p className="mt-1 font-black text-slate-900">{revisions.length} snapshot tersimpan</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1880,6 +2022,76 @@ export default function TabWebsiteBuilder() {
             </div>
           ) : null}
 
+          {activeArea === 'Pages' ? (
+            <div className="grid gap-6 xl:grid-cols-[0.35fr_0.65fr]">
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Pilih Halaman</p>
+                  <div className="mt-4 space-y-3">
+                    {builderPageOptions.map((page) => (
+                      <button
+                        key={page.key}
+                        type="button"
+                        onClick={() => setSelectedPageKey(page.key)}
+                        className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                          selectedPageKey === page.key
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200'
+                        }`}
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{page.route}</p>
+                        <p className="mt-2 text-base font-black">{page.label}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-500">{page.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Preview Halaman</p>
+                  <h4 className="mt-2 text-lg font-black text-slate-950">{selectedPageOption.label}</h4>
+                  <p className="mt-2 text-sm leading-7 text-slate-500">
+                    Cek draft untuk halaman terpilih sebelum di-live-kan, atau bandingkan dengan versi published saat ini.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => window.open(`/builder-preview/${selectedPageKey}`, '_blank', 'noopener,noreferrer')}
+                      className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                    >
+                      <Eye size={14} />
+                      Preview Draft
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.open(`/builder-compare/${selectedPageKey}`, '_blank', 'noopener,noreferrer')}
+                      className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-amber-700 transition hover:border-amber-300 hover:bg-amber-50"
+                    >
+                      <Columns2 size={14} />
+                      Bandingkan
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Page Builder</p>
+                  <h3 className="mt-2 text-2xl font-black text-slate-950">{selectedPageOption.label}</h3>
+                  <p className="mt-2 text-sm leading-7 text-slate-500">{selectedPageOption.description}</p>
+                </div>
+
+                <PageBuilderEditor
+                  pageKey={selectedPageKey}
+                  pagesDraft={pagesDraft}
+                  onChange={setPagesDraft}
+                  onUploadImage={async (target, file) => uploadBuilderAsset(target, file)}
+                  uploadingTarget={uploadingTarget}
+                />
+              </div>
+            </div>
+          ) : null}
+
           {activeArea === 'Floating' ? (
             <div className="grid gap-5 md:grid-cols-2">
               <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -1990,6 +2202,76 @@ export default function TabWebsiteBuilder() {
                 labelPlaceholder: 'Label kontak',
                 urlPlaceholder: 'Kosongkan untuk teks biasa, atau isi https:// mailto: tel:',
               })}
+            </div>
+          ) : null}
+
+          {activeArea === 'Revisions' ? (
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Riwayat Builder</p>
+                <h3 className="mt-2 text-2xl font-black text-slate-950">Snapshot Draft dan Publish</h3>
+                <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
+                  Setiap simpan draft, publish, dan rollback akan masuk ke riwayat. Kamu bisa memulihkan snapshot lama ke draft saja atau langsung ke published.
+                </p>
+              </div>
+
+              {revisions.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-8 text-sm font-medium text-slate-500">
+                  Belum ada revision tersimpan. Simpan draft atau publish dulu supaya snapshot pertama tercatat di sini.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {revisions.map((revision) => {
+                    const isRestoring = restoringRevisionId === revision.id;
+                    const homeCount = revision.snapshot.home.sections.filter((section) => section.enabled).length;
+
+                    return (
+                      <div
+                        key={revision.id}
+                        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                                {revisionActionLabels[revision.action]}
+                              </span>
+                              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                                {formatBuilderDateTimeLabel(revision.created_at)}
+                              </span>
+                            </div>
+                            <h4 className="text-lg font-black text-slate-950">{revision.label}</h4>
+                            <p className="text-sm text-slate-500">
+                              Snapshot berisi {homeCount} block Home aktif dan {builderPageOptions.length} halaman builder.
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => void restoreRevision(revision, false)}
+                              disabled={Boolean(restoringRevisionId)}
+                              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60"
+                            >
+                              {isRestoring ? <RefreshCw size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                              Pulihkan ke Draft
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void restoreRevision(revision, true)}
+                              disabled={Boolean(restoringRevisionId)}
+                              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-amber-700 transition hover:border-amber-300 hover:bg-amber-100 disabled:opacity-60"
+                            >
+                              {isRestoring ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                              Pulihkan & Publish
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : null}
         </div>

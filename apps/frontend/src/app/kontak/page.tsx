@@ -1,33 +1,33 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { createContactMessage, getPublicSettingsMap, SettingsMap } from '@/lib/api';
+import React, { useState } from 'react';
+import { createContactMessage } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import PublicLayout from '@/components/PublicLayout';
+import {
+  usePublicSiteContext,
+  useWebsiteBuilderPageContent,
+} from '@/components/PublicSiteContext';
+import { defaultWebsiteBuilderPages } from '@/lib/website-builder';
 import { Send, MapPin, Phone, Clock, RefreshCw, MessageCircle } from 'lucide-react';
 
-export default function ContactPage() {
+function ContactPageContent() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     whatsapp: '',
-    message: ''
+    message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [settings, setSettings] = useState<SettingsMap>({});
   const { showToast } = useToast();
+  const pageContent = useWebsiteBuilderPageContent('kontak', defaultWebsiteBuilderPages.kontak);
+  const context = usePublicSiteContext();
+  const settings = context?.settings || {};
 
-  useEffect(() => {
-    async function fetchSettings() {
-      const data = await getPublicSettingsMap();
-      setSettings(data || {});
-    }
-
-    fetchSettings();
-  }, []);
-
-  const schoolAddress = settings.school_address || 'Jl. KH. Ahmad Sugriwa, Kp. Lengkong Barang RT 01 RW 02, Desa Iwul, Kec. Parung, Kab. Bogor 16330';
+  const schoolAddress =
+    settings.school_address ||
+    'Jl. KH. Ahmad Sugriwa, Kp. Lengkong Barang RT 01 RW 02, Desa Iwul, Kec. Parung, Kab. Bogor 16330';
   const schoolPhone = settings.school_phone || '0814 1324 1748';
   const schoolEmail = settings.school_email || 'info@darussunnahparung.or.id';
   const schoolWebsite = settings.school_website || 'https://darussunnahparung.or.id';
@@ -37,12 +37,12 @@ export default function ContactPage() {
     .map((item) => item.replace(/\D/g, '').trim())
     .filter(Boolean);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!formData.name || !formData.message) {
       showToast('error', 'Nama dan Pesan wajib diisi');
       return;
@@ -50,8 +50,8 @@ export default function ContactPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await createContactMessage(formData);
-      if (res.success || res.id) {
+      const response = await createContactMessage(formData);
+      if (response.success || response.id) {
         setIsSuccess(true);
         showToast('success', 'Pesan Anda berhasil dikirim! Kami akan segera menghubungi Anda.');
         setFormData({ name: '', email: '', whatsapp: '', message: '' });
@@ -65,187 +65,222 @@ export default function ContactPage() {
   };
 
   return (
-    <PublicLayout>
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header Section */}
-      <div className="bg-slate-950 text-white py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-emerald-950/70"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-800/30 rounded-full blur-[100px] transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-sky-900/20 rounded-full blur-[100px] transform -translate-x-1/2 translate-y-1/2"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
-          <div className="inline-block px-4 py-1.5 bg-white/10 border border-white/15 rounded-full text-emerald-200 text-sm font-bold tracking-widest mb-6">
-            HUBUNGI KAMI
+      <div className="relative overflow-hidden bg-slate-950 py-24 text-white">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-emerald-950/70" />
+        <div className="absolute right-0 top-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-800/30 blur-[100px]" />
+        <div className="absolute bottom-0 left-0 h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-sky-900/20 blur-[100px]" />
+
+        <div className="relative z-10 mx-auto max-w-7xl px-4 text-center">
+          <div className="mb-6 inline-block rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-bold tracking-widest text-emerald-200">
+            {pageContent.hero.eyebrow.toUpperCase()}
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-6 tracking-tight font-outfit">Hubungi Pondok Darussunnah</h1>
-          <p className="text-emerald-100/80 max-w-2xl mx-auto text-lg leading-relaxed">
-            Jika ingin bertanya tentang program pondok, pendaftaran, atau kebutuhan informasi lainnya, silakan kirim pesan kepada kami.
+          <h1 className="font-outfit mb-6 text-4xl font-black tracking-tight md:text-5xl">
+            {pageContent.hero.title}
+          </h1>
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-emerald-100/80">
+            {pageContent.hero.subtitle}
           </p>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3 text-left">
+          <div className="mt-10 grid gap-4 text-left md:grid-cols-3">
             <div className="rounded-[1.75rem] border border-white/10 bg-white/10 px-5 py-5 backdrop-blur">
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">Alamat</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">
+                {pageContent.summary.address_title}
+              </p>
               <p className="mt-3 text-sm font-medium leading-relaxed text-white/80">{schoolAddress}</p>
+              <p className="mt-3 text-xs text-white/70">{pageContent.summary.address_supporting}</p>
             </div>
             <div className="rounded-[1.75rem] border border-white/10 bg-white/10 px-5 py-5 backdrop-blur">
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">Kontak Utama</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">
+                {pageContent.summary.contact_title}
+              </p>
               <p className="mt-3 text-sm font-semibold text-white">{schoolPhone}</p>
               <p className="mt-1 text-xs text-white/70">{schoolEmail}</p>
+              <p className="mt-3 text-xs text-white/70">{pageContent.summary.contact_supporting}</p>
             </div>
             <div className="rounded-[1.75rem] border border-white/10 bg-white/10 px-5 py-5 backdrop-blur">
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">Layanan</p>
-              <p className="mt-3 text-sm font-medium text-white/80">Senin - Sabtu, 08:00 - 16:00 WIB</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">
+                {pageContent.summary.hours_title}
+              </p>
+              <p className="mt-3 text-sm font-medium text-white/80">{pageContent.summary.hours_supporting}</p>
               <p className="mt-1 text-xs text-white/70">
-                {adminWhatsAppNumbers.length > 1 ? `${adminWhatsAppNumbers.length} admin siap membantu` : 'Admin siap membantu'}
+                {adminWhatsAppNumbers.length > 1
+                  ? `${adminWhatsAppNumbers.length} admin siap membantu`
+                  : 'Admin siap membantu'}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 -mt-12 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Contact Info Cards */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white/95 backdrop-blur-sm p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
-               <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0">
-                  <MapPin size={24} />
-               </div>
-               <div>
-                  <h3 className="text-lg font-black text-slate-800 mb-2">Alamat Pondok</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    {schoolAddress}
+      <div className="relative z-20 mx-auto -mt-12 max-w-7xl px-4">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-1">
+            <div className="flex items-start gap-5 rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-sm">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                <MapPin size={24} />
+              </div>
+              <div>
+                <h3 className="mb-2 text-lg font-black text-slate-800">{pageContent.info_cards.address_title}</h3>
+                <p className="text-sm leading-relaxed text-slate-500">{schoolAddress}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-5 rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-sm">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                <Phone size={24} />
+              </div>
+              <div>
+                <h3 className="mb-2 text-lg font-black text-slate-800">{pageContent.info_cards.contact_title}</h3>
+                <div className="space-y-1">
+                  <p className="text-sm text-slate-500">
+                    Kontak utama: <span className="font-bold text-slate-700">{schoolPhone}</span>
                   </p>
-               </div>
-            </div>
-
-            <div className="bg-white/95 backdrop-blur-sm p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
-               <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
-                  <Phone size={24} />
-               </div>
-               <div>
-                  <h3 className="text-lg font-black text-slate-800 mb-2">Telepon / WhatsApp</h3>
-                  <div className="space-y-1">
-                     <p className="text-slate-500 text-sm">Kontak utama: <span className="font-bold text-slate-700">{schoolPhone}</span></p>
-                     <p className="text-slate-500 text-sm">Email: <span className="font-bold text-slate-700">{schoolEmail}</span></p>
+                  <p className="text-sm text-slate-500">
+                    Email: <span className="font-bold text-slate-700">{schoolEmail}</span>
+                  </p>
+                </div>
+                {adminWhatsAppNumbers.length > 0 ? (
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {adminWhatsAppNumbers.slice(0, 2).map((phone, index) => (
+                      <a
+                        key={`${phone}-${index}`}
+                        href={`https://wa.me/${phone}?text=${encodeURIComponent(
+                          'Assalamualaikum, saya ingin bertanya tentang Pondok Pesantren Darussunnah.'
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+                      >
+                        <MessageCircle size={14} />
+                        Chat Admin {index + 1}
+                      </a>
+                    ))}
                   </div>
-                  {adminWhatsAppNumbers.length > 0 && (
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      {adminWhatsAppNumbers.slice(0, 2).map((phone, index) => (
-                        <a
-                          key={`${phone}-${index}`}
-                          href={`https://wa.me/${phone}?text=${encodeURIComponent('Assalamualaikum, saya ingin bertanya tentang Pondok Pesantren Darussunnah.')}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
-                        >
-                          <MessageCircle size={14} />
-                          Chat Admin {index + 1}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-               </div>
+                ) : null}
+              </div>
             </div>
 
-            <div className="bg-white/95 backdrop-blur-sm p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-start gap-5">
-               <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
-                  <Clock size={24} />
-               </div>
-               <div>
-                  <h3 className="text-lg font-black text-slate-800 mb-2">Jam Operasional</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed mb-1">Silakan hubungi kami pada jam kerja:</p>
-                  <p className="text-slate-800 font-bold block text-sm">Senin - Sabtu: 08:00 - 16:00 WIB</p>
-                  <p className="mt-2 text-slate-500 text-sm">Website: <span className="font-bold text-slate-700">{schoolWebsite}</span></p>
-               </div>
+            <div className="flex items-start gap-5 rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-sm">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                <Clock size={24} />
+              </div>
+              <div>
+                <h3 className="mb-2 text-lg font-black text-slate-800">{pageContent.info_cards.hours_title}</h3>
+                <p className="mb-1 text-sm leading-relaxed text-slate-500">
+                  Silakan hubungi kami pada jam kerja:
+                </p>
+                <p className="block text-sm font-bold text-slate-800">
+                  {pageContent.summary.hours_supporting}
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  Website: <span className="font-bold text-slate-700">{schoolWebsite}</span>
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Contact Form */}
           <div className="lg:col-span-2">
-            <div className="bg-white/96 backdrop-blur-sm p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
+            <div className="rounded-[2.5rem] border border-slate-100 bg-white/96 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-sm md:p-12">
               <div className="mb-10">
-                 <h2 className="text-2xl font-black text-slate-800 mb-2 font-outfit">Kirim Pesan</h2>
-                 <p className="text-slate-500 text-sm text-balance">Isi form di bawah ini. Insya Allah kami akan membalas melalui WhatsApp atau email yang Anda cantumkan.</p>
+                <h2 className="font-outfit mb-2 text-2xl font-black text-slate-800">
+                  {pageContent.form.title}
+                </h2>
+                <p className="text-balance text-sm text-slate-500">{pageContent.form.subtitle}</p>
               </div>
 
               {isSuccess ? (
-                <div className="bg-emerald-50 border border-emerald-200 p-8 rounded-3xl text-center animate-in zoom-in-95">
-                  <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="animate-in zoom-in-95 rounded-3xl border border-emerald-200 bg-emerald-50 p-8 text-center">
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Send size={32} />
                   </div>
-                  <h3 className="text-2xl font-black text-emerald-900 mb-2">Pesan Terkirim!</h3>
-                  <p className="text-emerald-700 mb-8 max-w-sm mx-auto">Terima kasih. Pesan Anda sudah kami terima dan akan kami tindak lanjuti secepatnya.</p>
-                  <button 
+                  <h3 className="mb-2 text-2xl font-black text-emerald-900">
+                    {pageContent.form.success_title}
+                  </h3>
+                  <p className="mx-auto mb-8 max-w-sm text-emerald-700">
+                    {pageContent.form.success_message}
+                  </p>
+                  <button
                     onClick={() => setIsSuccess(false)}
-                    className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition"
+                    className="rounded-2xl bg-emerald-600 px-8 py-3 font-bold text-white transition hover:bg-emerald-700"
                   >
-                    Kirim Pesan Lagi
+                    {pageContent.form.reset_label}
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nama Lengkap *</label>
-                      <input 
+                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                        Nama Lengkap *
+                      </label>
+                      <input
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
                         required
-                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         placeholder="Cth: Abdullah"
                       />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nomor WhatsApp</label>
-                      <input 
+                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                        Nomor WhatsApp
+                      </label>
+                      <input
                         type="tel"
                         name="whatsapp"
                         value={formData.whatsapp}
                         onChange={handleChange}
-                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         placeholder="Cth: 08123456789"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Alamat Email</label>
-                    <input 
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      Alamat Email
+                    </label>
+                    <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                       placeholder="Cth: abdullah@email.com"
                     />
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Pesan / Pertanyaan *</label>
-                    <textarea 
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      Pesan / Pertanyaan *
+                    </label>
+                    <textarea
                       name="message"
                       rows={5}
                       value={formData.message}
                       onChange={handleChange}
                       required
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-sm leading-relaxed"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                       placeholder="Tuliskan pesan atau pertanyaan Anda di sini..."
-                    ></textarea>
+                    />
                   </div>
 
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full md:w-auto px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition shadow-xl shadow-emerald-600/20 disabled:opacity-50 flex items-center justify-center gap-3"
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50 md:w-auto"
                   >
                     {isSubmitting ? (
-                      <><RefreshCw size={18} className="animate-spin" /> MENGIRIM...</>
+                      <>
+                        <RefreshCw size={18} className="animate-spin" /> {pageContent.form.submitting_label}
+                      </>
                     ) : (
-                      <><Send size={18} /> KIRIM PESAN</>
+                      <>
+                        <Send size={18} /> {pageContent.form.submit_label}
+                      </>
                     )}
                   </button>
                 </form>
@@ -254,40 +289,45 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* Large Map Section */}
-        <div className="mt-12 bg-white/96 backdrop-blur-sm p-4 md:p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
-           <div className="flex flex-col gap-4 px-4 pb-4 md:flex-row md:items-end md:justify-between">
-             <div>
-               <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-600">Lokasi Pondok</p>
-               <h2 className="mt-2 text-xl font-black text-slate-800 font-outfit">Peta Lokasi</h2>
-               <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                 Gunakan peta ini untuk menemukan jalur menuju Pondok Pesantren Tahfidz Al-Qur&apos;an Darussunnah di Parung, Bogor.
-               </p>
-             </div>
-             <a
-               href="https://maps.google.com/?q=Pondok%20Pesantren%20Darussunnah%20Parung"
-               target="_blank"
-               rel="noreferrer"
-               className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition hover:bg-slate-800"
-             >
-               Buka di Google Maps
-             </a>
-           </div>
-           <div className="w-full h-[400px] rounded-3xl overflow-hidden bg-slate-100">
-             <iframe 
-                src="https://maps.google.com/maps?q=Pondok%20Pesantren%20Darussunnah%20Parung&t=&z=15&ie=UTF8&iwloc=&output=embed" 
-                width="100%" 
-                height="100%" 
-                style={{ border: 0 }} 
-                allowFullScreen 
-                loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade"
-             ></iframe>
-           </div>
+        <div className="mt-12 rounded-[2.5rem] border border-slate-100 bg-white/96 p-4 shadow-xl shadow-slate-200/50 backdrop-blur-sm md:p-8">
+          <div className="flex flex-col gap-4 px-4 pb-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-600">
+                {pageContent.map.eyebrow}
+              </p>
+              <h2 className="font-outfit mt-2 text-xl font-black text-slate-800">{pageContent.map.title}</h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-500">{pageContent.map.subtitle}</p>
+            </div>
+            <a
+              href={pageContent.map.button_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition hover:bg-slate-800"
+            >
+              {pageContent.map.button_label}
+            </a>
+          </div>
+          <div className="h-[400px] w-full overflow-hidden rounded-3xl bg-slate-100">
+            <iframe
+              src={pageContent.map.embed_url}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         </div>
-
       </div>
     </div>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <PublicLayout>
+      <ContactPageContent />
     </PublicLayout>
   );
 }

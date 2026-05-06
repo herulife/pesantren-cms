@@ -10,6 +10,7 @@ import { getPublicSettingsMap, getSettingsMap, resolveDisplayImageUrl, SettingsM
 import { parseWebsiteBuilderState } from '@/lib/website-builder';
 import BuilderPreviewToolbar, { BuilderPreviewMode } from '@/components/website-builder/BuilderPreviewToolbar';
 import WebsiteShellRenderer from '@/components/website-builder/WebsiteShellRenderer';
+import { BuilderRenderMode, PublicSiteProvider } from '@/components/PublicSiteContext';
 
 type PublicLayoutProps = {
   children: React.ReactNode;
@@ -125,14 +126,25 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     setOpenDesktopDropdown((current) => (current === menu ? null : menu));
   };
 
+  const createContextValue = (renderMode: BuilderRenderMode) => ({
+    settings,
+    builderState,
+    effectivePathname,
+    isBuilderPreview,
+    renderMode,
+    useBuilderContent: renderMode !== 'live',
+  });
+
   if (isBuilderPreview && (loading || !user || user.role === 'user')) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" />
-          <p className="mt-4 text-sm font-bold text-emerald-100">Menyiapkan preview builder...</p>
+      <PublicSiteProvider value={createContextValue('draft')}>
+        <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+          <div className="text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" />
+            <p className="mt-4 text-sm font-bold text-emerald-100">Menyiapkan preview builder...</p>
+          </div>
         </div>
-      </div>
+      </PublicSiteProvider>
     );
   }
 
@@ -173,13 +185,15 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   </p>
                 </div>
 
-                <WebsiteShellRenderer
-                  {...shellRendererProps}
-                  shell={builderState.shellPublished}
-                  theme={builderState.themePublished}
-                >
-                  {children}
-                </WebsiteShellRenderer>
+                <PublicSiteProvider value={createContextValue('published')}>
+                  <WebsiteShellRenderer
+                    {...shellRendererProps}
+                    shell={builderState.shellPublished}
+                    theme={builderState.themePublished}
+                  >
+                    {children}
+                  </WebsiteShellRenderer>
+                </PublicSiteProvider>
               </div>
 
               <div className="space-y-3">
@@ -191,13 +205,15 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   </p>
                 </div>
 
-                <WebsiteShellRenderer
-                  {...shellRendererProps}
-                  shell={builderState.shellDraft}
-                  theme={builderState.themeDraft}
-                >
-                  {children}
-                </WebsiteShellRenderer>
+                <PublicSiteProvider value={createContextValue('draft')}>
+                  <WebsiteShellRenderer
+                    {...shellRendererProps}
+                    shell={builderState.shellDraft}
+                    theme={builderState.themeDraft}
+                  >
+                    {children}
+                  </WebsiteShellRenderer>
+                </PublicSiteProvider>
               </div>
             </div>
           </div>
@@ -206,21 +222,26 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     }
 
     return (
-      <WebsiteShellRenderer
-        {...shellRendererProps}
-        shell={isBuilderPreview ? builderState.shellDraft : builderState.shellPublished}
-        theme={isBuilderPreview ? builderState.themeDraft : builderState.themePublished}
+      <PublicSiteProvider
+        value={createContextValue(isBuilderPreview ? 'draft' : 'published')}
       >
-        {isBuilderPreview ? (
-          <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname={effectivePathname} mode={previewMode} />
-        ) : null}
-        {children}
-      </WebsiteShellRenderer>
+        <WebsiteShellRenderer
+          {...shellRendererProps}
+          shell={isBuilderPreview ? builderState.shellDraft : builderState.shellPublished}
+          theme={isBuilderPreview ? builderState.themeDraft : builderState.themePublished}
+        >
+          {isBuilderPreview ? (
+            <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname={effectivePathname} mode={previewMode} />
+          ) : null}
+          {children}
+        </WebsiteShellRenderer>
+      </PublicSiteProvider>
     );
   }
 
   return (
-    <div className="public-site-shell min-h-screen bg-white font-sans antialiased">
+    <PublicSiteProvider value={createContextValue('live')}>
+      <div className="public-site-shell min-h-screen bg-white font-sans antialiased">
       {/* ═══════════════════ NAVBAR ═══════════════════ */}
       {!hideNavbar ? (
       <nav className="sticky top-0 z-[1000] border-b border-emerald-900/80 bg-emerald-950/95 shadow-[0_10px_30px_rgba(2,6,23,0.2)] backdrop-blur-md">
@@ -635,6 +656,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
           <ChevronUp size={20} className="md:h-6 md:w-6" />
         </button>
       )}
-    </div>
+      </div>
+    </PublicSiteProvider>
   );
 }
