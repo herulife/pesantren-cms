@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight, Camera, ThumbsUp, Play } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { getPublicSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
+import { parseWebsiteBuilderState } from '@/lib/website-builder';
+import WebsiteShellRenderer from '@/components/website-builder/WebsiteShellRenderer';
 
 type PublicLayoutProps = {
   children: React.ReactNode;
@@ -87,9 +89,39 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const isInformationActive = pathname.startsWith('/galeri') || pathname.startsWith('/videos') || pathname.startsWith('/news');
   const isContactActive = pathname.startsWith('/kontak');
   const isPortalPage = pathname.startsWith('/portal');
+  const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
+  const useBuilderShell = builderState.enabled;
   const toggleDesktopDropdown = (menu: 'profil' | 'informasi') => {
     setOpenDesktopDropdown((current) => (current === menu ? null : menu));
   };
+
+  if (useBuilderShell) {
+    return (
+      <WebsiteShellRenderer
+        hideNavbar={hideNavbar}
+        shell={builderState.shellPublished}
+        theme={builderState.themePublished}
+        pathname={pathname}
+        logoUrl={logoUrl}
+        schoolName={schoolName}
+        welcomeText={welcomeText}
+        schoolAddress={schoolAddress}
+        schoolPhone={schoolPhone}
+        schoolEmail={schoolEmail}
+        schoolWebsite={schoolWebsite}
+        whatsappNumber={whatsappNumber}
+        socialLinks={socialLinks}
+        user={user}
+        loading={loading}
+        logout={logout}
+        showBackToTop={showBackToTop}
+        scrollToTop={scrollToTop}
+        isPortalPage={isPortalPage}
+      >
+        {children}
+      </WebsiteShellRenderer>
+    );
+  }
 
   return (
     <div className="public-site-shell min-h-screen bg-white font-sans antialiased">

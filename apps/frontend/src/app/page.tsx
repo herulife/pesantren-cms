@@ -20,9 +20,11 @@ import {
   getYouTubeThumbnailUrl,
 } from '@/lib/api';
 import PublicLayout from '@/components/PublicLayout';
+import HomePageRenderer from '@/components/website-builder/HomePageRenderer';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import NewsCard from '@/components/NewsCard';
+import { parseWebsiteBuilderState } from '@/lib/website-builder';
 import {
   ArrowRight,
   BookOpen,
@@ -429,6 +431,25 @@ export default function LandingPage() {
 
   const heroSlides = useMemo(() => parseHeroSlides(settings), [settings]);
   const canSlideHero = heroSlides.length > 1;
+  const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
+
+  if (builderState.enabled) {
+    return (
+      <PublicLayout>
+        <HomePageRenderer
+          layout={builderState.homePublished}
+          dataSources={{
+            news,
+            agendas,
+            galleryAlbums,
+            videoSeries,
+            settings,
+            isLoading,
+          }}
+        />
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>
