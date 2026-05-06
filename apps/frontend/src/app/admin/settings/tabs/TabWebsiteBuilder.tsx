@@ -6,6 +6,7 @@ import {
   ArrowDown,
   ArrowUp,
   CheckCircle2,
+  Copy,
   Eye,
   Globe2,
   GripVertical,
@@ -17,6 +18,7 @@ import {
   Paintbrush,
   Plus,
   RefreshCw,
+  RotateCcw,
   Save,
   Send,
   Trash2,
@@ -31,6 +33,7 @@ import {
   HomeBuilderLayout,
   HomeSection,
   HomeSectionType,
+  NavbarMenuItem,
   parseWebsiteBuilderState,
   serializeBuilderJson,
   WEBSITE_BUILDER_KEYS,
@@ -39,6 +42,7 @@ import {
 } from '@/lib/website-builder';
 
 type BuilderArea = 'Theme' | 'Navbar' | 'Home' | 'Floating' | 'Footer';
+type ShellListKey = 'navbar-menu' | 'footer-quick-links' | 'footer-contact-items';
 
 const builderAreas: Array<{ title: BuilderArea; description: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
   { title: 'Theme', description: 'Warna, font, radius, shadow, dan background global.', icon: Paintbrush },
@@ -66,6 +70,52 @@ const sectionLabels: Record<HomeSectionType, string> = blockCatalog.reduce(
   (acc, item) => ({ ...acc, [item.type]: item.label }),
   {} as Record<HomeSectionType, string>
 );
+
+function cloneSectionSettings(settings: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(settings)) as Record<string, unknown>;
+}
+
+function createSectionId(type: HomeSectionType): string {
+  return `${type}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function getDefaultSectionTemplate(type: HomeSectionType): HomeSection {
+  const defaultSection = defaultHomeBuilderLayout.sections.find((section) => section.type === type);
+  if (defaultSection) {
+    return {
+      ...defaultSection,
+      settings: cloneSectionSettings(defaultSection.settings),
+    };
+  }
+
+  return createSection(type);
+}
+
+function readShellList(shell: WebsiteBuilderShell, listKey: ShellListKey): NavbarMenuItem[] {
+  switch (listKey) {
+    case 'navbar-menu':
+      return shell.navbar.menu_items;
+    case 'footer-quick-links':
+      return shell.footer.quick_links;
+    case 'footer-contact-items':
+      return shell.footer.contact_items;
+    default:
+      return [];
+  }
+}
+
+function writeShellList(shell: WebsiteBuilderShell, listKey: ShellListKey, items: NavbarMenuItem[]): WebsiteBuilderShell {
+  switch (listKey) {
+    case 'navbar-menu':
+      return { ...shell, navbar: { ...shell.navbar, menu_items: items } };
+    case 'footer-quick-links':
+      return { ...shell, footer: { ...shell.footer, quick_links: items } };
+    case 'footer-contact-items':
+      return { ...shell, footer: { ...shell.footer, contact_items: items } };
+    default:
+      return shell;
+  }
+}
 
 function freshHomeLayout(): HomeBuilderLayout {
   return {
@@ -369,6 +419,8 @@ export default function TabWebsiteBuilder() {
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
   const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [draggingShellItem, setDraggingShellItem] = useState<{ listKey: ShellListKey; index: number } | null>(null);
+  const [dragOverShellItem, setDragOverShellItem] = useState<{ listKey: ShellListKey; index: number } | null>(null);
   const { showToast } = useToast();
 
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
@@ -535,6 +587,42 @@ export default function TabWebsiteBuilder() {
     setSelectedSectionId(section.id);
   };
 
+  const duplicateSection = (id: string) => {
+    const section = homeDraft.sections.find((item) => item.id === id);
+    if (!section) return;
+
+    const duplicate: HomeSection = {
+      ...section,
+      id: createSectionId(section.type),
+      settings: cloneSectionSettings(section.settings),
+    };
+
+    setHomeDraft((current) => {
+      const index = current.sections.findIndex((item) => item.id === id);
+      if (index < 0) return current;
+      const sections = [...current.sections];
+      sections.splice(index + 1, 0, duplicate);
+      return { ...current, sections };
+    });
+    setSelectedSectionId(duplicate.id);
+    showToast('success', 'Block berhasil diduplikasi.');
+  };
+
+  const resetSection = (id: string) => {
+    const currentSection = homeDraft.sections.find((item) => item.id === id);
+    if (!currentSection) return;
+
+    const resetTemplate = getDefaultSectionTemplate(currentSection.type);
+    const nextSection: HomeSection = {
+      ...resetTemplate,
+      id: currentSection.id,
+      enabled: currentSection.enabled,
+    };
+
+    updateSelectedSection(nextSection);
+    showToast('success', 'Block dikembalikan ke versi default.');
+  };
+
   const handleDragStart = (sectionId: string) => {
     setDraggingSectionId(sectionId);
     setDragOverSectionId(sectionId);
@@ -551,6 +639,175 @@ export default function TabWebsiteBuilder() {
     }
     handleDragEnd();
   };
+
+  const addShellListItem = useCallback((listKey: ShellListKey, item: NavbarMenuItem) => {
+    setShellDraft((current) => {
+      const items = [...readShellList(current, listKey), item];
+      return writeShellList(current, listKey, items);
+    });
+  }, []);
+
+  const updateShellListItem = useCallback((listKey: ShellListKey, index: number, key: keyof NavbarMenuItem, value: string) => {
+    setShellDraft((current) => {
+      const items = readShellList(current, listKey).map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item
+      );
+      return writeShellList(current, listKey, items);
+    });
+  }, []);
+
+  const removeShellListItem = useCallback((listKey: ShellListKey, index: number) => {
+    setShellDraft((current) => {
+      const items = readShellList(current, listKey).filter((_, itemIndex) => itemIndex !== index);
+      return writeShellList(current, listKey, items);
+    });
+  }, []);
+
+  const moveShellListItem = useCallback((listKey: ShellListKey, index: number, direction: 'up' | 'down') => {
+    setShellDraft((current) => {
+      const items = [...readShellList(current, listKey)];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= items.length) return current;
+      [items[index], items[targetIndex]] = [items[targetIndex], items[index]];
+      return writeShellList(current, listKey, items);
+    });
+  }, []);
+
+  const reorderShellListItems = useCallback((listKey: ShellListKey, sourceIndex: number, targetIndex: number) => {
+    if (sourceIndex === targetIndex) return;
+
+    setShellDraft((current) => {
+      const items = [...readShellList(current, listKey)];
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex >= items.length || targetIndex >= items.length) {
+        return current;
+      }
+      const [movedItem] = items.splice(sourceIndex, 1);
+      items.splice(targetIndex, 0, movedItem);
+      return writeShellList(current, listKey, items);
+    });
+  }, []);
+
+  const handleShellDragStart = (listKey: ShellListKey, index: number) => {
+    setDraggingShellItem({ listKey, index });
+    setDragOverShellItem({ listKey, index });
+  };
+
+  const handleShellDragEnd = () => {
+    setDraggingShellItem(null);
+    setDragOverShellItem(null);
+  };
+
+  const handleShellDrop = (listKey: ShellListKey, targetIndex: number) => {
+    if (draggingShellItem && draggingShellItem.listKey === listKey && draggingShellItem.index !== targetIndex) {
+      reorderShellListItems(listKey, draggingShellItem.index, targetIndex);
+    }
+    handleShellDragEnd();
+  };
+
+  const renderLinkListEditor = ({
+    title,
+    description,
+    listKey,
+    items,
+    addLabel,
+    addItem,
+    labelPlaceholder,
+    urlPlaceholder,
+  }: {
+    title: string;
+    description: string;
+    listKey: ShellListKey;
+    items: NavbarMenuItem[];
+    addLabel: string;
+    addItem: NavbarMenuItem;
+    labelPlaceholder: string;
+    urlPlaceholder: string;
+  }) => (
+    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:col-span-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h4 className="font-black text-slate-950">{title}</h4>
+          <p className="mt-1 text-sm text-slate-500">{description}</p>
+        </div>
+        <button
+          onClick={() => addShellListItem(listKey, addItem)}
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700"
+        >
+          <Plus size={14} /> {addLabel}
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-500">
+          Belum ada item. Tambahkan dulu supaya bagian ini muncul lebih jelas di preview.
+        </div>
+      ) : null}
+
+      <div className="space-y-3">
+        {items.map((item, index) => {
+          const isDragging = draggingShellItem?.listKey === listKey && draggingShellItem.index === index;
+          const isDragTarget =
+            dragOverShellItem?.listKey === listKey &&
+            dragOverShellItem.index === index &&
+            !(draggingShellItem?.listKey === listKey && draggingShellItem.index === index);
+
+          return (
+            <div
+              key={`${listKey}-${index}-${item.label}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (dragOverShellItem?.listKey !== listKey || dragOverShellItem.index !== index) {
+                  setDragOverShellItem({ listKey, index });
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                handleShellDrop(listKey, index);
+              }}
+              className={`grid gap-3 rounded-xl border p-3 transition-all md:grid-cols-[auto_1fr_1fr_auto_auto_auto] ${
+                isDragTarget ? 'border-emerald-300 bg-emerald-50/60 ring-2 ring-emerald-200' : 'border-slate-200 bg-slate-50'
+              } ${isDragging ? 'opacity-60' : ''}`}
+            >
+              <div
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = 'move';
+                  event.dataTransfer.setData('text/plain', `${listKey}:${index}`);
+                  handleShellDragStart(listKey, index);
+                }}
+                onDragEnd={handleShellDragEnd}
+                className="inline-flex cursor-grab items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-500 active:cursor-grabbing"
+                title="Drag untuk ubah urutan"
+              >
+                <GripVertical size={14} />
+              </div>
+              <input
+                value={item.label}
+                onChange={(event) => updateShellListItem(listKey, index, 'label', event.target.value)}
+                placeholder={labelPlaceholder}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold"
+              />
+              <input
+                value={item.url}
+                onChange={(event) => updateShellListItem(listKey, index, 'url', event.target.value)}
+                placeholder={urlPlaceholder}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold"
+              />
+              <button onClick={() => moveShellListItem(listKey, index, 'up')} className="rounded-lg bg-white p-2 text-slate-500">
+                <ArrowUp size={14} />
+              </button>
+              <button onClick={() => moveShellListItem(listKey, index, 'down')} className="rounded-lg bg-white p-2 text-slate-500">
+                <ArrowDown size={14} />
+              </button>
+              <button onClick={() => removeShellListItem(listKey, index)} className="rounded-lg bg-rose-50 p-2 text-rose-600">
+                <Trash2 size={14} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -741,23 +998,54 @@ export default function TabWebsiteBuilder() {
                   <input value={shellDraft.navbar.cta.url} onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, cta: { ...current.navbar.cta, url: event.target.value } } }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold" />
                 </label>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-black text-slate-950">Menu Navbar</h4>
-                  <button onClick={() => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, menu_items: [...current.navbar.menu_items, { label: 'Menu Baru', url: '/' }] } }))} className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700">
-                    <Plus size={14} /> Tambah Menu
-                  </button>
-                </div>
-                {shellDraft.navbar.menu_items.map((item, index) => (
-                  <div key={`${item.label}-${index}`} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_auto]">
-                    <input value={item.label} onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, menu_items: current.navbar.menu_items.map((menu, menuIndex) => (menuIndex === index ? { ...menu, label: event.target.value } : menu)) } }))} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold" />
-                    <input value={item.url} onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, menu_items: current.navbar.menu_items.map((menu, menuIndex) => (menuIndex === index ? { ...menu, url: event.target.value } : menu)) } }))} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold" />
-                    <button onClick={() => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, menu_items: current.navbar.menu_items.filter((_, menuIndex) => menuIndex !== index) } }))} className="rounded-lg bg-rose-50 px-3 py-2 text-rose-600">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <span className="font-black text-slate-900">Tampilkan Nama Sekolah</span>
+                  <input
+                    type="checkbox"
+                    checked={shellDraft.navbar.show_school_name}
+                    onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, show_school_name: event.target.checked } }))}
+                  />
+                </label>
+                <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <span className="font-black text-slate-900">Tampilkan Login / Akun</span>
+                  <input
+                    type="checkbox"
+                    checked={shellDraft.navbar.show_login_link}
+                    onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, show_login_link: event.target.checked } }))}
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Menu Mobile</span>
+                  <select
+                    value={shellDraft.navbar.mobile.variant}
+                    onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, mobile: { ...current.navbar.mobile, variant: event.target.value as WebsiteBuilderShell['navbar']['mobile']['variant'] } } }))}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold"
+                  >
+                    <option value="drawer">Drawer</option>
+                    <option value="sheet">Sheet</option>
+                    <option value="bottom-menu">Bottom Menu</option>
+                  </select>
+                </label>
+                <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <span className="font-black text-slate-900">Tampilkan CTA di Mobile</span>
+                  <input
+                    type="checkbox"
+                    checked={shellDraft.navbar.mobile.show_cta}
+                    onChange={(event) => setShellDraft((current) => ({ ...current, navbar: { ...current.navbar, mobile: { ...current.navbar.mobile, show_cta: event.target.checked } } }))}
+                  />
+                </label>
               </div>
+              {renderLinkListEditor({
+                title: 'Menu Navbar',
+                description: 'Atur urutan menu utama. Bisa drag, geser naik-turun, lalu preview sebelum publish.',
+                listKey: 'navbar-menu',
+                items: shellDraft.navbar.menu_items,
+                addLabel: 'Tambah Menu',
+                addItem: { label: 'Menu Baru', url: '/' },
+                labelPlaceholder: 'Label menu',
+                urlPlaceholder: '/profil atau /program',
+              })}
             </div>
           ) : null}
 
@@ -818,6 +1106,8 @@ export default function TabWebsiteBuilder() {
                         <button onClick={() => moveSection(section.id, 'up')} className="rounded-lg bg-white p-2 text-slate-500"><ArrowUp size={14} /></button>
                         <button onClick={() => moveSection(section.id, 'down')} className="rounded-lg bg-white p-2 text-slate-500"><ArrowDown size={14} /></button>
                         <button onClick={() => updateSelectedSection({ ...section, enabled: !section.enabled })} className="rounded-lg bg-white px-3 py-2 text-xs font-black text-slate-600">{section.enabled ? 'Hide' : 'Show'}</button>
+                        <button onClick={() => duplicateSection(section.id)} className="rounded-lg bg-white p-2 text-slate-500" title="Duplikat block"><Copy size={14} /></button>
+                        <button onClick={() => resetSection(section.id)} className="rounded-lg bg-white p-2 text-slate-500" title="Reset block ke default"><RotateCcw size={14} /></button>
                         <button onClick={() => deleteSection(section.id)} className="ml-auto rounded-lg bg-rose-50 p-2 text-rose-600"><Trash2 size={14} /></button>
                       </div>
                     </div>
@@ -894,10 +1184,62 @@ export default function TabWebsiteBuilder() {
                 <input
                   value={shellDraft.footer.copyright_text}
                   onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, copyright_text: event.target.value } }))}
-                  placeholder={`© ${new Date().getFullYear()} Darussunnah Parung.`}
+                  placeholder={`Copyright ${new Date().getFullYear()} Darussunnah Parung.`}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold"
                 />
               </label>
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <span className="font-black text-slate-900">Tampilkan Logo</span>
+                <input
+                  type="checkbox"
+                  checked={shellDraft.footer.show_logo}
+                  onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, show_logo: event.target.checked } }))}
+                />
+              </label>
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <span className="font-black text-slate-900">Tampilkan Sosial Media</span>
+                <input
+                  type="checkbox"
+                  checked={shellDraft.footer.show_socials}
+                  onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, show_socials: event.target.checked } }))}
+                />
+              </label>
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <span className="font-black text-slate-900">Tampilkan Alamat Default</span>
+                <input
+                  type="checkbox"
+                  checked={shellDraft.footer.show_address}
+                  onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, show_address: event.target.checked } }))}
+                />
+              </label>
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <span className="font-black text-slate-900">Tampilkan Tombol Maps</span>
+                <input
+                  type="checkbox"
+                  checked={shellDraft.footer.show_map_link}
+                  onChange={(event) => setShellDraft((current) => ({ ...current, footer: { ...current.footer, show_map_link: event.target.checked } }))}
+                />
+              </label>
+              {renderLinkListEditor({
+                title: 'Quick Links Footer',
+                description: 'Daftar tautan di kolom footer. Cocok untuk Profil, Program, PSB, dan halaman penting lain.',
+                listKey: 'footer-quick-links',
+                items: shellDraft.footer.quick_links,
+                addLabel: 'Tambah Link',
+                addItem: { label: 'Link Baru', url: '/' },
+                labelPlaceholder: 'Label quick link',
+                urlPlaceholder: '/psb atau /kontak',
+              })}
+              {renderLinkListEditor({
+                title: 'Contact Items Footer',
+                description: 'Isi manual kalau ingin kolom kontak lebih terarah, misalnya WhatsApp, email, alamat singkat, atau tautan maps.',
+                listKey: 'footer-contact-items',
+                items: shellDraft.footer.contact_items,
+                addLabel: 'Tambah Kontak',
+                addItem: { label: 'WhatsApp Admin', url: 'https://wa.me/' },
+                labelPlaceholder: 'Label kontak',
+                urlPlaceholder: 'Kosongkan untuk teks biasa, atau isi https:// mailto: tel:',
+              })}
             </div>
           ) : null}
         </div>

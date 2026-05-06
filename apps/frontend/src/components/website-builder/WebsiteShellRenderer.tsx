@@ -74,6 +74,28 @@ function footerClass(background: WebsiteBuilderShell['footer']['background']) {
   return 'border-emerald-900/70 bg-[linear-gradient(180deg,#082f28_0%,#041b18_100%)] text-emerald-100';
 }
 
+function mobileMenuOverlayClass(variant: WebsiteBuilderShell['navbar']['mobile']['variant']) {
+  if (variant === 'sheet') return 'fixed inset-0 z-[999] flex justify-end bg-slate-950/55 lg:hidden';
+  if (variant === 'bottom-menu') return 'fixed inset-0 z-[999] flex items-end bg-slate-950/45 lg:hidden';
+  return 'absolute left-0 top-full z-[999] w-full lg:hidden';
+}
+
+function mobileMenuPanelClass(variant: WebsiteBuilderShell['navbar']['mobile']['variant']) {
+  if (variant === 'sheet') return 'h-full w-full max-w-sm border-l border-emerald-900 bg-emerald-950/98 shadow-2xl';
+  if (variant === 'bottom-menu') return 'w-full rounded-t-[2rem] border-t border-emerald-900 bg-emerald-950/98 shadow-2xl';
+  return 'w-full border-t border-emerald-900 bg-emerald-950/98 shadow-2xl';
+}
+
+function mobileMenuInnerClass(variant: WebsiteBuilderShell['navbar']['mobile']['variant']) {
+  if (variant === 'sheet') return 'px-4 pb-5 pt-5';
+  if (variant === 'bottom-menu') return 'px-4 pb-8 pt-4';
+  return 'px-4 pb-5 pt-3';
+}
+
+function isExternalHref(href: string) {
+  return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:');
+}
+
 export default function WebsiteShellRenderer({
   children,
   hideNavbar = false,
@@ -105,6 +127,20 @@ export default function WebsiteShellRenderer({
   const cta = shell.navbar.cta;
   const menuItems = shell.navbar.menu_items.length > 0 ? shell.navbar.menu_items : [{ label: 'Beranda', url: '/' }];
   const footerLinks = shell.footer.quick_links.length > 0 ? shell.footer.quick_links : menuItems;
+  const footerContactItems =
+    shell.footer.contact_items.length > 0
+      ? shell.footer.contact_items
+      : [
+          ...(shell.footer.show_address && schoolAddress ? [{ label: schoolAddress, url: '' }] : []),
+          ...(schoolPhone ? [{ label: schoolPhone, url: `tel:${schoolPhone.replace(/[^\d+]/g, '')}` }] : []),
+          ...(schoolEmail ? [{ label: schoolEmail, url: `mailto:${schoolEmail}` }] : []),
+          ...(schoolWebsite
+            ? [{ label: schoolWebsite, url: isExternalHref(schoolWebsite) ? schoolWebsite : `https://${schoolWebsite.replace(/^\/+/, '')}` }]
+            : []),
+          ...(shell.footer.show_map_link
+            ? [{ label: 'Buka Maps', url: 'https://maps.google.com/?q=Pondok%20Pesantren%20Darussunnah%20Parung' }]
+            : []),
+        ];
   const whatsappHref = shell.floating.whatsapp.url || `https://wa.me/${whatsappNumber}`;
   const showNavbar = !hideNavbar && shell.navbar.enabled;
   const showFooter = shell.footer.enabled;
@@ -164,49 +200,51 @@ export default function WebsiteShellRenderer({
                     {cta.label}
                   </Link>
                 ) : null}
-                {loading ? (
-                  <div className="h-11 w-11 animate-pulse rounded-full bg-emerald-900/60" />
-                ) : (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      aria-label={dashboardLabel}
-                      onClick={() => setAccountOpen((prev) => !prev)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-700/90 bg-emerald-900/35 text-emerald-50 transition-all hover:border-emerald-500 hover:bg-emerald-900/60 hover:text-emerald-200"
-                    >
-                      <CircleUserRound size={20} />
-                    </button>
-                    <div className={`absolute right-0 top-full mt-3 w-64 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.18)] transition-all duration-200 ${accountOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'}`}>
-                      <div className="border-b border-slate-100 px-4 py-4 text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">{user ? dashboardLabel : 'Menu Akun'}</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-800">{user ? user.name : 'Masuk untuk mengakses portal.'}</p>
-                      </div>
-                      <div className="p-2">
-                        <Link
-                          href={user ? dashboardHref : '/login'}
-                          onClick={() => setAccountOpen(false)}
-                          className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700"
-                        >
-                          <span>{user ? `Buka ${dashboardLabel}` : 'Masuk'}</span>
-                          <ArrowRight size={16} />
-                        </Link>
-                        {user ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAccountOpen(false);
-                              void logout();
-                            }}
-                            className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                {shell.navbar.show_login_link ? (
+                  loading ? (
+                    <div className="h-11 w-11 animate-pulse rounded-full bg-emerald-900/60" />
+                  ) : (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        aria-label={dashboardLabel}
+                        onClick={() => setAccountOpen((prev) => !prev)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-700/90 bg-emerald-900/35 text-emerald-50 transition-all hover:border-emerald-500 hover:bg-emerald-900/60 hover:text-emerald-200"
+                      >
+                        <CircleUserRound size={20} />
+                      </button>
+                      <div className={`absolute right-0 top-full mt-3 w-64 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.18)] transition-all duration-200 ${accountOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'}`}>
+                        <div className="border-b border-slate-100 px-4 py-4 text-right">
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">{user ? dashboardLabel : 'Menu Akun'}</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-800">{user ? user.name : 'Masuk untuk mengakses portal.'}</p>
+                        </div>
+                        <div className="p-2">
+                          <Link
+                            href={user ? dashboardHref : '/login'}
+                            onClick={() => setAccountOpen(false)}
+                            className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700"
                           >
-                            <span>Keluar</span>
-                            <LogOut size={16} />
-                          </button>
-                        ) : null}
+                            <span>{user ? `Buka ${dashboardLabel}` : 'Masuk'}</span>
+                            <ArrowRight size={16} />
+                          </Link>
+                          {user ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAccountOpen(false);
+                                void logout();
+                              }}
+                              className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                            >
+                              <span>Keluar</span>
+                              <LogOut size={16} />
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )
+                ) : null}
               </div>
 
               <button
@@ -219,9 +257,22 @@ export default function WebsiteShellRenderer({
           </div>
 
           {mobileMenuOpen ? (
-            <div className="absolute left-0 top-full z-[999] w-full border-t border-emerald-900 bg-emerald-950/98 shadow-2xl lg:hidden">
-              <div className="px-4 pb-5 pt-3">
-                <div className="rounded-[1.6rem] border border-emerald-900/60 bg-emerald-950/80 p-3">
+            <div className={mobileMenuOverlayClass(shell.navbar.mobile.variant)} onClick={shell.navbar.mobile.variant === 'drawer' ? undefined : () => setMobileMenuOpen(false)}>
+              <div className={mobileMenuPanelClass(shell.navbar.mobile.variant)} onClick={(event) => event.stopPropagation()}>
+                <div className={mobileMenuInnerClass(shell.navbar.mobile.variant)}>
+                  <div className="mb-3 flex items-center justify-between px-1">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200/70">Menu</p>
+                    {shell.navbar.mobile.variant !== 'drawer' ? (
+                      <button
+                        type="button"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-800 bg-emerald-900/40 text-emerald-50"
+                      >
+                        <X size={16} />
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="rounded-[1.6rem] border border-emerald-900/60 bg-emerald-950/80 p-3">
                   <div className="grid gap-2">
                     {menuItems.map((item) => (
                       <Link key={`${item.label}-${item.url}-mobile`} href={item.url} onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">
@@ -234,21 +285,24 @@ export default function WebsiteShellRenderer({
                       {cta.label}
                     </Link>
                   ) : null}
-                  <div className="mt-3 grid gap-2">
-                    {user ? (
-                      <>
-                        <div className="rounded-[1.15rem] border border-emerald-800 bg-emerald-900/40 px-4 py-3 text-sm text-emerald-100">
-                          Assalamu&apos;alaikum, <b>{firstName}</b>
-                        </div>
-                        <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">
-                          Buka {dashboardLabel}
+                  {shell.navbar.show_login_link ? (
+                    <div className="mt-3 grid gap-2">
+                      {user ? (
+                        <>
+                          <div className="rounded-[1.15rem] border border-emerald-800 bg-emerald-900/40 px-4 py-3 text-sm text-emerald-100">
+                            Assalamu&apos;alaikum, <b>{firstName}</b>
+                          </div>
+                          <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">
+                            Buka {dashboardLabel}
+                          </Link>
+                        </>
+                      ) : (
+                        <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">
+                          Masuk
                         </Link>
-                      </>
-                    ) : (
-                      <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">
-                        Masuk
-                      </Link>
-                    )}
+                      )}
+                    </div>
+                  ) : null}
                   </div>
                 </div>
               </div>
@@ -292,15 +346,31 @@ export default function WebsiteShellRenderer({
               <div>
                 <p className="mb-4 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">Kontak</p>
                 <div className="space-y-3 text-sm leading-7 opacity-82">
-                  {shell.footer.show_address ? <p>{schoolAddress}</p> : null}
-                  <p>{schoolPhone}</p>
-                  {schoolEmail ? <p>{schoolEmail}</p> : null}
-                  {schoolWebsite ? <p>{schoolWebsite}</p> : null}
-                  {shell.footer.show_map_link ? (
-                    <a href="https://maps.google.com/?q=Pondok%20Pesantren%20Darussunnah%20Parung" target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border border-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-white/8">
-                      Buka Maps
-                    </a>
-                  ) : null}
+                  {footerContactItems.map((item, index) => {
+                    const href = item.url?.trim();
+                    const label = item.label?.trim() || href;
+
+                    if (!label) return null;
+
+                    if (!href) {
+                      return <p key={`${label}-${index}`}>{label}</p>;
+                    }
+
+                    if (href.startsWith('/')) {
+                      return (
+                        <Link key={`${label}-${index}`} href={href} className="inline-flex rounded-full border border-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-white/8">
+                          {label}
+                        </Link>
+                      );
+                    }
+
+                    const normalizedHref = isExternalHref(href) ? href : `https://${href.replace(/^\/+/, '')}`;
+                    return (
+                      <a key={`${label}-${index}`} href={normalizedHref} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border border-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-white/8">
+                        {label}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             </div>
