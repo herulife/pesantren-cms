@@ -32,9 +32,11 @@ import {
   getGallery,
   getGallerySortTimestamp,
   getNews,
+  getPrograms,
   getSettingsMap,
   getVideos,
   News,
+  Program,
   resolveDisplayImageUrl,
   updateSetting,
   uploadImage,
@@ -63,7 +65,7 @@ type HeroSlideDraft = {
   subtitle: string;
   image_url: string;
 };
-type ManualSourceBlockType = 'news' | 'agendas' | 'gallery' | 'videos';
+type ManualSourceBlockType = 'news' | 'agendas' | 'gallery' | 'videos' | 'programs' | 'extracurriculars';
 type BuilderContentOption = {
   id: string;
   label: string;
@@ -74,6 +76,8 @@ type BuilderContentCatalog = {
   agendas: BuilderContentOption[];
   gallery: BuilderContentOption[];
   videos: BuilderContentOption[];
+  programs: BuilderContentOption[];
+  extracurriculars: BuilderContentOption[];
 };
 
 const builderAreas: Array<{ title: BuilderArea; description: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
@@ -298,7 +302,8 @@ function createContentCatalog(
   newsItems: News[],
   agendaItems: Agenda[],
   galleryItems: GalleryItem[],
-  videoItems: Video[]
+  videoItems: Video[],
+  programItems: Program[]
 ): BuilderContentCatalog {
   const groupedGallery = new Map<string, GalleryItem[]>();
   for (const item of galleryItems) {
@@ -315,6 +320,18 @@ function createContentCatalog(
     current.push(item);
     groupedVideos.set(key, current);
   }
+
+  const sortedPrograms = [...programItems].sort((a, b) => {
+    const orderDiff = (a.order_index ?? 0) - (b.order_index ?? 0);
+    if (orderDiff !== 0) return orderDiff;
+    return a.title.localeCompare(b.title);
+  });
+
+  const mapProgramOption = (item: Program, fallbackMeta: string) => ({
+    id: String(item.id),
+    label: item.title,
+    meta: item.excerpt || item.slug || fallbackMeta,
+  });
 
   return {
     news: newsItems.map((item) => ({
@@ -361,11 +378,24 @@ function createContentCatalog(
         label: item.label,
         meta: item.meta,
       })),
+    programs: sortedPrograms
+      .filter((item) => item.category === 'program')
+      .map((item) => mapProgramOption(item, 'Program Inti')),
+    extracurriculars: sortedPrograms
+      .filter((item) => item.category === 'ekskul')
+      .map((item) => mapProgramOption(item, 'Ekstrakurikuler')),
   };
 }
 
 function isManualSourceBlockType(type: HomeSectionType): type is ManualSourceBlockType {
-  return type === 'news' || type === 'agendas' || type === 'gallery' || type === 'videos';
+  return (
+    type === 'news' ||
+    type === 'agendas' ||
+    type === 'gallery' ||
+    type === 'videos' ||
+    type === 'programs' ||
+    type === 'extracurriculars'
+  );
 }
 
 function getSectionSource(section: HomeSection) {
@@ -1074,6 +1104,8 @@ export default function TabWebsiteBuilder() {
     agendas: [],
     gallery: [],
     videos: [],
+    programs: [],
+    extracurriculars: [],
   });
   const [activeArea, setActiveArea] = useState<BuilderArea>('Home');
   const [themeDraft, setThemeDraft] = useState<WebsiteBuilderTheme>(defaultWebsiteBuilderTheme);
@@ -1107,17 +1139,24 @@ export default function TabWebsiteBuilder() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [settingsMap, newsItems, agendaItems, galleryResult, videosResult] = await Promise.all([
+      const [settingsMap, newsItems, agendaItems, galleryResult, videosResult, programItems] = await Promise.all([
         getSettingsMap(),
         getNews(),
         getAgendas(),
         getGallery({ limit: 60, offset: 0 }),
         getVideos({ limit: 60, offset: 0 }),
+        getPrograms(),
       ]);
       setSettings(settingsMap);
       syncFromSettings(settingsMap);
       setContentCatalog(
-        createContentCatalog(newsItems, agendaItems, galleryResult.data || [], videosResult.data || [])
+        createContentCatalog(
+          newsItems,
+          agendaItems,
+          galleryResult.data || [],
+          videosResult.data || [],
+          Array.isArray(programItems) ? programItems : []
+        )
       );
     } finally {
       setIsLoading(false);

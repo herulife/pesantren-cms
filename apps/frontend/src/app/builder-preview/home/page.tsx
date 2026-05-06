@@ -14,9 +14,11 @@ import {
   getGallery,
   getGallerySortTimestamp,
   getNews,
+  getPrograms,
   getSettingsMap,
   getVideos,
   News,
+  Program,
   resolveDisplayImageUrl,
   SettingsMap,
   Video,
@@ -47,6 +49,7 @@ export default function BuilderPreviewHomePage() {
   const [agendas, setAgendas] = useState<Agenda[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -70,18 +73,20 @@ export default function BuilderPreviewHomePage() {
     async function fetchAll() {
       setIsLoading(true);
       try {
-        const [settingsData, newsData, agendasData, galleryData, videosData] = await Promise.all([
+        const [settingsData, newsData, agendasData, galleryData, videosData, programsData] = await Promise.all([
           getSettingsMap(),
           getNews(),
           getAgendas(),
           getGallery({ limit: 24, offset: 0 }),
           getVideos({ limit: 24, offset: 0 }),
+          getPrograms(),
         ]);
         setSettings(settingsData || {});
         setNews(extractListItems(newsData).slice(0, 3));
         setAgendas(extractListItems(agendasData).slice(0, 3));
         setGallery(extractListItems(galleryData));
         setVideos(extractListItems(videosData));
+        setPrograms(extractListItems(programsData));
       } finally {
         setIsLoading(false);
       }
@@ -239,6 +244,7 @@ export default function BuilderPreviewHomePage() {
           dataSources={{
             news,
             agendas,
+            programs,
             galleryAlbums,
             videoSeries,
             settings,

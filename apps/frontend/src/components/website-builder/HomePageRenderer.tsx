@@ -5,6 +5,7 @@ import {
   Agenda,
   GalleryItem,
   News,
+  Program,
   SettingsMap,
   Video,
 } from '@/lib/api';
@@ -41,6 +42,7 @@ export type VideoSeriesSummary = {
 export type HomeBuilderDataSources = {
   news: News[];
   agendas: Agenda[];
+  programs: Program[];
   galleryAlbums: GalleryAlbumSummary[];
   videoSeries: VideoSeriesSummary[];
   settings: SettingsMap;
@@ -61,9 +63,9 @@ function renderSection(section: HomeSection, dataSources: HomeBuilderDataSources
     case 'profile':
       return <ProfileBlock section={section} />;
     case 'programs':
-      return <ProgramsBlock section={section} mode="programs" />;
+      return <ProgramsBlock section={section} mode="programs" programs={dataSources.programs} />;
     case 'extracurriculars':
-      return <ProgramsBlock section={section} mode="extracurriculars" />;
+      return <ProgramsBlock section={section} mode="extracurriculars" programs={dataSources.programs} />;
     case 'gallery':
       return <GalleryBlock section={section} albums={dataSources.galleryAlbums} isLoading={dataSources.isLoading} />;
     case 'videos':

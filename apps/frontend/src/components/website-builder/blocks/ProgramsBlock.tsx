@@ -3,8 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, HeartHandshake } from 'lucide-react';
 import { HomeSection } from '@/lib/website-builder';
-import { resolveDisplayImageUrl } from '@/lib/api';
-import { getNumber, getString } from './helpers';
+import { Program, resolveDisplayImageUrl } from '@/lib/api';
+import { getArray, getNumber, getString } from './helpers';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 
 const programCards = [
@@ -24,13 +24,42 @@ const extracurricularCards = [
 type ProgramsBlockProps = {
   section: HomeSection;
   mode: 'programs' | 'extracurriculars';
+  programs: Program[];
 };
 
-export default function ProgramsBlock({ section, mode }: ProgramsBlockProps) {
+export default function ProgramsBlock({ section, mode, programs }: ProgramsBlockProps) {
   const isProgram = mode === 'programs';
   const cards = isProgram ? programCards : extracurricularCards;
-  const limit = Math.max(1, Math.min(cards.length, getNumber(section, 'limit', 4)));
-  const visibleCards = cards.slice(0, limit);
+  const source = getString(section, 'source', 'latest');
+  const manualIds = getArray<string>(section, 'manual_ids').map((item) => String(item));
+  const category = isProgram ? 'program' : 'ekskul';
+  const availablePrograms = programs
+    .filter((item) => item.category === category)
+    .sort((a, b) => {
+      const orderDiff = (a.order_index ?? 0) - (b.order_index ?? 0);
+      if (orderDiff !== 0) return orderDiff;
+      return a.title.localeCompare(b.title);
+    });
+  const sourcePrograms =
+    source === 'manual' && manualIds.length > 0
+      ? manualIds
+          .map((id) => availablePrograms.find((item) => String(item.id) === id))
+          .filter((item): item is Program => Boolean(item))
+      : availablePrograms;
+  const dynamicCards = sourcePrograms.map((item) => ({
+    id: String(item.id),
+    title: item.title,
+    subtitle:
+      item.excerpt ||
+      item.content ||
+      (isProgram
+        ? 'Program pembinaan utama untuk membentuk hafalan, adab, dan kesiapan santri.'
+        : 'Kegiatan penunjang untuk melatih keterampilan, fokus, dan kemandirian santri.'),
+    image: item.image_url || (isProgram ? '/assets/img/tahfidz.jpg' : '/assets/img/manasik.jpg'),
+  }));
+  const cardPool = dynamicCards.length > 0 ? dynamicCards : cards.map((card) => ({ id: card.title, ...card }));
+  const limit = Math.max(1, Math.min(cardPool.length, getNumber(section, 'limit', 4)));
+  const visibleCards = cardPool.slice(0, limit);
   const eyebrow = getString(section, 'eyebrow', isProgram ? 'Program Inti' : 'Kegiatan Penunjang');
   const title = getString(section, 'title', isProgram ? 'Program Inti' : 'Ekstrakurikuler');
   const subtitle = getString(
@@ -58,7 +87,7 @@ export default function ProgramsBlock({ section, mode }: ProgramsBlockProps) {
         <div className={`mt-8 grid gap-4 sm:grid-cols-2 ${section.variant === 'compact-grid' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
           {visibleCards.map((card) => (
             <article
-              key={card.title}
+              key={card.id}
               className={`group overflow-hidden rounded-[1.8rem] border shadow-[0_26px_64px_-42px_rgba(15,23,42,0.3)] ${
                 isProgram ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/8'
               }`}

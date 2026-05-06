@@ -8,10 +8,12 @@ import {
   getAgendas,
   getGallery,
   getPublicSettingsMap,
+  getPrograms,
   getVideos,
   News,
   Agenda,
   GalleryItem,
+  Program,
   SettingsMap,
   Video,
   resolveDisplayImageUrl,
@@ -345,6 +347,7 @@ export default function LandingPage() {
   const [agendas, setAgendas] = useState<Agenda[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [settings, setSettings] = useState<SettingsMap>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -406,11 +409,12 @@ export default function LandingPage() {
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [newsData, agendasData, galleryData, videosData, settingsData] = await Promise.all([
+        const [newsData, agendasData, galleryData, videosData, programsData, settingsData] = await Promise.all([
           getNews(),
           getAgendas(),
           getGallery({ limit: 24, offset: 0 }),
           getVideos({ limit: 24, offset: 0 }),
+          getPrograms(),
           getPublicSettingsMap(),
         ]);
 
@@ -418,6 +422,7 @@ export default function LandingPage() {
         setAgendas(extractListItems(agendasData).slice(0, 3));
         setGallery(extractListItems(galleryData));
         setVideos(extractListItems(videosData));
+        setPrograms(extractListItems(programsData));
         setSettings(settingsData || {});
       } catch (error) {
         console.error('Error fetching landing page data:', error);
@@ -441,6 +446,7 @@ export default function LandingPage() {
           dataSources={{
             news,
             agendas,
+            programs,
             galleryAlbums,
             videoSeries,
             settings,
