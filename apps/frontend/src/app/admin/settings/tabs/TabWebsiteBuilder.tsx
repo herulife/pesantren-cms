@@ -42,6 +42,7 @@ import {
   Program,
   resolveDisplayImageUrl,
   updateSetting,
+  updateSettingsBatch,
   uploadImage,
   Video,
 } from '@/lib/api';
@@ -1223,7 +1224,11 @@ export default function TabWebsiteBuilder() {
     setHomeDraft(state.homeDraft);
     setPagesDraft(state.pagesDraft);
     setRevisions(state.revisions);
-    setSelectedSectionId(state.homeDraft.sections[0]?.id || '');
+    setSelectedSectionId((current) =>
+      state.homeDraft.sections.some((section) => section.id === current)
+        ? current
+        : state.homeDraft.sections[0]?.id || ''
+    );
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -1298,7 +1303,7 @@ export default function TabWebsiteBuilder() {
   );
 
   const persistBuilderSettings = useCallback(async (entries: Array<[string, string]>) => {
-    await Promise.all(entries.map(([key, value]) => updateSetting(key, value)));
+    await updateSettingsBatch(entries.map(([key, value]) => ({ key, value })));
   }, []);
 
   const saveDraft = async () => {
@@ -1402,6 +1407,7 @@ export default function TabWebsiteBuilder() {
             [WEBSITE_BUILDER_KEYS.homeDraft, serializeBuilderJson(snapshot.home)],
             [WEBSITE_BUILDER_KEYS.pagesDraft, serializeBuilderJson(snapshot.pages)],
             [WEBSITE_BUILDER_KEYS.revisions, serializeBuilderJson(nextRevisions)],
+            [WEBSITE_BUILDER_KEYS.enabled, 'true'],
           ]
         : [
             [WEBSITE_BUILDER_KEYS.themeDraft, serializeBuilderJson(snapshot.theme)],
@@ -1765,42 +1771,59 @@ export default function TabWebsiteBuilder() {
                 footer, dan theme, lalu aktifkan setelah siap.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <button onClick={saveDraft} disabled={isSavingDraft} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-emerald-700/20 transition hover:bg-emerald-700 disabled:opacity-60">
-                {isSavingDraft ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-                Simpan Draft
-              </button>
-              <button onClick={() => void publishDraft(false)} disabled={isPublishing} className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-amber-700 transition hover:border-amber-300 hover:bg-amber-100 disabled:opacity-60">
-                {isPublishing ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />}
-                Publish
-              </button>
-              <button
-                type="button"
-                onClick={() => window.open('/builder-preview/home', '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-              >
-                <Eye size={16} />
-                Preview Draft
-              </button>
-              <button
-                type="button"
-                onClick={() => window.open('/builder-compare/home', '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-amber-700 transition hover:border-amber-300 hover:bg-amber-50"
-              >
-                <Columns2 size={16} />
-                Bandingkan
-              </button>
-              <button onClick={() => void publishDraft(true)} disabled={isPublishing} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-slate-800 disabled:opacity-60">
-                <CheckCircle2 size={16} />
-                Publish & Aktifkan
-              </button>
-              <button onClick={() => void toggleBuilder(!builderState.enabled)} disabled={isToggling} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">
-                {isToggling ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
-                {builderState.enabled ? 'Nonaktifkan' : 'Aktifkan'}
-              </button>
-              <button onClick={resetDefault} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50">
-                Reset Default
-              </button>
+            <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+              <div className="rounded-2xl border border-emerald-200 bg-white/80 p-4 shadow-[0_18px_40px_-32px_rgba(5,150,105,0.35)]">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">Workflow Utama</p>
+                <p className="mt-2 text-sm font-medium leading-7 text-slate-600">
+                  Simpan dulu sebagai draft, lalu publish saat sudah yakin. Tombol paling kanan akan langsung mem-publish sekaligus mengaktifkan hasilnya di website publik.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button onClick={saveDraft} disabled={isSavingDraft} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-emerald-700/20 transition hover:bg-emerald-700 disabled:opacity-60">
+                    {isSavingDraft ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                    Simpan Draft
+                  </button>
+                  <button onClick={() => void publishDraft(false)} disabled={isPublishing} className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-amber-700 transition hover:border-amber-300 hover:bg-amber-100 disabled:opacity-60">
+                    {isPublishing ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />}
+                    Publish Saja
+                  </button>
+                  <button onClick={() => void publishDraft(true)} disabled={isPublishing} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-slate-800 disabled:opacity-60">
+                    <CheckCircle2 size={16} />
+                    Publish & Aktifkan
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white/85 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.22)]">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Preview & Utilitas</p>
+                <p className="mt-2 text-sm font-medium leading-7 text-slate-600">
+                  Untuk cek hasil di tab terpisah, membandingkan draft dengan versi live, atau mengatur status builder tanpa menyentuh isi draft.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => window.open('/builder-preview/home', '_blank', 'noopener,noreferrer')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                  >
+                    <Eye size={16} />
+                    Buka Preview Tab
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.open('/builder-compare/home', '_blank', 'noopener,noreferrer')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-amber-700 transition hover:border-amber-300 hover:bg-amber-50"
+                  >
+                    <Columns2 size={16} />
+                    Bandingkan Draft
+                  </button>
+                  <button onClick={() => void toggleBuilder(!builderState.enabled)} disabled={isToggling} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">
+                    {isToggling ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
+                    {builderState.enabled ? 'Nonaktifkan Builder' : 'Aktifkan Builder'}
+                  </button>
+                  <button onClick={resetDefault} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50">
+                    Reset Default
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

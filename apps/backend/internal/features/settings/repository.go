@@ -16,6 +16,11 @@ type Repository struct {
 	db *sql.DB
 }
 
+type SettingUpdate struct {
+	Key   string
+	Value string
+}
+
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
@@ -69,6 +74,37 @@ func (r *Repository) Update(key, value string) error {
 	}
 
 	return nil
+}
+
+func applyUpdate(tx *sql.Tx, key, value string) error {
+	res, err := tx.Exec("UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?", value, key)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		_, err = tx.Exec("INSERT INTO settings (key, value, description) VALUES (?, ?, '')", key, value)
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UpdateMany(updates []SettingUpdate) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, update := range updates {
+		if err := applyUpdate(tx, update.Key, update.Value); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (r *Repository) GetByKey(key string) (string, error) {

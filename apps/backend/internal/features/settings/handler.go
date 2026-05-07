@@ -109,9 +109,48 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJSONResponse(w, http.StatusOK, true, "Setting updated", nil)
 }
 
+func (h *Handler) BatchUpdate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Settings []struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"settings"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
+		return
+	}
+
+	if len(req.Settings) == 0 {
+		writeJSONResponse(w, http.StatusBadRequest, false, "Minimal satu setting harus dikirim", nil)
+		return
+	}
+
+	updates := make([]SettingUpdate, 0, len(req.Settings))
+	for _, item := range req.Settings {
+		if item.Key == "" {
+			writeJSONResponse(w, http.StatusBadRequest, false, "Key setting tidak boleh kosong", nil)
+			return
+		}
+		updates = append(updates, SettingUpdate{
+			Key:   item.Key,
+			Value: item.Value,
+		})
+	}
+
+	if err := h.repo.UpdateMany(updates); err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+
+	writeJSONResponse(w, http.StatusOK, true, "Settings updated", nil)
+}
+
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.GetAll)
+	r.Put("/batch", h.BatchUpdate)
 	r.Put("/{key}", h.Update)
 	return r
 }
@@ -122,5 +161,6 @@ func (h *Handler) Routes() chi.Router {
 type IRepository interface {
 	FindAll() ([]Setting, error)
 	Update(key, value string) error
+	UpdateMany(updates []SettingUpdate) error
 	GetByKey(key string) (string, error)
 }

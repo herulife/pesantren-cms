@@ -1841,6 +1841,15 @@ export async function updateSetting(key: string, value: string) {
 	return parseResponse(res);
 }
 
+export async function updateSettingsBatch(settings: Array<{ key: string; value: string }>) {
+	const res = await fetch(`${API_BASE_URL}/settings/batch`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ settings })
+	});
+	return parseResponse(res);
+}
+
 // ── Disciplines (Kedisiplinan Santri) ──────────────────
 
 export interface StudentDisciplinePoint {

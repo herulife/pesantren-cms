@@ -83,7 +83,7 @@ function renderPreviewContent(
   }
 
   if (previewTarget === 'program') {
-    return <ProgramPageContent />;
+    return <ProgramPageContent previewPrograms={dataSources.programs} disableFetch />;
   }
 
   if (previewTarget === 'psb') {
@@ -260,7 +260,7 @@ export default function WebsiteBuilderLivePreview({
               user={null}
               loading={false}
               logout={async () => {}}
-              showBackToTop
+              showBackToTop={false}
               scrollToTop={() => {}}
               isPortalPage={false}
             >

@@ -26,12 +26,24 @@ const featuredCardIcons = [
   <Target key="target" size={22} />,
 ];
 
-export function ProgramPageContent() {
+export function ProgramPageContent({
+  previewPrograms,
+  disableFetch = false,
+}: {
+  previewPrograms?: Program[];
+  disableFetch?: boolean;
+} = {}) {
   const pageContent = useWebsiteBuilderPageContent('program', defaultWebsiteBuilderPages.program);
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [programs, setPrograms] = useState<Program[]>(previewPrograms || []);
+  const [isLoading, setIsLoading] = useState(!disableFetch && !(previewPrograms && previewPrograms.length > 0));
 
   useEffect(() => {
+    if (disableFetch) {
+      setPrograms(previewPrograms || []);
+      setIsLoading(false);
+      return;
+    }
+
     let isActive = true;
 
     async function fetchPrograms() {
@@ -65,7 +77,7 @@ export function ProgramPageContent() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [disableFetch, previewPrograms]);
 
   return (
     <>
