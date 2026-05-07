@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-function PsbPageContent() {
+export function PsbPageContent() {
   const pageContent = useWebsiteBuilderPageContent('psb', defaultWebsiteBuilderPages.psb);
 
   return (

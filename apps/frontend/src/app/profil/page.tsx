@@ -23,7 +23,7 @@ const institutionFactIcons = [
   <CheckCircle2 key="check" size={18} />,
 ];
 
-function ProfilPageContent() {
+export function ProfilPageContent() {
   const pageContent = useWebsiteBuilderPageContent('profil', defaultWebsiteBuilderPages.profil);
   const phoneHref = `tel:${pageContent.about.phone_chip.replace(/\D/g, '')}`;
 

@@ -11,7 +11,7 @@ import {
 import { defaultWebsiteBuilderPages } from '@/lib/website-builder';
 import { Send, MapPin, Phone, Clock, RefreshCw, MessageCircle } from 'lucide-react';
 
-function ContactPageContent() {
+export function ContactPageContent() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',

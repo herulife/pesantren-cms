@@ -26,7 +26,7 @@ const featuredCardIcons = [
   <Target key="target" size={22} />,
 ];
 
-function ProgramPageContent() {
+export function ProgramPageContent() {
   const pageContent = useWebsiteBuilderPageContent('program', defaultWebsiteBuilderPages.program);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [isLoading, setIsLoading] = useState(true);

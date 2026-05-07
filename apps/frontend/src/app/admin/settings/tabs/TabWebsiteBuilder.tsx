@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useId, useMemo, useState } from 'react';
 import Image from 'next/image';
 import {
   ArrowDown,
@@ -47,6 +47,10 @@ import {
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import PageBuilderEditor from '@/components/website-builder/PageBuilderEditor';
+import WebsiteBuilderLivePreview, {
+  WebsiteBuilderLivePreviewTarget,
+  WebsiteBuilderLivePreviewViewport,
+} from '@/components/website-builder/WebsiteBuilderLivePreview';
 import {
   appendWebsiteBuilderRevision,
   BuilderPageKey,
@@ -90,6 +94,13 @@ type BuilderContentCatalog = {
   programs: BuilderContentOption[];
   extracurriculars: BuilderContentOption[];
 };
+type BuilderPreviewCollections = {
+  news: News[];
+  agendas: Agenda[];
+  gallery: GalleryItem[];
+  videos: Video[];
+  programs: Program[];
+};
 
 const builderAreas: Array<{ title: BuilderArea; description: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
   { title: 'Theme', description: 'Warna, font, radius, shadow, dan background global.', icon: Paintbrush },
@@ -106,6 +117,25 @@ const builderPageOptions: Array<{ key: BuilderPageKey; label: string; route: str
   { key: 'program', label: 'Program', route: '/program', description: 'Hero, highlight program, kurikulum, dan CTA.' },
   { key: 'psb', label: 'PSB', route: '/psb', description: 'Hero, syarat, gelombang, lokasi, dan CTA pendaftaran.' },
   { key: 'kontak', label: 'Kontak', route: '/kontak', description: 'Hero, info kontak, form pesan, dan peta lokasi.' },
+];
+
+const livePreviewPageOptions: Array<{
+  key: WebsiteBuilderLivePreviewTarget;
+  label: string;
+  route: string;
+}> = [{ key: 'home', label: 'Home', route: '/' }, ...builderPageOptions.map((page) => ({
+  key: page.key,
+  label: page.label,
+  route: page.route,
+}))];
+
+const livePreviewViewportOptions: Array<{
+  key: WebsiteBuilderLivePreviewViewport;
+  label: string;
+}> = [
+  { key: 'desktop', label: 'Desktop' },
+  { key: 'tablet', label: 'Tablet' },
+  { key: 'mobile', label: 'Mobile' },
 ];
 
 const revisionActionLabels: Record<WebsiteBuilderRevision['action'], string> = {
@@ -1147,11 +1177,20 @@ export default function TabWebsiteBuilder() {
     programs: [],
     extracurriculars: [],
   });
+  const [previewCollections, setPreviewCollections] = useState<BuilderPreviewCollections>({
+    news: [],
+    agendas: [],
+    gallery: [],
+    videos: [],
+    programs: [],
+  });
   const [activeArea, setActiveArea] = useState<BuilderArea>('Home');
   const [themeDraft, setThemeDraft] = useState<WebsiteBuilderTheme>(defaultWebsiteBuilderTheme);
   const [shellDraft, setShellDraft] = useState<WebsiteBuilderShell>(defaultWebsiteBuilderShell);
   const [homeDraft, setHomeDraft] = useState<HomeBuilderLayout>(freshHomeLayout());
   const [pagesDraft, setPagesDraft] = useState<WebsiteBuilderPages>(defaultWebsiteBuilderPages);
+  const [livePreviewPage, setLivePreviewPage] = useState<WebsiteBuilderLivePreviewTarget>('home');
+  const [livePreviewViewport, setLivePreviewViewport] = useState<WebsiteBuilderLivePreviewViewport>('desktop');
   const [selectedSectionId, setSelectedSectionId] = useState(defaultHomeBuilderLayout.sections[0]?.id || '');
   const [selectedPageKey, setSelectedPageKey] = useState<BuilderPageKey>('profil');
   const [isLoading, setIsLoading] = useState(true);
@@ -1172,6 +1211,10 @@ export default function TabWebsiteBuilder() {
   const selectedPageOption = builderPageOptions.find((page) => page.key === selectedPageKey) || builderPageOptions[0];
   const draftSectionCount = homeDraft.sections.filter((section) => section.enabled).length;
   const publishedSectionCount = builderState.homePublished.sections.filter((section) => section.enabled).length;
+  const deferredThemeDraft = useDeferredValue(themeDraft);
+  const deferredShellDraft = useDeferredValue(shellDraft);
+  const deferredHomeDraft = useDeferredValue(homeDraft);
+  const deferredPagesDraft = useDeferredValue(pagesDraft);
 
   const syncFromSettings = useCallback((settingsMap: Record<string, string>) => {
     const state = parseWebsiteBuilderState(settingsMap);
@@ -1205,6 +1248,13 @@ export default function TabWebsiteBuilder() {
           Array.isArray(programItems) ? programItems : []
         )
       );
+      setPreviewCollections({
+        news: newsItems,
+        agendas: agendaItems,
+        gallery: galleryResult.data || [],
+        videos: videosResult.data || [],
+        programs: Array.isArray(programItems) ? programItems : [],
+      });
     } finally {
       setIsLoading(false);
     }
@@ -1213,6 +1263,17 @@ export default function TabWebsiteBuilder() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (activeArea === 'Home') {
+      setLivePreviewPage('home');
+      return;
+    }
+
+    if (activeArea === 'Pages') {
+      setLivePreviewPage(selectedPageKey);
+    }
+  }, [activeArea, selectedPageKey]);
 
   const uploadBuilderAsset = useCallback(
     async (target: string, file: File) => {
@@ -1796,7 +1857,8 @@ export default function TabWebsiteBuilder() {
           })}
         </div>
 
-        <div className="p-6 lg:p-8">
+        <div className="grid gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,560px)] lg:p-8">
+          <div className="min-w-0 space-y-6">
           {activeArea === 'Theme' ? (
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2">
@@ -2274,6 +2336,71 @@ export default function TabWebsiteBuilder() {
               )}
             </div>
           ) : null}
+
+          </div>
+
+          <div className="min-w-0 xl:sticky xl:top-24 xl:self-start">
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Live Preview</p>
+                <h3 className="mt-2 text-xl font-black text-slate-950">Preview Real-Time di Dalam Admin</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  Semua perubahan draft langsung dirender di sini, tanpa perlu simpan dulu. Preview ini visual-only supaya admin tidak kepindah halaman saat mengecek layout.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Halaman Preview</p>
+                <div className="flex flex-wrap gap-2">
+                  {livePreviewPageOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setLivePreviewPage(option.key)}
+                      className={`rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] transition ${
+                        livePreviewPage === option.key
+                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-700/20'
+                          : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-200 hover:text-emerald-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Viewport</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {livePreviewViewportOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setLivePreviewViewport(option.key)}
+                      className={`rounded-xl px-3 py-3 text-xs font-black uppercase tracking-[0.14em] transition ${
+                        livePreviewViewport === option.key
+                          ? 'bg-slate-950 text-white'
+                          : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <WebsiteBuilderLivePreview
+                previewTarget={livePreviewPage}
+                viewport={livePreviewViewport}
+                settings={settings}
+                theme={deferredThemeDraft}
+                shell={deferredShellDraft}
+                home={deferredHomeDraft}
+                pages={deferredPagesDraft}
+                dataSources={previewCollections}
+              />
+            </div>
+          </div>
         </div>
       </section>
     </div>
