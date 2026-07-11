@@ -60,7 +60,7 @@ html, body {
 }
 
 .hero-swiper .swiper-pagination {
-  bottom: 100px !important;
+  bottom: 30px !important;
   z-index: 30;
 }
 
@@ -265,4 +265,8 @@ html, body {
   line-height: 1.6;
   font-weight: 500;
   resize: vertical;
+}
+
+.font-headline {
+  font-family: 'Outfit', sans-serif;
 }
