@@ -146,47 +146,47 @@ const extracurriculars = ['Panahan', 'Basket', 'Futsal', 'Karate', 'Tata Boga', 
 
 const featuredProgramCards = [
   {
-    title: 'Tahfidz Al-Quran',
-    subtitle: 'Target hafalan bertahap dan setoran harian.',
-    image: '/assets/img/tahfidz.jpg',
+    title: 'Akselerasi Tahfidz 30 Juz',
+    subtitle: 'Target hafalan 30 juz dengan muraja\'ah yang terjadwal.',
+    image: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=900&q=60',
   },
   {
-    title: 'Kajian Kitab',
-    subtitle: 'Pembiasaan faham diniyah dan adab belajar.',
-    image: '/assets/img/belajar-kitab.jpg',
+    title: 'Tsaqofah Islamiyah',
+    subtitle: 'Kajian kitab dan wawasan keislaman yang luas.',
+    image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=900&q=60',
   },
   {
-    title: 'Tasmi & Murajaah',
-    subtitle: 'Penguatan bacaan, kelancaran, dan ketelitian.',
-    image: '/assets/img/tasmi.jpg',
+    title: 'Tarbiyah Aqidah & Akhlak',
+    subtitle: 'Pembinaan aqidah lurus dan akhlak karimah.',
+    image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=900&q=60',
   },
   {
-    title: 'Halaqah Pembinaan',
-    subtitle: 'Ruang pembentukan karakter dan kedisiplinan.',
-    image: '/assets/img/khalaqoh.jpg',
+    title: 'Mahasantri Bahasa Arab',
+    subtitle: 'Kemampuan baca kitab dan berbahasa Arab aktif.',
+    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=60',
   },
 ];
 
 const extracurricularCards = [
   {
-    title: 'Panahan & Olahraga',
-    subtitle: 'Melatih fokus, fisik, dan sportivitas.',
-    image: '/assets/img/manasik.jpg',
-  },
-  {
     title: 'Tata Boga',
     subtitle: 'Keterampilan hidup yang aplikatif dan bermanfaat.',
-    image: '/assets/img/masak.jpg',
+    image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=900&q=60',
   },
   {
     title: 'Teknik Otomotif',
     subtitle: 'Praktik kerja tangan dan pemahaman teknis dasar.',
-    image: '/assets/img/bengkel.jpg',
+    image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=60',
   },
   {
-    title: 'Asrama & Kebersamaan',
-    subtitle: 'Belajar mandiri, tertib, dan saling menjaga.',
-    image: '/assets/img/asrama.jpg',
+    title: 'Futsal & Olahraga',
+    subtitle: 'Melatih fisik, fokus, dan sportivitas santri.',
+    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=60',
+  },
+  {
+    title: 'Panahan & Beladiri',
+    subtitle: 'Mengasah konsentrasi, keberanian, dan kesigapan.',
+    image: 'https://images.unsplash.com/photo-1517260739337-6799d239ce83?auto=format&fit=crop&w=900&q=60',
   },
 ];
 
