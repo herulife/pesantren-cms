@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"darussunnah-api/internal/platform/logger"
+	"almaparung-api/internal/platform/logger"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -79,7 +79,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func extractToken(r *http.Request) string {
-	if cookie, err := r.Cookie("darussunnah_token"); err == nil && strings.TrimSpace(cookie.Value) != "" {
+	if cookie, err := r.Cookie("alma_token"); err == nil && strings.TrimSpace(cookie.Value) != "" {
 		return cookie.Value
 	}
 

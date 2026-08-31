@@ -1,8 +1,8 @@
 package gallery
 
 import (
-	"darussunnah-api/internal/platform/logger"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/validators"
 	"encoding/json"
 	"errors"
 	"io"

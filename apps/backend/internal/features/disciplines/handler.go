@@ -2,7 +2,7 @@ package disciplines
 
 import (
 	"context"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/validators"
 	"net/http"
 	"strconv"
 	"time"

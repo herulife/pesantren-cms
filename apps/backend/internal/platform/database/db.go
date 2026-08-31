@@ -21,7 +21,7 @@ func Connect(dbPath string) {
 		dbPath = os.Getenv("DB_PATH")
 	}
 	if strings.TrimSpace(dbPath) == "" {
-		dbPath = "./darussunnah.db"
+		dbPath = "./alma.db"
 	}
 
 	absPath, absErr := filepath.Abs(dbPath)

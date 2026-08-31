@@ -8,7 +8,7 @@ Dokumen ini merangkum cara kerja aplikasi Al-Maa agar penambahan modul baru meng
   - `apps/frontend`: Next.js App Router + React + TypeScript + Tailwind CSS
   - `apps/backend`: Go + Chi Router + SQLite
 - Deploy production menggunakan Docker Compose di:
-  - `deploy/darussunnah/docker-compose.yml`
+  - `deploy/almaparung/docker-compose.yml`
 - Database utama memakai SQLite dengan mode WAL.
 
 ## 2. Struktur Penting
@@ -37,11 +37,11 @@ Dokumen ini merangkum cara kerja aplikasi Al-Maa agar penambahan modul baru meng
 
 ### Deploy
 
-- `deploy/darussunnah/docker-compose.yml`
+- `deploy/almaparung/docker-compose.yml`
   - service frontend dan backend
-- `deploy/darussunnah/.env`
+- `deploy/almaparung/.env`
   - environment production
-- `deploy/darussunnah/data/`
+- `deploy/almaparung/data/`
   - SQLite db + uploads
 
 ## 3. Pola Arsitektur Backend
@@ -82,7 +82,7 @@ Pola umumnya:
 - logger
 - recoverer
 - CORS
-- auth JWT via cookie `darussunnah_token`
+- auth JWT via cookie `alma_token`
 - role check
 - rate limiter
 - license gate
@@ -118,7 +118,7 @@ Artinya, modul baru yang butuh tabel baru idealnya:
 
 ### Backend
 
-- login set cookie JWT `darussunnah_token`
+- login set cookie JWT `alma_token`
 - sumber role ada di tabel `users`
 - role utama yang dipakai:
   - `superadmin`

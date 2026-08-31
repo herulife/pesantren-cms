@@ -1,4 +1,4 @@
-# Audit Kode: aplikasi darussunnah
+# Audit Kode: aplikasi almaparung
 Tanggal: 2026-04-30 11:59 (Asia/Bangkok)
 
 ## Ringkasan

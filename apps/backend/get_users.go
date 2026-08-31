@@ -14,7 +14,7 @@ import (
 func main() {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
-		dbPath = "./darussunnah.db"
+		dbPath = "./alma.db"
 	}
 
 	db, err := sql.Open("sqlite", dbPath)

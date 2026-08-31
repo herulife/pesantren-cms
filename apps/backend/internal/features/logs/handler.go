@@ -1,7 +1,7 @@
 package logs
 
 import (
-	"darussunnah-api/internal/platform/logger"
+	"almaparung-api/internal/platform/logger"
 	"encoding/json"
 	"net/http"
 	"strconv"

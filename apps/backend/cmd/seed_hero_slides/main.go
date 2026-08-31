@@ -18,7 +18,7 @@ type heroSlide struct {
 }
 
 func main() {
-	db, err := sql.Open("sqlite", "darussunnah.db")
+	db, err := sql.Open("sqlite", "alma.db")
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}

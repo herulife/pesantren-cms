@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
 
   // Cookie auth utama (baru) + fallback legacy agar backward compatible.
   const token =
-    request.cookies.get('darussunnah_token')?.value ||
+    request.cookies.get('alma_token')?.value ||
     request.cookies.get('token')?.value;
 
   // Jika user mengakses /admin tanpa token, redirect ke /login

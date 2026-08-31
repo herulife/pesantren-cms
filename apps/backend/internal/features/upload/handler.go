@@ -2,8 +2,8 @@ package upload
 
 import (
 	"bytes"
-	"darussunnah-api/internal/features/auth"
-	"darussunnah-api/internal/platform/logger"
+	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/logger"
 	"encoding/json"
 	"errors"
 	"fmt"

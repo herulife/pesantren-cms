@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const defaultBackendOrigin =
   process.env.NODE_ENV === 'production'
-    ? 'https://darussunnahparung.com'
+    ? 'https://almaparung.com'
     : 'http://localhost:8080';
 
 const backendOrigin = (

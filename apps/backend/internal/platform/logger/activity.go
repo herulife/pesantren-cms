@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"darussunnah-api/internal/platform/database"
+	"almaparung-api/internal/platform/database"
 	"log"
 )
 

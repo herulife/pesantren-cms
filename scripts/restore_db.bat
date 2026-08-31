@@ -7,7 +7,7 @@ if "%~1"=="" (
 )
 
 set "ROOT=%~dp0.."
-set "DB_PATH=%ROOT%\apps\backend\darussunnah.db"
+set "DB_PATH=%ROOT%\apps\backend\alma.db"
 set "BACKUP_INPUT=%~1"
 
 if not exist "%BACKUP_INPUT%" (

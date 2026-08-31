@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("sqlite", "./darussunnah.db")
+	db, err := sql.Open("sqlite", "./alma.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func main() {
 		Opts    string
 		Correct int
 	}{
-		{"Siapakah pendiri Darussunnah?", "[\"Kyai A\", \"Kyai B\", \"Kyai C\", \"Kyai D\"]", 0},
+		{"Siapakah pendiri Alma Parung?", "[\"Kyai A\", \"Kyai B\", \"Kyai C\", \"Kyai D\"]", 0},
 		{"Berapa rukun Islam?", "[\"4\", \"5\", \"6\", \"7\"]", 1},
 		{"Apa ibu kota Indonesia?", "[\"Bandung\", \"Jakarta\", \"Surabaya\", \"Medan\"]", 1},
 	}

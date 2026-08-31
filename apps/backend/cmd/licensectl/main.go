@@ -101,7 +101,7 @@ func runIssue(args []string) error {
 	customer := fs.String("customer", "", "customer or organization name")
 	domain := fs.String("domain", "", "primary licensed domain")
 	plan := fs.String("plan", "annual", "license plan label")
-	issuer := fs.String("issuer", "darussunnah-licensectl", "issuer claim")
+	issuer := fs.String("issuer", "almaparung-licensectl", "issuer claim")
 	notBeforeHours := fs.Int("not-before-hours", 0, "delay activation by N hours")
 	if err := fs.Parse(args); err != nil {
 		return err

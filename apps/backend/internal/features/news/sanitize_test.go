@@ -6,7 +6,7 @@ import (
 )
 
 func TestSanitizeNewsHTML_RemovesDangerousMarkup(t *testing.T) {
-	raw := `<p onclick="alert(1)">Halo</p><script>alert(1)</script><iframe src="https://evil.test"></iframe><a href="javascript:alert(1)">klik</a><a href="https://darussunnahparung.com/info" target="_blank">aman</a>`
+	raw := `<p onclick="alert(1)">Halo</p><script>alert(1)</script><iframe src="https://evil.test"></iframe><a href="javascript:alert(1)">klik</a><a href="https://almaparung.com/info" target="_blank">aman</a>`
 
 	got := sanitizeNewsHTML(raw)
 
@@ -24,7 +24,7 @@ func TestSanitizeNewsHTML_RemovesDangerousMarkup(t *testing.T) {
 		t.Fatalf("expected unsafe anchor href to be stripped, got %s", got)
 	}
 
-	if !strings.Contains(got, `href="https://darussunnahparung.com/info"`) {
+	if !strings.Contains(got, `href="https://almaparung.com/info"`) {
 		t.Fatalf("expected safe anchor href to remain, got %s", got)
 	}
 }

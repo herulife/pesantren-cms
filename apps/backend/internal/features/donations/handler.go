@@ -2,9 +2,9 @@ package donations
 
 import (
 	"context"
-	"darussunnah-api/internal/platform/logger"
-	"darussunnah-api/internal/platform/whatsapp"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/whatsapp"
+	"almaparung-api/internal/validators"
 	"encoding/json"
 	"net/http"
 	"strconv"

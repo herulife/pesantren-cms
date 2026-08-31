@@ -1,9 +1,9 @@
 package wallet
 
 import (
-	"darussunnah-api/internal/features/auth"
-	"darussunnah-api/internal/platform/logger"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/validators"
 	"encoding/json"
 	"net/http"
 	"strconv"

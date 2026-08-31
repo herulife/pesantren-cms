@@ -2,7 +2,7 @@ package psb
 
 import (
 	"context"
-	"darussunnah-api/internal/platform/logger"
+	"almaparung-api/internal/platform/logger"
 	"fmt"
 	"net/http"
 	"time"

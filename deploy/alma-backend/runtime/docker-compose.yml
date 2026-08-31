@@ -1,0 +1,14 @@
+services:
+  alma-parung-backend:
+    build:
+      context: ../../..
+      dockerfile: apps/backend/Dockerfile
+    container_name: alma-parung-backend
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - ../../../data:/data
+      - ../../../data/uploads:/app/apps/backend/public/uploads
+    ports:
+      - "8090:8080"

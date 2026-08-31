@@ -1,10 +1,10 @@
 package attendance
 
 import (
-	"darussunnah-api/internal/features/auth"
-	"darussunnah-api/internal/platform/logger"
-	"darussunnah-api/internal/platform/whatsapp"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/whatsapp"
+	"almaparung-api/internal/validators"
 	"encoding/json"
 	"net/http"
 	"time"

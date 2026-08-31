@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("sqlite", "./darussunnah.db")
+	db, err := sql.Open("sqlite", "./alma.db")
 	if err != nil {
 		log.Fatalf("Error opening db: %v", err)
 	}

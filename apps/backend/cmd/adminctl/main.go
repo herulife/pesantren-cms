@@ -33,12 +33,12 @@ func usage() {
 	fmt.Println("adminctl - Al-Maa admin utility")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  adminctl reset-password --db ./darussunnah.db --email admin@almaparung.com --password \"NewStrongPassword!\"")
+	fmt.Println("  adminctl reset-password --db ./alma.db --email admin@almaparung.com --password \"NewStrongPassword!\"")
 }
 
 func runResetPassword(args []string) error {
 	fs := flag.NewFlagSet("reset-password", flag.ContinueOnError)
-	dbPath := fs.String("db", "./darussunnah.db", "path to SQLite database")
+	dbPath := fs.String("db", "./alma.db", "path to SQLite database")
 	email := fs.String("email", "", "user email to update")
 	password := fs.String("password", "", "new plain-text password")
 	if err := fs.Parse(args); err != nil {

@@ -1,29 +1,29 @@
 services:
-  darussunnah-frontend:
+  almaparung-frontend:
     build:
       context: ../..
       dockerfile: apps/frontend/Dockerfile
-    container_name: darussunnah-frontend
+    container_name: almaparung-frontend
     restart: always
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: https://darussunnahparung.com/api
+      NEXT_PUBLIC_API_URL: https://almaparung.com/api
     expose:
       - "3000"
     networks:
       - app-network
 
-  darussunnah-backend:
+  almaparung-backend:
     build:
       context: ../..
       dockerfile: apps/backend/Dockerfile
-    container_name: darussunnah-backend
+    container_name: almaparung-backend
     restart: always
     environment:
-      APP_URL: https://darussunnahparung.com
+      APP_URL: https://almaparung.com
       API_PORT: "8080"
-      ALLOWED_ORIGINS: https://darussunnahparung.com,https://www.darussunnahparung.com
-      DB_PATH: /data/darussunnah.db
+      ALLOWED_ORIGINS: https://almaparung.com,https://www.almaparung.com
+      DB_PATH: /data/alma.db
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECURE: "true"
       DEV_MODE: "false"

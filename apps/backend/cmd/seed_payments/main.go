@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"darussunnah-api/internal/platform/database"
+	"almaparung-api/internal/platform/database"
 )
 
 type paymentSeed struct {
@@ -23,7 +23,7 @@ type paymentSeed struct {
 func main() {
 	dbPath := strings.TrimSpace(os.Getenv("DB_PATH"))
 	if dbPath == "" {
-		dbPath = "./darussunnah.db"
+		dbPath = "./alma.db"
 	}
 
 	database.Connect(dbPath)

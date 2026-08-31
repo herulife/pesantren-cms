@@ -6,7 +6,7 @@ echo ====================================================
 echo.
 
 echo [1/3] Menutup Backend (Golang)...
-taskkill /F /IM darussunnah_api.exe >nul 2>&1
+taskkill /F /IM almaparung_api.exe >nul 2>&1
 taskkill /F /IM main.exe >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Alma-Prod-Backend" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Alma-Go-Backend" >nul 2>&1

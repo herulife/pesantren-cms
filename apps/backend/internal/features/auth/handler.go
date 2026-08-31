@@ -2,9 +2,9 @@ package auth
 
 import (
 	"context"
-	"darussunnah-api/internal/platform/database"
-	"darussunnah-api/internal/platform/logger"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/platform/database"
+	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/validators"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -641,7 +641,7 @@ func writeAPIError(w http.ResponseWriter, status int, correlationID, message str
 
 func setAuthCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "darussunnah_token",
+		Name:     "alma_token",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
@@ -653,7 +653,7 @@ func setAuthCookie(w http.ResponseWriter, token string) {
 
 func clearAuthCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "darussunnah_token",
+		Name:     "alma_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,

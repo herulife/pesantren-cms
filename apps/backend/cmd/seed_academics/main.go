@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"darussunnah-api/internal/platform/database"
+	"almaparung-api/internal/platform/database"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -20,7 +20,7 @@ type subjectSeed struct {
 func main() {
 	dbPath := strings.TrimSpace(os.Getenv("DB_PATH"))
 	if dbPath == "" {
-		dbPath = "./darussunnah.db"
+		dbPath = "./alma.db"
 	}
 
 	database.Connect(dbPath)

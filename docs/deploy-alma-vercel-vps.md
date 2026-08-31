@@ -6,7 +6,7 @@ Dokumen ini menjelaskan alur deploy untuk setup berikut:
 - Backend Go di `apps/backend`
 - Source of truth di GitHub: `herulife/alma-parung`
 - Frontend deploy ke Vercel
-- Backend deploy ke VPS dengan domain `https://darussunnahparung.com`
+- Backend deploy ke VPS dengan domain `https://almaparung.com`
 
 ## Branch aktif
 
@@ -24,13 +24,13 @@ Jika repo GitHub belum punya branch `main`, ada dua opsi:
 - User membuka frontend di domain Vercel atau custom domain frontend
 - Frontend tetap memanggil `/api/*` dan `/uploads/*`
 - Vercel me-rewrite request tersebut ke backend VPS
-- Backend Go melayani API dan file upload dari `https://darussunnahparung.com`
+- Backend Go melayani API dan file upload dari `https://almaparung.com`
 
 Alur request:
 
 1. Browser akses `https://frontend-kamu.vercel.app`
 2. Request `/api/...` diterima frontend Vercel
-3. Vercel proxy ke `https://darussunnahparung.com/api/...`
+3. Vercel proxy ke `https://almaparung.com/api/...`
 4. Browser tetap merasa request berasal dari domain frontend
 
 ## Env frontend di Vercel
@@ -39,8 +39,8 @@ Masuk ke Vercel Project -> Settings -> Environment Variables.
 
 Tambahkan:
 
-- `BACKEND_ORIGIN=https://darussunnahparung.com`
-- `NEXT_PUBLIC_SITE_API_ORIGIN=https://darussunnahparung.com`
+- `BACKEND_ORIGIN=https://almaparung.com`
+- `NEXT_PUBLIC_SITE_API_ORIGIN=https://almaparung.com`
 
 Catatan:
 
@@ -75,10 +75,10 @@ Alasannya:
 Contoh env production backend:
 
 ```env
-APP_URL=https://darussunnahparung.com
+APP_URL=https://almaparung.com
 API_PORT=8080
 ALLOWED_ORIGINS=https://frontend-kamu.vercel.app
-DB_PATH=/home/ubuntu24/my-docker-apps/apps/darussunnah/deploy/darussunnah/data/darussunnah.db
+DB_PATH=/home/ubuntu24/my-docker-apps/apps/almaparung/deploy/almaparung/data/alma.db
 JWT_SECRET=ganti_dengan_secret_panjang
 COOKIE_SECURE=true
 DEV_MODE=false
@@ -136,12 +136,12 @@ Kalau nanti mau full otomatis, baru tambah GitHub Actions via SSH.
 - Backend VPS memakai `DEV_MODE=false`
 - `ALLOWED_ORIGINS` tidak mengandung `localhost`
 - Nginx VPS sudah melayani HTTPS
-- Endpoint backend sehat di `https://darussunnahparung.com/api/health`
+- Endpoint backend sehat di `https://almaparung.com/api/health`
 
 ## Endpoint penting untuk test
 
 - Frontend: `https://frontend-kamu.vercel.app`
-- Backend health: `https://darussunnahparung.com/api/health`
+- Backend health: `https://almaparung.com/api/health`
 - Upload proxy: `https://frontend-kamu.vercel.app/uploads/...`
 - Login API lewat Vercel rewrite: `https://frontend-kamu.vercel.app/api/login`
 

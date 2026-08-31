@@ -6,7 +6,7 @@ function getApiBaseUrl() {
 	const backendOrigin = process.env.NEXT_PUBLIC_SITE_API_ORIGIN?.trim();
 	const defaultBackendOrigin =
 		process.env.NODE_ENV === 'production'
-			? 'https://darussunnahparung.com'
+			? 'https://almaparung.com'
 			: 'http://localhost:8080';
 	if (configured) {
 		return configured;
@@ -57,7 +57,7 @@ function resolveApiOrigin() {
 		return new URL(API_BASE_URL).origin;
 	} catch {
 		return process.env.NODE_ENV === 'production'
-			? 'https://darussunnahparung.com'
+			? 'https://almaparung.com'
 			: 'http://localhost:8080';
 	}
 }

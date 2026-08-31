@@ -1,10 +1,10 @@
 package news
 
 import (
-	"darussunnah-api/internal/features/auth"
-	"darussunnah-api/internal/platform/ai"
-	"darussunnah-api/internal/platform/logger"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/ai"
+	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/validators"
 	"database/sql"
 	"encoding/json"
 	"errors"

@@ -2,7 +2,7 @@ package news
 
 import (
 	"context"
-	"darussunnah-api/internal/platform/logger"
+	"almaparung-api/internal/platform/logger"
 	"database/sql"
 	"strconv"
 	"strings"

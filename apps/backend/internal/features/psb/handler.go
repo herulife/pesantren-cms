@@ -2,8 +2,8 @@ package psb
 
 import (
 	"context"
-	"darussunnah-api/internal/features/auth"
-	"darussunnah-api/internal/validators"
+	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/validators"
 	"encoding/json"
 	"io"
 	"net/http"
