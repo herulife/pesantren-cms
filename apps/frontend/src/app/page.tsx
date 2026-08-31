@@ -441,7 +441,9 @@ export default function LandingPage() {
   }, []);
 
   const heroSlides = useMemo(() => parseHeroSlides(settings), [settings]);
-  const canSlideHero = heroSlides.length > 1;
+  const isLoadingHero = isLoading;
+  const renderedHeroSlides = isLoadingHero ? [] : heroSlides;
+  const canSlideHero = renderedHeroSlides.length > 1;
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
   const featuredCampaign = useMemo(() => findFeaturedDonationCampaign(campaigns), [campaigns]);
   const featuredTargetAmount = featuredCampaign?.target_amount ?? featuredOpenDonation.target;
@@ -476,10 +478,10 @@ export default function LandingPage() {
           pagination={canSlideHero ? { clickable: true } : false}
           autoplay={canSlideHero ? { delay: 6500, disableOnInteraction: false, pauseOnMouseEnter: true } : false}
           speed={950}
-          key={`hero-${heroSlides.length}`}
+          key={`hero-${renderedHeroSlides.length}`}
           className="hero-swiper"
         >
-          {heroSlides.map((slide) => {
+          {renderedHeroSlides.map((slide) => {
             const slideImage = resolveDisplayImageUrl(slide.image_url || '/assets/img/gedung.webp');
             return (
               <SwiperSlide key={slide.id}>
