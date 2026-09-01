@@ -163,7 +163,7 @@ const featuredProgramCards = [
   {
     title: 'Mahasantri Bahasa Arab',
     subtitle: 'Kemampuan baca kitab dan berbahasa Arab aktif.',
-    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=60',
+    image: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?auto=format&fit=crop&w=900&q=60',
   },
 ];
 
@@ -171,7 +171,7 @@ const extracurricularCards = [
   {
     title: 'Tata Boga',
     subtitle: 'Keterampilan hidup yang aplikatif dan bermanfaat.',
-    image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=900&q=60',
+    image: 'https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=60',
   },
   {
     title: 'Teknik Otomotif',
@@ -181,7 +181,7 @@ const extracurricularCards = [
   {
     title: 'Futsal & Olahraga',
     subtitle: 'Melatih fisik, fokus, dan sportivitas santri.',
-    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=60',
+    image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=900&q=60',
   },
   {
     title: 'Panahan & Beladiri',
