@@ -262,7 +262,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   width={48}
                   height={48}
                   unoptimized
-                  className="h-9 w-9 rounded-full border border-sky-300 object-cover shadow-[0_10px_24px_rgba(59,130,246,0.14)] transition-transform duration-300 group-hover:scale-105 md:h-12 md:w-12"
+                  className="h-9 w-9 rounded-full border border-sky-300 bg-white object-contain p-1 shadow-[0_10px_24px_rgba(59,130,246,0.14)] transition-transform duration-300 group-hover:scale-105 md:h-12 md:w-12"
                 />
               </div>
               <div className="flex min-w-0 flex-col">
@@ -560,7 +560,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   width={72}
                   height={72}
                   unoptimized
-                  className="relative h-16 w-16 rounded-full border-2 border-sky-300 object-cover shadow-[0_18px_42px_-20px_rgba(59,130,246,0.2)] md:h-[4.5rem] md:w-[4.5rem]"
+                  className="relative h-16 w-16 rounded-full border-2 border-sky-300 bg-white object-contain p-1.5 shadow-[0_18px_42px_-20px_rgba(59,130,246,0.2)] md:h-[4.5rem] md:w-[4.5rem]"
                 />
               </div>
               <div>

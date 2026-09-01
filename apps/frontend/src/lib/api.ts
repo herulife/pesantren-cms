@@ -209,10 +209,17 @@ export function normalizeApiAssetUrl(url?: string | null) {
 	try {
 		const parsed = new URL(trimmed);
 		if (parsed.pathname.startsWith('/api/uploads/')) {
-			return new URL(parsed.pathname.replace('/api/uploads/', '/uploads/'), parsed.origin).toString();
+			return new URL(parsed.pathname.replace('/api/uploads/', '/uploads/'), apiOrigin).toString();
+		}
+		if (parsed.pathname.startsWith('/uploads/')) {
+			return new URL(parsed.pathname, apiOrigin).toString();
 		}
 		if (parsed.pathname.startsWith('/assets/')) {
 			return parsed.pathname;
+		}
+		// rewrite localhost origins to apiOrigin
+		if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+			return new URL(parsed.pathname + parsed.search + parsed.hash, apiOrigin).toString();
 		}
 		return parsed.toString();
 	} catch {
