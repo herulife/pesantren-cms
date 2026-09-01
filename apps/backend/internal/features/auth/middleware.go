@@ -139,6 +139,8 @@ func canBypassLicenseForBootstrap(r *http.Request) bool {
 		return true
 	case strings.HasPrefix(r.URL.Path, "/api/users"):
 		return true
+	case r.URL.Path == "/api/upload" || strings.HasPrefix(r.URL.Path, "/api/upload/"):
+		return true
 	default:
 		return false
 	}
