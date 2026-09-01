@@ -69,6 +69,25 @@ function isBiodataComplete(formData: BiodataForm) {
   return requiredFields.every((field) => isFilled(formData[field]));
 }
 
+function validateBiodata(form: BiodataForm): Partial<Record<keyof BiodataForm, string>> {
+  const e: Partial<Record<keyof BiodataForm, string>> = {};
+  if (!isFilled(form.full_name)) e.full_name = "Nama lengkap wajib diisi";
+  if (!isFilled(form.gender)) e.gender = "Pilih jenis kelamin";
+  if (!/^[0-9]{16}$/.test(form.nik.trim())) e.nik = "NIK harus 16 digit angka";
+  if (!isFilled(form.birth_place)) e.birth_place = "Tempat lahir wajib diisi";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.birth_date.trim())) e.birth_date = "Tanggal lahir wajib YYYY-MM-DD";
+  if (!isFilled(form.address)) e.address = "Alamat wajib diisi";
+  if (!isFilled(form.school_origin)) e.school_origin = "Asal sekolah wajib diisi";
+  if (!isFilled(form.program_choice)) e.program_choice = "Pilih program";
+  if (!isFilled(form.father_name)) e.father_name = "Nama ayah wajib diisi";
+  if (!isFilled(form.mother_name)) e.mother_name = "Nama ibu wajib diisi";
+  const phoneRe = /^[0-9+\-\s]{8,15}$/;
+  const clean = (v: string) => v.replace(/[\s\-]/g, "").replace(/^\+/, "");
+  if (!phoneRe.test(form.father_phone.trim()) || clean(form.father_phone).length < 8) e.father_phone = "No HP ayah 8-15 digit";
+  if (!phoneRe.test(form.mother_phone.trim()) || clean(form.mother_phone).length < 8) e.mother_phone = "No HP ibu 8-15 digit";
+  return e;
+}
+
 export default function BiodataPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -79,6 +98,7 @@ export default function BiodataPage() {
   const [isEditMode, setIsEditMode] = useState(true);
   const [hasSavedBiodata, setHasSavedBiodata] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<keyof BiodataForm, string>>>({});
 
   useEffect(() => {
     const fetchRegistration = async () => {
@@ -123,6 +143,7 @@ export default function BiodataPage() {
 
   const handleChange = (key: keyof BiodataForm, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,6 +152,13 @@ export default function BiodataPage() {
     const submitter = nativeEvent.submitter as HTMLButtonElement | null;
     const shouldContinue = submitter?.value === 'continue';
 
+    const validation = validateBiodata(formData);
+    if (Object.keys(validation).length > 0) {
+      setErrors(validation);
+      showToast('error', 'Periksa kembali isian yang ditandai merah');
+      return;
+    }
+    setErrors({});
     setIsSaving(true);
 
     try {
@@ -330,16 +358,19 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">NIK</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">NIK <span className="text-rose-500">*</span></label>
               <input
                 type="text"
                 value={formData.nik}
                 onChange={(e) => handleChange('nik', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                aria-invalid={!!errors.nik}
+                aria-describedby={errors.nik ? "err-nik" : undefined}
+                className={`w-full rounded-2xl border px-5 py-4 font-bold outline-none transition-all focus:ring-4 ${errors.nik ? "border-rose-300 bg-rose-50 text-rose-900 focus:border-rose-400 focus:ring-rose-500/10" : "border-slate-200 bg-slate-50 text-slate-800 focus:border-blue-500 focus:ring-blue-500/10"}`}
                 placeholder="16 digit NIK"
                 maxLength={16}
                 required
               />
+              {errors.nik ? <p id="err-nik" className="mt-1 text-xs font-bold text-rose-600">{errors.nik}</p> : null}
             </div>
 
             <div>

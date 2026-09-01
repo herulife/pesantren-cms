@@ -24,6 +24,9 @@ func parsePagination(r *http.Request) (int, int) {
 	if limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
 			limit = parsedLimit
+			if limit > 100 {
+				limit = 100
+			}
 		}
 	}
 	offsetStr := r.URL.Query().Get("offset")

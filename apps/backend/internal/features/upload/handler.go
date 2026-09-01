@@ -169,6 +169,16 @@ func sanitizeImage(file io.Reader) ([]byte, string, error) {
 		return nil, "", err
 	}
 
+	// Validasi dimensi (DESIGN.md tokens: min 100x100, max 5000x5000)
+	bounds := img.Bounds()
+	w, h := bounds.Dx(), bounds.Dy()
+	if w < 100 || h < 100 {
+		return nil, "", fmt.Errorf("gambar terlalu kecil, minimal 100x100 piksel (dapat %dx%d)", w, h)
+	}
+	if w > 5000 || h > 5000 {
+		return nil, "", fmt.Errorf("gambar terlalu besar, maksimal 5000x5000 piksel (dapat %dx%d)", w, h)
+	}
+
 	var buf bytes.Buffer
 	switch format {
 	case "jpeg":

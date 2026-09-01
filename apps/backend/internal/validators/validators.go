@@ -77,6 +77,39 @@ func ValidateDate(raw string) bool {
 	return err == nil
 }
 
+func ValidateNIK(raw string) bool {
+	nik := strings.TrimSpace(raw)
+	if len(nik) != 16 {
+		return false
+	}
+	for _, c := range nik {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func ValidatePhone(raw string) bool {
+	phone := strings.TrimSpace(raw)
+	if phone == "" {
+		return false
+	}
+	// allow digits, +, -, space, 8-15 chars
+	clean := strings.ReplaceAll(phone, " ", "")
+	clean = strings.ReplaceAll(clean, "-", "")
+	clean = strings.TrimPrefix(clean, "+")
+	if len(clean) < 8 || len(clean) > 15 {
+		return false
+	}
+	for _, c := range clean {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func NormalizeSlug(raw string) string {
 	normalized := strings.ToLower(NormalizeText(raw))
 	normalized = strings.ReplaceAll(normalized, " ", "-")

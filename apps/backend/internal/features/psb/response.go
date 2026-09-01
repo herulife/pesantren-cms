@@ -33,6 +33,17 @@ func SendErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	SendResponse(w, statusCode, false, message, nil, nil)
 }
 
+// SendValidationErrorResponse mengirim validation error dengan format errors map
+func SendValidationErrorResponse(w http.ResponseWriter, errs map[string]string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": false,
+		"message": "Validasi gagal",
+		"errors":  errs,
+	})
+}
+
 // SendSuccessResponse mengirim success response dengan data
 func SendSuccessResponse(w http.ResponseWriter, statusCode int, data interface{}, message string) {
 	SendResponse(w, statusCode, true, message, data, nil)

@@ -1,6 +1,7 @@
 package attendance
 
 import (
+	"context"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
@@ -69,23 +70,22 @@ func (h *Handler) Scan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Async WhatsApp Notification
-	go func(sID int, sName string) {
+	// Async WhatsApp Notification with background context to avoid leak
+	notifyCtx := context.Background()
+	go func(sID int, sName string, ctx context.Context) {
 		_, phone, err := h.repo.GetStudentInfo(sID)
 		if err != nil || phone == "" {
 			return
 		}
-
 		msg := "Assalamu'alaikum Wr. Wb.\n\n" +
 			"Yth. Wali Santri *" + sName + "*,\n" +
 			"Kami informasikan bahwa ananda telah hadir di pondok dan melakukan presensi via QR Code hari ini.\n\n" +
 			"Jazakumullahu khairan.\n" +
 			"_Admin Al-Maa_"
-
 		if err := whatsapp.SendMessage(phone, msg); err != nil {
-			logger.Error(r.Context(), "attendance notification failed", logger.Field{"operation": "attendance_scan_notify", "student_id": sID, "error": err.Error()})
+			logger.Error(ctx, "attendance notification failed", logger.Field{"operation": "attendance_scan_notify", "student_id": sID, "error": err.Error()})
 		}
-	}(studentID, studentName)
+	}(studentID, studentName, notifyCtx)
 
 	logger.Info(r.Context(), "attendance scan completed", logger.Field{
 		"operation":   "attendance_scan",

@@ -75,6 +75,104 @@ func writeJSONValidationError(w http.ResponseWriter, errors map[string][]string)
 	})
 }
 
+func validateGrade(g *Grade) map[string][]string {
+	errs := map[string][]string{}
+	if g.StudentID <= 0 {
+		errs["student_id"] = []string{"Santri wajib dipilih"}
+	}
+	if g.SubjectID <= 0 {
+		errs["subject_id"] = []string{"Mata pelajaran wajib dipilih"}
+	}
+	if g.UTSScore < 0 || g.UTSScore > 100 {
+		errs["uts_score"] = []string{"Nilai UTS harus 0-100"}
+	}
+	if g.UASScore < 0 || g.UASScore > 100 {
+		errs["uas_score"] = []string{"Nilai UAS harus 0-100"}
+	}
+	if g.TaskScore < 0 || g.TaskScore > 100 {
+		errs["task_score"] = []string{"Nilai tugas harus 0-100"}
+	}
+	if g.Semester != "" && g.Semester != "ganjil" && g.Semester != "genap" {
+		errs["semester"] = []string{"Semester harus ganjil atau genap"}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
+}
+
+func validateAttendance(a *Attendance) map[string][]string {
+	errs := map[string][]string{}
+	if a.StudentID <= 0 {
+		errs["student_id"] = []string{"Santri wajib dipilih"}
+	}
+	if a.Date == "" {
+		errs["date"] = []string{"Tanggal wajib diisi"}
+	}
+	validStatus := map[string]bool{"hadir": true, "sakit": true, "izin": true, "alpha": true}
+	if !validStatus[a.Status] {
+		errs["status"] = []string{"Status harus hadir/sakit/izin/alpha"}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
+}
+
+func validateTahfidz(t *TahfidzProgress) map[string][]string {
+	errs := map[string][]string{}
+	if t.StudentID <= 0 {
+		errs["student_id"] = []string{"Santri wajib dipilih"}
+	}
+	if t.Juz < 1 || t.Juz > 30 {
+		errs["juz"] = []string{"Juz harus 1-30"}
+	}
+	if t.SurahName == "" {
+		errs["surah_name"] = []string{"Nama surah wajib diisi"}
+	}
+	validStatus := map[string]bool{"proses": true, "setor": true, "lulus": true}
+	if t.Status != "" && !validStatus[t.Status] {
+		errs["status"] = []string{"Status harus proses/setor/lulus"}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
+}
+
+func parsePagination(r *http.Request) (limit, offset int) {
+	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
+func calcGrade(uts, uas, task float64) (float64, string) {
+	final := (30*uts + 40*uas + 30*task) / 100
+	var letter string
+	switch {
+	case final >= 85:
+		letter = "A"
+	case final >= 70:
+		letter = "B"
+	case final >= 55:
+		letter = "C"
+	case final >= 40:
+		letter = "D"
+	default:
+		letter = "E"
+	}
+	return final, letter
+}
+
 func (h *Handler) GetSubjects(w http.ResponseWriter, r *http.Request) {
 	ss, err := h.repo.GetAllSubjects()
 	if err != nil {
@@ -129,7 +227,19 @@ func (h *Handler) DeleteSubject(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetGrades(w http.ResponseWriter, r *http.Request) {
 	semester := r.URL.Query().Get("semester")
 	year := r.URL.Query().Get("year")
+	limit, offset := parsePagination(r)
 	gs, err := h.repo.GetAllGrades(semester, year)
+	if err == nil && len(gs) > limit {
+		end := offset + limit
+		if end > len(gs) {
+			end = len(gs)
+		}
+		if offset < len(gs) {
+			gs = gs[offset:end]
+		} else {
+			gs = []Grade{}
+		}
+	}
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -171,6 +281,10 @@ func (h *Handler) CreateGrade(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
 		return
 	}
+	if errs := validateGrade(&g); errs != nil {
+		writeJSONValidationError(w, errs)
+		return
+	}
 	if err := h.repo.CreateGrade(&g); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -184,6 +298,10 @@ func (h *Handler) UpdateGrade(w http.ResponseWriter, r *http.Request) {
 	var g Grade
 	if err := validators.DecodeJSON(w, r, &g); err != nil {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
+		return
+	}
+	if errs := validateGrade(&g); errs != nil {
+		writeJSONValidationError(w, errs)
 		return
 	}
 	if err := h.repo.UpdateGrade(id, &g); err != nil {
@@ -221,6 +339,10 @@ func (h *Handler) CreateAttendance(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
 		return
 	}
+	if errs := validateAttendance(&a); errs != nil {
+		writeJSONValidationError(w, errs)
+		return
+	}
 	if err := h.repo.CreateAttendance(&a); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -234,6 +356,10 @@ func (h *Handler) UpdateAttendance(w http.ResponseWriter, r *http.Request) {
 	var a Attendance
 	if err := validators.DecodeJSON(w, r, &a); err != nil {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
+		return
+	}
+	if errs := validateAttendance(&a); errs != nil {
+		writeJSONValidationError(w, errs)
 		return
 	}
 	if err := h.repo.UpdateAttendance(id, &a); err != nil {
@@ -282,7 +408,19 @@ func (h *Handler) GetMyAttendanceSummary(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) GetTahfidz(w http.ResponseWriter, r *http.Request) {
+	limit, offset := parsePagination(r)
 	ts, err := h.repo.GetAllTahfidz()
+	if err == nil && len(ts) > limit {
+		end := offset + limit
+		if end > len(ts) {
+			end = len(ts)
+		}
+		if offset < len(ts) {
+			ts = ts[offset:end]
+		} else {
+			ts = []TahfidzProgress{}
+		}
+	}
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -313,6 +451,10 @@ func (h *Handler) CreateTahfidz(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
 		return
 	}
+	if errs := validateTahfidz(&t); errs != nil {
+		writeJSONValidationError(w, errs)
+		return
+	}
 	if err := h.repo.CreateTahfidz(&t); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -326,6 +468,10 @@ func (h *Handler) UpdateTahfidz(w http.ResponseWriter, r *http.Request) {
 	var t TahfidzProgress
 	if err := validators.DecodeJSON(w, r, &t); err != nil {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
+		return
+	}
+	if errs := validateTahfidz(&t); errs != nil {
+		writeJSONValidationError(w, errs)
 		return
 	}
 	if err := h.repo.UpdateTahfidz(id, &t); err != nil {

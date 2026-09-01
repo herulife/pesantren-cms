@@ -4,7 +4,6 @@ import (
 	"context"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/validators"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -68,6 +67,49 @@ type portalPaymentRequest struct {
 	PaymentDate     string `json:"payment_date"`
 }
 
+func validatePortalRegistration(req *portalRegistrationRequest) validators.ValidationErrors {
+	errs := validators.ValidationErrors{}
+	req.FullName = validators.NormalizeText(req.FullName)
+	req.Gender = validators.NormalizeText(req.Gender)
+	req.NIK = validators.NormalizeText(req.NIK)
+	req.BirthDate = validators.NormalizeText(req.BirthDate)
+	req.ProgramChoice = validators.NormalizeText(req.ProgramChoice)
+	if req.FullName == "" {
+		errs.Add("full_name", "Nama lengkap wajib diisi")
+	}
+	if req.NIK != "" {
+		matched := validators.ValidateNIK(req.NIK)
+		if !matched {
+			errs.Add("nik", "NIK harus 16 digit angka")
+		}
+	}
+	if req.Gender != "" {
+		g := validators.NormalizeText(req.Gender)
+		low := validators.NormalizeText(g)
+		// allow L/P, Laki-laki, Perempuan
+		valid := map[string]bool{"l": true, "p": true, "laki-laki": true, "perempuan": true, "laki": true}
+		if !valid[low] && !valid[g] {
+			// also check case-insensitive
+			if low != "l" && low != "p" && low != "laki-laki" && low != "perempuan" {
+				errs.Add("gender", "Jenis kelamin harus L/P atau Laki-laki/Perempuan")
+			}
+		}
+	}
+	if req.BirthDate != "" && !validators.ValidateDate(req.BirthDate) {
+		errs.Add("birth_date", "Tanggal lahir harus format YYYY-MM-DD")
+	}
+	if req.FatherPhone != "" && !validators.ValidatePhone(req.FatherPhone) {
+		errs.Add("father_phone", "No HP ayah tidak valid")
+	}
+	if req.MotherPhone != "" && !validators.ValidatePhone(req.MotherPhone) {
+		errs.Add("mother_phone", "No HP ibu tidak valid")
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
+}
+
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	logger := NewRequestLogger(r)
 	logger.LogInfo("GetAll request started")
@@ -84,6 +126,9 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			logger.LogWarning("Invalid limit parameter: %s, using default (20)", limitStr)
 		} else if parsedLimit > 0 {
 			limit = parsedLimit
+			if limit > 100 {
+				limit = 100
+			}
 		}
 	}
 
@@ -174,8 +219,13 @@ func (h *Handler) SaveMine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req portalRegistrationRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Format data tidak valid: "+err.Error())
+		return
+	}
+	// Validate portal registration
+	if errs := validatePortalRegistration(&req); len(errs) > 0 {
+		SendValidationErrorResponse(w, errs)
 		return
 	}
 
@@ -218,8 +268,20 @@ func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req portalDocumentsRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Format data tidak valid: "+err.Error())
+		return
+	}
+	if req.KKURL != "" && !validators.ValidateMediaURL(req.KKURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL KK tidak valid")
+		return
+	}
+	if req.IjazahURL != "" && !validators.ValidateMediaURL(req.IjazahURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL Ijazah tidak valid")
+		return
+	}
+	if req.PasfotoURL != "" && !validators.ValidateMediaURL(req.PasfotoURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL Pasfoto tidak valid")
 		return
 	}
 
@@ -246,8 +308,8 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req portalPaymentRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Format data tidak valid: "+err.Error())
 		return
 	}
 
