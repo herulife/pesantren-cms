@@ -114,18 +114,28 @@ export default function DonationDetailPage() {
               Kembali ke daftar donasi
             </Link>
 
-            {/* Video Donasi Embedded */}
-            <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-              <div className="aspect-video w-full bg-slate-900">
+            {/* Video Donasi - Deskripsi Panjang */}
+            <div className="mt-8 overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-[0_28px_80px_-44px_rgba(15,23,42,0.12)]">
+              <div className="aspect-video w-full bg-slate-950">
                 <iframe
                   src="https://www.youtube.com/embed/zi7yo4KEtiM"
-                  title="Video Donasi - Alma Parung"
+                  title="Video Donasi - Pondok Pesantren Al-Maa Parung"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   className="h-full w-full"
                 />
               </div>
-              <div className="px-4 py-3 text-xs font-medium text-slate-500">Video: Donasi — channel Alma Parung — https://youtu.be/zi7yo4KEtiM</div>
+              <div className="bg-slate-900 px-4 py-3 text-xs font-bold text-slate-200">Video resmi Alma Parung • Donasi — https://youtu.be/zi7yo4KEtiM</div>
+              <div className="p-6">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sky-600">Deskripsi Lengkap Video</p>
+                <h3 className="mt-2 text-xl font-black text-slate-900">Dari dinding kusam menjadi ruang yang menghidupkan hafalan</h3>
+                <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+                  <p>Video dibuka dengan sorotan ruang kelas yang catnya memudar dan lembab di sudut — tempat 60 santri (30 ikhwan + 30 akhwat SMP–SMK) setiap hari murojaah dan setor hafalan. Pengurus menyampaikan bahwa suasana yang bersih dan cerah bukan sekadar estetika, melainkan penunjang konsentrasi dan adab belajar.</p>
+                  <p>Rencana wakaf Rp 15.000.000 mencakup cat interior premium, cat dasar anti lembab, dempul/amplas, kuas/roller, dan upah tukang agar hasil rapi dan tahan lama. Pengerjaan ditargetkan menyeluruh agar tidak cepat rusak dan bisa dipakai lama.</p>
+                  <p>Dampaknya: santri lebih betah berlama-lama mengulang ayat, belajar diniyah lebih fokus, dan setiap huruf yang dihafal di ruang itu menjadi pahala jariyah bagi donatur — sebagaimana hadits tentang sedekah jariyah, ilmu bermanfaat, dan doa anak shalih.</p>
+                  <p>Cara donasi tetap sederhana: transfer ke BSI 4381567120 a.n. Alma Parung Bogor, simpan bukti, lalu kirim ke WA 0819 3250 6078 untuk verifikasi dan doa dari santri.</p>
+                </div>
+              </div>
             </div>
             <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(340px,0.96fr)] lg:items-center">
               <div className="order-2 lg:order-1">

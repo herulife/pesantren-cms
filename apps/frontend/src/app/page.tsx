@@ -589,18 +589,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-transparent py-6 md:py-8">
+      <section className="relative overflow-hidden bg-transparent py-4 md:py-5">
         <div className="container relative mx-auto max-w-6xl px-4">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUpVariant}
-            className="group overflow-hidden rounded-[1.8rem] border border-sky-200/80 bg-[linear-gradient(90deg,#f0f9ff_0%,#ffffff_48%,#ecfeff_100%)] shadow-[0_22px_50px_-34px_rgba(14,165,233,0.24)]"
+            className="group overflow-hidden rounded-[1.4rem] border border-sky-200/80 bg-[linear-gradient(90deg,#f0f9ff_0%,#ffffff_48%,#ecfeff_100%)] shadow-[0_22px_50px_-34px_rgba(14,165,233,0.24)]"
           >
-            <div className="grid items-center gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:grid-cols-[1fr_auto] lg:px-7">
+            <div className="grid items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 lg:grid-cols-[1fr_auto] lg:px-6 lg:py-4">
               <div className="flex min-w-0 items-start gap-4">
-                <div className="relative hidden h-20 w-16 shrink-0 overflow-hidden rounded-[1.1rem] border border-white/70 bg-white shadow-[0_18px_34px_-26px_rgba(15,23,42,0.28)] sm:block">
+                <div className="relative hidden h-14 w-14 shrink-0 overflow-hidden rounded-[0.9rem] border border-white/70 bg-white shadow-[0_18px_34px_-26px_rgba(15,23,42,0.28)] sm:block">
                   <Image
                     src={featuredOpenDonation.posterImage}
                     alt={`${featuredOpenDonation.title} poster`}
@@ -614,13 +614,13 @@ export default function LandingPage() {
                     <HeartHandshake size={14} />
                     Open Donasi
                   </span>
-                  <h2 className="mt-3 max-w-3xl text-base font-black leading-tight tracking-[-0.03em] text-slate-950 sm:text-lg md:text-[1.6rem]">
+                  <h2 className="mt-2 max-w-3xl text-sm font-black leading-tight tracking-[-0.03em] text-slate-950 sm:text-base md:text-[1.15rem]">
                     {featuredOpenDonation.title}
                   </h2>
-                  <p className="mt-2 max-w-3xl text-[13px] leading-5 text-slate-600 sm:text-sm sm:leading-6">
+                  <p className="mt-1.5 max-w-3xl text-xs leading-5 text-slate-600 sm:text-[13px] sm:leading-5">
                     {featuredOpenDonation.summary}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2.5">
+                  <div className="mt-2.5 flex flex-wrap gap-2">
                     <span className="rounded-full border border-sky-100 bg-white px-3 py-2 text-xs font-bold text-slate-700">
                       Target Rp {featuredTargetAmount.toLocaleString('id-ID')}
                     </span>

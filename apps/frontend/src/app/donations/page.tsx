@@ -254,12 +254,30 @@ export default function DonationsPage() {
         </div>
       </section>
 
-      {/* Video Donasi - Alma Parung */}
-      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_80px_-44px_rgba(15,23,42,0.12)]">
-          <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="relative bg-slate-950">
-              <div className="aspect-video w-full overflow-hidden bg-slate-900">
+      {/* Video Donasi - Alma Parung - Versi Lengkap & Estetik */}
+      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_55%,#eef7ff_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+        <div className="absolute left-[-6rem] top-10 h-72 w-72 rounded-full bg-sky-100/60 blur-3xl" />
+        <div className="absolute bottom-0 right-[-4rem] h-80 w-80 rounded-full bg-blue-100/50 blur-3xl" />
+        <div className="relative mx-auto max-w-6xl">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-700 shadow-sm">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> Video Resmi Alma Parung
+            </div>
+            <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-900 md:text-4xl">
+              Dari ruang yang kusam menjadi ruang yang menghidupkan hafalan
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
+              Video <span className="font-bold text-slate-900">“Donasi”</span> di channel YouTube{" "}
+              <span className="font-bold text-slate-900">Alma Parung</span> —{" "}
+              <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="font-bold text-red-600 underline decoration-red-200 underline-offset-4 hover:text-red-700">youtu.be/zi7yo4KEtiM</a>{" "}
+              — merekam ajakan wakaf pengurus untuk mengecat ruang kelas santri penghafal Al-Quran. Tonton langsung di bawah, lalu baca rangkuman lengkapnya.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-[1.25fr_0.9fr] lg:items-start">
+            {/* Video */}
+            <div className="overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-[0_28px_80px_-44px_rgba(15,23,42,0.18)]">
+              <div className="aspect-video w-full overflow-hidden bg-slate-950">
                 <iframe
                   src="https://www.youtube.com/embed/zi7yo4KEtiM"
                   title="Video Donasi - Pondok Pesantren Al-Maa Parung"
@@ -268,32 +286,73 @@ export default function DonationsPage() {
                   className="h-full w-full"
                 />
               </div>
-              <div className="flex items-center gap-2 bg-slate-900 px-4 py-3 text-xs font-bold text-slate-300">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                Video resmi channel YouTube Alma Parung • Judul: Donasi
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 px-4 py-3">
+                <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-200">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> YouTube • Alma Parung • Donasi
+                </span>
+                <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/15">Buka di YouTube ↗</a>
               </div>
             </div>
-            <div className="p-6 sm:p-8">
-              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-600">Video Ajakan Donasi</p>
-              <h3 className="mt-3 text-2xl font-black leading-tight tracking-tight text-slate-900">
-                Tonton ajakan donasi dari Alma Parung
-              </h3>
-              <p className="mt-4 text-sm leading-7 text-slate-600">
-                Video berjudul <span className="font-bold text-slate-800">“Donasi”</span> dari channel{" "}
-                <span className="font-bold text-slate-800">Alma Parung</span> menampilkan ajakan wakaf untuk
-                mendukung kebutuhan pondok — terutama <span className="font-bold text-slate-800">wakaf cat tembok ruang kelas penghafal Al-Quran</span>.
-                Dalam tayangan terlihat kondisi ruang belajar yang akan dicat, aktivitas santri, serta penjelasan
-                mengapa ruang yang bersih dan layak penting untuk semangat murojaah dan hafalan.
-              </p>
-              <ul className="mt-5 space-y-2 text-sm leading-7 text-slate-600">
-                <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />Fokus donasi: pengecatan ruang kelas agar lebih cerah, bersih, dan nyaman untuk 60 santri (30 ikhwan + 30 akhwat).</li>
-                <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />Sifat amal: wakaf / amal jariyah — pahalanya mengalir selama ruang dipakai untuk hafalan dan ilmu.</li>
-                <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />Cara donasi: transfer ke rekening BSI di halaman ini, lalu kirim bukti ke WA konfirmasi.</li>
-              </ul>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700">Buka di YouTube</a>
-                <a href={featuredOpenDonation.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white hover:bg-sky-600">Donasi Sekarang</a>
+
+            {/* Ringkasan estetik */}
+            <div className="space-y-4">
+              <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50/70 p-5">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sky-700">Ringkasan Video</p>
+                <p className="mt-2 text-sm font-bold leading-6 text-slate-900">Ajakan wakaf cat tembok — dari keprihatinan menjadi harapan.</p>
+                <p className="mt-2 text-sm leading-7 text-slate-600">Di menit awal, kamera menyorot dinding ruang kelas yang catnya memudar, ada lembab di sudut, dan cahaya yang kurang merata. Pengurus menjelaskan bahwa 60 santri (30 ikhwan + 30 akhwat, jenjang SMP–SMK) setiap hari mengulang hafalan di ruang itu — tempat ayat dihafal, disetorkan, dan dijaga.</p>
               </div>
+              <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
+                <p className="text-sm font-black text-slate-900">Deskripsi panjang — apa yang disampaikan di video:</p>
+                <div className="mt-3 space-y-3 text-sm leading-7 text-slate-600">
+                  <p>
+                    <span className="font-bold text-slate-800">1) Kondisi saat ini:</span> cat tembok kusam dan mengelupas di beberapa sisi, membuat ruang terasa pengap dan kurang cerah. Santri tetap semangat murojaah, namun suasana belajar yang lebih bersih akan sangat membantu konsentrasi dan kekhusyukan.
+                  </p>
+                  <p>
+                    <span className="font-bold text-slate-800">2) Rencana wakaf:</span> penggalangan <span className="font-bold text-slate-800">Rp 15.000.000</span> untuk pengecatan menyeluruh — meliputi cat interior berkualitas, kuas/roller, dempul dan amplas untuk dinding lembab, serta upah tukang agar hasil rapi dan tahan lama. Target pengerjaan dibuat menyeluruh, bukan tambal sulam, agar tidak cepat rusak.
+                  </p>
+                  <p>
+                    <span className="font-bold text-slate-800">3) Dampak:</span> ruang yang cerah membuat santri lebih betah berlama-lama mengulang hafalan, belajar diniyah, dan beradab di kelas. Setiap huruf yang dihafal di ruang itu insyaAllah menjadi aliran pahala bagi muhsinin — amal jariyah yang terus hidup bersama ilmu yang dijaga santri.
+                  </p>
+                  <p>
+                    <span className="font-bold text-slate-800">4) Transparansi:</span> donasi dikelola pondok dan difokuskan hanya untuk cat tembok ruang kelas. Setelah transfer, donatur diminta mengirim bukti ke WA konfirmasi <span className="font-bold text-sky-700">0819 3250 6078</span> agar pencatatan rapi dan doa bisa disampaikan langsung oleh pengurus dan santri.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-[1.6rem] border border-emerald-100 bg-emerald-50/80 p-5">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-700">Keutamaan</p>
+                <p className="mt-2 text-sm leading-7 text-slate-700">“Jika manusia meninggal, terputus amalnya kecuali tiga: sedekah jariyah, ilmu yang bermanfaat, dan anak shalih yang mendoakannya.” — wakaf cat tembok ini menggabungkan ketiganya: sedekah untuk tempat ilmu, ilmu Al-Quran yang dijaga santri, dan doa santri untuk muhsinin.</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <a href={featuredOpenDonation.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-sky-600/20 hover:bg-sky-700">Donasi via WA</a>
+                <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-red-200 hover:text-red-600">Tonton di YouTube</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Detail tambahan */}
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="rounded-[1.4rem] border border-sky-100 bg-white p-5 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-widest text-sky-600">Rincian Penggunaan</p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+                <li>• Cat interior premium + cat dasar anti lembab</li>
+                <li>• Dempul, amplas, dan perbaikan sudut lembab</li>
+                <li>• Kuas/roller dan alat bantu pengecatan</li>
+                <li>• Upah tukang & pembersihan akhir</li>
+              </ul>
+            </div>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-600">Cara Donasi (3 langkah)</p>
+              <ol className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+                <li><span className="font-black">1.</span> Transfer ke <span className="font-bold">BSI {featuredOpenDonation.accountNumber}</span> a.n. {featuredOpenDonation.accountHolder}</li>
+                <li><span className="font-black">2.</span> Simpan bukti transfer</li>
+                <li><span className="font-black">3.</span> Kirim bukti ke WA <span className="font-bold text-sky-700">0819 3250 6078</span></li>
+              </ol>
+            </div>
+            <div className="rounded-[1.4rem] border border-amber-100 bg-amber-50/70 p-5">
+              <p className="text-xs font-black uppercase tracking-widest text-amber-700">Rekening</p>
+              <p className="mt-3 text-sm font-black text-slate-900">BSI {featuredOpenDonation.accountNumber}</p>
+              <p className="text-sm text-slate-600">a.n. {featuredOpenDonation.accountHolder}</p>
+              <p className="mt-3 text-xs leading-6 text-slate-600">Target <span className="font-bold">Rp 15.000.000</span> • Kategori Wakaf Renovasi Ringan • Fokus Ruang Kelas Penghafal Al-Quran</p>
             </div>
           </div>
         </div>
