@@ -114,6 +114,19 @@ export default function DonationDetailPage() {
               Kembali ke daftar donasi
             </Link>
 
+            {/* Video Donasi Embedded */}
+            <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+              <div className="aspect-video w-full bg-slate-900">
+                <iframe
+                  src="https://www.youtube.com/embed/zi7yo4KEtiM"
+                  title="Video Donasi - Alma Parung"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="h-full w-full"
+                />
+              </div>
+              <div className="px-4 py-3 text-xs font-medium text-slate-500">Video: Donasi — channel Alma Parung — https://youtu.be/zi7yo4KEtiM</div>
+            </div>
             <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(340px,0.96fr)] lg:items-center">
               <div className="order-2 lg:order-1">
                 <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/90 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-700 shadow-[0_18px_40px_-28px_rgba(14,165,233,0.35)]">

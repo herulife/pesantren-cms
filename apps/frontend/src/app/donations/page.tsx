@@ -254,6 +254,51 @@ export default function DonationsPage() {
         </div>
       </section>
 
+      {/* Video Donasi - Alma Parung */}
+      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_80px_-44px_rgba(15,23,42,0.12)]">
+          <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="relative bg-slate-950">
+              <div className="aspect-video w-full overflow-hidden bg-slate-900">
+                <iframe
+                  src="https://www.youtube.com/embed/zi7yo4KEtiM"
+                  title="Video Donasi - Pondok Pesantren Al-Maa Parung"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="h-full w-full"
+                />
+              </div>
+              <div className="flex items-center gap-2 bg-slate-900 px-4 py-3 text-xs font-bold text-slate-300">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                Video resmi channel YouTube Alma Parung • Judul: Donasi
+              </div>
+            </div>
+            <div className="p-6 sm:p-8">
+              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-600">Video Ajakan Donasi</p>
+              <h3 className="mt-3 text-2xl font-black leading-tight tracking-tight text-slate-900">
+                Tonton ajakan donasi dari Alma Parung
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-slate-600">
+                Video berjudul <span className="font-bold text-slate-800">“Donasi”</span> dari channel{" "}
+                <span className="font-bold text-slate-800">Alma Parung</span> menampilkan ajakan wakaf untuk
+                mendukung kebutuhan pondok — terutama <span className="font-bold text-slate-800">wakaf cat tembok ruang kelas penghafal Al-Quran</span>.
+                Dalam tayangan terlihat kondisi ruang belajar yang akan dicat, aktivitas santri, serta penjelasan
+                mengapa ruang yang bersih dan layak penting untuk semangat murojaah dan hafalan.
+              </p>
+              <ul className="mt-5 space-y-2 text-sm leading-7 text-slate-600">
+                <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />Fokus donasi: pengecatan ruang kelas agar lebih cerah, bersih, dan nyaman untuk 60 santri (30 ikhwan + 30 akhwat).</li>
+                <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />Sifat amal: wakaf / amal jariyah — pahalanya mengalir selama ruang dipakai untuk hafalan dan ilmu.</li>
+                <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />Cara donasi: transfer ke rekening BSI di halaman ini, lalu kirim bukti ke WA konfirmasi.</li>
+              </ul>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700">Buka di YouTube</a>
+                <a href={featuredOpenDonation.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white hover:bg-sky-600">Donasi Sekarang</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section
         id="program-donasi"
         className="bg-[linear-gradient(to_bottom,_#f8fbff,_#ffffff)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"
