@@ -370,7 +370,10 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
             {/* Desktop Auth */}
             <div className="hidden items-center gap-3 lg:flex">
               {loading ? (
-                <div className="h-11 w-44 animate-pulse rounded-full bg-sky-100" />
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-32 animate-pulse rounded-full bg-sky-100" />
+                  <div className="h-11 w-11 animate-pulse rounded-full bg-sky-100" />
+                </div>
               ) : user ? (
                 <>
                   <div className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-slate-700">
