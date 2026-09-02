@@ -14,7 +14,7 @@ function createInitialForm(): Omit<Teacher, 'id'> {
 
 export default function TeacherFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>}>
       <TeacherFormContent />
     </Suspense>
   );
@@ -125,17 +125,17 @@ function TeacherFormContent() {
     }
   };
 
-  if (isLoading) return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>;
+  if (isLoading) return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>;
 
   return (
     <>
       <div className="mx-auto max-w-5xl pb-20">
         <div className="mb-10 flex items-center gap-4">
-          <button type="button" onClick={() => router.push('/admin/teachers')} className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-emerald-200 hover:text-emerald-600">
+          <button type="button" onClick={() => router.push('/admin/teachers')} className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-200 hover:text-blue-600">
             <ArrowLeft size={20} />
           </button>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Form Pengajar</p>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">Form Pengajar</p>
             <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 font-outfit">{id ? 'Edit Profil Guru' : 'Tambah Pengajar'}</h1>
             <p className="text-sm font-medium text-slate-500">Form pengajar sekarang tampil penuh seperti halaman tulis berita.</p>
           </div>
@@ -147,12 +147,12 @@ function TeacherFormContent() {
               <div className="md:col-span-1">
                 <div className="mb-3 flex items-center justify-between px-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Foto Profil</label>
-                  <button type="button" onClick={() => setIsGalleryOpen(true)} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 hover:underline">
+                  <button type="button" onClick={() => setIsGalleryOpen(true)} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-blue-600 hover:underline">
                     <ImageIcon size={12} /> Galeri
                   </button>
                 </div>
                 <div className="relative mx-auto aspect-square w-40 md:w-full">
-                  <div className={`h-full w-full overflow-hidden rounded-xl border-2 border-dashed transition-all ${croppedImageUrl ? 'border-emerald-300' : 'border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50'}`}>
+                  <div className={`h-full w-full overflow-hidden rounded-xl border-2 border-dashed transition-all ${croppedImageUrl ? 'border-blue-300' : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50'}`}>
                     {croppedImageUrl ? (
                       <img src={croppedImageUrl} alt="Preview guru" className="h-full w-full object-cover" />
                     ) : (
@@ -180,26 +180,26 @@ function TeacherFormContent() {
               <div className="space-y-6 md:col-span-2">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nama Lengkap</label>
-                  <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="Dr. KH. Ahmad Syarifuddin, MA" />
+                  <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" placeholder="Dr. KH. Ahmad Syarifuddin, MA" />
                 </div>
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><BookOpen size={12} /> Bidang Studi / Jabatan</label>
-                  <input value={form.subject} onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="Ushul Fiqih / Kepala Madrasah" />
+                  <input value={form.subject} onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" placeholder="Ushul Fiqih / Kepala Madrasah" />
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email (Opsional)</label>
-                    <input type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="ustadz@gmail.com" />
+                    <input type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" placeholder="ustadz@gmail.com" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp (Opsional)</label>
-                    <input type="text" value={form.whatsapp} onChange={(e) => setForm((prev) => ({ ...prev, whatsapp: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="08123456789" />
+                    <input type="text" value={form.whatsapp} onChange={(e) => setForm((prev) => ({ ...prev, whatsapp: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" placeholder="08123456789" />
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bio Singkat</label>
-                  <textarea rows={6} value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="Tuliskan riwayat pendidikan atau profil singkat pengajar..." />
+                  <textarea rows={6} value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" placeholder="Tuliskan riwayat pendidikan atau profil singkat pengajar..." />
                 </div>
               </div>
             </div>
@@ -207,7 +207,7 @@ function TeacherFormContent() {
 
           <div className="sticky bottom-8 flex justify-end gap-4">
             <button type="button" onClick={() => router.push('/admin/teachers')} className="rounded-lg border border-slate-200 bg-white px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-50">Batal</button>
-            <button type="submit" disabled={isSaving} className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-600 disabled:opacity-50">
+            <button type="submit" disabled={isSaving} className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-blue-600 disabled:opacity-50">
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
               {id ? 'Simpan Profil' : 'Simpan Pengajar'}
             </button>

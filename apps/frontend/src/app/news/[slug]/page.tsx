@@ -66,7 +66,7 @@ export default async function NewsDetailPage({
           </p>
           <Link
             href="/news"
-            className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+            className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
           >
             <ArrowLeft size={16} />
             Kembali ke Berita
@@ -90,7 +90,7 @@ export default async function NewsDetailPage({
         <div className="mx-auto max-w-4xl">
           <Link
             href="/news"
-            className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-700 transition hover:text-emerald-800"
+            className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-blue-700 transition hover:text-blue-800"
           >
             <ArrowLeft size={16} />
             Kembali ke Halaman Berita
@@ -98,12 +98,12 @@ export default async function NewsDetailPage({
 
           <div className="mt-8 flex flex-wrap items-center gap-5 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
             <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-emerald-600" />
+              <Calendar size={14} className="text-blue-600" />
               <span>{formatPublishedDate(news.created_at)}</span>
             </div>
             {categoryName ? (
               <div className="flex items-center gap-2">
-                <Tag size={14} className="text-emerald-600" />
+                <Tag size={14} className="text-blue-600" />
                 <span>{categoryName}</span>
               </div>
             ) : null}
@@ -114,7 +114,7 @@ export default async function NewsDetailPage({
           </h1>
 
           {news.excerpt ? (
-            <p className="mt-6 rounded-3xl border border-emerald-100 bg-emerald-50 px-6 py-5 text-base leading-8 text-slate-700">
+            <p className="mt-6 rounded-3xl border border-blue-100 bg-blue-50 px-6 py-5 text-base leading-8 text-slate-700">
               {news.excerpt}
             </p>
           ) : null}

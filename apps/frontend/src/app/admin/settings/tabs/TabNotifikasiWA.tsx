@@ -49,7 +49,7 @@ export default function TabNotifikasiWA() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-emerald-600" /></div>;
+  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-blue-600" /></div>;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
@@ -57,7 +57,7 @@ export default function TabNotifikasiWA() {
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
                    <MessageCircle size={24} />
                 </div>
                 <div>
@@ -86,7 +86,7 @@ export default function TabNotifikasiWA() {
                   placeholder="Contoh: Menginformasikan pelanggaran santri {{nama}}..."
                   value={formValues['wa_discipline_violation_template'] || ''}
                   onChange={(e) => handleChange('wa_discipline_violation_template', e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-800 leading-relaxed"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-800 leading-relaxed"
                 />
              </div>
           </div>
@@ -132,7 +132,7 @@ export default function TabNotifikasiWA() {
           <button 
              onClick={handleSaveAll}
              disabled={isSaving}
-             className="px-8 py-4 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition flex items-center gap-3 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+             className="px-8 py-4 bg-blue-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition flex items-center gap-3 shadow-lg shadow-blue-600/20 disabled:opacity-50"
           >
              {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
              SIMPAN TEMPLATE NOTIFIKASI

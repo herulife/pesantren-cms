@@ -26,19 +26,19 @@ export default function CtaBlock({ section }: { section: HomeSection }) {
           isMinimal
             ? 'border border-slate-200 bg-slate-50 text-slate-900 shadow-[0_20px_55px_-35px_rgba(15,23,42,0.16)]'
             : isPanel
-              ? 'border border-emerald-100 bg-[linear-gradient(180deg,#ecfdf5_0%,#ffffff_100%)] text-slate-900 shadow-[0_24px_70px_-40px_rgba(16,185,129,0.18)]'
-              : 'bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.28),transparent_26%),linear-gradient(135deg,#065f46_0%,#047857_48%,#0f766e_100%)] text-white shadow-[0_30px_80px_-45px_rgba(6,95,70,0.55)]'
+              ? 'border border-blue-100 bg-[linear-gradient(180deg,#eff6ff_0%,#ffffff_100%)] text-slate-900 shadow-[0_24px_70px_-40px_rgba(37,99,235,0.18)]'
+              : 'bg-[radial-gradient(circle_at_top_right,rgba(15,23,42,0.28),transparent_26%),linear-gradient(135deg,#1d4ed8_0%,#2563eb_48%,#3b82f6_100%)] text-white shadow-[0_30px_80px_-45px_rgba(30,64,175,0.55)]'
         }`}
       >
         <div className="max-w-3xl">
-          <p className={`text-[10px] font-black uppercase tracking-[0.28em] ${isMinimal ? 'text-emerald-600' : isPanel ? 'text-emerald-700' : 'text-emerald-200'}`}>{eyebrow}</p>
+          <p className={`text-[10px] font-black uppercase tracking-[0.28em] ${isMinimal ? 'text-blue-600' : isPanel ? 'text-blue-700' : 'text-blue-200'}`}>{eyebrow}</p>
           <h2 className="mt-4 text-[2.4rem] font-black leading-[1.02] tracking-[-0.03em] md:text-[3.2rem]">{title}</h2>
-          <p className={`mt-5 max-w-2xl text-base leading-8 md:text-lg ${isMinimal ? 'text-slate-600' : isPanel ? 'text-slate-700' : 'text-emerald-50/88'}`}>{subtitle}</p>
+          <p className={`mt-5 max-w-2xl text-base leading-8 md:text-lg ${isMinimal ? 'text-slate-600' : isPanel ? 'text-slate-700' : 'text-blue-50/88'}`}>{subtitle}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href={buttonUrl} className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isMinimal ? 'bg-emerald-600 text-white' : isPanel ? 'bg-slate-950 text-white' : 'bg-white text-emerald-900'}`}>
+            <Link href={buttonUrl} className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isMinimal ? 'bg-blue-600 text-white' : isPanel ? 'bg-slate-950 text-white' : 'bg-white text-blue-900'}`}>
               {buttonLabel} <ArrowRight size={16} />
             </Link>
-            <Link href={secondaryUrl} className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isMinimal ? 'border border-slate-200 bg-white text-slate-800' : isPanel ? 'border border-emerald-200 bg-white text-emerald-800' : 'border border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/16'}`}>
+            <Link href={secondaryUrl} className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isMinimal ? 'border border-slate-200 bg-white text-slate-800' : isPanel ? 'border border-blue-200 bg-white text-blue-800' : 'border border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/16'}`}>
               <MessageCircle size={16} /> {secondaryLabel}
             </Link>
           </div>

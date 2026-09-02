@@ -59,14 +59,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   });
 
   return (
-    <aside className="flex h-full w-64 flex-col overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-emerald-950 via-slate-950 to-slate-950 text-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] ring-1 ring-white/5">
+    <aside className="flex h-full w-64 flex-col overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-blue-950 via-slate-950 to-slate-950 text-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] ring-1 ring-white/5">
       {/* Header */}
-      <div className="h-[70px] flex items-center px-6 border-b border-emerald-900/40 shrink-0">
+      <div className="h-[70px] flex items-center px-6 border-b border-blue-900/40 shrink-0">
          <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-950/30">A</div>
+            <div className="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center font-black shadow-lg shadow-blue-950/30">A</div>
             <div className="min-w-0">
               <span className="block font-semibold text-[15px] text-white tracking-wide uppercase">Al-Maa</span>
-              <span className="block text-[10px] uppercase tracking-[0.24em] text-emerald-200/70">Panel Admin</span>
+              <span className="block text-[10px] uppercase tracking-[0.24em] text-blue-200/70">Panel Admin</span>
             </div>
             
             <button 
@@ -92,16 +92,16 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             <React.Fragment key={item.href}>
               {showCategory && item.category !== 'Utama' && (
                 <div className="px-3 pt-3 pb-1">
-                  <p className="text-[9.5px] font-bold uppercase tracking-widest text-emerald-200/40">
+                  <p className="text-[9.5px] font-bold uppercase tracking-widest text-blue-200/40">
                     {item.category}
                   </p>
                 </div>
               )}
               <div className={`flex items-center gap-2 rounded-lg transition-colors ${
-                isActive ? 'bg-gradient-to-r from-emerald-500/18 via-emerald-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
+                isActive ? 'bg-gradient-to-r from-blue-500/18 via-blue-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
               }`}>
                 <Link href={item.href} onClick={onClose} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
-                  <div className={isActive ? 'text-emerald-300' : 'text-slate-500'}>
+                  <div className={isActive ? 'text-blue-300' : 'text-slate-500'}>
                     {item.icon}
                   </div>
                   <span className={`truncate text-[12.5px] ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
@@ -113,8 +113,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                     onClick={onClose}
                     className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
                       isActive
-                        ? 'text-emerald-100 hover:bg-white/10 hover:text-white'
-                        : 'text-slate-500 hover:bg-white/10 hover:text-emerald-200'
+                        ? 'text-blue-100 hover:bg-white/10 hover:text-white'
+                        : 'text-slate-500 hover:bg-white/10 hover:text-blue-200'
                     }`}
                     title={`Buka tutorial ${item.label}`}
                     aria-label={`Buka tutorial ${item.label}`}
@@ -123,7 +123,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 </Link>
               )}
 
-                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400 rounded-r-md"></div>}
+                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-400 rounded-r-md"></div>}
               </div>
             </React.Fragment>
           );
@@ -131,7 +131,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* Footer / Logout */}
-      <div className="p-4 border-t border-emerald-900/35">
+      <div className="p-4 border-t border-blue-900/35">
          <button 
            onClick={() => {
              logout();

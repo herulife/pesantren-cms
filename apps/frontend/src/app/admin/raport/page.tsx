@@ -33,7 +33,7 @@ const ASPEK_OPTS = [
 ];
 
 function predikatColor(p: string) {
-	if (p === 'Sangat Baik') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
+	if (p === 'Sangat Baik') return 'bg-blue-50 text-blue-700 ring-blue-200';
 	if (p === 'Baik') return 'bg-sky-50 text-sky-700 ring-sky-200';
 	if (p === 'Cukup') return 'bg-amber-50 text-amber-700 ring-amber-200';
 	return 'bg-rose-50 text-rose-700 ring-rose-200';
@@ -204,13 +204,13 @@ export default function ERaportPage() {
 		<div className="space-y-6">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="flex items-center gap-2 text-2xl font-black text-slate-900"><GraduationCap size={24} className="text-emerald-600" /> E-Raport Santri</h1>
+					<h1 className="flex items-center gap-2 text-2xl font-black text-slate-900"><GraduationCap size={24} className="text-blue-600" /> E-Raport Santri</h1>
 					<p className="mt-1 text-sm text-slate-500">Nilai Akhir = Mapel×50% + Project×25% + Kesantrian×25% (bobot dapat diatur, total 100%).</p>
 				</div>
 				<div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5">
-					<button onClick={() => setTab('rekapitulasi')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'rekapitulasi' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Rekap</button>
-					<button onClick={() => setTab('maps')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'maps' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Bobot Mapel</button>
-					<button onClick={() => setTab('kesantrian')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'kesantrian' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Kesantrian</button>
+					<button onClick={() => setTab('rekapitulasi')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'rekapitulasi' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Rekap</button>
+					<button onClick={() => setTab('maps')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'maps' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Bobot Mapel</button>
+					<button onClick={() => setTab('kesantrian')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'kesantrian' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Kesantrian</button>
 				</div>
 			</div>
 
@@ -256,10 +256,10 @@ export default function ERaportPage() {
 								const st = stored.get(s.id);
 								const active = s.id === selected;
 								return (
-									<button key={s.id} onClick={() => pickStudent(s.id)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition ${active ? 'bg-emerald-50 ring-1 ring-emerald-200' : 'hover:bg-slate-50'}`}>
-										<div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{(s.name || '?').charAt(0).toUpperCase()}</div>
+									<button key={s.id} onClick={() => pickStudent(s.id)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition ${active ? 'bg-blue-50 ring-1 ring-blue-200' : 'hover:bg-slate-50'}`}>
+										<div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{(s.name || '?').charAt(0).toUpperCase()}</div>
 										<div className="min-w-0 flex-1">
-											<p className={`truncate text-sm font-bold ${active ? 'text-emerald-900' : 'text-slate-800'}`}>{s.name}</p>
+											<p className={`truncate text-sm font-bold ${active ? 'text-blue-900' : 'text-slate-800'}`}>{s.name}</p>
 											<p className="truncate text-[11px] text-slate-400">{s.email}</p>
 										</div>
 										{st && <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ring-1 ${predikatColor(st.predikat)}`}>{st.score.toFixed(2)}</span>}
@@ -274,15 +274,15 @@ export default function ERaportPage() {
 						{loading && <div className="flex items-center justify-center rounded-3xl border border-slate-200 bg-white py-16 text-sm font-semibold text-slate-400">Menghitung rapor...</div>}
 						{!loading && raport && (
 							<>
-								<div className="rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 p-6 text-white shadow-xl shadow-emerald-700/20">
+								<div className="rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 p-6 text-white shadow-xl shadow-blue-700/20">
 									<div className="flex flex-wrap items-center justify-between gap-4">
 										<div>
-											<p className="text-xs font-bold uppercase tracking-widest text-emerald-200">Raport Santri</p>
+											<p className="text-xs font-bold uppercase tracking-widest text-blue-200">Raport Santri</p>
 											<h2 className="mt-1 text-2xl font-black">{raport.student_name}</h2>
-											<p className="mt-0.5 text-sm text-emerald-100">Semester {raport.semester === '1' ? 'Ganjil' : 'Genap'} · TA {raport.academic_year}</p>
+											<p className="mt-0.5 text-sm text-blue-100">Semester {raport.semester === '1' ? 'Ganjil' : 'Genap'} · TA {raport.academic_year}</p>
 										</div>
 										<div className="rounded-3xl bg-white/10 px-6 py-4 text-center ring-1 ring-white/20">
-											<p className="text-[11px] font-bold uppercase tracking-widest text-emerald-100">Nilai Akhir</p>
+											<p className="text-[11px] font-bold uppercase tracking-widest text-blue-100">Nilai Akhir</p>
 											<p className="text-4xl font-black">{raport.final_score.toFixed(2)}</p>
 											<span className={`mt-1 inline-block rounded-full px-3 py-0.5 text-[11px] font-black ring-1 ${predikatColor(raport.predikat)}`}>{raport.predikat}</span>
 										</div>
@@ -315,7 +315,7 @@ export default function ERaportPage() {
 														<td className="py-2 font-semibold text-slate-700">{d.subject_name}</td>
 														<td className="py-2 font-bold text-slate-900">{d.score.toFixed(2)}</td>
 														<td className="py-2 text-slate-500">{d.weight}%</td>
-														<td className="py-2 font-semibold text-emerald-600">{(d.score * d.weight / 100).toFixed(2)}</td>
+														<td className="py-2 font-semibold text-blue-600">{(d.score * d.weight / 100).toFixed(2)}</td>
 													</tr>
 												))}
 											</tbody>
@@ -345,14 +345,14 @@ export default function ERaportPage() {
 										</div>
 									</div>
 									<div className="rounded-3xl border border-slate-200 bg-white p-5">
-										<h3 className="flex items-center gap-2 text-sm font-black text-slate-900"><HeartHandshake size={16} className="text-emerald-600" /> Kesantrian</h3>
+										<h3 className="flex items-center gap-2 text-sm font-black text-slate-900"><HeartHandshake size={16} className="text-blue-600" /> Kesantrian</h3>
 										<div className="mt-3 space-y-3">
 											{ASPEK_OPTS.map(a => {
 												const sc = raport.kesantrian_detail?.[a.key] ?? raport.kesantrian_detail?.[a.label] ?? 3;
 												return (
 													<div key={a.key} className="flex items-center justify-between text-sm">
 														<span className="font-semibold text-slate-700">{a.label}</span>
-														<span className="rounded-full bg-emerald-50 px-2.5 py-0.5 font-black text-emerald-700">{Number(sc).toFixed(1)}</span>
+														<span className="rounded-full bg-blue-50 px-2.5 py-0.5 font-black text-blue-700">{Number(sc).toFixed(1)}</span>
 													</div>
 												);
 											})}
@@ -361,7 +361,7 @@ export default function ERaportPage() {
 								</div>
 
 								<div className="flex flex-wrap gap-3">
-									<button onClick={handleLockRaport} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
+									<button onClick={handleLockRaport} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700">
 										<Save size={17} /> Kunci Rapor
 									</button>
 									<button onClick={handlePDF} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
@@ -384,7 +384,7 @@ export default function ERaportPage() {
 							<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Scale size={19} className="text-sky-600" /> Bobot Mata Pelajaran</h3>
 							<p className="mt-1 text-sm text-slate-500">Total bobot aktif harus 100% agar nilai mata pelajaran dapat dihitung.</p>
 						</div>
-						<div className={`rounded-2xl px-4 py-2 text-sm font-black ring-1 ${weightOk ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-rose-50 text-rose-700 ring-rose-200'}`}>
+						<div className={`rounded-2xl px-4 py-2 text-sm font-black ring-1 ${weightOk ? 'bg-blue-50 text-blue-700 ring-blue-200' : 'bg-rose-50 text-rose-700 ring-rose-200'}`}>
 							{weightOk ? '✓ Total 100%' : '✗ Total belum 100%'}
 						</div>
 					</div>
@@ -417,7 +417,7 @@ export default function ERaportPage() {
 
 			{tab === 'kesantrian' && (
 				<div className="rounded-3xl border border-slate-200 bg-white p-6">
-					<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><ClipboardList size={19} className="text-emerald-600" /> Penilaian Kesantrian</h3>
+					<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><ClipboardList size={19} className="text-blue-600" /> Penilaian Kesantrian</h3>
 					<p className="mt-1 text-sm text-slate-500">Tiap aspek dinilai 1-4 (1=Perlu Perbaikan, 4=Sangat Baik). Nilai kesantrian = rata-rata 4 aspek × 25%.</p>
 					<div className="mt-5 space-y-4">
 						{ASPEK_OPTS.map(a => (
@@ -426,15 +426,15 @@ export default function ERaportPage() {
 									<p className="text-sm font-bold text-slate-800">{a.label}</p>
 									<p className="text-[11px] text-slate-400">{selected ? students.find(s => s.id === selected)?.name : 'Pilih santri'}</p>
 								</div>
-								<select value={kesValues[a.key] ?? ''} onChange={e => setKesValues(prev => ({ ...prev, [a.key]: e.target.value }))} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold outline-none focus:border-emerald-500">
+								<select value={kesValues[a.key] ?? ''} onChange={e => setKesValues(prev => ({ ...prev, [a.key]: e.target.value }))} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold outline-none focus:border-blue-500">
 									<option value="">Pilih nilai</option>
 									<option value="4">4 - Sangat Baik</option>
 									<option value="3">3 - Baik</option>
 									<option value="2">2 - Cukup</option>
 									<option value="1">1 - Perlu Perbaikan</option>
 								</select>
-								{kesSaved[a.key] && <CheckCircle2 size={18} className="text-emerald-500" />}
-								<button onClick={() => handleKesantrianSave(a.key)} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700">Simpan</button>
+								{kesSaved[a.key] && <CheckCircle2 size={18} className="text-blue-500" />}
+								<button onClick={() => handleKesantrianSave(a.key)} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700">Simpan</button>
 							</div>
 						))}
 					</div>

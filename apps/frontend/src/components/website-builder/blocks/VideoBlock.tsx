@@ -43,14 +43,14 @@ export default function VideoBlock({ section, series, isLoading }: { section: Ho
                       <Image src={resolveDisplayImageUrl(thumbnail)} alt={item.title} fill unoptimized className="object-cover transition-transform duration-700 group-hover:scale-105" />
                     ) : null}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/20 to-transparent" />
-                    <div className="absolute left-5 top-5 inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+                    <div className="absolute left-5 top-5 inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg">
                       <PlayCircle size={24} />
                     </div>
                   </div>
                   <div className="p-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-300">{item.count} Video</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-300">{item.count} Video</p>
                     <h3 className="mt-2 text-xl font-black leading-tight text-white">{item.title}</h3>
-                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-emerald-100">
+                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-blue-100">
                       Tonton <ArrowRight size={14} />
                     </div>
                   </div>

@@ -102,7 +102,7 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/82 via-slate-950/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <div className="mb-3 inline-flex rounded-full bg-emerald-500/90 p-2 text-white">
+                  <div className="mb-3 inline-flex rounded-full bg-blue-500/90 p-2 text-white">
                     <Icon size={16} />
                   </div>
                   <h3 className="text-xl font-black leading-tight">{card.title}</h3>
@@ -114,7 +114,7 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
             </article>
           ))}
         </div>
-        <Link href={buttonUrl} className={`mt-8 inline-flex items-center gap-3 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isProgram ? 'border border-emerald-200 bg-white text-emerald-800' : 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-100'}`}>
+        <Link href={buttonUrl} className={`mt-8 inline-flex items-center gap-3 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isProgram ? 'border border-blue-200 bg-white text-blue-800' : 'border border-blue-500/30 bg-blue-500/10 text-blue-100'}`}>
           {buttonLabel} <ArrowRight size={16} />
         </Link>
       </div>

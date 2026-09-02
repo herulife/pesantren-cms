@@ -198,7 +198,7 @@ function TeachersAdminPageContent() {
         </div>
         <button 
           onClick={() => router.push('/admin/teachers/form')}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 active:scale-95"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
         >
           <UserPlus size={20} />
           <span>Tambah Pengajar</span>
@@ -208,13 +208,13 @@ function TeachersAdminPageContent() {
       {/* Search Bar */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-5 mb-10">
          <div className="flex-1 relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Cari nama atau pelajaran..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm"
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm"
             />
          </div>
       </div>
@@ -224,7 +224,7 @@ function TeachersAdminPageContent() {
         {!isLoading ? (
           teachers.length > 0 ? (
             teachers.map((teacher) => (
-              <div key={teacher.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-500 flex flex-col h-full">
+              <div key={teacher.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 flex flex-col h-full">
                  <div className="h-64 bg-slate-50 relative overflow-hidden shrink-0">
                     {teacher.image_url ? (
                       <img 
@@ -240,7 +240,7 @@ function TeachersAdminPageContent() {
                     <div className="absolute top-4 right-4 translate-x-12 group-hover:translate-x-0 transition-transform duration-500 flex flex-col gap-2">
                       <button 
                         onClick={() => router.push(`/admin/teachers/form?id=${teacher.id}`)}
-                        className="p-2.5 bg-white/90 text-slate-400 hover:text-emerald-600 rounded-xl backdrop-blur-md shadow-lg transition-all"
+                        className="p-2.5 bg-white/90 text-slate-400 hover:text-blue-600 rounded-xl backdrop-blur-md shadow-lg transition-all"
                       >
                         <Pencil size={18} />
                       </button>
@@ -252,7 +252,7 @@ function TeachersAdminPageContent() {
                       </button>
                     </div>
                     <div className="absolute bottom-4 left-4">
-                       <span className="px-4 py-1.5 bg-emerald-900/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-lg">
+                       <span className="px-4 py-1.5 bg-blue-900/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-lg">
                           {teacher.subject}
                        </span>
                     </div>
@@ -261,8 +261,8 @@ function TeachersAdminPageContent() {
                  <div className="p-8 flex-1 flex flex-col">
                     <div className="mb-4">
                       <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight uppercase mb-1">{teacher.name}</h3>
-                      <div className="flex items-center gap-1.5 text-emerald-600 text-[10px] font-black uppercase tracking-widest">
-                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <div className="flex items-center gap-1.5 text-blue-600 text-[10px] font-black uppercase tracking-widest">
+                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                          Staf Pengajar
                       </div>
                     </div>
@@ -280,7 +280,7 @@ function TeachersAdminPageContent() {
                          disabled={!teacher.email}
                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
                            teacher.email 
-                            ? 'bg-slate-50 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border-slate-100 hover:border-emerald-100' 
+                            ? 'bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-700 border-slate-100 hover:border-blue-100' 
                             : 'bg-slate-50 text-slate-300 border-slate-50 cursor-not-allowed'
                          }`}
                        >
@@ -292,7 +292,7 @@ function TeachersAdminPageContent() {
                          disabled={!teacher.whatsapp}
                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
                            teacher.whatsapp 
-                            ? 'bg-slate-50 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border-slate-100 hover:border-emerald-100' 
+                            ? 'bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-700 border-slate-100 hover:border-blue-100' 
                             : 'bg-slate-50 text-slate-300 border-slate-50 cursor-not-allowed'
                          }`}
                        >
@@ -326,7 +326,7 @@ function TeachersAdminPageContent() {
           <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300 max-h-[90vh]">
              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
                     <UserPlus size={24} />
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight font-outfit">
@@ -346,14 +346,14 @@ function TeachersAdminPageContent() {
                         <button 
                           type="button"
                           onClick={() => setIsGalleryOpen(true)}
-                          className="text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                          className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-1"
                         >
                           <ImageIcon size={12} /> Galeri
                         </button>
                       </div>
                       <div className="relative group mx-auto w-32 h-32 md:w-full md:h-auto md:aspect-square">
                         <div className={`w-full h-full rounded-xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all relative ${
-                          croppedImageUrl ? 'border-emerald-300' : 'border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 cursor-pointer'
+                          croppedImageUrl ? 'border-blue-300' : 'border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 cursor-pointer'
                         }`}>
                           {croppedImageUrl ? (
                             <img src={croppedImageUrl} alt="Pratinjau foto profil pengajar" className="w-full h-full object-cover" />
@@ -394,21 +394,21 @@ function TeachersAdminPageContent() {
                             placeholder="Contoh: Dr. KH. Ahmad Syarifuddin, MA"
                             value={form.name}
                             onChange={(e) => setForm({ ...form, name: e.target.value })}
-                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                           />
                         </div>
 
                         <div>
                           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Bidang Studi / Jabatan</label>
                           <div className="relative group">
-                            <BookOpen className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
+                            <BookOpen className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                             <input 
                               type="text"
                               required
                               placeholder="Contoh: Ushul Fiqih / Kepala Madrasah"
                               value={form.subject}
                               onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                              className="w-full pl-14 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                              className="w-full pl-14 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                             />
                           </div>
                         </div>
@@ -417,26 +417,26 @@ function TeachersAdminPageContent() {
                           <div>
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Email (Opsional)</label>
                             <div className="relative group">
-                              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={16} />
+                              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={16} />
                               <input 
                                 type="email"
                                 placeholder="ustadz@gmail.com"
                                 value={form.email}
                                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                className="w-full pl-14 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                                className="w-full pl-14 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                               />
                             </div>
                           </div>
                           <div>
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">WhatsApp (Opsional)</label>
                             <div className="relative group">
-                              <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={16} />
+                              <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={16} />
                               <input 
                                 type="text"
                                 placeholder="08123456789"
                                 value={form.whatsapp}
                                 onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                                className="w-full pl-14 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                                className="w-full pl-14 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                               />
                             </div>
                           </div>
@@ -451,7 +451,7 @@ function TeachersAdminPageContent() {
                       placeholder="Tuliskan sedikit profil, riwayat pendidikan, atau pesan hikmah dari beliau..."
                       value={form.bio}
                       onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-sm leading-relaxed"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-sm leading-relaxed"
                     />
                   </div>
 
@@ -466,7 +466,7 @@ function TeachersAdminPageContent() {
                     <button 
                       disabled={isSubmitting}
                       type="submit"
-                      className="flex-[2] py-4 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+                      className="flex-[2] py-4 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
                     >
                        {isSubmitting ? 'Memproses...' : (
                           <>

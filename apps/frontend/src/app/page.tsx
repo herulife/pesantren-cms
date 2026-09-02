@@ -224,7 +224,7 @@ const createHeroSlide = (overrides: Partial<HeroSlide> = {}, fallbackKey?: strin
   id: buildHeroSlideId(overrides, fallbackKey),
   title: 'Tahfidz, adab, dan ilmu dalam satu ritme pembinaan',
   subtitle: 'Al-Maa Parung menumbuhkan hafalan, akhlak, dan pembelajaran terpadu dalam suasana yang tertata.',
-  image_url: '/assets/img/gedung.webp',
+  image_url: fullHeroSlideImage('1564769625905-50e93615e769'),
   button_text: 'Lihat PSB',
   button_url: '/psb',
   ...overrides,
@@ -243,13 +243,16 @@ const formatAgendaFullDate = (dateStr: string) =>
     year: 'numeric',
   });
 
+const fullHeroSlideImage = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1920&q=80`;
+
 const defaultHeroSlides = [
   createHeroSlide(
     {
       title: 'Menghafal Al-Quran, tumbuh dengan adab',
       subtitle:
         'Lingkungan pesantren yang menjaga hafalan, ilmu, ibadah, dan kemandirian santri dalam keseharian.',
-      image_url: '/assets/img/gedung.webp',
+      image_url: fullHeroSlideImage('1564769625905-50e93615e769'),
       button_text: 'Daftar PSB',
       button_url: '/psb',
     },
@@ -260,7 +263,7 @@ const defaultHeroSlides = [
       title: 'Tahfidz dan kurikulum yang berjalan seimbang',
       subtitle:
         'Target hafalan, diniyah, akademik, dan karakter disusun menyatu dalam ritme pembinaan harian.',
-      image_url: '/assets/img/gedung.webp',
+      image_url: fullHeroSlideImage('1768152859503-084ed0e5507d'),
       button_text: 'Buka Program',
       button_url: '/program',
     },
@@ -271,7 +274,7 @@ const defaultHeroSlides = [
       title: 'Belajar, beribadah, dan tumbuh mandiri',
       subtitle:
         'Fasilitas pondok mendukung ibadah, belajar, olahraga, dan life skill dalam satu lingkungan yang terarah.',
-      image_url: '/assets/img/gedung.webp',
+      image_url: fullHeroSlideImage('1566747675140-317e7484b10d'),
       button_text: 'Buka Fasilitas',
       button_url: '/facilities',
     },
@@ -279,58 +282,8 @@ const defaultHeroSlides = [
   ),
 ];
 
-function parseHeroSlides(settings: SettingsMap): HeroSlide[] {
-  const raw = settings.hero_slides;
-
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const slides = parsed
-          .filter((item) => item && typeof item === 'object')
-          .map((item, index) =>
-            createHeroSlide(
-              {
-                id: typeof item.id === 'string' ? item.id : undefined,
-                title: typeof item.title === 'string' ? item.title : undefined,
-                subtitle: typeof item.subtitle === 'string' ? item.subtitle : undefined,
-                image_url: typeof item.image_url === 'string' ? item.image_url : undefined,
-                button_text: typeof item.button_text === 'string' ? item.button_text : undefined,
-                button_url: typeof item.button_url === 'string' ? item.button_url : undefined,
-              },
-              `slide-${index + 1}`
-            )
-          )
-          .filter((slide) => slide.title || slide.subtitle || slide.image_url);
-
-        if (slides.length > 1) {
-          return slides;
-        }
-
-        if (slides.length === 1) {
-          const [primarySlide] = slides;
-          const supplementalSlides = defaultHeroSlides.filter((slide) => slide.id !== primarySlide.id);
-          return [primarySlide, ...supplementalSlides];
-        }
-      }
-    } catch {
-      // Fallback ke banner lama jika JSON slider belum valid.
-    }
-  }
-
-  const legacySlide = createHeroSlide(
-    {
-      title: settings.banner_title || undefined,
-      subtitle: settings.banner_subtitle || undefined,
-      image_url: settings.banner_image_url || undefined,
-      button_text: settings.banner_button_text || undefined,
-      button_url: settings.banner_button_url || undefined,
-    },
-    'slide-1'
-  );
-
-  const supplementalSlides = defaultHeroSlides.filter((slide) => slide.id !== legacySlide.id);
-  return [legacySlide, ...supplementalSlides];
+function parseHeroSlides(_settings: SettingsMap): HeroSlide[] {
+  return defaultHeroSlides;
 }
 
 function extractListItems<T>(payload: MaybeListResponse<T>): T[] {
@@ -482,7 +435,9 @@ export default function LandingPage() {
           className="hero-swiper"
         >
           {renderedHeroSlides.map((slide) => {
-            const slideImage = resolveDisplayImageUrl(slide.image_url || '/assets/img/gedung.webp');
+            const slideImage = resolveDisplayImageUrl(
+              slide.image_url || fullHeroSlideImage('1564769625905-50e93615e769')
+            );
             return (
               <SwiperSlide key={slide.id}>
                 <div className="relative min-h-[520px] overflow-hidden sm:min-h-[620px] lg:min-h-[710px]">
@@ -655,7 +610,7 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden border-y border-slate-200/70 bg-[#f6f7f4] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.10),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.08),_transparent_28%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.10),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(37,99,235,0.08),_transparent_28%)]" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
@@ -723,7 +678,7 @@ export default function LandingPage() {
 
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f3_100%)] py-12 md:py-16">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-200 to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.06),_transparent_24%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(37,99,235,0.06),_transparent_24%)]" />
         <div className="container mx-auto max-w-6xl px-4">
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch lg:gap-8 xl:gap-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="relative z-10">
@@ -829,7 +784,7 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden bg-slate-950 py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.10),_transparent_24%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.16),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.10),_transparent_24%)]" />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="container mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="relative z-10">
@@ -1038,7 +993,7 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden border-t border-slate-200/70 bg-[linear-gradient(180deg,#fcfcfa_0%,#f7f7f3_100%)] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.06),_transparent_24%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.06),_transparent_24%)]" />
         <div className="container mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <PublicSectionIntro
@@ -1079,7 +1034,7 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden border-t border-slate-200 bg-[linear-gradient(180deg,#f6f7f3_0%,#eef4ef_100%)] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.08),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.05),_transparent_20%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.05),_transparent_20%)]" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <PublicSectionIntro
@@ -1099,7 +1054,7 @@ export default function LandingPage() {
                 <article className="group overflow-hidden rounded-[1.85rem] border border-white/75 bg-white/92 shadow-[0_26px_60px_-34px_rgba(15,23,42,0.18)] backdrop-blur-sm md:col-span-2">
                   <div className="grid h-full gap-0 md:grid-cols-[0.9fr_1.1fr]">
                     <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#10251d_100%)] p-6 text-white md:p-7">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.24),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.12),_transparent_26%)]" />
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.24),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.12),_transparent_26%)]" />
                       <div className="relative flex h-full flex-col">
                         <span className="inline-flex w-fit rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-blue-100 backdrop-blur-sm">
                           {agendas[0].category || 'Agenda Pondok'}
@@ -1238,7 +1193,7 @@ export default function LandingPage() {
               <motion.div key={item.title} variants={fadeUpVariant}>
                 <Link
                   href={item.href}
-                  className="group block h-full rounded-[1.8rem] border border-blue-100/70 bg-[linear-gradient(180deg,#ffffff_0%,#f4faf6_100%)] p-6 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.16)] transition-all duration-300 hover:-translate-y-2 hover:border-blue-200 hover:shadow-[0_24px_60px_-30px_rgba(16,185,129,0.18)] md:rounded-[2rem] md:p-7"
+                  className="group block h-full rounded-[1.8rem] border border-blue-100/70 bg-[linear-gradient(180deg,#ffffff_0%,#eff6ff_100%)] p-6 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.16)] transition-all duration-300 hover:-translate-y-2 hover:border-blue-200 hover:shadow-[0_24px_60px_-30px_rgba(37,99,235,0.18)] md:rounded-[2rem] md:p-7"
                 >
                   <div className="mb-5 inline-flex rounded-2xl bg-white p-4 text-blue-600 ring-1 ring-blue-100 transition-colors group-hover:bg-blue-500 group-hover:text-white group-hover:ring-blue-500">
                     {item.icon}
@@ -1256,9 +1211,9 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#0d1522_0%,#0d2f27_58%,#08231e_100%)] py-16 lg:py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.14),_transparent_22%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.18),_transparent_24%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(15,23,42,0.14),_transparent_22%),radial-gradient(circle_at_bottom_left,_rgba(37,99,235,0.18),_transparent_24%)]" />
         <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-300/16 blur-[110px]" />
-        <div className="absolute -bottom-36 left-0 h-72 w-72 rounded-full bg-teal-300/14 blur-[110px]" />
+        <div className="absolute -bottom-36 left-0 h-72 w-72 rounded-full bg-blue-300/14 blur-[110px]" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>

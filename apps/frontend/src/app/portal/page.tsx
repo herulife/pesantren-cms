@@ -34,7 +34,7 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
   accepted: {
     title: 'Pendaftaran Diterima',
     description: 'Selamat, berkas kamu sudah dinyatakan diterima. Ikuti arahan panitia untuk langkah berikutnya.',
-    accent: 'from-emerald-600 to-green-600',
+    accent: 'from-blue-600 to-cyan-600',
     actionLabel: 'Buka Raport',
     actionHref: '/portal/raport',
   },
@@ -347,7 +347,7 @@ export default function PortalDashboard() {
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                         item.completed
-                          ? 'bg-white text-emerald-600'
+                          ? 'bg-white text-blue-600'
                           : isAttentionPaymentStep
                             ? 'bg-rose-600 text-white'
                             : 'bg-white/10 text-white/80'
@@ -483,10 +483,10 @@ export default function PortalDashboard() {
         <div className="mb-10 space-y-4">
           {portalState.checklist.map((item, index) => {
             const cardClasses = item.completed
-              ? 'border-emerald-100 bg-white shadow-sm'
+              ? 'border-blue-100 bg-white shadow-sm'
               : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
             const iconClasses = item.completed
-              ? 'bg-emerald-50 text-emerald-500'
+              ? 'bg-blue-50 text-blue-500'
               : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
 
             const content = (
@@ -504,7 +504,7 @@ export default function PortalDashboard() {
                 </div>
 
                 {item.completed ? (
-                  <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                  <span className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
                     Selesai
                   </span>
                 ) : (
@@ -590,7 +590,7 @@ export default function PortalDashboard() {
             </div>
             <Link
               href="/portal/documents"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors hover:bg-emerald-100 md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition-colors hover:bg-blue-100 md:w-auto md:shrink-0"
             >
               Kelola Dokumen
             </Link>
@@ -608,7 +608,7 @@ export default function PortalDashboard() {
                 <span
                   className={`inline-flex w-fit rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest ${
                     item.uploaded
-                      ? 'border border-emerald-100 bg-emerald-50 text-emerald-600'
+                      ? 'border border-blue-100 bg-blue-50 text-blue-600'
                       : 'border border-amber-100 bg-amber-50 text-amber-600'
                   }`}
                 >

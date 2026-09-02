@@ -154,7 +154,7 @@ export default function NotificationsPage() {
 
   const colorMap: Record<string, { btn: string; shadow: string; bg: string }> = {
     blue: { btn: 'bg-blue-600 text-white shadow-xl shadow-blue-200', shadow: 'bg-blue-50', bg: 'bg-blue-50' },
-    emerald: { btn: 'bg-emerald-600 text-white shadow-xl shadow-emerald-200', shadow: 'bg-emerald-50', bg: 'bg-emerald-50' },
+    emerald: { btn: 'bg-blue-600 text-white shadow-xl shadow-blue-200', shadow: 'bg-blue-50', bg: 'bg-blue-50' },
     purple: { btn: 'bg-purple-600 text-white shadow-xl shadow-purple-200', shadow: 'bg-purple-50', bg: 'bg-purple-50' },
   };
 
@@ -176,19 +176,19 @@ export default function NotificationsPage() {
           {/* Status Card */}
           <div className={`p-6 rounded-[2rem] border-2 transition-all ${
             status.configured 
-              ? 'bg-emerald-50 border-emerald-100' 
+              ? 'bg-blue-50 border-blue-100' 
               : 'bg-rose-50 border-rose-100'
           }`}>
             <div className="flex items-center gap-4 mb-4">
               <div className={`p-3 rounded-2xl ${
-                status.configured ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white shadow-lg shadow-rose-200'
+                status.configured ? 'bg-blue-500 text-white' : 'bg-rose-500 text-white shadow-lg shadow-rose-200'
               }`}>
                 <Zap size={24} />
               </div>
               <div>
                 <h4 className="font-black uppercase tracking-tight text-slate-800">Status Gateway</h4>
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${
-                  status.configured ? 'text-emerald-600' : 'text-rose-600'
+                  status.configured ? 'text-blue-600' : 'text-rose-600'
                 }`}>
                   {status.configured ? 'Terhubung (Fonnte API)' : 'Belum Konfigurasi'}
                 </p>
@@ -200,7 +200,7 @@ export default function NotificationsPage() {
               </p>
             )}
             {status.configured && (
-              <div className="flex items-center gap-2 text-emerald-700 bg-white/50 p-3 rounded-xl border border-emerald-100">
+              <div className="flex items-center gap-2 text-blue-700 bg-white/50 p-3 rounded-xl border border-blue-100">
                 <CheckCircle2 size={14} />
                 <span className="text-[10px] font-black uppercase tracking-widest">Sistem Siap Digunakan</span>
               </div>
@@ -337,7 +337,7 @@ export default function NotificationsPage() {
                         <td className="px-6 py-5">
                           <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
                             log.action?.includes('NILAI') 
-                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              ? 'bg-blue-50 text-blue-600 border-blue-100'
                               : log.action?.includes('PSB')
                               ? 'bg-purple-50 text-purple-600 border-purple-100'
                               : 'bg-blue-50 text-blue-600 border-blue-100'

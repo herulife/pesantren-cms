@@ -134,7 +134,7 @@ export default function PortalRaportPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-emerald-600" />
+        <RefreshCw className="animate-spin text-blue-600" />
       </div>
     );
   }
@@ -188,7 +188,7 @@ export default function PortalRaportPage() {
             <button
               type="button"
               onClick={() => downloadStudentReportPDF(reportPayload)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               <Download size={16} />
               Download
@@ -217,21 +217,21 @@ export default function PortalRaportPage() {
       </section>
 
       {eraport && (
-        <section className="overflow-hidden rounded-[1.5rem] border border-emerald-200 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 shadow-lg shadow-emerald-700/20 print:shadow-none">
+        <section className="overflow-hidden rounded-[1.5rem] border border-blue-200 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 shadow-lg shadow-blue-700/20 print:shadow-none">
           <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-6">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-100">Nilai Akhir LMS · ALMAA</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-100">Nilai Akhir LMS · ALMAA</p>
               <h2 className="mt-1 font-outfit text-lg font-black tracking-tight text-white">
                 E-Raport {eraport.semester === '1' ? 'Semester Ganjil' : 'Semester Genap'} · TA {eraport.academic_year}
               </h2>
-              <p className="mt-1 text-xs text-emerald-100">
+              <p className="mt-1 text-xs text-blue-100">
                 Bobot Mapel {eraport.weights?.mapel ?? 50}% · Project {eraport.weights?.project ?? 25}% · Kesantrian {eraport.weights?.kesantrian ?? 25}%
               </p>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-3 text-center ring-1 ring-white/20">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">Nilai Akhir</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-100">Nilai Akhir</p>
               <p className="text-2xl font-black text-white">{eraport.final_score?.toFixed(2)}</p>
-              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-emerald-800">{eraport.predikat}</span>
+              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-blue-800">{eraport.predikat}</span>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 border-t border-white/10 px-5 py-4 sm:grid-cols-3 lg:px-6">
@@ -241,7 +241,7 @@ export default function PortalRaportPage() {
               { label: 'Kesantrian', value: eraport.kesantrian_score },
             ].map((item) => (
               <div key={item.label} className="rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/10">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100">{item.label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">{item.label}</p>
                 <p className="mt-0.5 text-lg font-black text-white">{Number(item.value || 0).toFixed(2)}</p>
               </div>
             ))}
@@ -255,7 +255,7 @@ export default function PortalRaportPage() {
             label: 'Rata-rata Nilai',
             value: formatScore(reportSummary.averageScore),
             icon: <TrendingUp size={18} />,
-            accent: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+            accent: 'text-blue-700 bg-blue-50 border-blue-100',
           },
           {
             label: 'Nilai Tertinggi',
@@ -314,7 +314,7 @@ export default function PortalRaportPage() {
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 md:text-right">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Nilai Akhir</p>
-                      <p className="mt-1 text-2xl font-black text-emerald-700">{formatScore(item.final_score)}</p>
+                      <p className="mt-1 text-2xl font-black text-blue-700">{formatScore(item.final_score)}</p>
                     </div>
                   </div>
 
@@ -358,7 +358,7 @@ export default function PortalRaportPage() {
           <div className="px-5 py-5 lg:px-6">
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
-                { label: 'Hadir', value: reportSummary.hadir, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+                { label: 'Hadir', value: reportSummary.hadir, accent: 'bg-blue-50 text-blue-700 border-blue-100' },
                 { label: 'Sakit', value: reportSummary.sakit, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
                 { label: 'Izin', value: reportSummary.izin, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
                 { label: 'Alpha', value: reportSummary.alpha, accent: 'bg-rose-50 text-rose-700 border-rose-100' },

@@ -157,8 +157,8 @@ function AgendasAdminPageContent() {
 
   const getCategoryColor = (cat: string) => {
     switch (cat.toLowerCase()) {
-      case 'psb': return 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-500/10';
-      case 'akademik': return 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-500/10';
+      case 'psb': return 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-500/10';
+      case 'akademik': return 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-500/10';
       case 'libur': return 'bg-rose-50 text-rose-600 border-rose-100 shadow-rose-500/10';
       case 'event': return 'bg-amber-50 text-amber-600 border-amber-100 shadow-amber-500/10';
       default: return 'bg-slate-50 text-slate-600 border-slate-100 shadow-slate-500/10';
@@ -184,7 +184,7 @@ function AgendasAdminPageContent() {
         </div>
         <button 
           onClick={() => router.push('/admin/agendas/form')}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 active:scale-95"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95"
         >
           <Plus size={20} />
           <span>Buat Jadwal</span>
@@ -194,13 +194,13 @@ function AgendasAdminPageContent() {
       {/* Filter & Search Bar */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-5 mb-10">
          <div className="flex-1 relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Cari judul kegiatan atau lokasi..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm"
+              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm"
             />
          </div>
       </div>
@@ -214,10 +214,10 @@ function AgendasAdminPageContent() {
           <div className="relative border-l-4 border-slate-100 ml-6 space-y-12 py-4">
             {agendas.map((agenda) => (
               <div key={agenda.id} className="relative pl-12 group">
-                <div className="absolute w-6 h-6 rounded-full bg-white border-4 border-slate-100 -left-[14px] top-2 group-hover:bg-emerald-600 group-hover:border-emerald-100 transition-all duration-500 shadow-sm z-10"></div>
+                <div className="absolute w-6 h-6 rounded-full bg-white border-4 border-slate-100 -left-[14px] top-2 group-hover:bg-blue-600 group-hover:border-blue-100 transition-all duration-500 shadow-sm z-10"></div>
                 
-                <div className="bg-white border border-slate-200 rounded-xl p-8 hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-500 group-hover:border-emerald-100 relative overflow-hidden group/card shadow-sm">
-                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/30 rounded-full blur-3xl transform -translate-y-1/2 translate-x-1/2 group-hover/card:bg-emerald-500/5 transition-colors duration-700"></div>
+                <div className="bg-white border border-slate-200 rounded-xl p-8 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 group-hover:border-blue-100 relative overflow-hidden group/card shadow-sm">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/30 rounded-full blur-3xl transform -translate-y-1/2 translate-x-1/2 group-hover/card:bg-blue-500/5 transition-colors duration-700"></div>
 
                    <div className="flex justify-between items-start gap-6 relative z-10 mb-6">
                      <h3 className="text-2xl font-black text-slate-900 leading-tight uppercase tracking-tight">{agenda.title}</h3>
@@ -228,7 +228,7 @@ function AgendasAdminPageContent() {
                         <div className="flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity translate-x-4 group-hover/card:translate-x-0 transition-transform">
                       <button 
                         onClick={() => router.push(`/admin/agendas/form?id=${agenda.id}`)}
-                            className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-emerald-600 rounded-lg shadow-sm transition-all"
+                            className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-blue-600 rounded-lg shadow-sm transition-all"
                           >
                             <Pencil size={16} />
                           </button>
@@ -244,7 +244,7 @@ function AgendasAdminPageContent() {
                    
                    <div className="flex flex-wrap gap-4 mb-6">
                       <div className="flex items-center gap-3 bg-slate-50 px-5 py-2.5 rounded-xl border border-slate-100 shadow-inner">
-                         <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                         <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
                             <Calendar size={18} />
                          </div>
                          <span className="text-xs font-black text-slate-700 uppercase tracking-wider">{formatTanggal(agenda.start_date, agenda.end_date)}</span>
@@ -295,7 +295,7 @@ function AgendasAdminPageContent() {
           <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300 max-h-[90vh]">
              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-200">
                     <Calendar size={24} />
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight font-outfit">
@@ -315,7 +315,7 @@ function AgendasAdminPageContent() {
                       placeholder="Contoh: Kedatangan Santri Semester Ganjil"
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
-                      className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-lg"
                     />
                   </div>
 
@@ -327,7 +327,7 @@ function AgendasAdminPageContent() {
                         required
                         value={form.start_date}
                         onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                       />
                     </div>
                     <div>
@@ -336,7 +336,7 @@ function AgendasAdminPageContent() {
                         type="date"
                         value={form.end_date || ''}
                         onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                       />
                     </div>
                   </div>
@@ -347,7 +347,7 @@ function AgendasAdminPageContent() {
                       <select
                         value={form.category}
                         onChange={(e) => setForm({ ...form, category: e.target.value })}
-                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm appearance-none"
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm appearance-none"
                       >
                         {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       </select>
@@ -355,13 +355,13 @@ function AgendasAdminPageContent() {
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Status Waktu (Pukul)</label>
                       <div className="relative group">
-                         <Clock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
+                         <Clock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                          <input 
                            type="text"
                            placeholder="Cth: 08:00 - Selesai"
                            value={form.time_info || ''}
                            onChange={(e) => setForm({ ...form, time_info: e.target.value })}
-                           className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                           className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                          />
                       </div>
                     </div>
@@ -370,13 +370,13 @@ function AgendasAdminPageContent() {
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Lokasi Kegiatan</label>
                     <div className="relative group">
-                       <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={18} />
+                       <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                        <input 
                          type="text"
                          placeholder="Cth: Aula Utama Pondok"
                          value={form.location || ''}
                          onChange={(e) => setForm({ ...form, location: e.target.value })}
-                         className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                         className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm"
                        />
                     </div>
                   </div>
@@ -388,7 +388,7 @@ function AgendasAdminPageContent() {
                       placeholder="Info tambahan untuk wali santri..."
                       value={form.description || ''}
                       onChange={(e) => setForm({ ...form, description: e.target.value })}
-                      className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-600 text-sm"
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-slate-600 text-sm"
                     />
                   </div>
 
@@ -403,7 +403,7 @@ function AgendasAdminPageContent() {
                     <button 
                       disabled={isSubmitting}
                       type="submit"
-                      className="flex-[2] py-5 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+                      className="flex-[2] py-5 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
                     >
                        {isSubmitting ? 'Menyimpan...' : (
                           <>

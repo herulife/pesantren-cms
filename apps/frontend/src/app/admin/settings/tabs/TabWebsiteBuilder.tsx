@@ -615,7 +615,7 @@ function ImageUploadField({
         <label
           htmlFor={inputId}
           className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] transition ${
-            isUploading ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+            isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
           }`}
         >
           {isUploading ? <RefreshCw size={14} className="animate-spin" /> : <UploadCloud size={14} />}
@@ -715,7 +715,7 @@ function SectionEditor({
   return (
     <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5">
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Editor Block</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Editor Block</p>
         <h4 className="mt-1 text-lg font-black text-slate-950">{sectionLabels[section.type] || section.type}</h4>
       </div>
 
@@ -740,7 +740,7 @@ function SectionEditor({
           <button
             type="button"
             onClick={() => onChange({ ...section, enabled: !section.enabled })}
-            className={`w-full rounded-xl px-4 py-3 text-sm font-black ${section.enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+            className={`w-full rounded-xl px-4 py-3 text-sm font-black ${section.enabled ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}
           >
             {section.enabled ? 'Aktif' : 'Nonaktif'}
           </button>
@@ -861,7 +861,7 @@ function SectionEditor({
               <button
                 type="button"
                 onClick={() => onChange(addHeroSlide(section))}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700"
               >
                 <Plus size={14} /> Tambah Slide
               </button>
@@ -1061,7 +1061,7 @@ function SectionEditor({
                         <label
                           key={`${section.id}-option-${option.id}`}
                           className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
-                            checked ? 'border-emerald-300 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-emerald-200'
+                            checked ? 'border-blue-300 bg-blue-50/70' : 'border-slate-200 bg-white hover:border-blue-200'
                           }`}
                         >
                           <input
@@ -1664,7 +1664,7 @@ export default function TabWebsiteBuilder() {
         </div>
         <button
           onClick={() => addShellListItem(listKey, addItem)}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700"
         >
           <Plus size={14} /> {addLabel}
         </button>
@@ -1698,7 +1698,7 @@ export default function TabWebsiteBuilder() {
                 handleShellDrop(listKey, index);
               }}
               className={`grid gap-3 rounded-xl border p-3 transition-all md:grid-cols-[auto_1fr_1fr_auto_auto_auto_auto] ${
-                isDragTarget ? 'border-emerald-300 bg-emerald-50/60 ring-2 ring-emerald-200' : 'border-slate-200 bg-slate-50'
+                isDragTarget ? 'border-blue-300 bg-blue-50/60 ring-2 ring-blue-200' : 'border-slate-200 bg-slate-50'
               } ${isDragging ? 'opacity-60' : ''}`}
             >
               <div
@@ -1748,17 +1748,17 @@ export default function TabWebsiteBuilder() {
   if (isLoading) {
     return (
       <div className="flex justify-center rounded-2xl border border-slate-200 bg-white p-12">
-        <Loader2 className="animate-spin text-emerald-600" size={28} />
+        <Loader2 className="animate-spin text-blue-600" size={28} />
       </div>
     );
   }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <section className="overflow-hidden rounded-2xl border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5_0%,#ffffff_54%,#fff7ed_100%)] shadow-sm">
+      <section className="overflow-hidden rounded-2xl border border-blue-100 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_54%,#fff7ed_100%)] shadow-sm">
         <div className="grid gap-6 p-6 lg:grid-cols-[1.2fr_0.8fr] lg:p-8">
           <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-blue-700">
               <Globe2 size={14} />
               Website Builder
             </div>
@@ -1772,13 +1772,13 @@ export default function TabWebsiteBuilder() {
               </p>
             </div>
             <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-2xl border border-emerald-200 bg-white/80 p-4 shadow-[0_18px_40px_-32px_rgba(5,150,105,0.35)]">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">Workflow Utama</p>
+              <div className="rounded-2xl border border-blue-200 bg-white/80 p-4 shadow-[0_18px_40px_-32px_rgba(5,150,105,0.35)]">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">Workflow Utama</p>
                 <p className="mt-2 text-sm font-medium leading-7 text-slate-600">
                   Simpan dulu sebagai draft, lalu publish saat sudah yakin. Tombol paling kanan akan langsung mem-publish sekaligus mengaktifkan hasilnya di website publik.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <button onClick={saveDraft} disabled={isSavingDraft} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-emerald-700/20 transition hover:bg-emerald-700 disabled:opacity-60">
+                  <button onClick={saveDraft} disabled={isSavingDraft} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-700/20 transition hover:bg-blue-700 disabled:opacity-60">
                     {isSavingDraft ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
                     Simpan Draft
                   </button>
@@ -1835,7 +1835,7 @@ export default function TabWebsiteBuilder() {
                   {builderState.enabled ? 'Builder Aktif' : 'Builder Nonaktif'}
                 </h3>
               </div>
-              <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${builderState.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+              <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${builderState.enabled ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
                 {builderState.enabled ? 'Live' : 'Fallback Lama'}
               </span>
             </div>
@@ -1870,7 +1870,7 @@ export default function TabWebsiteBuilder() {
                 key={area.title}
                 onClick={() => setActiveArea(area.title)}
                 className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition ${
-                  activeArea === area.title ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-700/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                  activeArea === area.title ? 'bg-blue-600 text-white shadow-lg shadow-blue-700/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
                 }`}
               >
                 <Icon size={16} />
@@ -2024,7 +2024,7 @@ export default function TabWebsiteBuilder() {
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-2">
                   {blockCatalog.map((block) => (
-                    <button key={block.type} onClick={() => addSection(block.type)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] text-slate-600 hover:border-emerald-200 hover:text-emerald-700">
+                    <button key={block.type} onClick={() => addSection(block.type)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] text-slate-600 hover:border-blue-200 hover:text-blue-700">
                       <Plus size={13} /> {block.label}
                     </button>
                   ))}
@@ -2044,10 +2044,10 @@ export default function TabWebsiteBuilder() {
                         handleDropSection(section.id);
                       }}
                       className={`rounded-2xl border p-4 transition-all ${
-                        selectedSectionId === section.id ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'
+                        selectedSectionId === section.id ? 'border-blue-300 bg-blue-50/60' : 'border-slate-200 bg-slate-50'
                       } ${
                         dragOverSectionId === section.id && draggingSectionId !== section.id
-                          ? 'ring-2 ring-emerald-300 ring-offset-2 ring-offset-white'
+                          ? 'ring-2 ring-blue-300 ring-offset-2 ring-offset-white'
                           : ''
                       } ${draggingSectionId === section.id ? 'opacity-65' : ''}`}
                     >
@@ -2120,8 +2120,8 @@ export default function TabWebsiteBuilder() {
                         onClick={() => setSelectedPageKey(page.key)}
                         className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
                           selectedPageKey === page.key
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200'
+                            ? 'border-blue-300 bg-blue-50 text-blue-900'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200'
                         }`}
                       >
                         <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{page.route}</p>
@@ -2161,7 +2161,7 @@ export default function TabWebsiteBuilder() {
 
               <div className="space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Page Builder</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Page Builder</p>
                   <h3 className="mt-2 text-2xl font-black text-slate-950">{selectedPageOption.label}</h3>
                   <p className="mt-2 text-sm leading-7 text-slate-500">{selectedPageOption.description}</p>
                 </div>
@@ -2336,7 +2336,7 @@ export default function TabWebsiteBuilder() {
                               type="button"
                               onClick={() => void restoreRevision(revision, false)}
                               disabled={Boolean(restoringRevisionId)}
-                              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60"
+                              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:opacity-60"
                             >
                               {isRestoring ? <RefreshCw size={14} className="animate-spin" /> : <RotateCcw size={14} />}
                               Pulihkan ke Draft
@@ -2365,7 +2365,7 @@ export default function TabWebsiteBuilder() {
           <div className="min-w-0 xl:sticky xl:top-24 xl:self-start">
             <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Live Preview</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Live Preview</p>
                 <h3 className="mt-2 text-xl font-black text-slate-950">Preview Real-Time di Dalam Admin</h3>
                 <p className="mt-2 text-sm leading-7 text-slate-500">
                   Semua perubahan draft langsung dirender di sini, tanpa perlu simpan dulu. Preview ini visual-only supaya admin tidak kepindah halaman saat mengecek layout.
@@ -2382,8 +2382,8 @@ export default function TabWebsiteBuilder() {
                       onClick={() => setLivePreviewPage(option.key)}
                       className={`rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] transition ${
                         livePreviewPage === option.key
-                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-700/20'
-                          : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-200 hover:text-emerald-700'
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-700/20'
+                          : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-200 hover:text-blue-700'
                       }`}
                     >
                       {option.label}

@@ -108,8 +108,8 @@ export default function DonationsPage() {
                 {featuredOpenDonation.summary} Konfirmasi dan arahan transfer sementara diarahkan
                 langsung ke admin pondok agar penyalurannya lebih rapi.
               </p>
-              <div className="mt-5 rounded-[1.2rem] border border-emerald-100 bg-emerald-50/80 px-4 py-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+              <div className="mt-5 rounded-[1.2rem] border border-blue-100 bg-blue-50/80 px-4 py-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">
                   Rekening Donasi
                 </p>
                 <p className="mt-2 text-sm font-semibold leading-7 text-slate-800">
@@ -187,8 +187,8 @@ export default function DonationsPage() {
                 </div>
                 ))}
               </div>
-            <div className="mt-6 rounded-[1.35rem] border border-emerald-100 bg-emerald-50/75 px-4 py-4 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+            <div className="mt-6 rounded-[1.35rem] border border-blue-100 bg-blue-50/75 px-4 py-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">
                 Salurkan infak terbaik anda melalui
               </p>
               <p className="mt-3 text-sm font-bold leading-7 text-slate-900">
@@ -318,8 +318,8 @@ export default function DonationsPage() {
                   </p>
                 </div>
               </div>
-              <div className="rounded-[1.6rem] border border-emerald-100 bg-emerald-50/80 p-5">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-700">Keutamaan</p>
+              <div className="rounded-[1.6rem] border border-blue-100 bg-blue-50/80 p-5">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">Keutamaan</p>
                 <p className="mt-2 text-sm leading-7 text-slate-700">“Jika manusia meninggal, terputus amalnya kecuali tiga: sedekah jariyah, ilmu yang bermanfaat, dan anak shalih yang mendoakannya.” — wakaf cat tembok ini menggabungkan ketiganya: sedekah untuk tempat ilmu, ilmu Al-Quran yang dijaga santri, dan doa santri untuk muhsinin.</p>
               </div>
               <div className="flex flex-wrap gap-3">

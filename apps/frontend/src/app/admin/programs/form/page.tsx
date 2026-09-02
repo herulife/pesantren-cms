@@ -8,7 +8,7 @@ import { useToast } from '@/components/Toast';
 
 export default function ProgramFormPage() {
 	return (
-		<Suspense fallback={<div className="h-[60vh] flex items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
+		<Suspense fallback={<div className="h-[60vh] flex items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>}>
 			<ProgramFormContent />
 		</Suspense>
 	);
@@ -109,7 +109,7 @@ function ProgramFormContent() {
 	if (isLoading) {
 		return (
 			<div className="h-[60vh] flex items-center justify-center">
-				<Loader2 className="animate-spin text-emerald-500" size={40} />
+				<Loader2 className="animate-spin text-blue-500" size={40} />
 			</div>
 		);
 	}
@@ -120,7 +120,7 @@ function ProgramFormContent() {
 				<button 
 					type="button" 
 					onClick={() => router.back()}
-					className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm"
+					className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
 				>
 					<ArrowLeft size={20} />
 				</button>
@@ -145,7 +145,7 @@ function ProgramFormContent() {
 								required
 								value={formData.title}
 								onChange={handleTitleChange}
-								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-slate-800"
+								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-slate-800"
 								placeholder="Misal: Tahfidz Reguler"
 							/>
 						</div>
@@ -160,7 +160,7 @@ function ProgramFormContent() {
 								required
 								value={formData.slug}
 								onChange={(e) => setFormData({...formData, slug: e.target.value})}
-								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-mono text-sm text-slate-600"
+								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-mono text-sm text-slate-600"
 							/>
 						</div>
 
@@ -173,7 +173,7 @@ function ProgramFormContent() {
 								required
 								value={formData.category}
 								onChange={(e) => setFormData({...formData, category: e.target.value})}
-								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-slate-800"
+								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-slate-800"
 							>
 								<option value="program">Program Unggulan</option>
 								<option value="ekskul">Ekstrakurikuler</option>
@@ -189,7 +189,7 @@ function ProgramFormContent() {
 								type="number" 
 								value={formData.order_index}
 								onChange={(e) => setFormData({...formData, order_index: parseInt(e.target.value) || 0})}
-								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-slate-800"
+								className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-slate-800"
 							/>
 						</div>
 					</div>
@@ -203,7 +203,7 @@ function ProgramFormContent() {
 							type="text" 
 							value={formData.image_url}
 							onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-							className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-600"
+							className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-600"
 							placeholder="https://..."
 						/>
 						{formData.image_url && (
@@ -222,7 +222,7 @@ function ProgramFormContent() {
 							rows={3}
 							value={formData.excerpt}
 							onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
-							className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-600"
+							className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-600"
 							placeholder="Tulis deskripsi singkat yang akan muncul di daftar kartu..."
 						/>
 					</div>
@@ -236,7 +236,7 @@ function ProgramFormContent() {
 							rows={8}
 							value={formData.content}
 							onChange={(e) => setFormData({...formData, content: e.target.value})}
-							className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-mono text-sm leading-relaxed text-slate-700"
+							className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-mono text-sm leading-relaxed text-slate-700"
 						/>
 					</div>
 
@@ -265,7 +265,7 @@ function ProgramFormContent() {
 					<button 
 						type="submit"
 						disabled={isSaving}
-						className="px-8 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-emerald-600 transition-all shadow-xl shadow-slate-900/10 flex items-center gap-3 disabled:opacity-50"
+						className="px-8 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10 flex items-center gap-3 disabled:opacity-50"
 					>
 						{isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
 						<span>Simpan Program</span>

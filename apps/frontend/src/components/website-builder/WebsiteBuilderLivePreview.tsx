@@ -170,10 +170,10 @@ function renderChrome(
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-full bg-rose-400" />
           <span className="h-3 w-3 rounded-full bg-amber-400" />
-          <span className="h-3 w-3 rounded-full bg-emerald-400" />
+          <span className="h-3 w-3 rounded-full bg-blue-400" />
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-500">
-          <Lock size={12} className="text-emerald-500" />
+          <Lock size={12} className="text-blue-500" />
           <span className="truncate">pondpes-almaparung.vercel.app{previewPath}</span>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
@@ -369,7 +369,7 @@ export default function WebsiteBuilderLivePreview({
       <div className="border-b border-slate-200 px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Live Preview</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Live Preview</p>
             <h4 className="mt-2 text-lg font-black text-slate-950">Preview yang lebih mirip tampilan publik</h4>
             <p className="mt-2 max-w-xl text-sm leading-7 text-slate-500">
               Preview ini auto-fit ke panel, memakai frame perangkat, dan sengaja non-interaktif supaya kamu bisa fokus menilai ritme layout, proporsi, dan visual hierarchy.
@@ -383,7 +383,7 @@ export default function WebsiteBuilderLivePreview({
             <span className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
               {previewPath}
             </span>
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
               Auto Fit {zoomPercent}%
             </span>
           </div>

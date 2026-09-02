@@ -195,8 +195,8 @@ export default function DonationDetailPage() {
                   </Link>
                 </div>
 
-                <div className="mt-6 rounded-[1.45rem] border border-emerald-100 bg-emerald-50/80 px-4 py-4 shadow-[0_18px_42px_-28px_rgba(5,150,105,0.18)]">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+                <div className="mt-6 rounded-[1.45rem] border border-blue-100 bg-blue-50/80 px-4 py-4 shadow-[0_18px_42px_-28px_rgba(5,150,105,0.18)]">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">
                     Rekening Donasi
                   </p>
                   <p className="mt-2 text-sm font-semibold leading-7 text-slate-800">
@@ -309,13 +309,13 @@ export default function DonationDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-emerald-100 bg-emerald-50/75 p-6 shadow-[0_22px_54px_-40px_rgba(5,150,105,0.16)]">
+              <div className="rounded-[2rem] border border-blue-100 bg-blue-50/75 p-6 shadow-[0_22px_54px_-40px_rgba(5,150,105,0.16)]">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-white text-emerald-700">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-white text-blue-700">
                     <Banknote size={20} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-700">
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-blue-700">
                       Transfer Donasi
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-700">

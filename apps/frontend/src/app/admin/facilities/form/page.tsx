@@ -16,7 +16,7 @@ function createInitialForm(): Omit<Facility, 'id'> {
 
 export default function FacilityFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>}>
       <FacilityFormContent />
     </Suspense>
   );
@@ -132,17 +132,17 @@ function FacilityFormContent() {
     }
   };
 
-  if (isLoading) return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>;
+  if (isLoading) return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>;
 
   return (
     <>
       <div className="mx-auto max-w-5xl pb-20">
         <div className="mb-10 flex items-center gap-4">
-          <button type="button" onClick={() => router.push('/admin/facilities')} className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-emerald-200 hover:text-emerald-600">
+          <button type="button" onClick={() => router.push('/admin/facilities')} className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-200 hover:text-blue-600">
             <ArrowLeft size={20} />
           </button>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Form Fasilitas</p>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">Form Fasilitas</p>
             <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 font-outfit">{id ? 'Edit Fasilitas' : 'Tambah Fasilitas'}</h1>
             <p className="text-sm font-medium text-slate-500">Form fasilitas kini tampil penuh agar lebih enak dipreview sebelum disimpan.</p>
           </div>
@@ -154,12 +154,12 @@ function FacilityFormContent() {
               <div>
                 <div className="mb-3 flex items-center justify-between px-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Foto Fasilitas</label>
-                  <button type="button" onClick={() => setIsGalleryOpen(true)} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 hover:underline">
+                  <button type="button" onClick={() => setIsGalleryOpen(true)} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-blue-600 hover:underline">
                     <ImageIcon size={12} /> Galeri
                   </button>
                 </div>
                 {!croppedImageUrl ? (
-                  <label className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 transition-all hover:border-emerald-300 hover:bg-emerald-50">
+                  <label className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 transition-all hover:border-blue-300 hover:bg-blue-50">
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                     <Upload size={32} className="mb-2 text-slate-300" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Unggah Foto</span>
@@ -183,16 +183,16 @@ function FacilityFormContent() {
               <div className="space-y-6">
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><Building size={12} /> Nama Fasilitas</label>
-                  <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="Masjid Jami' Al-Maa" />
+                  <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" placeholder="Masjid Jami' Al-Maa" />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Deskripsi</label>
-                  <textarea rows={5} value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" placeholder="Jelaskan fasilitas dan keunggulannya..." />
+                  <textarea rows={5} value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" placeholder="Jelaskan fasilitas dan keunggulannya..." />
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Kategori</label>
-                    <select value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10">
+                    <select value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
                       {CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
                     </select>
                   </div>
@@ -209,7 +209,7 @@ function FacilityFormContent() {
 
           <div className="sticky bottom-8 flex justify-end gap-4">
             <button type="button" onClick={() => router.push('/admin/facilities')} className="rounded-lg border border-slate-200 bg-white px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-50">Batal</button>
-            <button type="submit" disabled={isSaving} className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-600 disabled:opacity-50">
+            <button type="submit" disabled={isSaving} className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-blue-600 disabled:opacity-50">
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
               Simpan Fasilitas
             </button>

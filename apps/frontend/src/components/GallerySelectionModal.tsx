@@ -63,7 +63,7 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
               <ImageIcon size={20} />
             </div>
             <div>
@@ -79,13 +79,13 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
         {/* Toolbar */}
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 bg-white">
           <div className="flex-1 relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Cari foto..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm"
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm"
             />
           </div>
           <div className="flex gap-1 overflow-x-auto scrollbar-hide bg-slate-50 p-1.5 rounded-xl border border-slate-100">
@@ -95,8 +95,8 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
                 onClick={() => { setSelectedCategory(cat); setPagination(p => ({...p, offset: 0})); }}
                 className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                   selectedCategory === cat 
-                    ? 'bg-white text-emerald-900 shadow-sm border border-slate-100' 
-                    : 'text-slate-400 hover:text-emerald-700'
+                    ? 'bg-white text-blue-900 shadow-sm border border-slate-100' 
+                    : 'text-slate-400 hover:text-blue-700'
                 }`}
               >
                 {cat}
@@ -109,7 +109,7 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
           {isLoading ? (
             <div className="h-full flex flex-col items-center justify-center py-20">
-              <Loader2 size={40} className="text-emerald-500 animate-spin mb-4" />
+              <Loader2 size={40} className="text-blue-500 animate-spin mb-4" />
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Memuat koleksi...</span>
             </div>
           ) : gallery.length === 0 ? (
@@ -127,7 +127,7 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
                   onClick={() => setSelectedUrl(item.image_url)}
                   className={`group relative aspect-square bg-white rounded-2xl border-4 overflow-hidden cursor-pointer transition-all duration-300 ${
                     selectedUrl === item.image_url 
-                      ? 'border-emerald-500 shadow-xl shadow-emerald-500/20 ring-4 ring-emerald-500/10' 
+                      ? 'border-blue-500 shadow-xl shadow-blue-500/20 ring-4 ring-blue-500/10' 
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -139,11 +139,11 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
                       (e.target as HTMLImageElement).src = 'https://placehold.co/600x600/f1f5f9/94a3b8?text=Image+Not+Found';
                     }}
                   />
-                  <div className={`absolute inset-0 bg-emerald-900/40 transition-opacity flex items-center justify-center p-4 ${selectedUrl === item.image_url ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <div className={`absolute inset-0 bg-blue-900/40 transition-opacity flex items-center justify-center p-4 ${selectedUrl === item.image_url ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                     <div className={`transform transition-all duration-300 ${selectedUrl === item.image_url ? 'scale-100' : 'scale-75 group-hover:scale-100'}`}>
                       <span className="text-[10px] font-black text-white uppercase tracking-widest text-center block mb-1">{item.title}</span>
                       {selectedUrl === item.image_url && (
-                        <div className="mx-auto w-6 h-6 bg-white rounded-full flex items-center justify-center text-emerald-600 shadow-lg">
+                        <div className="mx-auto w-6 h-6 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-lg">
                           <ImageIcon size={14} />
                         </div>
                       )}
@@ -194,7 +194,7 @@ export default function GallerySelectionModal({ isOpen, onClose, onSelect }: Gal
             <button 
               disabled={!selectedUrl}
               onClick={handleConfirm}
-              className="flex-1 sm:flex-none px-8 py-3 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none px-8 py-3 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2"
             >
               Gunakan Foto Ini
             </button>

@@ -258,7 +258,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
               <Home size={14} />
               Beranda
@@ -284,7 +284,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 <div className="border-b border-slate-100 px-5 py-5 lg:px-8">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Mode Fokus</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Mode Fokus</p>
                       <h2 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900 lg:text-3xl">
                         Raport Akademik Santri
                       </h2>
@@ -300,7 +300,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         <ArrowLeft size={16} />
                         Kembali ke Dashboard Portal
                       </Link>
-                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                      <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
                         Tampilan fokus tanpa sidebar samping
                       </div>
                     </div>
@@ -313,7 +313,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                       <div key={`focus-${group.id}`}>
                         <div className="mb-2 flex items-center gap-2">
                           <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                            group.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                            group.active ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
                           }`}>
                             {group.label}
                           </span>
@@ -332,11 +332,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 href={group.locked ? '/portal' : item.href}
                                 className={`inline-flex shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
                                   isActive
-                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    ? 'border-blue-200 bg-blue-50 text-blue-700'
                                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                                 } ${group.locked ? 'opacity-70' : ''}`}
                               >
-                                <span className={isActive ? 'text-emerald-500' : 'text-slate-400'}>{item.icon}</span>
+                                <span className={isActive ? 'text-blue-500' : 'text-slate-400'}>{item.icon}</span>
                                 <span>{item.label}</span>
                               </Link>
                             );
@@ -545,11 +545,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     href={item.href}
                     className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold transition-all duration-300 ${
                       item.active
-                        ? 'bg-emerald-50 text-emerald-700 shadow-sm'
+                        ? 'bg-blue-50 text-blue-700 shadow-sm'
                         : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                     }`}
                   >
-                    <span className={item.active ? 'text-emerald-700' : 'text-slate-400'}>{item.icon}</span>
+                    <span className={item.active ? 'text-blue-700' : 'text-slate-400'}>{item.icon}</span>
                     <span className="w-full truncate text-center">{item.label}</span>
                   </Link>
                 );

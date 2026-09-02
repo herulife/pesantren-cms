@@ -40,26 +40,26 @@ export default function AgendaBlock({ section, agendas, isLoading }: { section: 
               <article key={agenda.id} className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_22px_48px_-36px_rgba(15,23,42,0.2)]">
                 <div className="flex items-start gap-4">
                   {showDate ? (
-                    <div className="rounded-2xl bg-emerald-600 px-4 py-3 text-center text-white">
+                    <div className="rounded-2xl bg-blue-600 px-4 py-3 text-center text-white">
                       <div className="text-2xl font-black leading-none">{formatDay(agenda.start_date)}</div>
                       <div className="mt-1 text-[10px] font-black uppercase tracking-[0.18em]">{formatMonth(agenda.start_date)}</div>
                     </div>
                   ) : null}
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">{agenda.category || 'Agenda Pondok'}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">{agenda.category || 'Agenda Pondok'}</p>
                     <h3 className="mt-2 text-lg font-black leading-tight text-slate-900">{agenda.title}</h3>
                   </div>
                 </div>
                 <div className="mt-5 space-y-2 text-sm text-slate-500">
                   {agenda.time_info ? (
                     <div className="flex items-start gap-2">
-                      <Calendar size={15} className="mt-0.5 text-emerald-500" />
+                      <Calendar size={15} className="mt-0.5 text-blue-500" />
                       <span>{agenda.time_info}</span>
                     </div>
                   ) : null}
                   {showLocation ? (
                     <div className="flex items-start gap-2">
-                      <MapPin size={15} className="mt-0.5 text-emerald-500" />
+                      <MapPin size={15} className="mt-0.5 text-blue-500" />
                       <span>{agenda.location || 'Kompleks Al-Maa Parung'}</span>
                     </div>
                   ) : null}

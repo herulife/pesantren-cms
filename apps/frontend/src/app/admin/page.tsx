@@ -69,8 +69,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-white via-emerald-50/60 to-teal-50/60 p-8 shadow-sm">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">
+      <section className="rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-blue-50/60 p-8 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-600">
           Dashboard Admin
         </p>
         <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
@@ -89,9 +89,9 @@ export default function AdminDashboardPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg"
+              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                 <Icon size={22} />
               </div>
               <h2 className="mt-5 text-lg font-black text-slate-900">{item.label}</h2>

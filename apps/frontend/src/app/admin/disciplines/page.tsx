@@ -41,7 +41,7 @@ function getSanctionLevel(points: number) {
   if (points <= 55) return { label: 'SP 1', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' };
   if (points <= 75) return { label: 'Pemanggilan Ortu', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
   if (points <= 85) return { label: 'Teguran & Pembinaan', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' };
-  return { label: 'Aman', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
+  return { label: 'Aman', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
 }
 
 function getPointsColor(points: number) {
@@ -49,7 +49,7 @@ function getPointsColor(points: number) {
   if (points <= 55) return 'text-orange-600';
   if (points <= 75) return 'text-amber-600';
   if (points <= 85) return 'text-yellow-700';
-  return 'text-emerald-600';
+  return 'text-blue-600';
 }
 
 function getPointsBarColor(points: number) {
@@ -57,7 +57,7 @@ function getPointsBarColor(points: number) {
   if (points <= 55) return 'bg-gradient-to-r from-orange-500 to-orange-400';
   if (points <= 75) return 'bg-gradient-to-r from-amber-500 to-amber-400';
   if (points <= 85) return 'bg-gradient-to-r from-yellow-500 to-yellow-400';
-  return 'bg-gradient-to-r from-emerald-500 to-emerald-400';
+  return 'bg-gradient-to-r from-blue-500 to-blue-400';
 }
 
 function Modal({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
@@ -296,7 +296,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
             { label: 'Total Santri Terpantau', value: stats.total, icon: Users, tone: 'border-slate-100 bg-slate-50 text-slate-700', iconTone: 'bg-slate-100 text-slate-600' },
-            { label: 'Aman (> 85 Poin)', value: stats.safe, icon: ShieldCheck, tone: 'border-emerald-100 bg-emerald-50 text-emerald-700', iconTone: 'bg-emerald-100 text-emerald-600' },
+            { label: 'Aman (> 85 Poin)', value: stats.safe, icon: ShieldCheck, tone: 'border-blue-100 bg-blue-50 text-blue-700', iconTone: 'bg-blue-100 text-blue-600' },
             { label: 'Perlu Perhatian (56-85)', value: stats.warning, icon: ShieldAlert, tone: 'border-amber-100 bg-amber-50 text-amber-700', iconTone: 'bg-amber-100 text-amber-600' },
             { label: 'Kritis (≤ 55 Poin)', value: stats.danger, icon: AlertTriangle, tone: 'border-rose-100 bg-rose-50 text-rose-700', iconTone: 'bg-rose-100 text-rose-600' },
           ].map((stat) => (
@@ -369,7 +369,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
                         <td className="px-4 py-4 text-center">
                           <button 
                             onClick={() => handleSendWARekap(p)}
-                            className={`p-2 rounded-lg transition-all ${p.parent_phone ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-300 cursor-not-allowed'}`}
+                            className={`p-2 rounded-lg transition-all ${p.parent_phone ? 'text-blue-600 hover:bg-blue-50' : 'text-slate-300 cursor-not-allowed'}`}
                             title={p.parent_phone ? 'Kirim Rekap WA ke Ortu' : 'Nomor WA Ortu Tidak Ada'}
                           >
                             <MessageCircle size={18} />
@@ -429,7 +429,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
                       <td className="px-4 py-4 text-center">
                         <button 
                           onClick={() => handleSendWA(log)}
-                          className={`p-2 rounded-lg transition-all ${log.parent_phone ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-300 cursor-not-allowed'}`}
+                          className={`p-2 rounded-lg transition-all ${log.parent_phone ? 'text-blue-600 hover:bg-blue-50' : 'text-slate-300 cursor-not-allowed'}`}
                           title={log.parent_phone ? 'Kirim Notifikasi WA ke Ortu' : 'Nomor WA Ortu Tidak Ada'}
                         >
                           <MessageSquare size={18} />

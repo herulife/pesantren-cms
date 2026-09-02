@@ -41,10 +41,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu size={22} />
             </button>
             <div className="flex flex-col">
-              <Link href="/admin" className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">
+              <Link href="/admin" className="text-sm font-black uppercase tracking-[0.18em] text-blue-700">
                 Dashboard
               </Link>
-              <Link href="/" className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-colors hover:text-emerald-700">
+              <Link href="/" className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-colors hover:text-blue-700">
                 Lihat Website
               </Link>
             </div>
@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <button
               type="button"
-              className="rounded-full bg-emerald-600 p-2 text-white lg:hidden"
+              className="rounded-full bg-blue-600 p-2 text-white lg:hidden"
               onClick={() => setIsMobileSidebarOpen(false)}
               aria-label="Tutup menu cepat"
             >

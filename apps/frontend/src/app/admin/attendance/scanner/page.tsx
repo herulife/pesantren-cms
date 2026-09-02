@@ -88,18 +88,18 @@ export default function AttendanceScannerPage() {
 
         <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-2 shadow-2xl">
           {scanResult ? (
-            <div className={`flex min-h-[400px] flex-col items-center justify-center p-10 text-center transition-all ${scanResult.success ? 'bg-emerald-50/50' : 'bg-rose-50/50'}`}>
-              <div className={`mb-6 flex h-20 w-20 items-center justify-center rounded-3xl shadow-lg ${scanResult.success ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+            <div className={`flex min-h-[400px] flex-col items-center justify-center p-10 text-center transition-all ${scanResult.success ? 'bg-blue-50/50' : 'bg-rose-50/50'}`}>
+              <div className={`mb-6 flex h-20 w-20 items-center justify-center rounded-3xl shadow-lg ${scanResult.success ? 'bg-blue-500 text-white' : 'bg-rose-500 text-white'}`}>
                 {scanResult.success ? <CheckCircle size={40} /> : <XCircle size={40} />}
               </div>
-              <h2 className={`mb-3 text-2xl font-black uppercase tracking-tight ${scanResult.success ? 'text-emerald-900' : 'text-rose-900'}`}>
+              <h2 className={`mb-3 text-2xl font-black uppercase tracking-tight ${scanResult.success ? 'text-blue-900' : 'text-rose-900'}`}>
                 {scanResult.success ? 'Berhasil!' : 'Gagal'}
               </h2>
               <p className="mb-10 text-sm leading-relaxed text-slate-600">{scanResult.message}</p>
               
               <button
                 onClick={resetScanner}
-                className={`flex w-full items-center justify-center gap-3 rounded-2xl py-5 text-sm font-black uppercase tracking-widest text-white shadow-xl transition-all hover:-translate-y-1 ${scanResult.success ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-rose-600 shadow-rose-500/20'}`}
+                className={`flex w-full items-center justify-center gap-3 rounded-2xl py-5 text-sm font-black uppercase tracking-widest text-white shadow-xl transition-all hover:-translate-y-1 ${scanResult.success ? 'bg-blue-600 shadow-blue-500/20' : 'bg-rose-600 shadow-rose-500/20'}`}
               >
                 <RefreshCw size={20} />
                 Scan Ulang

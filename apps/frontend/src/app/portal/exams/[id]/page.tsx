@@ -164,9 +164,9 @@ export default function ExamInterfacePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <div className="w-full max-w-md overflow-hidden rounded-[3rem] bg-white text-center shadow-2xl ring-1 ring-slate-100">
-          <div className="relative bg-gradient-to-b from-emerald-500 to-emerald-600 p-12 text-white">
+          <div className="relative bg-gradient-to-b from-blue-500 to-blue-600 p-12 text-white">
             <div className="absolute inset-0 bg-[url('/assets/noise.png')] opacity-10 mix-blend-overlay" />
-            <CheckCircle2 size={72} className="relative z-10 mx-auto mb-6 text-emerald-100" />
+            <CheckCircle2 size={72} className="relative z-10 mx-auto mb-6 text-blue-100" />
             <h2 className="relative z-10 font-outfit text-3xl font-black uppercase tracking-tight">Ujian Selesai!</h2>
           </div>
           <div className="p-12">
@@ -177,7 +177,7 @@ export default function ExamInterfacePage() {
             </div>
             <button 
               onClick={() => router.push('/portal/exams')}
-              className="w-full rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-slate-900/20 hover:bg-emerald-600 transition-all active:scale-95"
+              className="w-full rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-slate-900/20 hover:bg-blue-600 transition-all active:scale-95"
             >
               Kembali ke Menu Ujian
             </button>
@@ -302,7 +302,7 @@ export default function ExamInterfacePage() {
                     void handleFinish();
                   }}
                   disabled={isSubmitting}
-                  className="flex items-center gap-3 rounded-[1.25rem] bg-emerald-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/30 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-3 rounded-[1.25rem] bg-blue-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/30 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50"
                 >
                   {isSubmitting ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} />}
                   Selesai Ujian
@@ -328,7 +328,7 @@ export default function ExamInterfacePage() {
                   if (isCurrent) {
                     btnColor = "bg-white text-blue-600 ring-4 ring-blue-600 font-black shadow-md z-10 scale-105";
                   } else if (isAnswered) {
-                    btnColor = "bg-emerald-500 text-white ring-1 ring-emerald-600 shadow-sm";
+                    btnColor = "bg-blue-500 text-white ring-1 ring-blue-600 shadow-sm";
                   }
 
                   return (
@@ -347,7 +347,7 @@ export default function ExamInterfacePage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="h-4 w-4 rounded-md bg-emerald-500 shadow-sm" />
+                      <div className="h-4 w-4 rounded-md bg-blue-500 shadow-sm" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Sudah Terjawab</span>
                     </div>
                     <span className="font-outfit font-black text-slate-900">{Object.keys(answers).length}</span>

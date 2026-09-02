@@ -68,7 +68,7 @@ export default function AvailableExamsPage() {
             const colors = [
               "from-blue-500 to-blue-700",
               "from-purple-500 to-purple-700",
-              "from-emerald-500 to-emerald-700",
+              "from-blue-500 to-blue-700",
               "from-amber-500 to-amber-700"
             ];
             const bgGradient = colors[index % colors.length];

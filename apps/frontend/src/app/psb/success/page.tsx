@@ -16,11 +16,11 @@ export default function PsbSuccessPage() {
              <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-50 to-white opacity-50 pointer-events-none"></div>
 
              <div className="relative z-10">
-               <div className="w-24 h-24 bg-emerald-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-emerald-100">
-                  <CheckCircle2 className="text-emerald-500" size={48} />
+               <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-blue-100">
+                  <CheckCircle2 className="text-blue-500" size={48} />
                </div>
                
-               <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 font-outfit uppercase tracking-tight leading-tight">Pendaftaran <span className="text-emerald-600 block sm:inline">Berhasil!</span></h1>
+               <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 font-outfit uppercase tracking-tight leading-tight">Pendaftaran <span className="text-blue-600 block sm:inline">Berhasil!</span></h1>
                <p className="text-slate-600 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
                  Alhamdulillah, data awal pendaftaran calon santri telah kami terima. Silahkan lengkapi biodata dan unggah dokumen persyaratan di Portal Wali Santri.
                </p>

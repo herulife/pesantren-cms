@@ -80,7 +80,7 @@ export default function PSBAdminPage() {
 
   const getStatusStyle = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'accepted': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'accepted': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'review': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'rejected': return 'bg-rose-100 text-rose-700 border-rose-200';
       default: return 'bg-amber-100 text-amber-700 border-amber-200';
@@ -104,7 +104,7 @@ export default function PSBAdminPage() {
           </button>
           <button 
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-6 py-4 bg-emerald-50 text-emerald-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100"
+            className="flex items-center gap-2 px-6 py-4 bg-blue-50 text-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-100 transition-all border border-blue-100"
           >
             <FileSpreadsheet size={18} />
             <span>Excel</span>
@@ -117,7 +117,7 @@ export default function PSBAdminPage() {
          { label: 'Total Pendaftar', count: registrations.length, color: 'bg-blue-500' },
            { label: 'Menunggu', count: registrations.filter(r => r.status === 'pending').length, color: 'bg-amber-500' },
            { label: 'Direview', count: registrations.filter(r => r.status === 'review').length, color: 'bg-sky-500' },
-           { label: 'Diterima', count: registrations.filter(r => r.status === 'accepted').length, color: 'bg-emerald-500' },
+           { label: 'Diterima', count: registrations.filter(r => r.status === 'accepted').length, color: 'bg-blue-500' },
            { label: 'Ditolak', count: registrations.filter(r => r.status === 'rejected').length, color: 'bg-rose-500' },
          ].map((stat, i) => (
            <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
@@ -131,13 +131,13 @@ export default function PSBAdminPage() {
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
          <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between gap-6">
             <div className="relative flex-1 max-w-md group">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                <input 
                  type="text" 
                  placeholder="Cari nama santri atau asal sekolah..." 
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
-                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm" 
+                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm" 
                />
             </div>
             <div className="flex gap-3">
@@ -166,7 +166,7 @@ export default function PSBAdminPage() {
                         <tr key={reg.id} className="hover:bg-slate-50/50 transition-colors group block md:table-row mb-4 md:mb-0">
                            <td className="px-8 py-6 block md:table-cell">
                               <div className="flex items-center gap-5">
-                                 <div className="w-12 h-12 bg-emerald-50 rounded-[1rem] flex items-center justify-center font-black text-emerald-600 text-lg border border-emerald-100">
+                                 <div className="w-12 h-12 bg-blue-50 rounded-[1rem] flex items-center justify-center font-black text-blue-600 text-lg border border-blue-100">
                                     {reg.full_name.charAt(0)}
                                  </div>
                                  <div className="min-w-0">
@@ -190,7 +190,7 @@ export default function PSBAdminPage() {
                               <div className="flex flex-col justify-end gap-2 md:flex-row">
                                 <Link 
                                   href={`/admin/psb/detail/${reg.id}`}
-                                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-50 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100"
+                                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100"
                                 >
                                    <Eye size={16} />
                                    Periksa Berkas
@@ -217,7 +217,7 @@ export default function PSBAdminPage() {
                   ) : (
                     <tr>
                       <td colSpan={5} className="px-8 py-20 text-center">
-                        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
+                        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
                       </td>
                     </tr>
                   )}

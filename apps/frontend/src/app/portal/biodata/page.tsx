@@ -207,7 +207,7 @@ export default function BiodataPage() {
     },
     {
       title: 'Data Orang Tua',
-      accent: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+      accent: 'border-blue-100 bg-blue-50 text-blue-700',
       items: [
         { label: 'Nama Ayah', value: formData.father_name || '-' },
         { label: 'Pekerjaan Ayah', value: formData.father_job || '-' },
@@ -236,13 +236,13 @@ export default function BiodataPage() {
       {!isEditMode && hasSavedBiodata ? (
         <div className="space-y-8">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-            <div className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-sm">
+            <div className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-sm">
               <div className="flex items-start gap-4">
-                <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-600">
+                <div className="rounded-2xl bg-blue-100 p-3 text-blue-600">
                   <CheckCircle2 size={28} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Biodata Tersimpan</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Biodata Tersimpan</p>
                   <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
                     Form Tidak Perlu Aktif Terus
                   </h4>
@@ -267,7 +267,7 @@ export default function BiodataPage() {
               <div className="mt-6 flex flex-col gap-3">
                 <Link
                   href="/portal/documents"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
                 >
                   Unggah Dokumen Sekarang <ArrowRight size={16} />
                 </Link>

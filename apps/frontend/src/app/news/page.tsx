@@ -45,7 +45,7 @@ export default function NewsPortal() {
   return (
     <PublicLayout>
       <section className="relative overflow-hidden border-b border-slate-200 bg-[linear-gradient(180deg,#fbfcfa_0%,#f3f7f3_100%)] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.10),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(15,118,110,0.06),_transparent_22%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.10),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(37,99,235,0.06),_transparent_22%)]" />
         <div className="mx-auto flex max-w-6xl flex-col gap-8 relative z-10">
           <div className="grid gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-end">
             <PublicSectionIntro
@@ -55,12 +55,12 @@ export default function NewsPortal() {
             />
 
             <div className="rounded-[1.8rem] border border-white/80 bg-white/88 p-5 shadow-[0_22px_50px_-36px_rgba(15,23,42,0.16)] backdrop-blur-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Pencarian Berita</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Pencarian Berita</p>
               <div className="relative mt-4 w-full">
                 <input
                   type="text"
                   placeholder="Cari judul atau ringkasan berita..."
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-12 py-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-12 py-4 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                 />
@@ -98,8 +98,8 @@ export default function NewsPortal() {
             {filteredNews.length > 3 ? (
               <div>
                 <div className="mb-6 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-gradient-to-r from-emerald-200 via-emerald-100 to-transparent" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">
+                  <div className="h-px flex-1 bg-gradient-to-r from-blue-200 via-blue-100 to-transparent" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-700">
                     Arsip Berita
                   </p>
                 </div>

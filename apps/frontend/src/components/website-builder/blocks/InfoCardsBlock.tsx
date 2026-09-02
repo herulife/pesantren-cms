@@ -34,7 +34,7 @@ export default function InfoCardsBlock({ section }: { section: HomeSection }) {
         <div className={`grid gap-4 rounded-[2.1rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.92)_100%)] p-5 shadow-[0_30px_70px_-35px_rgba(15,23,42,0.32)] backdrop-blur-xl md:p-6 ${columns === 3 ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           {items.map((fact) => (
             <div key={`${fact.label}-${fact.value}`} className="rounded-[1.5rem] border border-slate-100/90 bg-white/95 px-5 py-4 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
-              <div className="mb-3 inline-flex rounded-2xl bg-emerald-50 p-3 text-emerald-600 ring-1 ring-emerald-100">
+              <div className="mb-3 inline-flex rounded-2xl bg-blue-50 p-3 text-blue-600 ring-1 ring-blue-100">
                 {fact.icon}
               </div>
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{fact.label}</p>

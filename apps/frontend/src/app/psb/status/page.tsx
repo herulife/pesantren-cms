@@ -77,13 +77,13 @@ export default function PsbStatusPage() {
                 <h3 className="text-xl font-black text-slate-900 mb-6 font-outfit uppercase tracking-tight">Hasil Pencarian</h3>
                 
                 <div className={`p-8 rounded-[2rem] border ${
-                  result.status === 'Diterima' ? 'bg-emerald-50 border-emerald-100' :
+                  result.status === 'Diterima' ? 'bg-blue-50 border-blue-100' :
                   result.status === 'Tidak Diterima' ? 'bg-rose-50 border-rose-100' :
                   'bg-amber-50 border-amber-100'
                 }`}>
                   <div className="flex items-start gap-4">
                      <div className={`mt-1 bg-white p-2 rounded-full shadow-sm ${
-                        result.status === 'Diterima' ? 'text-emerald-500' :
+                        result.status === 'Diterima' ? 'text-blue-500' :
                         result.status === 'Tidak Diterima' ? 'text-rose-500' :
                         'text-amber-500'
                      }`}>
@@ -94,12 +94,12 @@ export default function PsbStatusPage() {
                      <div>
                         <p className="text-sm font-bold text-slate-500 mb-1 uppercase tracking-widest">{result.name}</p>
                         <h4 className={`text-2xl font-black uppercase tracking-tight mb-3 ${
-                           result.status === 'Diterima' ? 'text-emerald-800' :
+                           result.status === 'Diterima' ? 'text-blue-800' :
                            result.status === 'Tidak Diterima' ? 'text-rose-800' :
                            'text-amber-800'
                         }`}>{result.status}</h4>
                         <p className={`text-sm font-medium leading-relaxed ${
-                           result.status === 'Diterima' ? 'text-emerald-700' :
+                           result.status === 'Diterima' ? 'text-blue-700' :
                            result.status === 'Tidak Diterima' ? 'text-rose-700' :
                            'text-amber-700'
                         }`}>{result.notes}</p>

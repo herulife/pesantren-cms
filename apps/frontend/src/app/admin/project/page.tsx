@@ -31,7 +31,7 @@ const blockLabels = {
 
 type TabKey = 'subprojects' | 'activities' | 'indicators' | 'weights';
 
-const DEFAULT_COLORS = ['from-sky-500 to-blue-600', 'from-emerald-500 to-teal-600', 'from-amber-500 to-orange-600'];
+const DEFAULT_COLORS = ['from-sky-500 to-blue-600', 'from-blue-500 to-blue-600', 'from-amber-500 to-orange-600'];
 
 function Modal({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
 	if (!open) return null;
@@ -53,7 +53,7 @@ function Scorebar({ score }: { score: number }) {
 	return (
 		<div className="flex items-center gap-2">
 			<div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-				<div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-sky-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+				<div className={`h-full rounded-full ${pct >= 100 ? 'bg-blue-500' : pct >= 50 ? 'bg-sky-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
 			</div>
 			<span className="w-14 text-right text-sm font-bold text-slate-700">{pct}%</span>
 		</div>
@@ -159,7 +159,7 @@ export default function ProjectPage() {
 			</div>
 
 			{/* Weight status banner */}
-			<div className={`flex items-center gap-3 rounded-2xl border px-5 py-4 ${weightMsg?.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
+			<div className={`flex items-center gap-3 rounded-2xl border px-5 py-4 ${weightMsg?.ok ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
 				{weightMsg?.ok ? <CheckCircle2 size={22} /> : <AlertTriangle size={22} />}
 				<div className="flex-1">
 					<p className="text-sm font-bold">{weightMsg?.text || 'Memvalidasi bobot...'}</p>
@@ -293,7 +293,7 @@ export default function ProjectPage() {
 						<div className="border-t border-slate-100 pt-3">
 							<div className="flex items-center gap-4">
 								<span className="w-40 text-sm font-black text-slate-900">Total</span>
-								<span className={`text-base font-black ${totalWeight === 100 ? 'text-emerald-600' : 'text-rose-600'}`}>{totalWeight.toFixed(1)}%</span>
+								<span className={`text-base font-black ${totalWeight === 100 ? 'text-blue-600' : 'text-rose-600'}`}>{totalWeight.toFixed(1)}%</span>
 							</div>
 						</div>
 					</div>

@@ -201,7 +201,7 @@ export default function NewsAdminPage() {
         </div>
         <Link 
           href="/admin/news/add"
-          className="flex items-center justify-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/15"
+          className="flex items-center justify-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/15"
         >
           <Plus size={20} />
           <span>Tulis Berita</span>
@@ -214,7 +214,7 @@ export default function NewsAdminPage() {
              <div className="flex bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm shrink-0">
                   <button 
                     onClick={() => { setCurrentStatus('published'); setCurrentPage(1); }}
-                    className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${currentStatus === 'published' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${currentStatus === 'published' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                     Terbit
                   </button>
@@ -228,31 +228,31 @@ export default function NewsAdminPage() {
              </div>
 
              <div className="flex-1 w-full relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                 <input 
                   type="text" 
                   placeholder="Cari berita berdasarkan judul..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-14 pr-6 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm shadow-inner"
+                  className="w-full pl-14 pr-6 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm shadow-inner"
                 />
              </div>
          </div>
 
          {/* Bulk Actions Bar */}
          {selectedIds.size > 0 && (
-           <div className="bg-emerald-50 px-8 py-4 border-b border-emerald-100 flex items-center justify-between animate-in slide-in-from-top duration-300">
+           <div className="bg-blue-50 px-8 py-4 border-b border-blue-100 flex items-center justify-between animate-in slide-in-from-top duration-300">
               <div className="flex items-center gap-4">
-                 <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
+                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
                    {selectedIds.size}
                  </div>
-                 <span className="text-xs font-black text-emerald-800 uppercase tracking-widest">Berita Terpilih</span>
+                 <span className="text-xs font-black text-blue-800 uppercase tracking-widest">Berita Terpilih</span>
               </div>
               <div className="flex items-center gap-3">
                  {currentStatus === 'trash' && (
                     <button 
                       onClick={() => setIsBulkRestoreOpen(true)}
-                      className="px-6 py-2.5 bg-white text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors border border-emerald-200"
+                      className="px-6 py-2.5 bg-white text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-colors border border-blue-200"
                     >
                       Pulihkan Semua
                     </button>
@@ -275,7 +275,7 @@ export default function NewsAdminPage() {
                   <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
                      <th className="pl-10 pr-6 py-6 w-12">
                          <div className="flex items-center justify-center">
-                            <input type="checkbox" checked={news.length > 0 && selectedIds.size === news.length} onChange={(e) => handleSelectAll(e.target.checked)} className="w-5 h-5 rounded-lg border-slate-200 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer transition-all" />
+                            <input type="checkbox" checked={news.length > 0 && selectedIds.size === news.length} onChange={(e) => handleSelectAll(e.target.checked)} className="w-5 h-5 rounded-lg border-slate-200 text-blue-600 focus:ring-blue-500/20 cursor-pointer transition-all" />
                          </div>
                      </th>
                      <th className="px-6 py-6">Informasi Berita</th>
@@ -305,10 +305,10 @@ export default function NewsAdminPage() {
                       news.map((item) => {
                         const isChecked = selectedIds.has(item.id);
                         return (
-                          <tr key={item.id} className={`group hover:bg-slate-50 transition-colors ${isChecked ? 'bg-emerald-50/50' : ''}`}>
+                          <tr key={item.id} className={`group hover:bg-slate-50 transition-colors ${isChecked ? 'bg-blue-50/50' : ''}`}>
                              <td className="pl-10 pr-6 py-6 text-center">
                                  <div className="flex items-center justify-center">
-                                    <input type="checkbox" checked={isChecked} onChange={(e) => handleSelectOne(item.id, e.target.checked)} className="w-5 h-5 rounded-lg border-slate-200 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer transition-all" />
+                                    <input type="checkbox" checked={isChecked} onChange={(e) => handleSelectOne(item.id, e.target.checked)} className="w-5 h-5 rounded-lg border-slate-200 text-blue-600 focus:ring-blue-500/20 cursor-pointer transition-all" />
                                  </div>
                              </td>
                              <td className="px-6 py-6 max-w-lg">
@@ -321,7 +321,7 @@ export default function NewsAdminPage() {
                                       )}
                                    </div>
                                    <div className="flex flex-col gap-2">
-                                      <Link href={`/admin/news/edit/${item.id}`} className="font-black text-slate-900 leading-snug uppercase tracking-tight group-hover:text-emerald-600 transition-colors line-clamp-2">{item.title}</Link>
+                                      <Link href={`/admin/news/edit/${item.id}`} className="font-black text-slate-900 leading-snug uppercase tracking-tight group-hover:text-blue-600 transition-colors line-clamp-2">{item.title}</Link>
                                       <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                                          <div className="flex items-center gap-1.5"><Calendar size={12} className="text-slate-300" /> {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                                          <div className="flex items-center gap-1.5"><User size={12} className="text-slate-300" /> Admin Redaksi</div>
@@ -331,14 +331,14 @@ export default function NewsAdminPage() {
                              </td>
                              <td className="px-6 py-6 hidden lg:table-cell">
                                 <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-widest shadow-sm">
-                                  <Tag size={12} className="text-emerald-500" />
+                                  <Tag size={12} className="text-blue-500" />
                                   {getCategoryName(item)}
                                 </span>
                              </td>
                              <td className="px-6 py-6 hidden md:table-cell">
                                 <div className="flex items-center gap-2">
                                    {item.status === 'published' ? (
-                                     <span className="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+                                     <span className="flex items-center gap-2 text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest">
                                         <Eye size={12}/> PUBLISHED
                                      </span>
                                    ) : (
@@ -352,13 +352,13 @@ export default function NewsAdminPage() {
                                 <div className="flex justify-end items-center gap-2">
                                    {currentStatus === 'trash' ? (
                                        <>
-                                         <button onClick={() => { setSelectedId(item.id); setIsRestoreOpen(true); }} className="p-3 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Pulihkan Berita"><RotateCcw size={20} /></button>
+                                         <button onClick={() => { setSelectedId(item.id); setIsRestoreOpen(true); }} className="p-3 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Pulihkan Berita"><RotateCcw size={20} /></button>
                                          <button onClick={() => { setSelectedId(item.id); setIsDeleteOpen(true); }} className="p-3 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Permanen"><Trash2 size={20} /></button>
                                        </>
                                    ) : (
                                        <>
                                          <Link href={`/news/${item.slug}`} target="_blank" className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Lihat di Web"><ExternalLink size={20} /></Link>
-                                         <Link href={`/admin/news/edit/${item.id}`} className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Ubah Konten"><Pencil size={20} /></Link>
+                                         <Link href={`/admin/news/edit/${item.id}`} className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ubah Konten"><Pencil size={20} /></Link>
                                          <button onClick={() => { setSelectedId(item.id); setIsDeleteOpen(true); }} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Masukan Sampah"><Trash2 size={20} /></button>
                                        </>
                                    )}

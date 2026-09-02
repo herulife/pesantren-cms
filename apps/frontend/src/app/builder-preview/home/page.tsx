@@ -173,7 +173,7 @@ export default function BuilderPreviewHomePage() {
   if (loading || (!user && !isLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <Loader2 className="animate-spin text-emerald-400" size={28} />
+        <Loader2 className="animate-spin text-blue-400" size={28} />
       </div>
     );
   }
