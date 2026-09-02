@@ -185,7 +185,7 @@ export default function BiodataPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-blue-600" />
+        <RefreshCw className="animate-spin text-sky-600" />
       </div>
     );
   }
@@ -193,7 +193,7 @@ export default function BiodataPage() {
   const summaryCards = [
     {
       title: 'Data Calon Santri',
-      accent: 'border-blue-100 bg-blue-50 text-blue-700',
+      accent: 'border-sky-100 bg-sky-50 text-sky-700',
       items: [
         { label: 'Nama Lengkap', value: formData.full_name || '-' },
         { label: 'Nama Panggilan', value: formData.nickname || '-' },
@@ -207,7 +207,7 @@ export default function BiodataPage() {
     },
     {
       title: 'Data Orang Tua',
-      accent: 'border-blue-100 bg-blue-50 text-blue-700',
+      accent: 'border-sky-100 bg-sky-50 text-sky-700',
       items: [
         { label: 'Nama Ayah', value: formData.father_name || '-' },
         { label: 'Pekerjaan Ayah', value: formData.father_job || '-' },
@@ -226,8 +226,8 @@ export default function BiodataPage() {
         Lengkapi data calon santri dan data orang tua. Biodata ini akan dibaca langsung oleh panitia PSB saat proses verifikasi.
       </p>
 
-      <div className="mb-8 flex gap-4 rounded-3xl border border-blue-100 bg-blue-50 p-6 text-blue-800">
-        <AlertCircle className="mt-1 shrink-0 text-blue-500" />
+      <div className="mb-8 flex gap-4 rounded-3xl border border-sky-100 bg-sky-50 p-6 text-sky-800">
+        <AlertCircle className="mt-1 shrink-0 text-sky-500" />
         <p className="text-sm font-medium leading-relaxed">
           Nama lengkap akan otomatis mengikuti akun portal saat biodata pertama kali dibuat, tetapi tetap bisa disesuaikan di formulir ini jika perlu mengikuti dokumen resmi.
         </p>
@@ -236,13 +236,13 @@ export default function BiodataPage() {
       {!isEditMode && hasSavedBiodata ? (
         <div className="space-y-8">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-            <div className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-sm">
+            <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-sm">
               <div className="flex items-start gap-4">
-                <div className="rounded-2xl bg-blue-100 p-3 text-blue-600">
+                <div className="rounded-2xl bg-sky-100 p-3 text-sky-600">
                   <CheckCircle2 size={28} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Biodata Tersimpan</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Biodata Tersimpan</p>
                   <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
                     Form Tidak Perlu Aktif Terus
                   </h4>
@@ -267,7 +267,7 @@ export default function BiodataPage() {
               <div className="mt-6 flex flex-col gap-3">
                 <Link
                   href="/portal/documents"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-500"
                 >
                   Unggah Dokumen Sekarang <ArrowRight size={16} />
                 </Link>
@@ -327,7 +327,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.full_name}
                 onChange={(e) => handleChange('full_name', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
             </div>
@@ -338,7 +338,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.nickname}
                 onChange={(e) => handleChange('nickname', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Contoh: Ahmad"
               />
             </div>
@@ -348,7 +348,7 @@ export default function BiodataPage() {
               <select
                 value={formData.gender}
                 onChange={(e) => handleChange('gender', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               >
                 <option value="">Pilih jenis kelamin</option>
@@ -365,7 +365,7 @@ export default function BiodataPage() {
                 onChange={(e) => handleChange('nik', e.target.value)}
                 aria-invalid={!!errors.nik}
                 aria-describedby={errors.nik ? "err-nik" : undefined}
-                className={`w-full rounded-2xl border px-5 py-4 font-bold outline-none transition-all focus:ring-4 ${errors.nik ? "border-rose-300 bg-rose-50 text-rose-900 focus:border-rose-400 focus:ring-rose-500/10" : "border-slate-200 bg-slate-50 text-slate-800 focus:border-blue-500 focus:ring-blue-500/10"}`}
+                className={`w-full rounded-2xl border px-5 py-4 font-bold outline-none transition-all focus:ring-4 ${errors.nik ? "border-rose-300 bg-rose-50 text-rose-900 focus:border-rose-400 focus:ring-rose-500/10" : "border-slate-200 bg-slate-50 text-slate-800 focus:border-sky-500 focus:ring-sky-500/10"}`}
                 placeholder="16 digit NIK"
                 maxLength={16}
                 required
@@ -379,7 +379,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.birth_place}
                 onChange={(e) => handleChange('birth_place', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
             </div>
@@ -390,7 +390,7 @@ export default function BiodataPage() {
                 type="date"
                 value={formData.birth_date}
                 onChange={(e) => handleChange('birth_date', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
             </div>
@@ -401,7 +401,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.school_origin}
                 onChange={(e) => handleChange('school_origin', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
             </div>
@@ -412,7 +412,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.program_choice}
                 onChange={(e) => handleChange('program_choice', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Contoh: Tahfidz Reguler"
                 required
               />
@@ -424,7 +424,7 @@ export default function BiodataPage() {
                 rows={3}
                 value={formData.address}
                 onChange={(e) => handleChange('address', e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
             </div>
@@ -473,7 +473,7 @@ export default function BiodataPage() {
               type="submit"
               value="save"
               disabled={isSaving}
-              className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-blue-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 disabled:opacity-70 md:w-auto"
+              className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-sky-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-sky-700 transition hover:border-sky-300 hover:bg-sky-50 disabled:opacity-70 md:w-auto"
             >
               {isSaving ? 'Menyimpan...' : <><Save size={18} /> Simpan Biodata</>}
             </button>
@@ -481,7 +481,7 @@ export default function BiodataPage() {
               type="submit"
               value="continue"
               disabled={isSaving}
-              className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-blue-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:opacity-70 md:w-auto"
+              className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-sky-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/20 transition-all hover:bg-sky-700 disabled:opacity-70 md:w-auto"
             >
               {isSaving ? 'Menyimpan...' : <>Simpan & Lanjut ke Dokumen <ArrowRight size={18} /></>}
             </button>

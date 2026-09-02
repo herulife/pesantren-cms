@@ -26,7 +26,7 @@ type BuilderHeroSlide = {
 const defaultSlide: BuilderHeroSlide = {
   title: 'Tahfidz, Adab, dan Ilmu dalam Satu Pembinaan',
   subtitle: 'Al-Maa Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.',
-  image_url: '/assets/img/gedung.webp',
+  image_url: 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80',
 };
 
 function getSlides(section: HomeSection) {
@@ -85,9 +85,9 @@ function buttonClass(style: string) {
     return 'border border-white/20 bg-transparent text-white hover:bg-white/10';
   }
   if (style === 'light') {
-    return 'bg-white text-blue-900 hover:bg-blue-50';
+    return 'bg-white text-sky-900 hover:bg-sky-50';
   }
-  return 'bg-blue-600 text-white shadow-[0_18px_45px_-20px_rgba(37,99,235,0.6)] hover:bg-blue-500';
+  return 'bg-sky-600 text-white shadow-[0_18px_45px_-20px_rgba(14,165,233,0.6)] hover:bg-sky-500';
 }
 
 function contentPositionClass(textPosition: string, variant: string) {
@@ -125,7 +125,7 @@ function HeroContent({
 
   return (
     <div className={`max-w-3xl ${contentPositionClass(textPosition, variant)}`}>
-      <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-blue-300/20 bg-blue-400/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-blue-100 backdrop-blur-md sm:text-[11px]">
+      <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-sky-300/20 bg-sky-400/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100 backdrop-blur-md sm:text-[11px]">
         <Sparkles size={14} />
         {kicker}
       </span>
@@ -198,7 +198,7 @@ export default function HeroBlock({ section, settings }: HeroBlockProps) {
     <div className={`relative overflow-hidden ${heroHeightClass(mobileHeight)}`}>
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
       <div className={`absolute inset-0 ${overlayClass(overlay)}`} />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(15,23,42,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.14),transparent_24%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.14),transparent_24%)]" />
       <div className={`container relative z-10 mx-auto grid min-h-[inherit] max-w-6xl items-center gap-10 px-4 pb-16 pt-10 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-24 ${variant === 'split' ? 'lg:grid-cols-[1fr_0.9fr]' : ''}`}>
         <HeroContent section={section} slide={slide} variant={variant} textPosition={textPosition} />
         {variant === 'split' ? (

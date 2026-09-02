@@ -98,9 +98,9 @@ export default function VideoSeriesPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-blue-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.22),_transparent_42%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-20 text-white">
+      <section className="relative overflow-hidden border-b border-sky-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.22),_transparent_42%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-20 text-white">
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <Link href="/videos" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-100/80 hover:text-white">
+          <Link href="/videos" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-sky-100/80 hover:text-white">
             <ArrowLeft size={14} />
             Kembali ke Video
           </Link>
@@ -121,10 +121,10 @@ export default function VideoSeriesPage() {
             <PublicGridSkeleton count={6} className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" itemClassName="h-[240px] rounded-[2rem]" />
           ) : series ? (
             <>
-              <div className="mb-10 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
+              <div className="mb-10 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-sky-700">
                 {series.eventDate && (
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
-                    <CalendarDays size={14} className="text-blue-600" />
+                    <CalendarDays size={14} className="text-sky-600" />
                     {series.eventDate}
                   </span>
                 )}
@@ -132,7 +132,7 @@ export default function VideoSeriesPage() {
               </div>
 
               {leadVideoId ? (
-                <div className="mb-12 overflow-hidden rounded-[2.5rem] border border-white/80 bg-white shadow-[0_25px_60px_-35px_rgba(15,23,42,0.3)]">
+                <div className="mb-12 overflow-hidden rounded-[2.5rem] border border-white/80 bg-white shadow-[0_25px_60px_-35px_rgba(250,204,21,0.3)]">
                   <div className="aspect-video">
                     <iframe
                       title={series.title}
@@ -143,7 +143,7 @@ export default function VideoSeriesPage() {
                     />
                   </div>
                   <div className="px-6 py-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Video Utama</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-600">Video Utama</p>
                     <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-slate-900">{leadVideo.title}</h2>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export default function VideoSeriesPage() {
                 {sortedItems.map((video) => {
                   const thumbnail = video.thumbnail || getYouTubeThumbnailUrl(video.url);
                   return (
-                    <a key={video.id} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,0.25)]">
+                    <a key={video.id} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_18px_50px_-30px_rgba(250,204,21,0.25)]">
                       <div className="relative aspect-video overflow-hidden bg-slate-900">
                         {thumbnail ? (
                           <img src={thumbnail} alt={video.title} className="h-full w-full object-cover opacity-85 transition-transform duration-700 group-hover:scale-105" />
@@ -170,7 +170,7 @@ export default function VideoSeriesPage() {
                         </div>
                       </div>
                       <div className="px-5 py-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-600">Video</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-600">Video</p>
                         <h3 className="mt-2 text-lg font-black uppercase tracking-tight text-slate-900 line-clamp-2">{video.title}</h3>
                       </div>
                     </a>

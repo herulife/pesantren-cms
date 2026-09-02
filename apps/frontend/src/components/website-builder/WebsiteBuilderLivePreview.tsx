@@ -100,7 +100,7 @@ const previewFrameConfigs: Record<WebsiteBuilderLivePreviewViewport, PreviewFram
     chromeHeight: 52,
     fallbackScale: 0.42,
     frameOuterClass:
-      'rounded-[2rem] border border-slate-300/80 bg-[linear-gradient(180deg,#f8fafc_0%,#dbe4f3_100%)] p-[18px] shadow-[0_28px_80px_-45px_rgba(15,23,42,0.45)]',
+      'rounded-[2rem] border border-slate-300/80 bg-[linear-gradient(180deg,#f8fafc_0%,#dbe4f3_100%)] p-[18px] shadow-[0_28px_80px_-45px_rgba(250,204,21,0.45)]',
     screenOuterClass: 'overflow-hidden rounded-[1.35rem] border border-slate-300/70 bg-white',
     canvasWrapClass: 'rounded-[1.4rem] bg-[radial-gradient(circle_at_top,#eef4ff_0%,#dce7f5_48%,#d6dfec_100%)] p-4',
     icon: Monitor,
@@ -114,7 +114,7 @@ const previewFrameConfigs: Record<WebsiteBuilderLivePreviewViewport, PreviewFram
     chromeHeight: 48,
     fallbackScale: 0.58,
     frameOuterClass:
-      'rounded-[2.4rem] border border-slate-800/80 bg-[linear-gradient(180deg,#1f2937_0%,#0f172a_100%)] p-[20px] shadow-[0_30px_90px_-50px_rgba(15,23,42,0.7)]',
+      'rounded-[2.4rem] border border-slate-800/80 bg-[linear-gradient(180deg,#1f2937_0%,#facc15_100%)] p-[20px] shadow-[0_30px_90px_-50px_rgba(250,204,21,0.7)]',
     screenOuterClass: 'overflow-hidden rounded-[1.8rem] border border-white/10 bg-white',
     canvasWrapClass: 'rounded-[1.6rem] bg-[radial-gradient(circle_at_top,#f8fafc_0%,#e5eef9_45%,#dae3ef_100%)] p-4',
     icon: TabletSmartphone,
@@ -170,10 +170,10 @@ function renderChrome(
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-full bg-rose-400" />
           <span className="h-3 w-3 rounded-full bg-amber-400" />
-          <span className="h-3 w-3 rounded-full bg-blue-400" />
+          <span className="h-3 w-3 rounded-full bg-sky-400" />
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-500">
-          <Lock size={12} className="text-blue-500" />
+          <Lock size={12} className="text-sky-500" />
           <span className="truncate">pondpes-almaparung.vercel.app{previewPath}</span>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
@@ -365,11 +365,11 @@ export default function WebsiteBuilderLivePreview({
   const zoomPercent = Math.round(frameScale * 100);
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_25px_70px_-40px_rgba(15,23,42,0.28)]">
+    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_25px_70px_-40px_rgba(250,204,21,0.28)]">
       <div className="border-b border-slate-200 px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Live Preview</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-600">Live Preview</p>
             <h4 className="mt-2 text-lg font-black text-slate-950">Preview yang lebih mirip tampilan publik</h4>
             <p className="mt-2 max-w-xl text-sm leading-7 text-slate-500">
               Preview ini auto-fit ke panel, memakai frame perangkat, dan sengaja non-interaktif supaya kamu bisa fokus menilai ritme layout, proporsi, dan visual hierarchy.
@@ -383,7 +383,7 @@ export default function WebsiteBuilderLivePreview({
             <span className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
               {previewPath}
             </span>
-            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-sky-700">
               Auto Fit {zoomPercent}%
             </span>
           </div>

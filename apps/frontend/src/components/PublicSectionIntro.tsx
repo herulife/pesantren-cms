@@ -30,7 +30,7 @@ export default function PublicSectionIntro({
     <div className={`flex flex-col gap-6 ${isCenter ? 'items-center text-center' : 'md:flex-row md:items-end md:justify-between md:gap-8 lg:gap-10'}`}>
       <div className={isCenter ? 'max-w-3xl' : 'max-w-3xl'}>
         {eyebrow ? (
-          <p className={`mb-3 text-[10px] font-black uppercase tracking-[0.32em] ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+          <p className={`mb-3 text-[10px] font-black uppercase tracking-[0.32em] ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
             {eyebrow}
           </p>
         ) : null}
@@ -57,8 +57,8 @@ export default function PublicSectionIntro({
           href={actionHref}
           className={`inline-flex self-start items-center gap-2 rounded-full px-6 py-3 text-sm font-black tracking-[0.06em] transition-all md:shrink-0 md:self-end ${
             isDark
-              ? 'border border-blue-500/40 bg-blue-500/10 text-blue-100 hover:bg-blue-500/20'
-              : 'border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700'
+              ? 'border border-sky-500/40 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20'
+              : 'border border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:text-sky-700'
           }`}
         >
           {actionLabel}

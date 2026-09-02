@@ -30,8 +30,8 @@ export const featuredOpenDonation: FeaturedDonationDetail = {
   bankName: 'BSI',
   accountNumber: '4381567120',
   accountHolder: 'Alma Parung Bogor',
-  posterImage: '/assets/img/donasi/wakaf-cat-tembok-brosur.jpeg',
-  coverImage: '/assets/img/donasi/wakaf-cat-tembok-gedung.jpeg',
+  posterImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1700&q=80',
+  coverImage: 'https://images.unsplash.com/photo-1744132242267-9aa633fd2f73?auto=format&fit=crop&w=1700&q=80',
   summary:
     'Kami membuka kesempatan amal jariyah untuk membantu pengecatan ruang kelas santri agar suasana belajar lebih bersih, nyaman, dan membangkitkan semangat menghafal Al-Quran.',
   category: 'Wakaf Renovasi Ringan',

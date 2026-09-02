@@ -132,7 +132,7 @@ export default function DonationsAdminPage() {
         </div>
         <Link 
           href="/admin/donations/add"
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95"
         >
           <Plus size={20} />
           <span>Buat Kampanye</span>
@@ -140,12 +140,12 @@ export default function DonationsAdminPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500">
+        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-sky-900/10 transition-all duration-500">
           <div className="flex justify-between items-start mb-6">
-            <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 shadow-inner">
+            <div className="w-14 h-14 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 border border-sky-100 shadow-inner">
                <DollarSign size={28} />
             </div>
-            <span className="text-blue-600 text-[9px] font-black bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-1 border border-blue-100 uppercase tracking-widest">
+            <span className="text-sky-600 text-[9px] font-black bg-sky-50 px-3 py-1.5 rounded-full flex items-center gap-1 border border-sky-100 uppercase tracking-widest">
                <ArrowUpRight size={14} /> Berkelanjutan
             </span>
           </div>
@@ -153,17 +153,17 @@ export default function DonationsAdminPage() {
           <div className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Agregat Dana Sosial</div>
         </div>
 
-        <div className="bg-blue-950 p-8 rounded-xl shadow-2xl shadow-blue-950/20 relative overflow-hidden group transition-all duration-500 hover:scale-[1.02]">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-900/20 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-amber-400/10 transition-colors duration-700"></div>
-          <div className="w-14 h-14 bg-blue-900 rounded-xl flex items-center justify-center text-amber-400 mb-6 border border-blue-800 shadow-lg">
+        <div className="bg-sky-950 p-8 rounded-xl shadow-2xl shadow-sky-950/20 relative overflow-hidden group transition-all duration-500 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-sky-900/20 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-amber-400/10 transition-colors duration-700"></div>
+          <div className="w-14 h-14 bg-sky-900 rounded-xl flex items-center justify-center text-amber-400 mb-6 border border-sky-800 shadow-lg">
              <TrendingUp size={28} />
           </div>
           <div className="text-3xl font-black text-white mb-1 font-outfit">{activeCampaignsCount}</div>
-          <div className="text-[10px] text-blue-400 font-black uppercase tracking-[0.2em]">Kampanye Berjalan</div>
+          <div className="text-[10px] text-sky-400 font-black uppercase tracking-[0.2em]">Kampanye Berjalan</div>
         </div>
 
-        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm group hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500">
-          <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6 border border-blue-100 shadow-inner">
+        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm group hover:shadow-2xl hover:shadow-sky-900/10 transition-all duration-500">
+          <div className="w-14 h-14 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 mb-6 border border-sky-100 shadow-inner">
              <Users size={28} />
           </div>
           <div className="text-3xl font-black text-slate-900 mb-1 font-outfit">{donations.length >= 10 ? donations.length : `0${donations.length}`}</div>
@@ -177,26 +177,26 @@ export default function DonationsAdminPage() {
             <div className="flex bg-slate-50 p-1.5 rounded-xl border border-slate-100 shadow-inner shrink-0 w-full lg:w-auto">
                 <button 
                   onClick={() => { setActiveTab('campaigns'); setSearchQuery(''); }}
-                  className={`flex-1 lg:flex-none px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'campaigns' ? 'bg-white text-blue-600 shadow-md border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex-1 lg:flex-none px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'campaigns' ? 'bg-white text-sky-600 shadow-md border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Daftar Kampanye
                 </button>
                 <button 
                   onClick={() => { setActiveTab('transactions'); setSearchQuery(''); }}
-                  className={`flex-1 lg:flex-none px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transactions' ? 'bg-white text-blue-600 shadow-md border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex-1 lg:flex-none px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transactions' ? 'bg-white text-sky-600 shadow-md border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Log Transaksi
                 </button>
             </div>
 
             <div className="flex-1 w-full relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors" size={18} />
                 <input 
                   type="text" 
                   placeholder={activeTab === 'campaigns' ? "Cari judul kampanye atau deskripsi..." : "Cari nama donatur atau ID transaksi..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm shadow-inner"
+                  className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-sm shadow-inner"
                 />
             </div>
          </div>
@@ -204,7 +204,7 @@ export default function DonationsAdminPage() {
          {activeTab === 'transactions' && (
            <div className="flex flex-col md:flex-row gap-4 pt-4 border-t border-slate-100 animate-in fade-in duration-500">
               <div className="flex items-center gap-3 shrink-0">
-                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                 <div className="w-10 h-10 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600">
                     <Filter size={18} />
                  </div>
                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter Lanjutan</span>
@@ -213,7 +213,7 @@ export default function DonationsAdminPage() {
               <select 
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="flex-1 px-6 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-xs text-slate-600 cursor-pointer appearance-none"
+                className="flex-1 px-6 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-xs text-slate-600 cursor-pointer appearance-none"
               >
                 <option value="all">Semua Status Verifikasi</option>
                 <option value="verified">Terverifikasi (Verified)</option>
@@ -223,7 +223,7 @@ export default function DonationsAdminPage() {
               <select 
                 value={campaignFilter}
                 onChange={(e) => setCampaignFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                className="flex-[1.5] px-6 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-xs text-slate-600 cursor-pointer appearance-none"
+                className="flex-[1.5] px-6 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-xs text-slate-600 cursor-pointer appearance-none"
               >
                 <option value="all">Semua Program Kampanye</option>
                 {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
@@ -238,7 +238,7 @@ export default function DonationsAdminPage() {
                   </button>
                   <button 
                     onClick={handleExportExcel}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-100 transition-all shadow-sm"
+                    className="flex items-center gap-2 px-6 py-3 bg-sky-50 text-sky-600 border border-sky-100 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-sky-100 transition-all shadow-sm"
                   >
                     <FileSpreadsheet size={14} /> EXCEL
                   </button>
@@ -252,7 +252,7 @@ export default function DonationsAdminPage() {
           {!isLoading ? (
             campaigns.length > 0 ? (
               campaigns.map((c) => (
-                <div key={c.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 relative">
+                <div key={c.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group hover:shadow-2xl hover:shadow-sky-900/10 transition-all duration-500 relative">
                    <div className="h-52 relative overflow-hidden bg-slate-100">
                       <Image 
                         src={c.image_url || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1470&auto=format&fit=crop'} 
@@ -262,9 +262,9 @@ export default function DonationsAdminPage() {
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" 
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-sky-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
                       
-                      <div className={`absolute top-6 left-6 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md border ${c.is_active ? 'bg-blue-500/90 text-white border-blue-400' : 'bg-slate-500/90 text-white border-slate-400'}`}>
+                      <div className={`absolute top-6 left-6 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md border ${c.is_active ? 'bg-sky-500/90 text-white border-sky-400' : 'bg-slate-500/90 text-white border-slate-400'}`}>
                         {c.is_active ? 'Kampanye Aktif' : 'Telah Berakhir'}
                       </div>
                       
@@ -287,12 +287,12 @@ export default function DonationsAdminPage() {
                       <div className="mt-auto space-y-6">
                          <div className="p-6 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
                             <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                               <span className="text-blue-700">TERKUMPUL: Rp {c.collected_amount.toLocaleString('id-ID')}</span>
+                               <span className="text-sky-700">TERKUMPUL: Rp {c.collected_amount.toLocaleString('id-ID')}</span>
                                <span className="text-slate-400 font-mono">{Math.round((c.collected_amount / (c.target_amount || 1)) * 100)}%</span>
                             </div>
-                            <div className="w-full h-2.5 bg-white rounded-full overflow-hidden border border-slate-100 ring-4 ring-blue-500/5">
+                            <div className="w-full h-2.5 bg-white rounded-full overflow-hidden border border-slate-100 ring-4 ring-sky-500/5">
                                <div 
-                                 className="h-full bg-blue-500 rounded-full shadow-lg shadow-blue-500/30 transition-all duration-1000" 
+                                 className="h-full bg-sky-500 rounded-full shadow-lg shadow-sky-500/30 transition-all duration-1000" 
                                  style={{ width: `${Math.min((c.collected_amount / (c.target_amount || 1)) * 100, 100)}%` }}
                                ></div>
                             </div>
@@ -342,7 +342,7 @@ export default function DonationsAdminPage() {
                      <tr key={d.id} className="hover:bg-slate-50 transition-all group">
                        <td className="pl-10 pr-6 py-6">
                          <div className="flex items-center gap-4">
-                           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center font-black text-blue-600 text-base shadow-sm group-hover:scale-105 transition-transform">
+                           <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center font-black text-sky-600 text-base shadow-sm group-hover:scale-105 transition-transform">
                              {d.donor_name ? d.donor_name.charAt(0) : '?'}
                            </div>
                            <div>
@@ -356,7 +356,7 @@ export default function DonationsAdminPage() {
                        </td>
                        <td className="px-6 py-6">
                          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black text-slate-600 uppercase tracking-tight shadow-inner">
-                            <Heart size={12} className="text-blue-500 fill-blue-500" />
+                            <Heart size={12} className="text-sky-500 fill-sky-500" />
                             {d.campaign_title}
                          </div>
                        </td>
@@ -365,8 +365,8 @@ export default function DonationsAdminPage() {
                        </td>
                        <td className="px-6 py-6">
                          {d.status === 'verified' ? (
-                           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100 shadow-sm">
-                             <CheckCircle size={14} className="fill-blue-600 text-white" /> TERVERIFIKASI
+                           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-sky-50 text-sky-600 border border-sky-100 shadow-sm">
+                             <CheckCircle size={14} className="fill-sky-600 text-white" /> TERVERIFIKASI
                            </span>
                          ) : (
                            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 shadow-sm animate-pulse">
@@ -378,13 +378,13 @@ export default function DonationsAdminPage() {
                          {d.status !== 'verified' ? (
                            <button 
                              onClick={() => handleVerify(d.id)}
-                             className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
+                             className="px-6 py-2.5 bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-sky-700 transition-all shadow-lg shadow-sky-200 active:scale-95"
                            >
                              Verifikasi Dana
                            </button>
                          ) : (
                            <div className="flex justify-end gap-2 pr-2">
-                              <div className="p-2 text-blue-600 bg-blue-50 rounded-lg"><CheckCircle size={18} /></div>
+                              <div className="p-2 text-sky-600 bg-sky-50 rounded-lg"><CheckCircle size={18} /></div>
                            </div>
                          )}
                        </td>

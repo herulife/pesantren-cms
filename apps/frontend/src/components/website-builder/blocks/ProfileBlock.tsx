@@ -27,35 +27,35 @@ export default function ProfileBlock({ section }: { section: HomeSection }) {
 
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(180deg,#f5f7f3_0%,#ffffff_28%,#ffffff_100%)] py-16 md:py-24">
-      <div className="pointer-events-none absolute left-1/2 top-10 h-28 w-28 -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-10 h-28 w-28 -translate-x-1/2 rounded-full bg-sky-100/70 blur-3xl" />
       <div className="container relative mx-auto grid max-w-6xl gap-8 px-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.32em] text-blue-700">Profil Singkat</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.32em] text-sky-700">Profil Singkat</p>
           <h2 className="mt-5 text-[2.45rem] font-black leading-[1.02] tracking-[-0.03em] text-slate-900 md:text-[3.05rem]">
             {title}
           </h2>
           <p className="mt-5 text-[15px] leading-8 text-slate-600 md:text-lg">{body}</p>
           <div className="mt-7 flex flex-wrap gap-3">
             <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-bold text-white md:px-5">
-              <CheckCircle2 size={16} className="text-blue-300" />
+              <CheckCircle2 size={16} className="text-sky-300" />
               Pembinaan Tahfidz
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800 md:px-5">
+            <span className="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-800 md:px-5">
               <CheckCircle2 size={16} />
               Kurikulum Terpadu
             </span>
           </div>
           <Link
             href={buttonUrl}
-            className="mt-8 inline-flex items-center gap-3 rounded-full border border-blue-200 bg-white px-6 py-3 text-sm font-black text-blue-800 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.18)] transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700"
+            className="mt-8 inline-flex items-center gap-3 rounded-full border border-sky-200 bg-white px-6 py-3 text-sm font-black text-sky-800 shadow-[0_18px_36px_-28px_rgba(250,204,21,0.18)] transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700"
           >
             {buttonLabel} <ArrowRight size={16} />
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-4">
           {highlights.map((item) => (
-            <div key={item.label} className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_22px_54px_-38px_rgba(15,23,42,0.22)]">
-              <div className="mb-8 inline-flex rounded-2xl bg-blue-50 p-3 text-blue-600">{item.icon}</div>
+            <div key={item.label} className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_22px_54px_-38px_rgba(250,204,21,0.22)]">
+              <div className="mb-8 inline-flex rounded-2xl bg-sky-50 p-3 text-sky-600">{item.icon}</div>
               <p className="text-3xl font-black tracking-tight text-slate-900">{item.value}</p>
               <p className="mt-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">{item.label}</p>
             </div>

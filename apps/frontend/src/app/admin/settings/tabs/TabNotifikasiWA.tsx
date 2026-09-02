@@ -49,7 +49,7 @@ export default function TabNotifikasiWA() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-blue-600" /></div>;
+  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-sky-600" /></div>;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
@@ -57,7 +57,7 @@ export default function TabNotifikasiWA() {
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                <div className="w-12 h-12 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600">
                    <MessageCircle size={24} />
                 </div>
                 <div>
@@ -86,7 +86,7 @@ export default function TabNotifikasiWA() {
                   placeholder="Contoh: Menginformasikan pelanggaran santri {{nama}}..."
                   value={formValues['wa_discipline_violation_template'] || ''}
                   onChange={(e) => handleChange('wa_discipline_violation_template', e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-800 leading-relaxed"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-medium text-slate-800 leading-relaxed"
                 />
              </div>
           </div>
@@ -95,7 +95,7 @@ export default function TabNotifikasiWA() {
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                <div className="w-12 h-12 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600">
                    <Settings2 size={24} />
                 </div>
                 <div>
@@ -105,14 +105,14 @@ export default function TabNotifikasiWA() {
              </div>
           </div>
           <div className="p-8 space-y-6">
-             <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex gap-4">
-                <Info className="text-blue-600 shrink-0" size={20} />
-                <div className="text-sm text-blue-800 leading-relaxed">
+             <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 flex gap-4">
+                <Info className="text-sky-600 shrink-0" size={20} />
+                <div className="text-sm text-sky-800 leading-relaxed">
                    <p className="font-bold mb-1">Variabel yang tersedia:</p>
                    <ul className="list-disc list-inside space-y-1 opacity-90">
-                      <li><code className="bg-blue-200/50 px-1 rounded text-xs font-bold">{"{{nama}}"}</code> : Nama Lengkap Santri</li>
-                      <li><code className="bg-blue-200/50 px-1 rounded text-xs font-bold">{"{{sisa}}"}</code> : Sisa Poin Saat Ini</li>
-                      <li><code className="bg-blue-200/50 px-1 rounded text-xs font-bold">{"{{status}}"}</code> : Status Sanksi (Aman, SP1, dsb)</li>
+                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{"{{nama}}"}</code> : Nama Lengkap Santri</li>
+                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{"{{sisa}}"}</code> : Sisa Poin Saat Ini</li>
+                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{"{{status}}"}</code> : Status Sanksi (Aman, SP1, dsb)</li>
                    </ul>
                 </div>
              </div>
@@ -122,7 +122,7 @@ export default function TabNotifikasiWA() {
                   placeholder="Contoh: Rekap poin santri {{nama}} sisa {{sisa}}..."
                   value={formValues['wa_discipline_summary_template'] || ''}
                   onChange={(e) => handleChange('wa_discipline_summary_template', e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-800 leading-relaxed"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-medium text-slate-800 leading-relaxed"
                 />
              </div>
           </div>
@@ -132,7 +132,7 @@ export default function TabNotifikasiWA() {
           <button 
              onClick={handleSaveAll}
              disabled={isSaving}
-             className="px-8 py-4 bg-blue-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition flex items-center gap-3 shadow-lg shadow-blue-600/20 disabled:opacity-50"
+             className="px-8 py-4 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition flex items-center gap-3 shadow-lg shadow-sky-600/20 disabled:opacity-50"
           >
              {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
              SIMPAN TEMPLATE NOTIFIKASI

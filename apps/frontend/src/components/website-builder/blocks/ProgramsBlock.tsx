@@ -8,17 +8,17 @@ import { getArray, getNumber, getString } from './helpers';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 
 const programCards = [
-  { title: 'Tahfidz Al-Quran', subtitle: 'Target hafalan bertahap dan setoran harian.', image: '/assets/img/tahfidz.jpg' },
-  { title: 'Kajian Kitab', subtitle: 'Pembiasaan faham diniyah dan adab belajar.', image: '/assets/img/belajar-kitab.jpg' },
-  { title: 'Tasmi & Murajaah', subtitle: 'Penguatan bacaan, kelancaran, dan ketelitian.', image: '/assets/img/tasmi.jpg' },
-  { title: 'Halaqah Pembinaan', subtitle: 'Ruang pembentukan karakter dan kedisiplinan.', image: '/assets/img/khalaqoh.jpg' },
+  { title: 'Tahfidz Al-Quran', subtitle: 'Target hafalan bertahap dan setoran harian.', image: 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80' },
+  { title: 'Kajian Kitab', subtitle: 'Pembiasaan faham diniyah dan adab belajar.', image: 'https://images.unsplash.com/photo-1774191441801-95b99c8abd3f?auto=format&fit=crop&w=1700&q=80' },
+  { title: 'Tasmi & Murajaah', subtitle: 'Penguatan bacaan, kelancaran, dan ketelitian.', image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1700&q=80' },
+  { title: 'Halaqah Pembinaan', subtitle: 'Ruang pembentukan karakter dan kedisiplinan.', image: 'https://images.unsplash.com/photo-1753947127898-a11f139e9a67?auto=format&fit=crop&w=1700&q=80' },
 ];
 
 const extracurricularCards = [
-  { title: 'Panahan & Olahraga', subtitle: 'Melatih fokus, fisik, dan sportivitas.', image: '/assets/img/manasik.jpg' },
-  { title: 'Tata Boga', subtitle: 'Keterampilan hidup yang aplikatif dan bermanfaat.', image: '/assets/img/masak.jpg' },
-  { title: 'Teknik Otomotif', subtitle: 'Praktik kerja tangan dan pemahaman teknis dasar.', image: '/assets/img/bengkel.jpg' },
-  { title: 'Asrama & Kebersamaan', subtitle: 'Belajar mandiri, tertib, dan saling menjaga.', image: '/assets/img/asrama.jpg' },
+  { title: 'Panahan & Olahraga', subtitle: 'Melatih fokus, fisik, dan sportivitas.', image: 'https://images.unsplash.com/photo-1566747675140-317e7484b10d?auto=format&fit=crop&w=1700&q=80' },
+  { title: 'Tata Boga', subtitle: 'Keterampilan hidup yang aplikatif dan bermanfaat.', image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1700&q=80' },
+  { title: 'Teknik Otomotif', subtitle: 'Praktik kerja tangan dan pemahaman teknis dasar.', image: 'https://images.unsplash.com/photo-1753947127898-a11f139e9a67?auto=format&fit=crop&w=1700&q=80' },
+  { title: 'Asrama & Kebersamaan', subtitle: 'Belajar mandiri, tertib, dan saling menjaga.', image: 'https://images.unsplash.com/photo-1744132242267-9aa633fd2f73?auto=format&fit=crop&w=1700&q=80' },
 ];
 
 type ProgramsBlockProps = {
@@ -55,7 +55,7 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
       (isProgram
         ? 'Program pembinaan utama untuk membentuk hafalan, adab, dan kesiapan santri.'
         : 'Kegiatan penunjang untuk melatih keterampilan, fokus, dan kemandirian santri.'),
-    image: item.image_url || (isProgram ? '/assets/img/tahfidz.jpg' : '/assets/img/manasik.jpg'),
+    image: item.image_url || (isProgram ? 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80' : 'https://images.unsplash.com/photo-1566747675140-317e7484b10d?auto=format&fit=crop&w=1700&q=80'),
   }));
   const cardPool = dynamicCards.length > 0 ? dynamicCards : cards.map((card) => ({ id: card.title, ...card }));
   const limit = Math.max(1, Math.min(cardPool.length, getNumber(section, 'limit', 4)));
@@ -88,7 +88,7 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
           {visibleCards.map((card) => (
             <article
               key={card.id}
-              className={`group overflow-hidden rounded-[1.8rem] border shadow-[0_26px_64px_-42px_rgba(15,23,42,0.3)] ${
+              className={`group overflow-hidden rounded-[1.8rem] border shadow-[0_26px_64px_-42px_rgba(250,204,21,0.3)] ${
                 isProgram ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/8'
               }`}
             >
@@ -102,7 +102,7 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/82 via-slate-950/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <div className="mb-3 inline-flex rounded-full bg-blue-500/90 p-2 text-white">
+                  <div className="mb-3 inline-flex rounded-full bg-sky-500/90 p-2 text-white">
                     <Icon size={16} />
                   </div>
                   <h3 className="text-xl font-black leading-tight">{card.title}</h3>
@@ -114,7 +114,7 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
             </article>
           ))}
         </div>
-        <Link href={buttonUrl} className={`mt-8 inline-flex items-center gap-3 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isProgram ? 'border border-blue-200 bg-white text-blue-800' : 'border border-blue-500/30 bg-blue-500/10 text-blue-100'}`}>
+        <Link href={buttonUrl} className={`mt-8 inline-flex items-center gap-3 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isProgram ? 'border border-sky-200 bg-white text-sky-800' : 'border border-sky-500/30 bg-sky-500/10 text-sky-100'}`}>
           {buttonLabel} <ArrowRight size={16} />
         </Link>
       </div>

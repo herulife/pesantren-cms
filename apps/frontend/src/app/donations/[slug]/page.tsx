@@ -115,7 +115,7 @@ export default function DonationDetailPage() {
             </Link>
 
             {/* Video Donasi - Deskripsi Panjang */}
-            <div className="mt-8 overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-[0_28px_80px_-44px_rgba(15,23,42,0.12)]">
+            <div className="mt-8 overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-[0_28px_80px_-44px_rgba(250,204,21,0.12)]">
               <div className="aspect-video w-full bg-slate-950">
                 <iframe
                   src="https://www.youtube.com/embed/zi7yo4KEtiM"
@@ -151,7 +151,7 @@ export default function DonationDetailPage() {
                 </p>
 
                 <div className="mt-7 grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-[1.45rem] border border-sky-100 bg-white/92 p-4 shadow-[0_22px_50px_-34px_rgba(15,23,42,0.16)]">
+                  <div className="rounded-[1.45rem] border border-sky-100 bg-white/92 p-4 shadow-[0_22px_50px_-34px_rgba(250,204,21,0.16)]">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">
                       Target
                     </p>
@@ -159,7 +159,7 @@ export default function DonationDetailPage() {
                       Rp {featuredTargetAmount.toLocaleString('id-ID')}
                     </p>
                   </div>
-                  <div className="rounded-[1.45rem] border border-slate-200 bg-white/92 p-4 shadow-[0_22px_50px_-34px_rgba(15,23,42,0.16)]">
+                  <div className="rounded-[1.45rem] border border-slate-200 bg-white/92 p-4 shadow-[0_22px_50px_-34px_rgba(250,204,21,0.16)]">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                       Kategori
                     </p>
@@ -167,7 +167,7 @@ export default function DonationDetailPage() {
                       {featuredOpenDonation.category}
                     </p>
                   </div>
-                  <div className="rounded-[1.45rem] border border-slate-200 bg-white/92 p-4 shadow-[0_22px_50px_-34px_rgba(15,23,42,0.16)]">
+                  <div className="rounded-[1.45rem] border border-slate-200 bg-white/92 p-4 shadow-[0_22px_50px_-34px_rgba(250,204,21,0.16)]">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                       Fokus
                     </p>
@@ -195,8 +195,8 @@ export default function DonationDetailPage() {
                   </Link>
                 </div>
 
-                <div className="mt-6 rounded-[1.45rem] border border-blue-100 bg-blue-50/80 px-4 py-4 shadow-[0_18px_42px_-28px_rgba(5,150,105,0.18)]">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">
+                <div className="mt-6 rounded-[1.45rem] border border-sky-100 bg-sky-50/80 px-4 py-4 shadow-[0_18px_42px_-28px_rgba(5,150,105,0.18)]">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">
                     Rekening Donasi
                   </p>
                   <p className="mt-2 text-sm font-semibold leading-7 text-slate-800">
@@ -233,7 +233,7 @@ export default function DonationDetailPage() {
         <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
           <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
             <div className="space-y-8">
-              <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 shadow-[0_28px_90px_-50px_rgba(15,23,42,0.6)]">
+              <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 shadow-[0_28px_90px_-50px_rgba(250,204,21,0.6)]">
                 <div className="relative h-[360px]">
                   <Image
                     src={featuredOpenDonation.coverImage}
@@ -246,7 +246,7 @@ export default function DonationDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.14)] sm:p-8">
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(250,204,21,0.14)] sm:p-8">
                 <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-700">
                   Cerita Donasi
                 </p>
@@ -257,7 +257,7 @@ export default function DonationDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.14)] sm:p-8">
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(250,204,21,0.14)] sm:p-8">
                 <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-700">
                   Mengapa Campaign Ini Penting
                 </p>
@@ -276,7 +276,7 @@ export default function DonationDetailPage() {
             </div>
 
             <aside className="space-y-6">
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.14)]">
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(250,204,21,0.14)]">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-sky-100 text-sky-600">
                     <Target size={20} />
@@ -309,13 +309,13 @@ export default function DonationDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-blue-100 bg-blue-50/75 p-6 shadow-[0_22px_54px_-40px_rgba(5,150,105,0.16)]">
+              <div className="rounded-[2rem] border border-sky-100 bg-sky-50/75 p-6 shadow-[0_22px_54px_-40px_rgba(5,150,105,0.16)]">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-white text-blue-700">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-white text-sky-700">
                     <Banknote size={20} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-blue-700">
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-700">
                       Transfer Donasi
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-700">
@@ -331,7 +331,7 @@ export default function DonationDetailPage() {
                 </p>
               </div>
 
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.14)]">
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(250,204,21,0.14)]">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-sky-100 text-sky-600">
                     <ShieldCheck size={20} />
@@ -355,7 +355,7 @@ export default function DonationDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.14)]">
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_22px_54px_-40px_rgba(250,204,21,0.14)]">
                 <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-700">
                   WhatsApp Konfirmasi
                 </p>
@@ -492,7 +492,7 @@ export default function DonationDetailPage() {
                     className="object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-50 to-blue-100 text-sky-300">
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-50 to-sky-100 text-sky-300">
                     <Heart size={72} />
                   </div>
                 )}

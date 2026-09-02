@@ -446,7 +446,7 @@ export default function LandingPage() {
                     style={{ backgroundImage: `url('${slideImage}')` }}
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,250,252,0.74)_0%,rgba(248,250,252,0.5)_18%,rgba(248,250,252,0.18)_34%,rgba(255,255,255,0.02)_52%,rgba(255,255,255,0)_72%)] sm:bg-[linear-gradient(94deg,rgba(248,250,252,0.68)_0%,rgba(248,250,252,0.42)_20%,rgba(248,250,252,0.14)_38%,rgba(255,255,255,0)_62%)]" />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.03)_34%,rgba(15,23,42,0.16)_100%)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,204,21,0.08)_0%,rgba(250,204,21,0.03)_34%,rgba(250,204,21,0.16)_100%)]" />
                   <div className="pointer-events-none absolute right-[-8%] top-[13%] hidden h-72 w-72 rounded-full border border-white/45 bg-white/8 backdrop-blur-[2px] lg:block" />
                   <div className="pointer-events-none absolute right-[12%] top-[24%] hidden h-28 w-28 rounded-full border border-sky-200/70 bg-sky-100/12 lg:block" />
                   <div className="pointer-events-none absolute bottom-[18%] right-[9%] hidden h-px w-48 bg-gradient-to-r from-transparent via-white/85 to-transparent lg:block" />
@@ -480,7 +480,7 @@ export default function LandingPage() {
                             </Link>
                             <Link
                               href="/program"
-                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full border border-sky-200 bg-white/94 px-5 py-3 text-xs font-bold text-sky-700 shadow-[0_16px_34px_-24px_rgba(15,23,42,0.18)] transition-all hover:-translate-y-0.5 hover:bg-sky-50 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
+                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full border border-sky-200 bg-white/94 px-5 py-3 text-xs font-bold text-sky-700 shadow-[0_16px_34px_-24px_rgba(250,204,21,0.18)] transition-all hover:-translate-y-0.5 hover:bg-sky-50 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
                             >
                               Buka Program
                             </Link>
@@ -511,7 +511,7 @@ export default function LandingPage() {
                             <p className="mt-2 text-2xl font-black text-slate-900">20 Juz</p>
                             <p className="mt-2 text-sm leading-6 text-slate-600">Target hafalan bertahap dengan murajaah yang dijaga rutin.</p>
                           </div>
-                          <div className="ml-auto rounded-[1.4rem] border border-white/45 bg-slate-950/78 px-4 py-3 text-white shadow-[0_22px_60px_-36px_rgba(15,23,42,0.55)] backdrop-blur-sm">
+                          <div className="ml-auto rounded-[1.4rem] border border-white/45 bg-slate-950/78 px-4 py-3 text-white shadow-[0_22px_60px_-36px_rgba(250,204,21,0.55)] backdrop-blur-sm">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-200/90">PSB</p>
                             <p className="mt-2 text-sm font-semibold">SMP - SMK</p>
                           </div>
@@ -529,10 +529,10 @@ export default function LandingPage() {
 
         <div className="relative z-20 -mt-16 px-4 lg:-mt-12">
           <div className="container mx-auto max-w-6xl">
-            <div className="grid grid-cols-2 gap-3 rounded-[2.1rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.92)_100%)] p-4 shadow-[0_30px_70px_-35px_rgba(15,23,42,0.32)] backdrop-blur-xl md:grid-cols-4 md:gap-4 md:p-6">
+            <div className="grid grid-cols-2 gap-3 rounded-[2.1rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.92)_100%)] p-4 shadow-[0_30px_70px_-35px_rgba(250,204,21,0.32)] backdrop-blur-xl md:grid-cols-4 md:gap-4 md:p-6">
               {institutionFacts.map((fact) => (
-                <div key={fact.label} className="rounded-[1.35rem] border border-slate-100/90 bg-white/95 px-4 py-4 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)] md:rounded-[1.5rem] md:px-5">
-                  <div className="mb-3 inline-flex rounded-2xl bg-blue-50 p-2.5 text-blue-600 ring-1 ring-blue-100 md:p-3">
+                <div key={fact.label} className="rounded-[1.35rem] border border-slate-100/90 bg-white/95 px-4 py-4 shadow-[0_16px_36px_-30px_rgba(250,204,21,0.18)] md:rounded-[1.5rem] md:px-5">
+                  <div className="mb-3 inline-flex rounded-2xl bg-sky-50 p-2.5 text-sky-600 ring-1 ring-sky-100 md:p-3">
                     {fact.icon}
                   </div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{fact.label}</p>
@@ -555,7 +555,7 @@ export default function LandingPage() {
           >
             <div className="grid items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 lg:grid-cols-[1fr_auto] lg:px-6 lg:py-4">
               <div className="flex min-w-0 items-start gap-4">
-                <div className="relative hidden h-14 w-14 shrink-0 overflow-hidden rounded-[0.9rem] border border-white/70 bg-white shadow-[0_18px_34px_-26px_rgba(15,23,42,0.28)] sm:block">
+                <div className="relative hidden h-14 w-14 shrink-0 overflow-hidden rounded-[0.9rem] border border-white/70 bg-white shadow-[0_18px_34px_-26px_rgba(250,204,21,0.28)] sm:block">
                   <Image
                     src={featuredOpenDonation.posterImage}
                     alt={`${featuredOpenDonation.title} poster`}
@@ -610,11 +610,11 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden border-y border-slate-200/70 bg-[#f6f7f4] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.10),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(37,99,235,0.08),_transparent_28%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.08),_transparent_28%)]" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-blue-700">
+              <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-sky-700">
                 <Compass size={14} />
                 Profil Singkat
               </span>
@@ -627,14 +627,14 @@ export default function LandingPage() {
               </p>
               <div className="mt-7 flex flex-wrap gap-3 md:mt-8">
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-bold text-white md:px-5">
-                  <MapPin size={16} className="text-blue-300" />
+                  <MapPin size={16} className="text-sky-300" />
                   Parung, Bogor 16330
                 </span>
                 <a
                   href="tel:081382410582"
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-blue-200 hover:text-blue-700 md:px-5"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-sky-200 hover:text-sky-700 md:px-5"
                 >
-                  <PhoneCall size={16} className="text-blue-500" />
+                  <PhoneCall size={16} className="text-sky-500" />
                   0857 7694 8779
                 </a>
               </div>
@@ -645,9 +645,9 @@ export default function LandingPage() {
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUpVariant}
-              className="rounded-[1.8rem] border border-blue-100/80 bg-white p-6 shadow-[0_30px_70px_-35px_rgba(15,23,42,0.18)] md:rounded-[2rem] md:p-8"
+              className="rounded-[1.8rem] border border-sky-100/80 bg-white p-6 shadow-[0_30px_70px_-35px_rgba(250,204,21,0.18)] md:rounded-[2rem] md:p-8"
             >
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-600">Arah Pembinaan</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-600">Arah Pembinaan</p>
               <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
                 Pembinaan diarahkan agar santri tumbuh utuh.
               </h3>
@@ -658,7 +658,7 @@ export default function LandingPage() {
                   'Mengembangkan intelektual, kreativitas, dan jiwa kaderisasi umat.',
                 ].map((point) => (
                   <div key={point} className="flex gap-4 rounded-[1.5rem] border border-slate-100 bg-slate-50 px-5 py-4">
-                    <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
+                    <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
                       <CheckCircle2 size={18} />
                     </div>
                     <p className="text-sm leading-7 text-slate-600">{point}</p>
@@ -667,7 +667,7 @@ export default function LandingPage() {
               </div>
               <Link
                 href="/profil"
-                className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-600 transition-colors hover:text-blue-700"
+                className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-sky-600 transition-colors hover:text-sky-700"
               >
                 Lihat profil dan visi-misi lengkap <ArrowRight size={16} />
               </Link>
@@ -677,8 +677,8 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f3_100%)] py-12 md:py-16">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-200 to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(37,99,235,0.06),_transparent_24%)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-200 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.06),_transparent_24%)]" />
         <div className="container mx-auto max-w-6xl px-4">
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch lg:gap-8 xl:gap-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="relative z-10">
@@ -691,7 +691,7 @@ export default function LandingPage() {
                 {featuredProgramCards.map((program) => (
                   <div
                     key={program.title}
-                    className="group overflow-hidden rounded-[1.7rem] border border-white/70 bg-white/90 shadow-[0_22px_48px_-34px_rgba(15,23,42,0.22)] backdrop-blur-sm transition-all hover:-translate-y-1 md:rounded-[1.9rem]"
+                    className="group overflow-hidden rounded-[1.7rem] border border-white/70 bg-white/90 shadow-[0_22px_48px_-34px_rgba(250,204,21,0.22)] backdrop-blur-sm transition-all hover:-translate-y-1 md:rounded-[1.9rem]"
                   >
                     <div className="relative h-48 md:h-52">
                       <Image
@@ -704,7 +704,7 @@ export default function LandingPage() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/24 to-transparent" />
                       <div className="absolute inset-x-0 bottom-0 p-4 text-white md:p-5">
-                        <span className="inline-flex rounded-full border border-white/15 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-blue-200 backdrop-blur-sm">
+                        <span className="inline-flex rounded-full border border-white/15 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-200 backdrop-blur-sm">
                           Program Unggulan
                         </span>
                         <p className="mt-3 text-lg font-black leading-tight">{program.title}</p>
@@ -718,7 +718,7 @@ export default function LandingPage() {
                 {curriculumTracks.map((track) => (
                   <span
                     key={track}
-                    className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-blue-700"
+                    className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-sky-700"
                   >
                     {track}
                   </span>
@@ -726,7 +726,7 @@ export default function LandingPage() {
               </div>
               <Link
                 href="/program"
-                className="mt-8 inline-flex items-center gap-3 self-start rounded-full border border-blue-200 bg-white px-6 py-3 text-sm font-black text-blue-800 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.18)] transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700"
+                className="mt-8 inline-flex items-center gap-3 self-start rounded-full border border-sky-200 bg-white px-6 py-3 text-sm font-black text-sky-800 shadow-[0_18px_36px_-28px_rgba(250,204,21,0.18)] transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700"
               >
                 Jelajahi program <ArrowRight size={16} />
               </Link>
@@ -737,9 +737,9 @@ export default function LandingPage() {
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUpVariant}
-              className="relative z-10 rounded-[1.8rem] border border-blue-900/80 bg-[linear-gradient(180deg,#0f172a_0%,#10251d_100%)] p-6 text-white shadow-[0_35px_80px_-35px_rgba(15,23,42,0.35)] md:rounded-[2rem] md:p-8"
+              className="relative z-10 rounded-[1.8rem] border border-sky-900/80 bg-[linear-gradient(180deg,#facc15_0%,#10251d_100%)] p-6 text-white shadow-[0_35px_80px_-35px_rgba(250,204,21,0.35)] md:rounded-[2rem] md:p-8"
             >
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-200">Ekstrakurikuler</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-200">Ekstrakurikuler</p>
               <h3 className="mt-3 text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem]">
                 Aktivitas penunjang yang membuat santri aktif, terampil, dan percaya diri.
               </h3>
@@ -784,7 +784,7 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden bg-slate-950 py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.16),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.10),_transparent_24%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.10),_transparent_24%)]" />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="container mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="relative z-10">
@@ -821,7 +821,7 @@ export default function LandingPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-7">
-                    <p className="text-[10px] font-black uppercase tracking-[0.32em] text-blue-200">{galleryAlbums[0].category}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.32em] text-sky-200">{galleryAlbums[0].category}</p>
                     <h3 className="mt-3 max-w-xl text-2xl font-black tracking-tight sm:text-3xl">{galleryAlbums[0].title}</h3>
                     <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-100">
                       <span className="rounded-full bg-white/10 px-3 py-2 backdrop-blur-sm">{galleryAlbums[0].photoCount} foto</span>
@@ -849,7 +849,7 @@ export default function LandingPage() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
                       <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                        <p className="text-[9px] font-black uppercase tracking-[0.28em] text-blue-200">{album.category}</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.28em] text-sky-200">{album.category}</p>
                         <h3 className="mt-2 line-clamp-2 text-sm font-black tracking-tight sm:text-base">{album.title}</h3>
                         <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-100">{album.photoCount} foto</p>
                       </div>
@@ -865,7 +865,7 @@ export default function LandingPage() {
                 title="Belum ada dokumentasi galeri"
                 description="Album kegiatan terbaru akan muncul di sini setelah dipublikasikan."
                 className="border-white/10 bg-white/6 shadow-[0_30px_70px_-40px_rgba(0,0,0,0.6)] backdrop-blur-sm"
-                iconClassName="text-blue-200/70"
+                iconClassName="text-sky-200/70"
                 titleClassName="text-white"
                 descriptionClassName="text-slate-300"
               />
@@ -948,7 +948,7 @@ export default function LandingPage() {
                   <Link
                     key={series.key}
                     href={`/videos/${series.slug}`}
-                    className="group overflow-hidden rounded-[1.7rem] border border-sky-100/80 bg-white shadow-[0_24px_50px_-34px_rgba(15,23,42,0.18)] transition-all hover:-translate-y-1 hover:border-sky-200 md:rounded-[1.9rem]"
+                    className="group overflow-hidden rounded-[1.7rem] border border-sky-100/80 bg-white shadow-[0_24px_50px_-34px_rgba(250,204,21,0.18)] transition-all hover:-translate-y-1 hover:border-sky-200 md:rounded-[1.9rem]"
                   >
                     <div className="relative h-52 overflow-hidden bg-slate-900 md:h-56">
                       {thumbnail ? (
@@ -957,7 +957,7 @@ export default function LandingPage() {
                           style={{ backgroundImage: `url('${thumbnail}')` }}
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f172a_0%,#10251d_100%)]" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,#facc15_0%,#10251d_100%)]" />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -966,7 +966,7 @@ export default function LandingPage() {
                         </div>
                       </div>
                       <div className="absolute inset-x-0 bottom-0 p-4 text-white md:p-5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-200">
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200">
                           {series.count} video
                         </p>
                         <h3 className="mt-2 text-xl font-black leading-tight">{series.title}</h3>
@@ -985,7 +985,7 @@ export default function LandingPage() {
                 icon={PlayCircle}
                 title="Belum ada dokumentasi video"
                 description="Video kegiatan pondok akan tampil di bagian ini setelah dipublikasikan."
-                className="bg-white shadow-[0_24px_50px_-34px_rgba(15,23,42,0.12)]"
+                className="bg-white shadow-[0_24px_50px_-34px_rgba(250,204,21,0.12)]"
               />
             </div>
           )}
@@ -993,7 +993,7 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden border-t border-slate-200/70 bg-[linear-gradient(180deg,#fcfcfa_0%,#f7f7f3_100%)] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.06),_transparent_24%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(14,165,233,0.06),_transparent_24%)]" />
         <div className="container mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <PublicSectionIntro
@@ -1034,7 +1034,7 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden border-t border-slate-200 bg-[linear-gradient(180deg,#f6f7f3_0%,#eef4ef_100%)] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.05),_transparent_20%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.08),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.05),_transparent_20%)]" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <PublicSectionIntro
@@ -1051,17 +1051,17 @@ export default function LandingPage() {
               <PublicGridSkeleton count={3} className="grid gap-4 md:grid-cols-3 col-span-full" itemClassName="h-44 rounded-[1.75rem]" />
             ) : agendas.length > 0 ? (
               <>
-                <article className="group overflow-hidden rounded-[1.85rem] border border-white/75 bg-white/92 shadow-[0_26px_60px_-34px_rgba(15,23,42,0.18)] backdrop-blur-sm md:col-span-2">
+                <article className="group overflow-hidden rounded-[1.85rem] border border-white/75 bg-white/92 shadow-[0_26px_60px_-34px_rgba(250,204,21,0.18)] backdrop-blur-sm md:col-span-2">
                   <div className="grid h-full gap-0 md:grid-cols-[0.9fr_1.1fr]">
-                    <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#10251d_100%)] p-6 text-white md:p-7">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.24),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.12),_transparent_26%)]" />
+                    <div className="relative overflow-hidden bg-[linear-gradient(135deg,#facc15_0%,#10251d_100%)] p-6 text-white md:p-7">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.24),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.12),_transparent_26%)]" />
                       <div className="relative flex h-full flex-col">
-                        <span className="inline-flex w-fit rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-blue-100 backdrop-blur-sm">
+                        <span className="inline-flex w-fit rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-100 backdrop-blur-sm">
                           {agendas[0].category || 'Agenda Pondok'}
                         </span>
                         <div className="mt-8 flex items-end gap-4">
                           <div className="rounded-[1.6rem] border border-white/10 bg-white/10 px-5 py-4 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-                            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-200">
+                            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200">
                               {formatAgendaMonth(agendas[0].start_date)}
                             </p>
                             <p className="mt-2 text-4xl font-black leading-none">
@@ -1069,7 +1069,7 @@ export default function LandingPage() {
                             </p>
                           </div>
                           <div className="pb-1">
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-100/80">Jadwal Terdekat</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/80">Jadwal Terdekat</p>
                             <p className="mt-2 text-sm font-semibold text-slate-200">
                               {agendas[0].time_info || '08:00 - selesai'}
                             </p>
@@ -1079,7 +1079,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="flex h-full flex-col p-6 md:p-7">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">Agenda Utama</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">Agenda Utama</p>
                       <h3 className="mt-3 text-[1.9rem] font-black leading-[1.02] tracking-[-0.03em] text-slate-900">
                         {agendas[0].title}
                       </h3>
@@ -1089,11 +1089,11 @@ export default function LandingPage() {
                       </p>
                       <div className="mt-6 grid gap-3 text-sm text-slate-600">
                         <div className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
-                          <Calendar size={16} className="mt-0.5 shrink-0 text-blue-600" />
+                          <Calendar size={16} className="mt-0.5 shrink-0 text-sky-600" />
                           <span>{formatAgendaFullDate(agendas[0].start_date)}</span>
                         </div>
                         <div className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
-                          <MapPin size={16} className="mt-0.5 shrink-0 text-blue-600" />
+                          <MapPin size={16} className="mt-0.5 shrink-0 text-sky-600" />
                           <span>{agendas[0].location || 'Kompleks Al-Maa Parung'}</span>
                         </div>
                       </div>
@@ -1105,15 +1105,15 @@ export default function LandingPage() {
                   {agendas.slice(1, 3).map((agenda) => (
                     <article
                       key={agenda.id}
-                      className="flex h-full flex-col rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_42px_-32px_rgba(15,23,42,0.16)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200"
+                      className="flex h-full flex-col rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_42px_-32px_rgba(250,204,21,0.16)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky-200"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-[1.35rem] bg-blue-500 text-white shadow-lg shadow-blue-200/70">
+                        <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-[1.35rem] bg-sky-500 text-white shadow-lg shadow-sky-200/70">
                           <span className="text-[9px] font-black uppercase tracking-[0.18em]">{formatAgendaMonth(agenda.start_date)}</span>
                           <span className="mt-1 text-xl font-black leading-none">{formatAgendaDay(agenda.start_date)}</span>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">
                             {agenda.category || 'Agenda'}
                           </p>
                           <h3 className="mt-2 line-clamp-2 text-lg font-black tracking-tight text-slate-900">
@@ -1129,11 +1129,11 @@ export default function LandingPage() {
 
                       <div className="mt-5 space-y-2 text-sm text-slate-500">
                         <div className="flex items-start gap-2">
-                          <Calendar size={15} className="mt-0.5 shrink-0 text-blue-500" />
+                          <Calendar size={15} className="mt-0.5 shrink-0 text-sky-500" />
                           <span>{agenda.time_info || formatAgendaFullDate(agenda.start_date)}</span>
                         </div>
                         <div className="flex items-start gap-2">
-                          <MapPin size={15} className="mt-0.5 shrink-0 text-blue-500" />
+                          <MapPin size={15} className="mt-0.5 shrink-0 text-sky-500" />
                           <span>{agenda.location || 'Kompleks Al-Maa Parung'}</span>
                         </div>
                       </div>
@@ -1156,8 +1156,8 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#f5f7f3_0%,#ffffff_24%,#ffffff_100%)] pb-12 pt-8 md:pb-16 md:pt-14">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-blue-50/80 to-transparent" />
-        <div className="pointer-events-none absolute left-1/2 top-10 h-28 w-28 -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-sky-50/80 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-10 h-28 w-28 -translate-x-1/2 rounded-full bg-sky-100/70 blur-3xl" />
         <div className="container relative mx-auto max-w-6xl px-4">
           <motion.div
             initial="hidden"
@@ -1167,7 +1167,7 @@ export default function LandingPage() {
             className="mb-8 border-b border-slate-200/80 pb-7 md:mb-10 md:pb-8 md:flex md:items-end md:justify-between md:gap-6"
           >
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-600">Akses Cepat</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-600">Akses Cepat</p>
                   <h2 className="mt-3 max-w-3xl text-[2rem] font-black leading-[1.02] tracking-[-0.03em] text-slate-900 md:text-[3.1rem]">
                     Lanjutkan ke halaman yang paling sering dicari pengunjung.
                   </h2>
@@ -1177,7 +1177,7 @@ export default function LandingPage() {
             </div>
             <Link
               href="/psb"
-              className="mt-5 inline-flex items-center gap-2 self-start rounded-full border border-blue-200 bg-white px-5 py-3 text-sm font-bold text-blue-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-800 md:mt-0"
+              className="mt-5 inline-flex items-center gap-2 self-start rounded-full border border-sky-200 bg-white px-5 py-3 text-sm font-bold text-sky-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-800 md:mt-0"
             >
               Lihat PSB <ArrowRight size={16} />
             </Link>
@@ -1193,14 +1193,14 @@ export default function LandingPage() {
               <motion.div key={item.title} variants={fadeUpVariant}>
                 <Link
                   href={item.href}
-                  className="group block h-full rounded-[1.8rem] border border-blue-100/70 bg-[linear-gradient(180deg,#ffffff_0%,#eff6ff_100%)] p-6 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.16)] transition-all duration-300 hover:-translate-y-2 hover:border-blue-200 hover:shadow-[0_24px_60px_-30px_rgba(37,99,235,0.18)] md:rounded-[2rem] md:p-7"
+                  className="group block h-full rounded-[1.8rem] border border-sky-100/70 bg-[linear-gradient(180deg,#ffffff_0%,#eff6ff_100%)] p-6 shadow-[0_18px_44px_-34px_rgba(250,204,21,0.16)] transition-all duration-300 hover:-translate-y-2 hover:border-sky-200 hover:shadow-[0_24px_60px_-30px_rgba(14,165,233,0.18)] md:rounded-[2rem] md:p-7"
                 >
-                  <div className="mb-5 inline-flex rounded-2xl bg-white p-4 text-blue-600 ring-1 ring-blue-100 transition-colors group-hover:bg-blue-500 group-hover:text-white group-hover:ring-blue-500">
+                  <div className="mb-5 inline-flex rounded-2xl bg-white p-4 text-sky-600 ring-1 ring-sky-100 transition-colors group-hover:bg-sky-500 group-hover:text-white group-hover:ring-sky-500">
                     {item.icon}
                   </div>
                   <h2 className="text-xl font-black tracking-tight text-slate-900">{item.title}</h2>
                   <p className="mt-3 text-sm leading-7 text-slate-600">{item.desc}</p>
-                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-700">
+                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-sky-700">
                     Selengkapnya <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                   </div>
                 </Link>
@@ -1211,20 +1211,20 @@ export default function LandingPage() {
       </section>
 
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#0d1522_0%,#0d2f27_58%,#08231e_100%)] py-16 lg:py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(15,23,42,0.14),_transparent_22%),radial-gradient(circle_at_bottom_left,_rgba(37,99,235,0.18),_transparent_24%)]" />
-        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-300/16 blur-[110px]" />
-        <div className="absolute -bottom-36 left-0 h-72 w-72 rounded-full bg-blue-300/14 blur-[110px]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(250,204,21,0.14),_transparent_22%),radial-gradient(circle_at_bottom_left,_rgba(14,165,233,0.18),_transparent_24%)]" />
+        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-sky-300/16 blur-[110px]" />
+        <div className="absolute -bottom-36 left-0 h-72 w-72 rounded-full bg-sky-300/14 blur-[110px]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/30 to-transparent" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <div className="overflow-hidden rounded-[2.25rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] shadow-[0_34px_90px_-42px_rgba(0,0,0,0.55)] backdrop-blur-sm">
               <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
                 <div className="p-7 sm:p-8 lg:p-10">
-                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-200">Langkah Berikutnya</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-200">Langkah Berikutnya</p>
                   <h2 className="mt-4 max-w-3xl text-[2.3rem] font-black leading-[1.02] tracking-tight text-white md:text-6xl">
                     Siap melangkah lebih dekat ke Al-Maa?
                   </h2>
-                  <p className="mt-6 max-w-2xl text-base leading-8 text-blue-50/88 md:text-lg">
+                  <p className="mt-6 max-w-2xl text-base leading-8 text-sky-50/88 md:text-lg">
                     Mulai dari profil, program, dan fasilitas, lalu lanjutkan ke PSB saat arah pembinaannya terasa cocok untuk keluarga Anda.
                   </p>
 
@@ -1236,7 +1236,7 @@ export default function LandingPage() {
                     ].map((item) => (
                       <span
                         key={item}
-                        className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs font-semibold text-blue-50/90 backdrop-blur-sm"
+                        className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs font-semibold text-sky-50/90 backdrop-blur-sm"
                       >
                         {item}
                       </span>
@@ -1246,7 +1246,7 @@ export default function LandingPage() {
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                     <Link
                       href="/psb"
-                      className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-black text-blue-800 shadow-[0_24px_55px_-28px_rgba(255,255,255,0.42)] transition-all hover:-translate-y-1 hover:bg-blue-50 sm:w-auto"
+                      className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-black text-sky-800 shadow-[0_24px_55px_-28px_rgba(255,255,255,0.42)] transition-all hover:-translate-y-1 hover:bg-sky-50 sm:w-auto"
                     >
                       Lihat PSB <ArrowRight size={18} />
                     </Link>
@@ -1262,7 +1262,7 @@ export default function LandingPage() {
                 <div className="border-t border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)] p-7 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
                   <div className="grid gap-4">
                     <div className="rounded-[1.6rem] border border-white/10 bg-slate-950/28 p-5 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.45)]">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-200/90">Jalur Cepat</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/90">Jalur Cepat</p>
                       <p className="mt-3 text-2xl font-black leading-tight text-white">Kenali arah pondok, lalu lanjut daftar dengan lebih mantap.</p>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -1277,8 +1277,8 @@ export default function LandingPage() {
                           className="group rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition-all hover:-translate-y-1 hover:bg-white/10"
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-200/80">{item.step}</span>
-                            <ArrowRight size={16} className="text-blue-200/80 transition-transform group-hover:translate-x-1" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/80">{item.step}</span>
+                            <ArrowRight size={16} className="text-sky-200/80 transition-transform group-hover:translate-x-1" />
                           </div>
                           <p className="mt-3 text-sm font-bold text-white">{item.label}</p>
                         </Link>

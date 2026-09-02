@@ -106,7 +106,7 @@ export default function WalletPage() {
       {/* Hero Section (Digital Card Replica) */}
       <div className="relative mb-8 overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 text-white shadow-2xl">
         <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-cyan-500/20 blur-[80px]" />
-        <div className="absolute left-0 bottom-0 h-64 w-64 -ml-20 -mb-20 rounded-full bg-blue-500/20 blur-[80px]" />
+        <div className="absolute left-0 bottom-0 h-64 w-64 -ml-20 -mb-20 rounded-full bg-sky-500/20 blur-[80px]" />
         <div className="absolute inset-0 bg-[url('/assets/noise.png')] opacity-10 mix-blend-overlay" />
         
         <div className="relative z-10 flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
@@ -172,13 +172,13 @@ export default function WalletPage() {
                 <div className="flex items-center gap-5">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-transform group-hover:scale-110 ${
                     tr.type === 'deposit' 
-                      ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-100' 
+                      ? 'bg-sky-50 text-sky-600 ring-1 ring-sky-100' 
                       : 'bg-rose-50 text-rose-600 ring-1 ring-rose-100'
                   }`}>
                     {tr.type === 'deposit' ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
                   </div>
                   <div>
-                    <h5 className="text-sm font-bold text-slate-900 capitalize leading-tight group-hover:text-blue-600 transition-colors">
+                    <h5 className="text-sm font-bold text-slate-900 capitalize leading-tight group-hover:text-sky-600 transition-colors">
                       {tr.description || 'Transaksi Saku'}
                     </h5>
                     <p className="mt-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
@@ -189,7 +189,7 @@ export default function WalletPage() {
                   </div>
                 </div>
                 <div className={`text-right font-outfit text-lg font-black ${
-                  tr.type === 'deposit' ? 'text-blue-500' : 'text-slate-900'
+                  tr.type === 'deposit' ? 'text-sky-500' : 'text-slate-900'
                 }`}>
                   {tr.type === 'deposit' ? '+' : '-'} {formatCurrency(tr.amount).replace('Rp', '')}
                 </div>

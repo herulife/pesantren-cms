@@ -258,7 +258,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
             >
               <Home size={14} />
               Beranda
@@ -284,7 +284,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 <div className="border-b border-slate-100 px-5 py-5 lg:px-8">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Mode Fokus</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Mode Fokus</p>
                       <h2 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900 lg:text-3xl">
                         Raport Akademik Santri
                       </h2>
@@ -300,7 +300,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         <ArrowLeft size={16} />
                         Kembali ke Dashboard Portal
                       </Link>
-                      <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
+                      <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
                         Tampilan fokus tanpa sidebar samping
                       </div>
                     </div>
@@ -313,7 +313,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                       <div key={`focus-${group.id}`}>
                         <div className="mb-2 flex items-center gap-2">
                           <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                            group.active ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                            group.active ? 'bg-sky-50 text-sky-700' : 'bg-slate-100 text-slate-500'
                           }`}>
                             {group.label}
                           </span>
@@ -332,11 +332,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 href={group.locked ? '/portal' : item.href}
                                 className={`inline-flex shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
                                   isActive
-                                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                                    ? 'border-sky-200 bg-sky-50 text-sky-700'
                                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                                 } ${group.locked ? 'opacity-70' : ''}`}
                               >
-                                <span className={isActive ? 'text-blue-500' : 'text-slate-400'}>{item.icon}</span>
+                                <span className={isActive ? 'text-sky-500' : 'text-slate-400'}>{item.icon}</span>
                                 <span>{item.label}</span>
                               </Link>
                             );
@@ -357,7 +357,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             {/* Sidebar Portal */}
             <div className="hidden shrink-0 border-r border-slate-200 bg-slate-100 p-6 md:block md:w-72 md:border-b-0 lg:w-80 lg:p-8">
                <div className="mb-8">
-                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Navigasi Portal</p>
+                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Navigasi Portal</p>
                  <h2 className="mt-2 text-2xl font-black text-slate-900 font-outfit tracking-tight">Portal Pendaftaran & Santri</h2>
                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
                    Selesaikan pendaftaran, pantau status, dan buka menu yang tersedia dari satu tempat.
@@ -370,14 +370,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                      key={group.id}
                      className={`rounded-[1.5rem] border px-4 py-4 transition ${
                        group.active
-                         ? 'border-blue-200 bg-blue-50 text-blue-800'
+                         ? 'border-sky-200 bg-sky-50 text-sky-800'
                          : 'border-slate-200 bg-white text-slate-600'
                      }`}
                    >
                      <div className="flex items-center justify-between gap-3">
                        <div>
                          <p className="text-xs font-black uppercase tracking-[0.18em]">{group.label}</p>
-                         <p className={`mt-1 text-xs leading-relaxed ${group.active ? 'text-blue-700/80' : 'text-slate-500'}`}>
+                         <p className={`mt-1 text-xs leading-relaxed ${group.active ? 'text-sky-700/80' : 'text-slate-500'}`}>
                            {group.description}
                          </p>
                        </div>
@@ -388,7 +388,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                          </span>
                        ) : (
                          <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                           group.active ? 'bg-white text-blue-700' : 'bg-slate-100 text-slate-500'
+                           group.active ? 'bg-white text-sky-700' : 'bg-slate-100 text-slate-500'
                          }`}>
                            {group.active ? 'Aktif' : 'Tersedia'}
                          </span>
@@ -416,15 +416,15 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                              key={item.href}
                              className={`flex items-center gap-2 rounded-2xl transition-all ${
                                isActive
-                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                 ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
                                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                              } ${group.locked ? 'opacity-70' : ''}`}
                            >
                              <Link href={group.locked ? '/portal' : item.href} className="flex flex-1 items-center gap-4 p-4">
-                               <span className={isActive ? 'text-blue-200' : 'text-slate-400'}>{item.icon}</span>
+                               <span className={isActive ? 'text-sky-200' : 'text-slate-400'}>{item.icon}</span>
                                <div className="min-w-0">
                                  <div className="font-bold text-sm tracking-wide">{item.label}</div>
-                                 <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-blue-100/80' : 'text-slate-500'}`}>
+                                 <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-sky-100/80' : 'text-slate-500'}`}>
                                    {item.description}
                                  </div>
                                </div>
@@ -433,8 +433,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                href={`/portal/help?ref=${item.docRef}`}
                                className={`mr-3 flex h-8 w-8 items-center justify-center rounded-full transition ${
                                  isActive
-                                   ? 'text-blue-100 hover:bg-white/10'
-                                   : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600'
+                                   ? 'text-sky-100 hover:bg-white/10'
+                                   : 'text-slate-400 hover:bg-slate-100 hover:text-sky-600'
                                }`}
                                title={`Buka panduan ${item.label}`}
                                aria-label={`Buka panduan ${item.label}`}
@@ -472,7 +472,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             <div className="min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
                {isLoading && !isPortalDashboard ? (
                  <div className="mb-6 flex items-center gap-3 rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-500">
-                   <RefreshCw size={16} className="animate-spin text-blue-600" />
+                   <RefreshCw size={16} className="animate-spin text-sky-600" />
                    Menyiapkan struktur portal sesuai status akunmu...
                  </div>
                ) : null}
@@ -509,7 +509,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </div>
       <div className="fixed inset-x-0 bottom-4 z-[1000] px-4 md:hidden">
         {isLoading ? (
-          <div className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur">
+          <div className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(250,204,21,0.18)] backdrop-blur">
             <div className="grid grid-cols-5 gap-1">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div
@@ -522,7 +522,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         ) : (
           <nav
             aria-label="Menu portal mobile"
-            className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur"
+            className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(250,204,21,0.18)] backdrop-blur"
           >
             <div className="grid grid-cols-5 gap-1">
               {mobilePortalTabs.map((item) => {
@@ -545,11 +545,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     href={item.href}
                     className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold transition-all duration-300 ${
                       item.active
-                        ? 'bg-blue-50 text-blue-700 shadow-sm'
+                        ? 'bg-sky-50 text-sky-700 shadow-sm'
                         : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                     }`}
                   >
-                    <span className={item.active ? 'text-blue-700' : 'text-slate-400'}>{item.icon}</span>
+                    <span className={item.active ? 'text-sky-700' : 'text-slate-400'}>{item.icon}</span>
                     <span className="w-full truncate text-center">{item.label}</span>
                   </Link>
                 );

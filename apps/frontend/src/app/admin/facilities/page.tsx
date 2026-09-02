@@ -208,7 +208,7 @@ function FacilitiesAdminPageContent() {
         </div>
         <button 
           onClick={() => router.push('/admin/facilities/form')}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95"
         >
           <Plus size={20} />
           <span>Tambah Fasilitas</span>
@@ -218,13 +218,13 @@ function FacilitiesAdminPageContent() {
       {/* Filter & Search Bar */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-5 mb-10">
          <div className="flex-1 relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Cari nama fasilitas..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm"
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-sm"
             />
          </div>
          <div className="flex gap-2 scrollbar-hide overflow-x-auto whitespace-nowrap bg-slate-50 p-2 rounded-xl border border-slate-100">
@@ -234,8 +234,8 @@ function FacilitiesAdminPageContent() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                   selectedCategory === cat 
-                    ? 'bg-white text-blue-900 shadow-md border border-slate-100' 
-                    : 'text-slate-400 hover:text-blue-700'
+                    ? 'bg-white text-sky-900 shadow-md border border-slate-100' 
+                    : 'text-slate-400 hover:text-sky-700'
                 }`}
               >
                 {cat}
@@ -268,7 +268,7 @@ function FacilitiesAdminPageContent() {
                     </button>
                     <button 
                       onClick={() => router.push(`/admin/facilities/form?id=${fac.id}`)}
-                      className="p-2.5 bg-white/80 text-slate-400 hover:text-blue-600 rounded-lg backdrop-blur-md shadow-lg transition-all"
+                      className="p-2.5 bg-white/80 text-slate-400 hover:text-sky-600 rounded-lg backdrop-blur-md shadow-lg transition-all"
                     >
                       <Pencil size={18} />
                     </button>
@@ -281,7 +281,7 @@ function FacilitiesAdminPageContent() {
                   </div>
 
                   <div className="absolute bottom-4 left-4">
-                     <span className="px-4 py-1.5 bg-blue-900/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-md">
+                     <span className="px-4 py-1.5 bg-sky-900/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-md">
                         {fac.category || 'Umum'}
                      </span>
                   </div>
@@ -324,7 +324,7 @@ function FacilitiesAdminPageContent() {
           <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                  <div className="w-12 h-12 bg-sky-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-sky-200">
                     <Building size={24} />
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight font-outfit">
@@ -343,7 +343,7 @@ function FacilitiesAdminPageContent() {
                     placeholder="Contoh: Masjid Jami' Al-Maa"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
                   />
                 </div>
 
@@ -355,7 +355,7 @@ function FacilitiesAdminPageContent() {
                     placeholder="Jelaskan spesifikasi atau keunggulan fasilitas ini..."
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
                   />
                 </div>
 
@@ -365,7 +365,7 @@ function FacilitiesAdminPageContent() {
                     <select
                       value={form.category}
                       onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-sm appearance-none"
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-sm appearance-none"
                     >
                       {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
@@ -392,15 +392,15 @@ function FacilitiesAdminPageContent() {
                     <button 
                       type="button"
                       onClick={() => setIsGalleryOpen(true)}
-                      className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                      className="text-[9px] font-black text-sky-600 uppercase tracking-widest hover:underline flex items-center gap-1"
                     >
                       <ImageIcon size={12} /> Galeri
                     </button>
                   </div>
                   {!croppedImageUrl ? (
-                    <label className="block w-full h-40 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-all cursor-pointer group">
+                    <label className="block w-full h-40 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 hover:bg-sky-50 hover:border-sky-300 transition-all cursor-pointer group">
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-                      <div className="h-full flex flex-col items-center justify-center text-slate-400 group-hover:text-blue-500">
+                      <div className="h-full flex flex-col items-center justify-center text-slate-400 group-hover:text-sky-500">
                          <Upload size={32} className="mb-2" />
                          <span className="text-[10px] font-black uppercase tracking-widest">Unggah Foto</span>
                       </div>
@@ -436,7 +436,7 @@ function FacilitiesAdminPageContent() {
                   <button 
                     disabled={isSubmitting}
                     type="submit"
-                    className="flex-[2] py-4 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+                    className="flex-[2] py-4 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
                   >
                      {isSubmitting ? 'Memproses...' : (
                         <>

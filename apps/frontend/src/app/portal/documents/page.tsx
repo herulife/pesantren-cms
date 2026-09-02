@@ -124,7 +124,7 @@ export default function DocumentsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-blue-600" />
+        <RefreshCw className="animate-spin text-sky-600" />
       </div>
     );
   }
@@ -136,8 +136,8 @@ export default function DocumentsPage() {
         Unggah dokumen persyaratan PSB. Dokumen yang sudah masuk akan langsung terhubung ke akun pendaftaran kamu.
       </p>
 
-      <div className="mb-10 flex gap-4 rounded-3xl border border-blue-100 bg-blue-50 p-6 text-blue-800">
-        <ShieldCheck className="mt-1 shrink-0 text-blue-500" />
+      <div className="mb-10 flex gap-4 rounded-3xl border border-sky-100 bg-sky-50 p-6 text-sky-800">
+        <ShieldCheck className="mt-1 shrink-0 text-sky-500" />
         <p className="text-sm font-medium leading-relaxed">
           Pastikan biodata sudah tersimpan sebelum mengunggah dokumen. File akan dikirim ke server dan dibaca panitia dari dashboard PSB.
         </p>
@@ -172,9 +172,9 @@ export default function DocumentsPage() {
                   : 'Belum diunggah';
           const statusClass =
             status === 'uploading'
-              ? 'border-blue-100 bg-blue-50 text-blue-700'
+              ? 'border-sky-100 bg-sky-50 text-sky-700'
               : status === 'success'
-                ? 'border-blue-100 bg-blue-50 text-blue-600'
+                ? 'border-sky-100 bg-sky-50 text-sky-600'
                 : status === 'error'
                   ? 'border-rose-100 bg-rose-50 text-rose-600'
                   : 'border-slate-200 bg-slate-100 text-slate-500';
@@ -183,11 +183,11 @@ export default function DocumentsPage() {
             <div
               key={doc.id}
               className={`flex flex-col items-start justify-between gap-6 rounded-[2rem] border p-6 md:flex-row md:items-center md:p-8 ${
-                isUploaded ? 'border-blue-200 bg-white shadow-lg shadow-blue-900/5' : 'border-dashed border-slate-200 bg-slate-50'
+                isUploaded ? 'border-sky-200 bg-white shadow-lg shadow-sky-900/5' : 'border-dashed border-slate-200 bg-slate-50'
               }`}
             >
               <div className="flex items-start gap-4">
-                <div className={`mt-1 rounded-2xl p-3 ${isUploaded ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
+                <div className={`mt-1 rounded-2xl p-3 ${isUploaded ? 'bg-sky-100 text-sky-600' : 'bg-slate-200 text-slate-500'}`}>
                   {isUploaded ? <CheckCircle2 size={24} /> : <FileText size={24} />}
                 </div>
                 <div>
@@ -198,7 +198,7 @@ export default function DocumentsPage() {
                       {statusText}
                     </span>
                     {isUploaded ? (
-                      <span className="inline-flex items-center gap-1 rounded border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                      <span className="inline-flex items-center gap-1 rounded border border-sky-100 bg-sky-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-sky-600">
                         Dokumen sudah masuk
                       </span>
                     ) : null}
@@ -208,7 +208,7 @@ export default function DocumentsPage() {
                       status === 'error'
                         ? 'text-rose-600'
                         : status === 'uploading'
-                          ? 'text-blue-600'
+                          ? 'text-sky-600'
                           : 'text-slate-500'
                     }`}>
                       {documentNotes[doc.id]}
@@ -259,7 +259,7 @@ export default function DocumentsPage() {
             <span
               className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] ${
                 allDocumentsUploaded
-                  ? 'border border-blue-100 bg-blue-50 text-blue-700'
+                  ? 'border border-sky-100 bg-sky-50 text-sky-700'
                   : 'border border-amber-100 bg-amber-50 text-amber-700'
               }`}
             >
@@ -269,7 +269,7 @@ export default function DocumentsPage() {
               href="/portal"
               className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-widest transition ${
                 allDocumentsUploaded
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500'
+                  ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20 hover:bg-sky-500'
                   : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
               }`}
             >

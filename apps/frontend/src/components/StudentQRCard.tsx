@@ -61,7 +61,7 @@ export default function StudentQRCard() {
   return (
     <div className="group relative w-full overflow-hidden rounded-[2.5rem] bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all">
       {/* Top Header - Boarding Pass Style */}
-      <div className="bg-blue-600 p-8 text-white relative">
+      <div className="bg-sky-600 p-8 text-white relative">
         <div className="absolute right-0 top-0 h-32 w-32 -mr-10 -mt-10 rounded-full bg-white/10 blur-2xl" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
@@ -88,7 +88,7 @@ export default function StudentQRCard() {
         <div className="relative mb-6 flex aspect-square w-full max-w-[200px] items-center justify-center rounded-3xl bg-white p-4 shadow-[0_0_40px_rgb(0,0,0,0.05)] ring-1 ring-slate-100 transition-transform duration-500 group-hover:scale-105 md:max-w-[220px]">
           {isLoading ? (
             <div className="flex flex-col items-center gap-3">
-              <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+              <RefreshCw className="h-8 w-8 animate-spin text-sky-600" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Loading...</span>
             </div>
           ) : token ? (
@@ -97,7 +97,7 @@ export default function StudentQRCard() {
               size={180}
               level="H"
               includeMargin={false}
-              fgColor="#0f172a" 
+              fgColor="#facc15" 
               imageSettings={{
                 src: "/assets/logo-pondok.png",
                 x: undefined,
@@ -121,13 +121,13 @@ export default function StudentQRCard() {
             <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
               <Clock size={12} /> Auto Refresh
             </span>
-            <span className={`text-[10px] font-black uppercase tracking-widest ${countdown < 60 ? 'text-rose-500 animate-pulse' : 'text-blue-600'}`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${countdown < 60 ? 'text-rose-500 animate-pulse' : 'text-sky-600'}`}>
               {formatTime(countdown)}
             </span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div 
-              className={`h-full rounded-full transition-all duration-1000 ease-linear ${countdown < 60 ? 'bg-rose-500' : 'bg-blue-600'}`}
+              className={`h-full rounded-full transition-all duration-1000 ease-linear ${countdown < 60 ? 'bg-rose-500' : 'bg-sky-600'}`}
               style={{ width: `${progressPercentage}%` }} 
             />
           </div>

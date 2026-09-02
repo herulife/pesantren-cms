@@ -22,7 +22,7 @@ const createInitialForm = (): AgendaFormState => ({
 
 export default function AgendaFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
       <AgendaFormContent />
     </Suspense>
   );
@@ -109,7 +109,7 @@ function AgendaFormContent() {
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
+        <Loader2 className="animate-spin text-sky-500" size={40} />
       </div>
     );
   }
@@ -120,12 +120,12 @@ function AgendaFormContent() {
         <button
           type="button"
           onClick={() => router.push('/admin/agendas')}
-          className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-200 hover:text-blue-600"
+          className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-sky-200 hover:text-sky-600"
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">Form Agenda</p>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-sky-700">Form Agenda</p>
           <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 font-outfit">
             {id ? 'Edit Agenda' : 'Tambah Agenda'}
           </h1>
@@ -145,7 +145,7 @@ function AgendaFormContent() {
                 required
                 value={form.title}
                 onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Contoh: Ujian Tahfidz Semester Genap"
               />
             </div>
@@ -159,7 +159,7 @@ function AgendaFormContent() {
                 required
                 value={form.start_date}
                 onChange={(event) => setForm((prev) => ({ ...prev, start_date: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               />
             </div>
 
@@ -171,7 +171,7 @@ function AgendaFormContent() {
                 type="date"
                 value={form.end_date || ''}
                 onChange={(event) => setForm((prev) => ({ ...prev, end_date: event.target.value || null }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               />
             </div>
 
@@ -183,7 +183,7 @@ function AgendaFormContent() {
                 type="text"
                 value={form.time_info || ''}
                 onChange={(event) => setForm((prev) => ({ ...prev, time_info: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="08.00 - 11.30 WIB"
               />
             </div>
@@ -196,7 +196,7 @@ function AgendaFormContent() {
                 type="text"
                 value={form.location || ''}
                 onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Aula Al-Maa"
               />
             </div>
@@ -210,7 +210,7 @@ function AgendaFormContent() {
                     type="button"
                     onClick={() => setForm((prev) => ({ ...prev, category }))}
                     className={`rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                      form.category === category ? 'bg-white text-blue-700 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-blue-700'
+                      form.category === category ? 'bg-white text-sky-700 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-sky-700'
                     }`}
                   >
                     {category}
@@ -225,7 +225,7 @@ function AgendaFormContent() {
                 rows={6}
                 value={form.description || ''}
                 onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Tambahkan keterangan tambahan agenda di sini..."
               />
             </div>
@@ -243,7 +243,7 @@ function AgendaFormContent() {
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-blue-600 disabled:opacity-50"
+            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-sky-600 disabled:opacity-50"
           >
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             {id ? 'Simpan Perubahan' : 'Simpan Agenda'}

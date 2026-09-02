@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #1d4ed8;
-  --color-accent: #0f172a;
+  --color-primary: #0ea5e9;
+  --color-accent: #facc15;
   --color-surface-50: #f8fafc;
   --color-surface-100: #f1f5f9;
   --color-surface-200: #e2e8f0;
@@ -76,8 +76,8 @@ html, body {
 }
 
 .hero-swiper .swiper-pagination-bullet-active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #0ea5e9;
+  border-color: #0ea5e9;
   width: 36px;
   border-radius: 6px;
   box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
@@ -258,7 +258,7 @@ html, body {
 }
 
 .admin-panel-shell .form-input:focus {
-  border-color: #2563eb;
+  border-color: #0ea5e9;
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }

@@ -31,7 +31,7 @@ function createInitialForm() {
 
 export default function GalleryFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
       <GalleryFormContent />
     </Suspense>
   );
@@ -257,7 +257,7 @@ function GalleryFormContent() {
   };
 
   if (isLoading) {
-    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={40} /></div>;
+    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>;
   }
 
   return (
@@ -268,12 +268,12 @@ function GalleryFormContent() {
             <button
               type="button"
               onClick={() => router.push('/admin/gallery')}
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-200 hover:text-blue-600"
+              className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-sky-200 hover:text-sky-600"
             >
               <ArrowLeft size={20} />
             </button>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-700">Galeri Media</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">Galeri Media</p>
               <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 font-outfit">Tambah Foto Baru</h1>
               <p className="text-sm font-medium text-slate-500">Alur dibuat lebih sederhana seperti WordPress: media di kiri, pengaturan di kanan.</p>
             </div>
@@ -290,7 +290,7 @@ function GalleryFormContent() {
 
               <div className="p-6">
                 {!croppedImageUrl ? (
-                  <label className="flex min-h-[28rem] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-center transition-all hover:border-blue-300 hover:bg-blue-50">
+                  <label className="flex min-h-[28rem] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-center transition-all hover:border-sky-300 hover:bg-sky-50">
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                     <ImageIcon size={54} className="mb-4 text-slate-300" />
                     <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-500">Pilih atau Upload Foto</span>
@@ -302,7 +302,7 @@ function GalleryFormContent() {
                       <img src={croppedImageUrl} alt="Preview galeri" className="max-h-[38rem] w-full object-contain" />
                     </div>
                     <div className="flex flex-wrap gap-3">
-                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600 transition-all hover:border-blue-300 hover:text-blue-700">
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600 transition-all hover:border-sky-300 hover:text-sky-700">
                         <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                         <Upload size={16} />
                         Ganti Foto
@@ -340,7 +340,7 @@ function GalleryFormContent() {
                   <input
                     value={form.title}
                     onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                     placeholder="Contoh: Santri mengikuti kajian ba'da Maghrib"
                   />
                 </div>
@@ -353,7 +353,7 @@ function GalleryFormContent() {
                         key={category}
                         type="button"
                         onClick={() => setForm((prev) => ({ ...prev, category }))}
-                        className={`rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${form.category === category ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-100' : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200'}`}
+                        className={`rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${form.category === category ? 'border-sky-600 bg-sky-600 text-white shadow-lg shadow-sky-100' : 'border-slate-200 bg-white text-slate-500 hover:border-sky-200'}`}
                       >
                         {category}
                       </button>
@@ -363,18 +363,18 @@ function GalleryFormContent() {
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/40 shadow-sm">
-              <div className="border-b border-blue-100 px-6 py-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-700">Upload Massal</p>
+            <section className="overflow-hidden rounded-2xl border border-sky-200 bg-sky-50/40 shadow-sm">
+              <div className="border-b border-sky-100 px-6 py-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">Upload Massal</p>
                 <h2 className="mt-2 text-xl font-black uppercase tracking-tight text-slate-900">Tambahkan Banyak Foto Sekaligus</h2>
               </div>
 
               <div className="space-y-5 p-6">
                 <p className="text-sm font-medium text-slate-500">Gunakan pengaturan album di sidebar kanan, lalu pilih banyak file. Judul tiap foto otomatis diambil dari nama file.</p>
-                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-200 bg-white px-6 py-10 text-center transition-all hover:border-blue-400">
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-sky-200 bg-white px-6 py-10 text-center transition-all hover:border-sky-400">
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handleBulkSelect} />
-                  <Images size={32} className="text-blue-500" />
-                  <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">Pilih Banyak Foto</span>
+                  <Images size={32} className="text-sky-500" />
+                  <span className="text-[11px] font-black uppercase tracking-[0.2em] text-sky-700">Pilih Banyak Foto</span>
                   <span className="text-sm text-slate-500">{bulkFiles.length > 0 ? `${bulkFiles.length} file dipilih` : 'Belum ada file dipilih'}</span>
                 </label>
                 <div className="flex flex-wrap gap-3">
@@ -382,7 +382,7 @@ function GalleryFormContent() {
                     type="button"
                     onClick={handleBulkUpload}
                     disabled={isBulkSubmitting || bulkFiles.length === 0}
-                    className="inline-flex items-center gap-3 rounded-xl bg-blue-600 px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-blue-200 transition-all hover:bg-blue-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-3 rounded-xl bg-sky-600 px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-sky-200 transition-all hover:bg-sky-700 disabled:opacity-50"
                   >
                     {isBulkSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                     {isBulkSubmitting ? 'Mengunggah...' : `Upload ${bulkFiles.length || ''} Foto`}
@@ -409,7 +409,7 @@ function GalleryFormContent() {
                   type="submit"
                   form="gallery-single-upload-form"
                   disabled={isSubmitting || !croppedImage}
-                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-5 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-blue-600 disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-5 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-sky-600 disabled:opacity-50"
                 >
                   {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   {isSubmitting ? 'Menyimpan...' : 'Simpan Foto'}
@@ -440,7 +440,7 @@ function GalleryFormContent() {
                       setSelectedAlbumSlug('');
                       setForm((prev) => ({ ...prev, album_name: '', event_date: '', is_album_cover: false }));
                     }}
-                    className={`rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${albumMode === 'new' ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-500'}`}
+                    className={`rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${albumMode === 'new' ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-200 bg-white text-slate-500'}`}
                   >
                     Album Baru
                   </button>
@@ -452,7 +452,7 @@ function GalleryFormContent() {
                         applyAlbumSelection(albumSummaries[0].slug);
                       }
                     }}
-                    className={`rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${albumMode === 'existing' ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-500'}`}
+                    className={`rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${albumMode === 'existing' ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-200 bg-white text-slate-500'}`}
                   >
                     Album Lama
                   </button>
@@ -464,7 +464,7 @@ function GalleryFormContent() {
                     <select
                       value={selectedAlbumSlug}
                       onChange={(e) => applyAlbumSelection(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                     >
                       <option value="">Pilih album...</option>
                       {albumSummaries.map((album) => (
@@ -482,7 +482,7 @@ function GalleryFormContent() {
                     value={form.album_name}
                     onChange={(e) => setForm((prev) => ({ ...prev, album_name: e.target.value }))}
                     disabled={albumMode === 'existing'}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:opacity-70"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:opacity-70"
                     placeholder="Contoh: Dauroh Ramadhan 2026"
                   />
                 </div>
@@ -496,7 +496,7 @@ function GalleryFormContent() {
                       value={form.event_date}
                       onChange={(e) => setForm((prev) => ({ ...prev, event_date: e.target.value }))}
                       disabled={albumMode === 'existing'}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-4 pl-11 pr-4 font-bold text-slate-800 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:opacity-70"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-4 pl-11 pr-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:opacity-70"
                     />
                   </div>
                 </div>
@@ -504,13 +504,13 @@ function GalleryFormContent() {
                 <button
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, is_album_cover: !prev.is_album_cover }))}
-                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-4 text-left transition-all ${form.is_album_cover ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-4 text-left transition-all ${form.is_album_cover ? 'border-sky-600 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-600'}`}
                 >
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em]">Cover Album</p>
                     <p className="mt-1 text-xs font-medium">{form.is_album_cover ? 'Foto ini akan jadi cover album.' : 'Aktifkan jika foto ini ingin dipakai sebagai cover.'}</p>
                   </div>
-                  <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${form.is_album_cover ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${form.is_album_cover ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                     <Check size={14} />
                   </span>
                 </button>
@@ -547,9 +547,9 @@ function GalleryFormContent() {
                 </div>
                 <div className="rounded-xl border border-dashed border-slate-200 p-4">
                   <div className="flex items-center gap-3">
-                    <FolderOpen size={18} className="text-blue-600" />
+                    <FolderOpen size={18} className="text-sky-600" />
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">Total Album</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">Total Album</p>
                       <p className="mt-1 text-sm font-bold text-slate-700">{albumSummaries.length} album tersedia</p>
                     </div>
                   </div>

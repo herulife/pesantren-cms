@@ -186,7 +186,7 @@ function ImageUploadField({
         <label
           htmlFor={inputId}
           className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] transition ${
-            isUploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            isUploading ? 'bg-slate-100 text-slate-400' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'
           }`}
         >
           {isUploading ? <RefreshCw size={14} className="animate-spin" /> : <UploadCloud size={14} />}
@@ -250,7 +250,7 @@ function StringListEditor({
         <button
           type="button"
           onClick={() => onChange([...items, ''])}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-xs font-black text-sky-700"
         >
           <Plus size={14} /> {addLabel}
         </button>
@@ -303,7 +303,7 @@ function StatListEditor({
         <button
           type="button"
           onClick={() => onChange([...items, { value: '', label: '' }])}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-xs font-black text-sky-700"
         >
           <Plus size={14} /> Tambah Stat
         </button>
@@ -366,7 +366,7 @@ function FactListEditor({
         <button
           type="button"
           onClick={() => onChange([...items, { label: '', value: '' }])}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-xs font-black text-sky-700"
         >
           <Plus size={14} /> Tambah Fakta
         </button>
@@ -435,7 +435,7 @@ function ImageCardListEditor({
         <button
           type="button"
           onClick={() => onChange([...items, { title: '', description: '', image_url: '' }])}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-xs font-black text-sky-700"
         >
           <Plus size={14} /> Tambah Kartu
         </button>
@@ -511,7 +511,7 @@ function PsbWaveListEditor({
         <button
           type="button"
           onClick={() => onChange([...items, { label: '', date_text: '', active: false }])}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-xs font-black text-sky-700"
         >
           <Plus size={14} /> Tambah Gelombang
         </button>

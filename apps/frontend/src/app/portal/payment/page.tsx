@@ -59,13 +59,13 @@ const paymentStatusMeta: Record<PaymentStatus, { label: string; title: string; d
     label: 'Menunggu Verifikasi',
     title: 'Bukti Pembayaran Sedang Dicek',
     description: 'Bukti pembayaran sudah masuk. Panitia akan memeriksa nominal dan bukti transfer yang kamu kirim.',
-    className: 'border-blue-100 bg-blue-50 text-blue-700',
+    className: 'border-sky-100 bg-sky-50 text-sky-700',
   },
   paid: {
     label: 'Lunas',
     title: 'Pembayaran Sudah Diverifikasi',
     description: 'Pembayaran pendaftaran sudah dinyatakan lunas. Kamu bisa memantau status pendaftaran dari dashboard portal.',
-    className: 'border-blue-100 bg-blue-50 text-blue-700',
+    className: 'border-sky-100 bg-sky-50 text-sky-700',
   },
   rejected: {
     label: 'Perlu Upload Ulang',
@@ -272,7 +272,7 @@ export default function PortalPaymentPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-blue-600" />
+        <RefreshCw className="animate-spin text-sky-600" />
       </div>
     );
   }
@@ -342,7 +342,7 @@ export default function PortalPaymentPage() {
       <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Checklist Pembayaran</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Checklist Pembayaran</p>
             <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Langkah Yang Sudah Dilalui</h4>
           </div>
           <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
@@ -356,13 +356,13 @@ export default function PortalPaymentPage() {
               key={step.title}
               className={`rounded-2xl border px-4 py-4 ${
                 step.completed
-                  ? 'border-blue-100 bg-blue-50 text-blue-900'
+                  ? 'border-sky-100 bg-sky-50 text-sky-900'
                   : 'border-slate-200 bg-slate-50 text-slate-500'
               }`}
             >
               <div
                 className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
-                  step.completed ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'
+                  step.completed ? 'bg-sky-600 text-white' : 'bg-white text-slate-400'
                 }`}
               >
                 {step.completed ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
@@ -375,13 +375,13 @@ export default function PortalPaymentPage() {
       </div>
 
       {successMessage ? (
-        <div className="mb-8 rounded-[2rem] border border-blue-200 bg-blue-50 p-6 text-blue-900 shadow-sm">
+        <div className="mb-8 rounded-[2rem] border border-sky-200 bg-sky-50 p-6 text-sky-900 shadow-sm">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
               <CheckCircle2 size={24} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">Upload Berhasil</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">Upload Berhasil</p>
               <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Bukti Pembayaran Terkirim</h4>
               <p className="mt-2 text-sm font-semibold leading-7">{successMessage}</p>
             </div>
@@ -441,11 +441,11 @@ export default function PortalPaymentPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center gap-3">
-            <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
+            <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
               <ShieldCheck size={22} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Instruksi Transfer</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Instruksi Transfer</p>
               <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Pembayaran Manual</h4>
             </div>
           </div>
@@ -457,11 +457,11 @@ export default function PortalPaymentPage() {
 
             {hasBankInfo ? (
               <div className="grid gap-3">
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
                     <Landmark size={13} /> Bank Tujuan
                   </p>
-                  <p className="mt-2 text-lg font-black text-blue-950">{configuredBankName || '-'}</p>
+                  <p className="mt-2 text-lg font-black text-sky-950">{configuredBankName || '-'}</p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -489,7 +489,7 @@ export default function PortalPaymentPage() {
             )}
 
             {configuredPaymentNote ? (
-              <p className="rounded-2xl border border-blue-100 bg-blue-50 p-4 font-semibold text-blue-900">
+              <p className="rounded-2xl border border-sky-100 bg-sky-50 p-4 font-semibold text-sky-900">
                 {configuredPaymentNote}
               </p>
             ) : null}
@@ -512,7 +512,7 @@ export default function PortalPaymentPage() {
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:text-slate-400"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
                 placeholder="Contoh: 250000"
               />
             </div>
@@ -524,7 +524,7 @@ export default function PortalPaymentPage() {
                 value={paymentDate}
                 onChange={(event) => setPaymentDate(event.target.value)}
                 disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:text-slate-400"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
               />
             </div>
           </div>
@@ -540,7 +540,7 @@ export default function PortalPaymentPage() {
                   Pilih file dulu, lalu klik Kirim Bukti Pembayaran. Format: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
                 </p>
                 {selectedProofFile ? (
-                  <p className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-blue-700">
+                  <p className="mt-3 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-sky-700">
                     File dipilih: {selectedProofFile.name}
                   </p>
                 ) : null}
@@ -557,7 +557,7 @@ export default function PortalPaymentPage() {
                     href={proofDisplayUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-blue-200 hover:text-blue-700"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
                   >
                     <Eye size={16} />
                     Preview
@@ -578,7 +578,7 @@ export default function PortalPaymentPage() {
                         ? 'bg-slate-200 text-slate-400'
                         : hasPaymentWarning
                           ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                          : 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                          : 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
                     }`}
                   >
                     <UploadCloud size={16} />
@@ -598,14 +598,14 @@ export default function PortalPaymentPage() {
                 type="button"
                 onClick={() => void handleSubmitPayment()}
                 disabled={!canSubmitPayment || isUploading}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
               >
                 {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                 {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
               </button>
               <Link
                 href="/portal"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-blue-600"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-sky-600"
               >
                 Kembali ke Dasbor <ArrowRight size={16} />
               </Link>

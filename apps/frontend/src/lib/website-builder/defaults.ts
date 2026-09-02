@@ -113,7 +113,7 @@ export const defaultHomeBuilderLayout: HomeBuilderLayout = {
             title: 'Tahfidz, Adab, dan Ilmu dalam Satu Ritme Pembinaan',
             subtitle:
               'Al-Maa Parung menghadirkan lingkungan belajar yang menjaga hafalan, akhlak, dan semangat tumbuh bersama.',
-            image_url: '/assets/img/gedung.webp',
+            image_url: 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80',
           },
         ],
       },
@@ -239,7 +239,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
       title: 'Pondok Pesantren Tahfidzul Qur’an Al-Maa Parung',
       subtitle:
         'Mengenal lembaga, arah pembinaan, visi-misi, dan identitas resmi Al-Maa sebagai pondok yang menumbuhkan generasi Qurani melalui tahfidz, adab, dan pembinaan terpadu.',
-      background_image_url: '/assets/img/gedung.webp',
+      background_image_url: 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80',
       highlights: [
         { value: 'Parung', label: 'Lokasi Pondok' },
         { value: '20 Juz', label: 'Target Hafalan' },
@@ -297,7 +297,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
       title: 'Pembinaan Al-Maa dirancang seimbang antara tahfidz, ilmu, dan pembentukan karakter.',
       subtitle:
         'Kenali program unggulan, ritme belajar, pembiasaan santri, dan kegiatan penunjang yang membentuk hafalan sekaligus kemandirian mereka.',
-      background_image_url: '/assets/img/khalaqoh.jpg',
+      background_image_url: 'https://images.unsplash.com/photo-1753947127898-a11f139e9a67?auto=format&fit=crop&w=1700&q=80',
       tags: ['Tahfidz', 'Adab', 'Bahasa Arab', 'Ilmu Syar’i'],
       highlights: [
         { value: '20 Juz', label: 'Target Hafalan' },
@@ -315,25 +315,25 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
           title: 'Tahfidz Al-Qur’an',
           description:
             'Program inti pondok dengan target hafalan bertahap, setoran rutin, dan murajaah yang dijaga konsisten.',
-          image_url: '/assets/img/tahfidz.jpg',
+          image_url: 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80',
         },
         {
           title: 'Pembinaan Adab',
           description:
             'Pembiasaan akhlak, disiplin, dan tanggung jawab sebagai fondasi karakter santri dalam keseharian.',
-          image_url: '/assets/img/khalaqoh.jpg',
+          image_url: 'https://images.unsplash.com/photo-1753947127898-a11f139e9a67?auto=format&fit=crop&w=1700&q=80',
         },
         {
           title: 'Bahasa Arab',
           description:
             'Penguatan dasar bahasa Arab untuk membantu santri memahami ilmu dan teks Islam dengan lebih baik.',
-          image_url: '/assets/img/tahfidz1.jpg',
+          image_url: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1700&q=80',
         },
         {
           title: 'Ilmu Syar’i Dasar',
           description:
             'Pembelajaran diniyah yang menolong santri mengenal aqidah, ibadah, dan adab secara terarah.',
-          image_url: '/assets/img/belajar-kitab.jpg',
+          image_url: 'https://images.unsplash.com/photo-1774191441801-95b99c8abd3f?auto=format&fit=crop&w=1700&q=80',
         },
       ],
     },
@@ -375,7 +375,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
       title: 'Penerimaan santri baru Al-Maa untuk jenjang SMP sampai SMK.',
       subtitle:
         'Kenali persyaratan, kuota, biaya pendaftaran, dan langkah awal untuk bergabung bersama keluarga besar penghafal Al-Qur’an di Al-Maa Parung.',
-      background_image_url: '/assets/img/psb-banner.png',
+      background_image_url: 'https://images.unsplash.com/photo-1566747675140-317e7484b10d?auto=format&fit=crop&w=1700&q=80',
     },
     requirements: {
       eyebrow: 'Persyaratan',
@@ -406,7 +406,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
         'Hubungi panitia pendaftaran untuk petunjuk kunjungan, tanya program, dan memastikan alur pendaftaran terbaru.',
       address_text:
         'Jl. H. Mawi, Gg. Omega, Kp. Jati Waru, RT 003/RW 002, Waru, Kec. Parung, Kab. Bogor, Jawa Barat 16330',
-      image_url: '/assets/img/info-pendaftaran.jpg',
+      image_url: 'https://images.unsplash.com/photo-1758985776354-4df674930917?auto=format&fit=crop&w=1700&q=80',
     },
     cta: {
       eyebrow: 'Langkah Berikutnya',

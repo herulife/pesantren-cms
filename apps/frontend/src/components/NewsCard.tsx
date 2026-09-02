@@ -17,7 +17,7 @@ export default function NewsCard({ news, featured = false }: NewsCardProps) {
     : '';
 
   return (
-    <article className={`group overflow-hidden rounded-[1.7rem] border border-slate-200/80 bg-white shadow-[0_22px_48px_-34px_rgba(15,23,42,0.16)] transition-all duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_26px_60px_-34px_rgba(15,23,42,0.22)] ${featured ? 'md:rounded-[1.9rem]' : 'h-full'}`}>
+    <article className={`group overflow-hidden rounded-[1.7rem] border border-slate-200/80 bg-white shadow-[0_22px_48px_-34px_rgba(250,204,21,0.16)] transition-all duration-500 hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_26px_60px_-34px_rgba(250,204,21,0.22)] ${featured ? 'md:rounded-[1.9rem]' : 'h-full'}`}>
       <Link href={`/news/${news.slug}`} className={`block ${featured ? '' : 'h-full'}`}>
         <div className={`relative overflow-hidden bg-slate-100 ${featured ? 'h-[260px] md:h-[320px]' : 'h-[220px] md:h-52'}`}>
           {imageUrl ? (
@@ -38,14 +38,14 @@ export default function NewsCard({ news, featured = false }: NewsCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/18 to-transparent" />
           <div className="absolute left-4 top-4 sm:left-5 sm:top-5">
             <span className={`rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] backdrop-blur-md shadow-lg ${
-              news.status === 'published' ? 'bg-blue-600/90 text-white shadow-blue-600/20' : 'bg-amber-500/90 text-white shadow-amber-500/20'
+              news.status === 'published' ? 'bg-sky-600/90 text-white shadow-sky-600/20' : 'bg-amber-500/90 text-white shadow-amber-500/20'
             }`}>
               {news.status === 'published' ? 'Published' : news.status}
             </span>
           </div>
           <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
-            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-100/90">
-              <Calendar className="h-3.5 w-3.5 text-blue-200" />
+            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/90">
+              <Calendar className="h-3.5 w-3.5 text-sky-200" />
               <span>{publishedAt}</span>
             </div>
             <h3 className={`mt-3 font-black leading-tight text-white ${featured ? 'max-w-xl text-2xl sm:text-3xl' : 'line-clamp-2 text-xl'}`}>
@@ -59,9 +59,9 @@ export default function NewsCard({ news, featured = false }: NewsCardProps) {
             {news.excerpt || 'Klik untuk membaca selengkapnya...'}
           </p>
           
-          <div className="group/btn mt-6 flex cursor-pointer items-center text-xs font-black uppercase tracking-[0.2em] text-blue-600 md:mt-auto md:pt-6">
+          <div className="group/btn mt-6 flex cursor-pointer items-center text-xs font-black uppercase tracking-[0.2em] text-sky-600 md:mt-auto md:pt-6">
             Selengkapnya
-            <div className="ml-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 transition-all group-hover/btn:bg-blue-600 group-hover/btn:text-white">
+            <div className="ml-3 flex h-8 w-8 items-center justify-center rounded-full bg-sky-50 transition-all group-hover/btn:bg-sky-600 group-hover/btn:text-white">
               <ChevronRight size={16} className="transition-transform group-hover/btn:translate-x-0.5" />
             </div>
           </div>

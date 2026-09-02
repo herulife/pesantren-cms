@@ -107,7 +107,7 @@ export default function AddDonationCampaignPage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-         <Link href="/admin/donations" className="flex items-center gap-2 text-slate-500 hover:text-blue-700 transition-colors font-bold uppercase tracking-widest text-xs">
+         <Link href="/admin/donations" className="flex items-center gap-2 text-slate-500 hover:text-sky-700 transition-colors font-bold uppercase tracking-widest text-xs">
             <ArrowLeft size={16} /> Kembali ke Sistem Donasi
          </Link>
       </div>
@@ -123,7 +123,7 @@ export default function AddDonationCampaignPage() {
            <div className="lg:col-span-2 space-y-8">
               
               {/* Title Input WP Style */}
-              <div className="bg-white border text-transparent border-slate-200 rounded-2xl shadow-sm overflow-hidden focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all">
+              <div className="bg-white border text-transparent border-slate-200 rounded-2xl shadow-sm overflow-hidden focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:border-sky-500 transition-all">
                 <input 
                   required
                   value={formData.title}
@@ -134,7 +134,7 @@ export default function AddDonationCampaignPage() {
               </div>
 
               {/* Content Textarea WP Style */}
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all min-h-[400px]">
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:border-sky-500 transition-all min-h-[400px]">
                 <div className="h-12 border-b border-slate-100 bg-slate-50 flex items-center px-4 gap-2">
                    <div className="text-xs font-bold text-slate-400 px-2 uppercase tracking-widest cursor-default">Deskripsi Detail Kampanye</div>
                 </div>
@@ -163,7 +163,7 @@ export default function AddDonationCampaignPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm text-slate-600">
                        <span className="flex items-center gap-2"><ImageIcon size={16} className="text-slate-400"/> Tipe:</span>
-                       <span className="font-bold text-blue-600">Terbuka (Publik)</span>
+                       <span className="font-bold text-sky-600">Terbuka (Publik)</span>
                     </div>
                  </div>
                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
@@ -173,7 +173,7 @@ export default function AddDonationCampaignPage() {
                     <button 
                       type="submit"
                       disabled={isUploading}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-bold hover:bg-sky-700 transition-all shadow-md shadow-sky-500/20 disabled:opacity-50"
                     >
                       <Send size={16} />
                       Sebarkan
@@ -196,7 +196,7 @@ export default function AddDonationCampaignPage() {
                           type="number"
                           value={formData.target_amount || ''}
                           onChange={(e) => setFormData({...formData, target_amount: Number(e.target.value)})}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
                           placeholder="0"
                         />
                       </div>
@@ -210,7 +210,7 @@ export default function AddDonationCampaignPage() {
                           type="date"
                           value={formData.end_date}
                           onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
                         />
                       </div>
                     </div>
@@ -224,7 +224,7 @@ export default function AddDonationCampaignPage() {
                     <button 
                       type="button"
                       onClick={() => setIsGalleryOpen(true)}
-                      className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1"
+                      className="text-[10px] font-bold text-sky-600 hover:underline flex items-center gap-1"
                     >
                       <ImageIcon size={12} /> Galeri
                     </button>
@@ -232,7 +232,7 @@ export default function AddDonationCampaignPage() {
                  <div className="p-5 flex-1 flex flex-col">
                     <div 
                       className={`w-full flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center relative overflow-hidden transition-all min-h-[14rem] bg-slate-50 hover:bg-slate-100 ${
-                        formData.image_url ? 'border-blue-300' : 'border-slate-300'
+                        formData.image_url ? 'border-sky-300' : 'border-slate-300'
                       }`}
                       onClick={() => !isUploading && fileInputRef.current?.click()}
                       style={{ cursor: isUploading ? 'not-allowed' : 'pointer' }}
@@ -247,7 +247,7 @@ export default function AddDonationCampaignPage() {
                       ) : (
                         <div className="flex flex-col items-center gap-2 p-6 text-slate-400 text-center">
                           {isUploading ? (
-                             <Loader2 size={32} className="animate-spin text-blue-500 mb-2" />
+                             <Loader2 size={32} className="animate-spin text-sky-500 mb-2" />
                           ) : (
                              <ImageIcon size={32} className="text-slate-300 mb-2" />
                           )}

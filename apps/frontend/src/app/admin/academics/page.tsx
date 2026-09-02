@@ -194,7 +194,7 @@ export default function AcademicsPage() {
     .sort((a, b) => b.average - a.average)
     .slice(0, 6), [recapSubjectAverages]);
   const dashboardStats = useMemo(() => ([
-    { label: 'Total Santri', value: String(studentRecaps.length), icon: Users, tone: 'bg-blue-50 text-blue-700' },
+    { label: 'Total Santri', value: String(studentRecaps.length), icon: Users, tone: 'bg-sky-50 text-sky-700' },
     { label: 'Mata Pelajaran', value: String(recapSubjectColumns.length), icon: BookOpen, tone: 'bg-sky-50 text-sky-700' },
     { label: 'Rata-rata Kelas', value: averageGrade, icon: Trophy, tone: 'bg-amber-50 text-amber-700' },
     { label: 'Perlu Perhatian', value: String(recapCompletionStats.pending), icon: AlertTriangle, tone: 'bg-rose-50 text-rose-700' },
@@ -421,13 +421,13 @@ export default function AcademicsPage() {
     <div className="pb-10 font-outfit">
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Dashboard eRapor</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">Dashboard eRapor</p>
           <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-800">eRapor</h2>
           <p className="mt-1 text-sm text-slate-500">{academicPeriodLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => exportData('pdf')} className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100"><FileDown size={16} /> Export PDF</button>
-          <button onClick={() => exportData('excel')} className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"><FileSpreadsheet size={16} /> Export Excel</button>
+          <button onClick={() => exportData('excel')} className="flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100"><FileSpreadsheet size={16} /> Export Excel</button>
         </div>
       </div>
 
@@ -439,11 +439,11 @@ export default function AcademicsPage() {
         { id: 'recap', label: 'Rekap Nilai', icon: BarChart3 },
         { id: 'reports', label: 'Cetak Raport', icon: FileDown },
         { id: 'subjects', label: 'Mata Pelajaran', icon: Layers3 },
-      ].map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id as TabKey)} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}><tab.icon size={16} /> {tab.label}</button>)}</div>
+      ].map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id as TabKey)} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-sky-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}><tab.icon size={16} /> {tab.label}</button>)}</div>
 
       <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[280px] flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari data akademik..." className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none focus:border-blue-500" /></div>
+          <div className="relative min-w-[280px] flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari data akademik..." className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none focus:border-sky-500" /></div>
           {['grades', 'recap', 'reports'].includes(activeTab) && <>
             <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option>Ganjil</option><option>Genap</option></select>
             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
@@ -454,7 +454,7 @@ export default function AcademicsPage() {
             <button onClick={() => router.push(buildFormHref('bulk-edit'))} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"><Pencil size={16} /> Edit Massal</button>
           </>}
           {activeTab === 'attendance' && <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm" />}
-          {['grades', 'attendance', 'tahfidz'].includes(activeTab) && <button onClick={openAdd} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"><Plus size={16} /> Tambah Data</button>}
+          {['grades', 'attendance', 'tahfidz'].includes(activeTab) && <button onClick={openAdd} className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"><Plus size={16} /> Tambah Data</button>}
         </div>
       </div>
 
@@ -496,12 +496,12 @@ export default function AcademicsPage() {
                   <tbody>
                     {studentRecaps.slice(0, 8).map((item) => (
                       <tr key={item.studentId} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition-colors">
-                        <td className="px-6 py-3 font-bold text-blue-700">{item.rank}</td>
+                        <td className="px-6 py-3 font-bold text-sky-700">{item.rank}</td>
                         <td className="px-6 py-3 font-medium text-slate-900">{item.studentName}</td>
                         {recapSubjectColumns.slice(0, 4).map((subject) => <td key={subject.id} className="px-6 py-3 text-center text-slate-600">{item.subjectScores[subject.id] ?? '-'}</td>)}
                         <td className="px-6 py-3 text-center font-semibold text-slate-900">{item.average.toFixed(1)}</td>
                         <td className="px-6 py-3 text-center">
-                          <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${item.average >= 75 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span>
+                          <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${item.average >= 75 ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -526,7 +526,7 @@ export default function AcademicsPage() {
                     </div>
                     <div className="h-3 rounded-full bg-slate-100">
                       <div
-                        className="h-3 rounded-full bg-blue-600 transition-all"
+                        className="h-3 rounded-full bg-sky-600 transition-all"
                         style={{ width: `${Math.max(8, Math.min(subject.average, 100))}%` }}
                       />
                     </div>
@@ -543,9 +543,9 @@ export default function AcademicsPage() {
         {
           label: 'Rata-rata Nilai',
           value: averageGrade,
-          color: 'text-blue-700',
-          tone: 'border-blue-100 bg-blue-50/80',
-          labelTone: 'text-blue-600/80',
+          color: 'text-sky-700',
+          tone: 'border-sky-100 bg-sky-50/80',
+          labelTone: 'text-sky-600/80',
         },
         {
           label: 'Kehadiran',
@@ -580,9 +580,9 @@ export default function AcademicsPage() {
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th>{activeTab === 'grades' && <><th className="px-4 py-4">Mapel</th><th className="px-4 py-4">UTS</th><th className="px-4 py-4">UAS</th><th className="px-4 py-4">Tugas</th><th className="px-4 py-4">Akhir</th><th className="px-4 py-4">Grade</th></>}{activeTab === 'attendance' && <><th className="px-4 py-4">Tanggal</th><th className="px-4 py-4">Status</th></>}{activeTab === 'tahfidz' && <><th className="px-4 py-4">Surah</th><th className="px-4 py-4">Juz</th><th className="px-4 py-4">Ayat</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Evaluasi</th></>}<th className="px-6 py-4 text-right">Aksi</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {activeTab === 'grades' && filteredGrades.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.subject_name}</td><td className="px-4 py-4">{v.uts_score}</td><td className="px-4 py-4">{v.uas_score}</td><td className="px-4 py-4">{v.task_score}</td><td className="px-4 py-4 font-black text-blue-600">{v.final_score}</td><td className="px-4 py-4">{v.grade_letter}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('grade', { id: v.id, semester: v.semester, year: v.academic_year }))} className="rounded-xl bg-blue-50 p-2 text-blue-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'grade', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
-              {activeTab === 'attendance' && filteredAttendance.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.date}</td><td className="px-4 py-4 font-bold uppercase">{v.status}</td><td className="px-6 py-4"><div className="flex justify-end gap-2">{v.status === 'alpha' && <button onClick={() => notifyAlpha(v)} className="rounded-xl bg-amber-50 p-2 text-amber-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-sm"><MessageSquare size={15} /></button>}<button onClick={() => router.push(buildFormHref('attendance', { id: v.id, date: v.date }))} className="rounded-xl bg-blue-50 p-2 text-blue-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'attendance', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
-              {activeTab === 'tahfidz' && filteredTahfidz.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.surah_name}</td><td className="px-4 py-4">{v.juz}</td><td className="px-4 py-4">{v.start_ayat}-{v.end_ayat}</td><td className="px-4 py-4 uppercase">{v.status}</td><td className="px-4 py-4">{v.evaluation_date}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('tahfidz', { id: v.id }))} className="rounded-xl bg-blue-50 p-2 text-blue-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'tahfidz', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {activeTab === 'grades' && filteredGrades.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.subject_name}</td><td className="px-4 py-4">{v.uts_score}</td><td className="px-4 py-4">{v.uas_score}</td><td className="px-4 py-4">{v.task_score}</td><td className="px-4 py-4 font-black text-sky-600">{v.final_score}</td><td className="px-4 py-4">{v.grade_letter}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('grade', { id: v.id, semester: v.semester, year: v.academic_year }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'grade', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {activeTab === 'attendance' && filteredAttendance.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.date}</td><td className="px-4 py-4 font-bold uppercase">{v.status}</td><td className="px-6 py-4"><div className="flex justify-end gap-2">{v.status === 'alpha' && <button onClick={() => notifyAlpha(v)} className="rounded-xl bg-amber-50 p-2 text-amber-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-sm"><MessageSquare size={15} /></button>}<button onClick={() => router.push(buildFormHref('attendance', { id: v.id, date: v.date }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'attendance', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {activeTab === 'tahfidz' && filteredTahfidz.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.surah_name}</td><td className="px-4 py-4">{v.juz}</td><td className="px-4 py-4">{v.start_ayat}-{v.end_ayat}</td><td className="px-4 py-4 uppercase">{v.status}</td><td className="px-4 py-4">{v.evaluation_date}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('tahfidz', { id: v.id }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'tahfidz', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
             </tbody>
           </table>
         </div>}
@@ -591,9 +591,9 @@ export default function AcademicsPage() {
       {activeTab === 'recap' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="rounded-xl border border-blue-100 bg-blue-50/80 p-5 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-700/80">Santri Terekap</p>
-              <p className="mt-2 text-3xl font-black text-blue-700">{recapCompletionStats.total}</p>
+            <div className="rounded-xl border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Santri Terekap</p>
+              <p className="mt-2 text-3xl font-black text-sky-700">{recapCompletionStats.total}</p>
             </div>
             <div className="rounded-xl border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Mapel Aktif</p>
@@ -630,7 +630,7 @@ export default function AcademicsPage() {
               {recapSubjectAverages.map((subject) => (
                 <div key={subject.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm font-black text-slate-800">{subject.name}</p>
-                  <p className="mt-2 text-2xl font-black text-blue-600">{subject.average.toFixed(1)}</p>
+                  <p className="mt-2 text-2xl font-black text-sky-600">{subject.average.toFixed(1)}</p>
                   <p className="mt-1 text-xs font-semibold text-slate-500">{subject.totalStudents} santri masuk rekap</p>
                 </div>
               ))}
@@ -655,11 +655,11 @@ export default function AcademicsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {studentRecaps.map((item) => (
                     <tr key={item.studentId}>
-                      <td className="px-4 py-4 text-center font-black text-blue-700">{item.rank}</td>
+                      <td className="px-4 py-4 text-center font-black text-sky-700">{item.rank}</td>
                       <td className="px-4 py-4 font-bold text-slate-800">{item.studentName}</td>
                       {recapSubjectColumns.map((subject) => <td key={subject.id} className="px-4 py-4 text-center font-semibold text-slate-600">{item.subjectScores[subject.id] ?? '-'}</td>)}
                       <td className="px-4 py-4 text-center font-black text-slate-900">{item.average.toFixed(1)}</td>
-                      <td className="px-4 py-4 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span></td>
+                      <td className="px-4 py-4 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -695,7 +695,7 @@ export default function AcademicsPage() {
                 </select>
                 <div className="flex flex-col gap-3">
                   <button type="button" onClick={printReport} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"><Printer size={16} /> CETAK</button>
-                  <button type="button" onClick={() => previewStudentReportPDF(buildReportPayload())} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50"><Eye size={16} /> PREVIEW PDF</button>
+                  <button type="button" onClick={() => previewStudentReportPDF(buildReportPayload())} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100 disabled:opacity-50"><Eye size={16} /> PREVIEW PDF</button>
                   <button type="button" onClick={() => downloadStudentReportPDF(buildReportPayload())} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"><Download size={16} /> DOWNLOAD PDF</button>
                 </div>
               </div>
@@ -707,8 +707,8 @@ export default function AcademicsPage() {
                 {studentRecaps.map((item) => {
                   const checked = selectedBulkStudentIds.includes(String(item.studentId));
                   return (
-                    <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${checked ? 'border-blue-200 bg-blue-50/80' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
-                      <input type="checkbox" checked={checked} onChange={() => toggleBulkStudent(String(item.studentId))} className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                    <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${checked ? 'border-sky-200 bg-sky-50/80' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
+                      <input type="checkbox" checked={checked} onChange={() => toggleBulkStudent(String(item.studentId))} className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
                       <div className="min-w-0">
                         <p className="font-black text-slate-800">{item.studentName}</p>
                         <p className="mt-1 text-xs font-medium text-slate-500">Rata-rata {item.average.toFixed(1)} · Rank {item.rank}</p>
@@ -718,7 +718,7 @@ export default function AcademicsPage() {
                 })}
               </div>
               <div className="mt-5 flex flex-col gap-3 md:flex-row">
-                <button type="button" onClick={handlePreviewBulkReports} disabled={!selectedBulkStudentIds.length || isBulkGenerating} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50">{isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />} PREVIEW RAPORT MASSAL</button>
+                <button type="button" onClick={handlePreviewBulkReports} disabled={!selectedBulkStudentIds.length || isBulkGenerating} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100 disabled:opacity-50">{isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />} PREVIEW RAPORT MASSAL</button>
                 <button type="button" onClick={handleDownloadBulkReports} disabled={!selectedBulkStudentIds.length || isBulkGenerating} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50">{isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />} DOWNLOAD RAPORT MASSAL</button>
               </div>
             </div>
@@ -733,7 +733,7 @@ export default function AcademicsPage() {
             <form onSubmit={saveSubject} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_auto]">
               <input required value={subjectForm.name} onChange={(e) => setSubjectForm((p) => ({ ...p, name: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5" placeholder="Nama mapel" />
               <input value={subjectForm.category} onChange={(e) => setSubjectForm((p) => ({ ...p, category: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5" placeholder="Kategori" />
-              <button disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50">{isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} />} Tambah</button>
+              <button disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50">{isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} />} Tambah</button>
             </form>
           </div>
 
@@ -779,7 +779,7 @@ export default function AcademicsPage() {
               type="button"
               onClick={() => previewStudentReportPDF(buildReportPayload())}
               disabled={!reportStudentId}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-xs font-black text-blue-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-blue-50 disabled:hover:shadow-none"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black text-sky-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-sky-50 disabled:hover:shadow-none"
             >
               <Eye size={16} />
               PREVIEW PDF
@@ -806,9 +806,9 @@ export default function AcademicsPage() {
           ) : (
             <div id="report-print-area" className="space-y-6 print:space-y-4">
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white print:rounded-none print:border-slate-300">
-                <div className="border-b-4 border-blue-600 px-8 py-7 print:px-0">
+                <div className="border-b-4 border-sky-600 px-8 py-7 print:px-0">
                   <div className="text-center">
-                    <p className="text-[11px] font-black uppercase tracking-[0.35em] text-blue-700">e-Raport Santri</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.35em] text-sky-700">e-Raport Santri</p>
                     <h4 className="mt-3 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">Pondok Pesantren Al-Maa</h4>
                     <p className="mt-2 text-sm font-medium text-slate-500">Tahun Pelajaran {reportGrades[0]?.academic_year || '-'} - Semester {reportGrades[0]?.semester || '-'}</p>
                   </div>
@@ -828,11 +828,11 @@ export default function AcademicsPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4 print:grid-cols-4">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 print:border-slate-300 print:bg-white">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rata-rata Nilai</p>
-                  <p className="mt-2 text-3xl font-black text-blue-600">{reportAverage}</p>
+                  <p className="mt-2 text-3xl font-black text-sky-600">{reportAverage}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 print:border-slate-300 print:bg-white">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hadir</p>
-                  <p className="mt-2 text-3xl font-black text-blue-600">{reportAttendanceSummary.hadir || 0}</p>
+                  <p className="mt-2 text-3xl font-black text-sky-600">{reportAttendanceSummary.hadir || 0}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 print:border-slate-300 print:bg-white">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Izin / Sakit</p>
@@ -865,7 +865,7 @@ export default function AcademicsPage() {
                         <td className="px-4 py-3 font-bold text-slate-800">{item.subject_name}</td>
                         <td className="px-4 py-3 text-sm text-slate-500">{item.semester}</td>
                         <td className="px-4 py-3 text-sm text-slate-500">{item.academic_year}</td>
-                        <td className="px-4 py-3 font-black text-blue-600">{item.final_score}</td>
+                        <td className="px-4 py-3 font-black text-sky-600">{item.final_score}</td>
                         <td className="px-4 py-3 font-black text-slate-800">{item.grade_letter} - {getLetterPredicate(item.grade_letter)}</td>
                         <td className="px-4 py-3 text-sm text-slate-500">{item.notes || 'Menunjukkan perkembangan belajar yang baik.'}</td>
                       </tr>
@@ -957,9 +957,9 @@ export default function AcademicsPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/80 p-5 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-700/80">Santri Terekap</p>
-              <p className="mt-2 text-3xl font-black text-blue-700">{recapCompletionStats.total}</p>
+            <div className="rounded-[1.5rem] border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Santri Terekap</p>
+              <p className="mt-2 text-3xl font-black text-sky-700">{recapCompletionStats.total}</p>
             </div>
             <div className="rounded-[1.5rem] border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Mapel Aktif</p>
@@ -983,7 +983,7 @@ export default function AcademicsPage() {
               {recapSubjectAverages.map((subject) => (
                 <div key={subject.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                   <p className="text-sm font-black text-slate-800">{subject.name}</p>
-                  <p className="mt-2 text-2xl font-black text-blue-600">{subject.average.toFixed(1)}</p>
+                  <p className="mt-2 text-2xl font-black text-sky-600">{subject.average.toFixed(1)}</p>
                   <p className="mt-1 text-xs font-semibold text-slate-500">{subject.totalStudents} santri masuk rekap</p>
                 </div>
               ))}
@@ -1013,7 +1013,7 @@ export default function AcademicsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {studentRecaps.map((item) => (
                     <tr key={item.studentId}>
-                      <td className="px-4 py-4 text-center font-black text-blue-700">{item.rank}</td>
+                      <td className="px-4 py-4 text-center font-black text-sky-700">{item.rank}</td>
                       <td className="px-4 py-4">
                         <p className="font-bold text-slate-800">{item.studentName}</p>
                         <p className="text-xs font-medium text-slate-500">{item.subjectCount} mapel terekap</p>
@@ -1023,7 +1023,7 @@ export default function AcademicsPage() {
                       ))}
                       <td className="px-4 py-4 text-center font-black text-slate-900">{item.average.toFixed(1)}</td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'}`}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>
                           {item.status}
                         </span>
                       </td>
@@ -1066,9 +1066,9 @@ export default function AcademicsPage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Total Tersedia</p>
               <p className="mt-2 text-3xl font-black text-sky-700">{studentRecaps.length}</p>
             </div>
-            <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/80 p-5 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-700/80">Status</p>
-              <p className="mt-2 text-sm font-black uppercase tracking-widest text-blue-700">{selectedBulkStudentIds.length ? 'Siap Diproses' : 'Belum Ada Pilihan'}</p>
+            <div className="rounded-[1.5rem] border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Status</p>
+              <p className="mt-2 text-sm font-black uppercase tracking-widest text-sky-700">{selectedBulkStudentIds.length ? 'Siap Diproses' : 'Belum Ada Pilihan'}</p>
             </div>
           </div>
 
@@ -1080,12 +1080,12 @@ export default function AcademicsPage() {
               {studentRecaps.map((item) => {
                 const checked = selectedBulkStudentIds.includes(String(item.studentId));
                 return (
-                  <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${checked ? 'border-blue-200 bg-blue-50/80' : 'border-slate-200 bg-slate-50'}`}>
+                  <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${checked ? 'border-sky-200 bg-sky-50/80' : 'border-slate-200 bg-slate-50'}`}>
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleBulkStudent(String(item.studentId))}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                     />
                     <div className="min-w-0">
                       <p className="font-black text-slate-800">{item.studentName}</p>
@@ -1108,7 +1108,7 @@ export default function AcademicsPage() {
               type="button"
               onClick={handlePreviewBulkReports}
               disabled={!selectedBulkStudentIds.length || isBulkGenerating}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-xs font-black text-blue-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-blue-50 disabled:hover:shadow-none"
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black text-sky-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-sky-50 disabled:hover:shadow-none"
             >
               {isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
               PREVIEW RAPORT MASSAL

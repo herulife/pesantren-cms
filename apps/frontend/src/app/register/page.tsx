@@ -70,23 +70,23 @@ function RegisterPageContent() {
         {/* Decorative Orbs matching HOMEPAGE */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5 }}
-          className="absolute top-0 right-0 w-[500px] lg:w-[800px] h-[500px] lg:h-[800px] bg-blue-200/40 rounded-full blur-[100px] lg:blur-[140px] -translate-y-1/2 translate-x-1/3 pointer-events-none" 
+          className="absolute top-0 right-0 w-[500px] lg:w-[800px] h-[500px] lg:h-[800px] bg-sky-200/40 rounded-full blur-[100px] lg:blur-[140px] -translate-y-1/2 translate-x-1/3 pointer-events-none" 
         />
         <motion.div 
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, delay: 0.2 }}
-          className="absolute bottom-0 left-0 w-[400px] lg:w-[600px] h-[400px] lg:h-[600px] bg-blue-200/40 rounded-full blur-[100px] lg:blur-[120px] translate-y-1/3 -translate-x-1/3 pointer-events-none" 
+          className="absolute bottom-0 left-0 w-[400px] lg:w-[600px] h-[400px] lg:h-[600px] bg-sky-200/40 rounded-full blur-[100px] lg:blur-[120px] translate-y-1/3 -translate-x-1/3 pointer-events-none" 
         />
 
         <motion.div 
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="w-full max-w-[1100px] bg-white/70 backdrop-blur-2xl rounded-[2.5rem] md:rounded-[3.5rem] border border-white shadow-[0_30px_60px_-15px_rgba(37,99,235,0.15)] overflow-hidden flex flex-col md:flex-row relative z-10"
+          className="w-full max-w-[1100px] bg-white/70 backdrop-blur-2xl rounded-[2.5rem] md:rounded-[3.5rem] border border-white shadow-[0_30px_60px_-15px_rgba(14,165,233,0.15)] overflow-hidden flex flex-col md:flex-row relative z-10"
         >
           {/* Left Side: Form */}
           <div className="w-full md:w-[55%] p-8 sm:p-12 lg:p-20 flex flex-col justify-center">
             <div className="mb-8 text-center md:text-left">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-lg shadow-blue-500/30 mb-6 mx-auto md:mx-0">D</div>
+              <div className="w-16 h-16 bg-gradient-to-br from-sky-500 to-sky-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-lg shadow-sky-500/30 mb-6 mx-auto md:mx-0">D</div>
               <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
                 {fromPSB ? 'Buat Akun Portal PSB' : 'Buat Akun'}
               </h1>
@@ -98,35 +98,35 @@ function RegisterPageContent() {
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 ml-2">
-                  <User size={14} className="text-blue-500" /> Nama Lengkap
+                  <User size={14} className="text-sky-500" /> Nama Lengkap
                 </label>
                 <input 
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium outline-none shadow-inner"
+                  className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 transition-all font-medium outline-none shadow-inner"
                   placeholder="Fulan bin Fulan"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 ml-2">
-                  <Mail size={14} className="text-blue-500" /> Alamat Email
+                  <Mail size={14} className="text-sky-500" /> Alamat Email
                 </label>
                 <input 
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium outline-none shadow-inner"
+                  className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 transition-all font-medium outline-none shadow-inner"
                   placeholder="fulan@almaparung.com"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 ml-2">
-                  <Lock size={14} className="text-blue-500" /> Kata Sandi
+                  <Lock size={14} className="text-sky-500" /> Kata Sandi
                 </label>
                 <input 
                   type="password"
@@ -134,7 +134,7 @@ function RegisterPageContent() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium outline-none shadow-inner"
+                  className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 transition-all font-medium outline-none shadow-inner"
                   placeholder="Minimal 8 karakter"
                 />
               </div>
@@ -142,7 +142,7 @@ function RegisterPageContent() {
               <button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl font-bold uppercase tracking-widest text-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/25 active:translate-y-0 transition-all flex justify-center items-center gap-3 disabled:opacity-70 disabled:hover:translate-y-0 mt-8 group"
+                className="w-full py-5 bg-gradient-to-r from-sky-600 to-sky-500 text-white rounded-2xl font-bold uppercase tracking-widest text-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-sky-500/25 active:translate-y-0 transition-all flex justify-center items-center gap-3 disabled:opacity-70 disabled:hover:translate-y-0 mt-8 group"
               >
                 {isLoading ? 'MEMPROSES...' : 'DAFTAR SEKARANG'}
                 {!isLoading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
@@ -175,47 +175,47 @@ function RegisterPageContent() {
             )}
 
             <div className="mt-8 text-center text-slate-500 font-medium">
-               Sudah punya akun? <Link href={fromPSB ? "/login?from=psb" : "/login"} className="text-blue-600 font-bold hover:underline">Masuk di sini</Link>
+               Sudah punya akun? <Link href={fromPSB ? "/login?from=psb" : "/login"} className="text-sky-600 font-bold hover:underline">Masuk di sini</Link>
             </div>
 
           </div>
 
           {/* Right Side: Imagery / Aesthetic */}
-          <div className="hidden md:flex w-[45%] bg-blue-50/50 relative flex-col items-center justify-center p-12 overflow-hidden border-l border-white">
-             <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-blue-600/10 mix-blend-multiply" />
-             <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #2563eb 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+          <div className="hidden md:flex w-[45%] bg-sky-50/50 relative flex-col items-center justify-center p-12 overflow-hidden border-l border-white">
+             <div className="absolute inset-0 bg-gradient-to-br from-sky-400/10 to-sky-600/10 mix-blend-multiply" />
+             <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #0ea5e9 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
              
              <div className="relative z-10 w-full flex flex-col items-center">
                 {/* Floating Cards Graphic */}
                 <div className="relative mb-14 w-full h-48 flex justify-center items-center">
                    <motion.div 
                      animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                     className="absolute bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-[0_20px_40px_-15px_rgba(37,99,235,0.3)] border border-white z-20 flex flex-col items-center transform -rotate-6 -translate-x-12"
+                     className="absolute bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-[0_20px_40px_-15px_rgba(14,165,233,0.3)] border border-white z-20 flex flex-col items-center transform -rotate-6 -translate-x-12"
                    >
-                      <Server className="text-blue-500 mb-2" size={32} />
+                      <Server className="text-sky-500 mb-2" size={32} />
                       <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Keamanan Data</div>
                    </motion.div>
 
                    <motion.div 
                      animate={{ y: [0, 10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                     className="absolute bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-[0_20px_40px_-15px_rgba(37,99,235,0.3)] border border-white z-30 flex flex-col items-center"
+                     className="absolute bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-[0_20px_40px_-15px_rgba(14,165,233,0.3)] border border-white z-30 flex flex-col items-center"
                    >
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                         <ShieldCheck className="text-blue-600" size={24} />
+                      <div className="w-12 h-12 bg-sky-100 rounded-full flex items-center justify-center mb-3">
+                         <ShieldCheck className="text-sky-600" size={24} />
                       </div>
-                      <div className="text-xs font-black text-blue-900 uppercase tracking-widest">Akun Personal</div>
+                      <div className="text-xs font-black text-sky-900 uppercase tracking-widest">Akun Personal</div>
                    </motion.div>
 
                    <motion.div 
                      animate={{ y: [0, -8, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-                     className="absolute bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-[0_20px_40px_-15px_rgba(37,99,235,0.3)] border border-white z-10 flex flex-col items-center transform rotate-6 translate-x-14 translate-y-6"
+                     className="absolute bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-[0_20px_40px_-15px_rgba(14,165,233,0.3)] border border-white z-10 flex flex-col items-center transform rotate-6 translate-x-14 translate-y-6"
                    >
-                      <Globe className="text-blue-500 mb-2" size={28} />
+                      <Globe className="text-sky-500 mb-2" size={28} />
                       <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Akses Terpadu</div>
                    </motion.div>
                 </div>
 
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-snug text-center">Sistem Informasi<br/><span className="text-blue-600">Terpadu Al-Maa</span></h2>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-snug text-center">Sistem Informasi<br/><span className="text-sky-600">Terpadu Al-Maa</span></h2>
                 <p className="text-slate-500 mt-5 max-w-[280px] text-center text-sm leading-relaxed font-medium">
                   {fromPSB
                     ? 'Setelah akun dibuat, lanjutkan isi biodata dan unggah berkas melalui portal PSB.'

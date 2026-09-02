@@ -514,7 +514,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
 
                 <div className="mt-4 grid grid-cols-1 gap-3">
                   {loading ? (
-                    <div className="h-24 animate-pulse rounded-2xl bg-blue-900/40" />
+                    <div className="h-24 animate-pulse rounded-2xl bg-sky-900/40" />
                   ) : user ? (
                     <>
                       <div className="rounded-[1.25rem] border border-sky-200 bg-sky-50 px-5 py-4 text-center text-slate-700">
@@ -684,18 +684,18 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
 
       {/* ═══════════════════ WHATSAPP FLOAT ═══════════════════ */}
       <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer"
-        className={`fixed right-4 z-[9995] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-600/30 ring-4 ring-white/25 transition-all duration-300 hover:scale-110 hover:shadow-blue-600/50 md:right-6 md:h-14 md:w-14 md:ring-white/30 ${
+        className={`fixed right-4 z-[9995] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-600/30 ring-4 ring-white/25 transition-all duration-300 hover:scale-110 hover:shadow-sky-600/50 md:right-6 md:h-14 md:w-14 md:ring-white/30 ${
           isPortalPage ? 'bottom-28 md:bottom-6' : 'bottom-4 md:bottom-6'
         }`}
         aria-label="Chat via WhatsApp">
         <MessageCircle size={24} className="md:h-7 md:w-7" />
-        <span className="absolute w-full h-full rounded-full bg-blue-400 opacity-20 animate-ping -z-10" />
+        <span className="absolute w-full h-full rounded-full bg-sky-400 opacity-20 animate-ping -z-10" />
       </a>
 
       {/* ═══════════════════ BACK TO TOP ═══════════════════ */}
       {showBackToTop && (
         <button onClick={scrollToTop}
-          className={`fixed right-4 z-[9990] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-blue-600 shadow-lg transition-all hover:scale-110 hover:text-blue-500 md:right-6 md:h-10 md:w-10 ${
+          className={`fixed right-4 z-[9990] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-sky-600 shadow-lg transition-all hover:scale-110 hover:text-sky-500 md:right-6 md:h-10 md:w-10 ${
             isPortalPage ? 'bottom-[11.5rem] md:bottom-24' : 'bottom-[4.5rem] md:bottom-24'
           }`}
           aria-label="Kembali ke atas">

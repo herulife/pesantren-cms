@@ -169,7 +169,7 @@ function VideosAdminPageContent() {
         </div>
         <button 
           onClick={() => router.push('/admin/videos/form')}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-200 active:scale-95"
         >
           <Plus size={20} />
           <span>Tautkan Video</span>
@@ -179,13 +179,13 @@ function VideosAdminPageContent() {
       {/* Search Bar */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-5 mb-10">
          <div className="flex-1 relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Cari judul kajian..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-sm"
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-sm"
             />
          </div>
       </div>
@@ -194,7 +194,7 @@ function VideosAdminPageContent() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-10">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-700">Seri Video</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-700">Seri Video</p>
               <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Kegiatan & Kajian Terekam</h2>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600">
@@ -204,8 +204,8 @@ function VideosAdminPageContent() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {videoSeries.map((series) => (
-              <div key={series.key} className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-5 transition-all hover:border-blue-200 hover:bg-white">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-700">Seri</p>
+              <div key={series.key} className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-5 transition-all hover:border-sky-200 hover:bg-white">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">Seri</p>
                 <h3 className="mt-2 text-lg font-black uppercase tracking-tight text-slate-900">{series.title}</h3>
                 <div className="mt-4 flex items-center justify-between text-xs font-bold text-slate-500">
                   <span className="inline-flex items-center gap-2"><Play size={12} /> {series.count} video</span>
@@ -240,14 +240,14 @@ function VideosAdminPageContent() {
                  </div>
                  <div className="p-8 flex-1 flex flex-col justify-between">
                     <div className="mb-8">
-                      {v.series_name && <p className="mb-3 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700">{formatGalleryAlbumTitle(v.series_name)}</p>}
+                      {v.series_name && <p className="mb-3 text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">{formatGalleryAlbumTitle(v.series_name)}</p>}
                       <h3 className="font-black text-slate-900 line-clamp-2 leading-relaxed tracking-tight text-lg uppercase">{v.title}</h3>
                     </div>
                     <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 mt-auto">
                        <div className="flex gap-2">
                           <button 
                             onClick={() => router.push(`/admin/videos/form?id=${v.id}`)}
-                            className="p-3 bg-white text-slate-400 hover:text-blue-600 hover:border-blue-100 border border-slate-100 rounded-xl transition-all shadow-sm"
+                            className="p-3 bg-white text-slate-400 hover:text-sky-600 hover:border-sky-100 border border-slate-100 rounded-xl transition-all shadow-sm"
                           >
                              <Pencil size={18} />
                           </button>
@@ -272,7 +272,7 @@ function VideosAdminPageContent() {
                          href={v.url} 
                          target="_blank" 
                          rel="noopener noreferrer" 
-                         className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-xl hover:bg-blue-600 transition-all"
+                         className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-xl hover:bg-sky-600 transition-all"
                        >
                           YOUTUBE <ExternalLink size={12} />
                         </a>
@@ -306,7 +306,7 @@ function VideosAdminPageContent() {
                onClick={() => fetchVideos(searchQuery, i * pagination.limit)}
                className={`w-10 h-10 rounded-xl font-bold transition-all ${
                  pagination.offset === i * pagination.limit 
-                   ? 'bg-blue-600 text-white shadow-lg' 
+                   ? 'bg-sky-600 text-white shadow-lg' 
                    : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'
                }`}
              >
@@ -323,7 +323,7 @@ function VideosAdminPageContent() {
           <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                  <div className="w-12 h-12 bg-sky-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-sky-200">
                   <Play size={24} />
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight font-outfit">
@@ -342,7 +342,7 @@ function VideosAdminPageContent() {
                     placeholder="Contoh: Kajian Fiqih - Kitab Safinatun Najah"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
                   />
                 </div>
 
@@ -354,7 +354,7 @@ function VideosAdminPageContent() {
                       placeholder="Contoh: Wisuda Tahfidz 2026"
                       value={form.series_name}
                       onChange={(e) => setForm({ ...form, series_name: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
                     />
                   </div>
                   <div>
@@ -363,7 +363,7 @@ function VideosAdminPageContent() {
                       type="date"
                       value={form.event_date}
                       onChange={(e) => setForm({ ...form, event_date: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
                     />
                   </div>
                 </div>
@@ -383,14 +383,14 @@ function VideosAdminPageContent() {
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Tautan YouTube</label>
                   <div className="relative group">
-                    <Play className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={20} />
+                    <Play className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-sky-600 transition-colors" size={20} />
                     <input 
                       type="url"
                       required
                       placeholder="https://www.youtube.com/watch?v=..."
                       value={form.url}
                       onChange={(e) => setForm({ ...form, url: e.target.value })}
-                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold"
+                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
                     />
                   </div>
                   <p className="text-[10px] text-slate-400 font-bold mt-3 px-1 italic">Thumbnail akan ditarik secara otomatis dari YouTube.</p>
@@ -407,7 +407,7 @@ function VideosAdminPageContent() {
                   <button 
                     disabled={isSubmitting}
                     type="submit"
-                    className="flex-[2] py-4 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+                    className="flex-[2] py-4 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
                   >
                      {isSubmitting ? 'Sedang Memproses...' : (
                         <>

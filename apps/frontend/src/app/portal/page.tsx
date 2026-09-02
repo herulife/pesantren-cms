@@ -27,14 +27,14 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
   review: {
     title: 'Berkas Sedang Direview',
     description: 'Panitia sedang memeriksa biodata dan dokumen yang sudah kamu kirim. Pantau portal secara berkala.',
-    accent: 'from-blue-600 to-cyan-600',
+    accent: 'from-sky-600 to-cyan-600',
     actionLabel: 'Lihat Dokumen',
     actionHref: '/portal/documents',
   },
   accepted: {
     title: 'Pendaftaran Diterima',
     description: 'Selamat, berkas kamu sudah dinyatakan diterima. Ikuti arahan panitia untuk langkah berikutnya.',
-    accent: 'from-blue-600 to-cyan-600',
+    accent: 'from-sky-600 to-cyan-600',
     actionLabel: 'Buka Raport',
     actionHref: '/portal/raport',
   },
@@ -308,7 +308,7 @@ export default function PortalDashboard() {
     <>
       <div className="mb-8">
         <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
-          Ahlan Wa Sahlan, <br /> <span className="text-blue-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
+          Ahlan Wa Sahlan, <br /> <span className="text-sky-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
         </h3>
         <p className="text-lg text-slate-500">
           {hasStudentAccess
@@ -347,7 +347,7 @@ export default function PortalDashboard() {
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                         item.completed
-                          ? 'bg-white text-blue-600'
+                          ? 'bg-white text-sky-600'
                           : isAttentionPaymentStep
                             ? 'bg-rose-600 text-white'
                             : 'bg-white/10 text-white/80'
@@ -408,10 +408,10 @@ export default function PortalDashboard() {
         </div>
 
         {hasStudentAccess ? (
-          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
+          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-sky-50/40 p-5 shadow-sm md:p-6">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Akses Santri</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Akses Santri</p>
                 <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
                   Presensi & Dompet
                 </h4>
@@ -419,7 +419,7 @@ export default function PortalDashboard() {
                   Gunakan QR presensi untuk scan kehadiran dan pantau saldo Al-Maa Pay dari satu area yang lebih ringkas.
                 </p>
               </div>
-              <div className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+              <div className="inline-flex w-fit rounded-full border border-sky-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
                 Live tools untuk akses harian
               </div>
             </div>
@@ -461,9 +461,9 @@ export default function PortalDashboard() {
                 <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
                   {item.icon}
                 </div>
-                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
+                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-sky-700">{item.title}</h5>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
+                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-sky-600">
                   Buka Menu
                   <ChevronRight size={14} />
                 </div>
@@ -483,11 +483,11 @@ export default function PortalDashboard() {
         <div className="mb-10 space-y-4">
           {portalState.checklist.map((item, index) => {
             const cardClasses = item.completed
-              ? 'border-blue-100 bg-white shadow-sm'
-              : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
+              ? 'border-sky-100 bg-white shadow-sm'
+              : 'border-slate-200 bg-white shadow-sm hover:border-sky-300';
             const iconClasses = item.completed
-              ? 'bg-blue-50 text-blue-500'
-              : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
+              ? 'bg-sky-50 text-sky-500'
+              : 'bg-slate-50 text-slate-400 group-hover:bg-sky-50 group-hover:text-sky-500';
 
             const content = (
               <>
@@ -496,7 +496,7 @@ export default function PortalDashboard() {
                     {item.icon}
                   </div>
                   <div>
-                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-blue-700'}`}>
+                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-sky-700'}`}>
                       {item.title}
                     </h5>
                     <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
@@ -504,7 +504,7 @@ export default function PortalDashboard() {
                 </div>
 
                 {item.completed ? (
-                  <span className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                  <span className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sky-600">
                     Selesai
                   </span>
                 ) : (
@@ -512,7 +512,7 @@ export default function PortalDashboard() {
                     <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
                       Langkah {index + 1}
                     </span>
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-sky-600 group-hover:text-white">
                       <ChevronRight size={20} />
                     </span>
                   </div>
@@ -554,7 +554,7 @@ export default function PortalDashboard() {
             </div>
             <Link
               href="/portal/biodata"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition-colors hover:bg-blue-100 md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:bg-sky-100 md:w-auto md:shrink-0"
             >
               Edit Biodata
             </Link>
@@ -590,7 +590,7 @@ export default function PortalDashboard() {
             </div>
             <Link
               href="/portal/documents"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition-colors hover:bg-blue-100 md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:bg-sky-100 md:w-auto md:shrink-0"
             >
               Kelola Dokumen
             </Link>
@@ -608,7 +608,7 @@ export default function PortalDashboard() {
                 <span
                   className={`inline-flex w-fit rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest ${
                     item.uploaded
-                      ? 'border border-blue-100 bg-blue-50 text-blue-600'
+                      ? 'border border-sky-100 bg-sky-50 text-sky-600'
                       : 'border border-amber-100 bg-amber-50 text-amber-600'
                   }`}
                 >
