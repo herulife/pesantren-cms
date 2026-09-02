@@ -333,6 +333,7 @@ func main() {
 				r.Put("/psb/me/payment", psbHandler.SaveMyPayment)
 				r.Get("/portal/academics/grades", academicHandler.GetMyGrades)
 				r.Get("/portal/academics/attendance-summary", academicHandler.GetMyAttendanceSummary)
+				r.Get("/portal/raport/me", raportHandler.GetMine)
 				r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
 				r.Get("/attendance/token", attendanceHandler.GetToken)
 

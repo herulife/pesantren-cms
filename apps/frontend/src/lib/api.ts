@@ -2398,3 +2398,11 @@ export async function updateSubjectWeights(items: { subject_id: number; weight: 
 		return { ok: r.success, message: r.message };
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal update bobot mapel' }; }
 }
+
+export async function getMyRaport(semester: string = '1', academicYear: string = '2025/2026'): Promise<ComputedRaport | null> {
+	try {
+		const q = new URLSearchParams({ semester, academic_year: academicYear });
+		const r = await lmsFetch<ComputedRaport>(`/portal/raport/me?${q.toString()}`);
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Raport] get my:', e); return null; }
+}

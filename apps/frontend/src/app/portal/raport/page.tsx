@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Download, Eye, FileText, Printer, RefreshCw, Sparkles, Target, TrendingUp } from 'lucide-react';
-import { getMyAcademicGrades, getMyAttendanceSummary, getMyTahfidz, type Grade, type TahfidzProgress } from '@/lib/api';
+import { getMyAcademicGrades, getMyAttendanceSummary, getMyTahfidz, getMyRaport, type Grade, type TahfidzProgress, type ComputedRaport } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { downloadStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
 
@@ -55,20 +55,23 @@ export default function PortalRaportPage() {
   const [attendanceSummary, setAttendanceSummary] = useState<Record<string, number>>({});
   const [tahfidz, setTahfidz] = useState<TahfidzProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [eraport, setEraport] = useState<ComputedRaport | null>(null);
 
   useEffect(() => {
     const fetchAcademicData = async () => {
       setIsLoading(true);
       try {
-        const [gradesData, attendanceData, tahfidzData] = await Promise.all([
+        const [gradesData, attendanceData, tahfidzData, eraData] = await Promise.all([
           getMyAcademicGrades(),
           getMyAttendanceSummary(),
           getMyTahfidz(),
+          getMyRaport('1', '2025/2026'),
         ]);
 
         setGrades(gradesData);
         setAttendanceSummary(attendanceData);
         setTahfidz(tahfidzData);
+        setEraport(eraData);
       } finally {
         setIsLoading(false);
       }
@@ -212,6 +215,39 @@ export default function PortalRaportPage() {
           </div>
         </div>
       </section>
+
+      {eraport && (
+        <section className="overflow-hidden rounded-[1.5rem] border border-emerald-200 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 shadow-lg shadow-emerald-700/20 print:shadow-none">
+          <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-100">Nilai Akhir LMS · ALMAA</p>
+              <h2 className="mt-1 font-outfit text-lg font-black tracking-tight text-white">
+                E-Raport {eraport.semester === '1' ? 'Semester Ganjil' : 'Semester Genap'} · TA {eraport.academic_year}
+              </h2>
+              <p className="mt-1 text-xs text-emerald-100">
+                Bobot Mapel {eraport.weights?.mapel ?? 50}% · Project {eraport.weights?.project ?? 25}% · Kesantrian {eraport.weights?.kesantrian ?? 25}%
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/10 px-5 py-3 text-center ring-1 ring-white/20">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">Nilai Akhir</p>
+              <p className="text-2xl font-black text-white">{eraport.final_score?.toFixed(2)}</p>
+              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-emerald-800">{eraport.predikat}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 border-t border-white/10 px-5 py-4 sm:grid-cols-3 lg:px-6">
+            {[
+              { label: 'Mata Pelajaran', value: eraport.mapel_score },
+              { label: 'Project (QNS)', value: eraport.project_score },
+              { label: 'Kesantrian', value: eraport.kesantrian_score },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/10">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100">{item.label}</p>
+                <p className="mt-0.5 text-lg font-black text-white">{Number(item.value || 0).toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
