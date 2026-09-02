@@ -228,18 +228,7 @@ func (h *Handler) GetGrades(w http.ResponseWriter, r *http.Request) {
 	semester := r.URL.Query().Get("semester")
 	year := r.URL.Query().Get("year")
 	limit, offset := parsePagination(r)
-	gs, err := h.repo.GetAllGrades(semester, year)
-	if err == nil && len(gs) > limit {
-		end := offset + limit
-		if end > len(gs) {
-			end = len(gs)
-		}
-		if offset < len(gs) {
-			gs = gs[offset:end]
-		} else {
-			gs = []Grade{}
-		}
-	}
+	gs, err := h.repo.GetAllGrades(semester, year, limit, offset)
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -409,18 +398,7 @@ func (h *Handler) GetMyAttendanceSummary(w http.ResponseWriter, r *http.Request)
 
 func (h *Handler) GetTahfidz(w http.ResponseWriter, r *http.Request) {
 	limit, offset := parsePagination(r)
-	ts, err := h.repo.GetAllTahfidz()
-	if err == nil && len(ts) > limit {
-		end := offset + limit
-		if end > len(ts) {
-			end = len(ts)
-		}
-		if offset < len(ts) {
-			ts = ts[offset:end]
-		} else {
-			ts = []TahfidzProgress{}
-		}
-	}
+	ts, err := h.repo.GetAllTahfidz(limit, offset)
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -511,7 +489,7 @@ type IRepository interface {
 	CreateSubject(s *Subject) error
 	DeleteSubject(id int) error
 	// Grades
-	GetAllGrades(semester, year string) ([]Grade, error)
+	GetAllGrades(semester, year string, limit, offset int) ([]Grade, error)
 	GetGradesByStudent(studentID int) ([]Grade, error)
 	CreateGrade(g *Grade) error
 	UpdateGrade(id int, g *Grade) error
@@ -523,7 +501,7 @@ type IRepository interface {
 	DeleteAttendance(id int) error
 	GetAttendanceSummary(studentID int) (map[string]int, error)
 	// Tahfidz
-	GetAllTahfidz() ([]TahfidzProgress, error)
+	GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error)
 	GetTahfidzByStudent(studentID int) ([]TahfidzProgress, error)
 	CreateTahfidz(t *TahfidzProgress) error
 	UpdateTahfidz(id int, t *TahfidzProgress) error

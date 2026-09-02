@@ -73,6 +73,16 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSONResponse(w, http.StatusUnauthorized, false, "Akses ditolak", nil)
+		return
+	}
+	// IDOR check: session must belong to caller
+	if !h.repo.IsSessionOwnedBy(body.SessionID, userID) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Sesi tidak milik Anda", nil)
+		return
+	}
 
 	err := h.repo.SubmitAnswer(body.SessionID, body.QuestionID, body.SelectedAnswer)
 	if err != nil {
@@ -91,7 +101,15 @@ func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
-
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSONResponse(w, http.StatusUnauthorized, false, "Akses ditolak", nil)
+		return
+	}
+	if !h.repo.IsSessionOwnedBy(body.SessionID, userID) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Sesi tidak milik Anda", nil)
+		return
+	}
 	score, err := h.repo.FinishSession(body.SessionID)
 	if err != nil {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal mengakhiri ujian", nil)
@@ -108,7 +126,12 @@ func (h *Handler) CreateExam(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
-
+	if errs := validateExam(&e); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
 	if err := h.repo.CreateExam(&e); err != nil {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal membuat ujian", nil)
 		return
@@ -128,6 +151,26 @@ func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSONResponse(w, http.StatusOK, true, "Soal berhasil ditambahkan", nil)
+}
+
+func validateExam(e *Exam) map[string]string {
+	errs := map[string]string{}
+	if len(e.Title) < 3 {
+		errs["title"] = "Judul minimal 3 karakter"
+	}
+	if e.SubjectID <= 0 {
+		errs["subject_id"] = "Mata pelajaran wajib dipilih"
+	}
+	if e.DurationMinutes <= 0 {
+		errs["duration"] = "Durasi harus >0 menit"
+	}
+	if e.Semester != "" && e.Semester != "ganjil" && e.Semester != "genap" {
+		errs["semester"] = "Semester harus ganjil/genap"
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
 }
 
 func currentUserID(r *http.Request) (int, bool) {
@@ -167,4 +210,5 @@ type IRepository interface {
 	StartSession(studentID, examID int) (int, error)
 	SubmitAnswer(sessionID, questionID, selectedAnswer int) error
 	FinishSession(sessionID int) (float64, error)
+	IsSessionOwnedBy(sessionID, userID int) bool
 }

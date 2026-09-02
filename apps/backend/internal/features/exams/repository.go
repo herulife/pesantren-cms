@@ -125,6 +125,15 @@ func (r *Repository) GetExamQuestions(examID int, hideAnswers bool) ([]Question,
 }
 
 // Student: Session Management
+func (r *Repository) IsSessionOwnedBy(sessionID, userID int) bool {
+	var owner int
+	err := r.db.QueryRow("SELECT student_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&owner)
+	if err != nil {
+		return false
+	}
+	return owner == userID
+}
+
 func (r *Repository) StartSession(studentID, examID int) (int, error) {
 	// Check if already has a session
 	var sessionID int
@@ -163,48 +172,64 @@ func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) err
 }
 
 func (r *Repository) FinishSession(sessionID int) (float64, error) {
-	var totalPoints, earnedPoints int
+	var totalPoints, earnedPoints sql.NullInt64
 
-	// Sum points
+	// Sum points: total from all questions of the exam, earned from correct answers
+	var examID int
+	_ = r.db.QueryRow("SELECT exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&examID)
 	queryPoints := `
-		SELECT SUM(q.points), SUM(CASE WHEN a.is_correct = 1 THEN q.points ELSE 0 END)
+		SELECT 
+			(SELECT COALESCE(SUM(points),0) FROM exam_questions WHERE exam_id = ?),
+			COALESCE(SUM(CASE WHEN a.is_correct = 1 THEN q.points ELSE 0 END),0)
 		FROM exam_questions q
-		JOIN exam_answers a ON q.id = a.question_id
-		WHERE a.session_id = ?
+		LEFT JOIN exam_answers a ON q.id = a.question_id AND a.session_id = ?
+		WHERE q.exam_id = ?
 	`
-	err := r.db.QueryRow(queryPoints, sessionID).Scan(&totalPoints, &earnedPoints)
+	err := r.db.QueryRow(queryPoints, examID, sessionID, examID).Scan(&totalPoints, &earnedPoints)
 	if err != nil {
 		return 0, err
 	}
 
 	score := 0.0
-	if totalPoints > 0 {
-		score = (float64(earnedPoints) / float64(totalPoints)) * 100.0
+	tp := int64(0)
+	ep := int64(0)
+	if totalPoints.Valid {
+		tp = totalPoints.Int64
+	}
+	if earnedPoints.Valid {
+		ep = earnedPoints.Int64
+	}
+	if tp > 0 {
+		score = (float64(ep) / float64(tp)) * 100.0
 	}
 
-	// Update session
+	// Update session with transaction
 	finishTime := time.Now()
-	_, err = r.db.Exec("UPDATE exam_sessions SET status = 'finished', score = ?, finished_at = ? WHERE id = ?",
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec("UPDATE exam_sessions SET status = 'finished', score = ?, finished_at = ? WHERE id = ?",
 		score, finishTime, sessionID)
 	if err != nil {
 		return 0, err
 	}
-
 	// SYNC TO GRADES
-	var studentID, examID int
-	r.db.QueryRow("SELECT student_id, exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&studentID, &examID)
+	var studentID int
+	tx.QueryRow("SELECT student_id, exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&studentID, &examID)
 
 	var subjectID int
 	var semester, year string
-	r.db.QueryRow("SELECT subject_id, semester, academic_year FROM exams WHERE id = ?", examID).Scan(&subjectID, &semester, &year)
+	tx.QueryRow("SELECT subject_id, semester, academic_year FROM exams WHERE id = ?", examID).Scan(&subjectID, &semester, &year)
 
-	// Insert into grades (as UAS or UTS based on title or default to UAS)
-	// We'll check if entry exists
-	_, _ = r.db.Exec(`
+	_, _ = tx.Exec(`
 		INSERT INTO grades (student_id, subject_id, semester, academic_year, uas_score, final_score, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(student_id, subject_id) DO UPDATE SET uas_score = excluded.uas_score
+		ON CONFLICT(student_id, subject_id, semester, academic_year) DO UPDATE SET uas_score = excluded.uas_score, final_score = excluded.final_score
 	`, studentID, subjectID, semester, year, score, score, "Generated from CBT")
-
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
 	return score, nil
 }

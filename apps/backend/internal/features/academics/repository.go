@@ -101,7 +101,7 @@ func (r *Repository) DeleteSubject(id int) error {
 }
 
 // Grades
-func (r *Repository) GetAllGrades(semester, year string) ([]Grade, error) {
+func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]Grade, error) {
 	query := `
 		SELECT g.id, g.student_id, u.name as student_name, g.subject_id, s.name as subject_name,
 		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, 
@@ -123,6 +123,10 @@ func (r *Repository) GetAllGrades(semester, year string) ([]Grade, error) {
 		}
 	}
 	query += " ORDER BY u.name ASC"
+	if limit > 0 {
+		query += " LIMIT ? OFFSET ?"
+		args = append(args, limit, offset)
+	}
 
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -176,11 +180,11 @@ func (r *Repository) CreateGrade(g *Grade) error {
 	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
 	if g.FinalScore >= 85 {
 		g.GradeLetter = "A"
-	} else if g.FinalScore >= 75 {
+	} else if g.FinalScore >= 70 {
 		g.GradeLetter = "B"
-	} else if g.FinalScore >= 60 {
+	} else if g.FinalScore >= 55 {
 		g.GradeLetter = "C"
-	} else if g.FinalScore >= 45 {
+	} else if g.FinalScore >= 40 {
 		g.GradeLetter = "D"
 	} else {
 		g.GradeLetter = "E"
@@ -198,11 +202,11 @@ func (r *Repository) UpdateGrade(id int, g *Grade) error {
 	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
 	if g.FinalScore >= 85 {
 		g.GradeLetter = "A"
-	} else if g.FinalScore >= 75 {
+	} else if g.FinalScore >= 70 {
 		g.GradeLetter = "B"
-	} else if g.FinalScore >= 60 {
+	} else if g.FinalScore >= 55 {
 		g.GradeLetter = "C"
-	} else if g.FinalScore >= 45 {
+	} else if g.FinalScore >= 40 {
 		g.GradeLetter = "D"
 	} else {
 		g.GradeLetter = "E"
@@ -288,13 +292,30 @@ func (r *Repository) GetAttendanceSummary(studentID int) (map[string]int, error)
 }
 
 // Tahfidz
-func (r *Repository) GetAllTahfidz() ([]TahfidzProgress, error) {
+func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error) {
 	query := `
 		SELECT t.id, t.student_id, u.name as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		ORDER BY t.evaluation_date DESC
 	`
+	if limit > 0 {
+		query += " LIMIT ? OFFSET ?"
+		rows, err := r.db.Query(query, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var ts []TahfidzProgress
+		for rows.Next() {
+			var t TahfidzProgress
+			if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate); err != nil {
+				return nil, err
+			}
+			ts = append(ts, t)
+		}
+		return ts, nil
+	}
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
