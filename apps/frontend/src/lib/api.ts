@@ -452,13 +452,6 @@ export interface NewsPayload {
 	category_id: number;
 }
 
-export interface LicenseStatus {
-  is_valid: boolean;
-  is_warning: boolean;
-  days_left: number;
-  message: string;
-}
-
 export interface Registration {
 	id: number;
 	user_id?: number;
@@ -805,21 +798,6 @@ export async function getNews() {
   } catch (e) {
     console.error(`[API] Fetch news error:`, e);
     return [];
-  }
-}
-
-export async function getLicenseStatus() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/premium-check`, withCredentials({ cache: 'no-store' }));
-    if (res.status === 402) {
-      const errorBody = await res.json();
-      return { is_valid: false, message: errorBody.message } as LicenseStatus;
-    }
-    if (!res.ok) return { is_valid: false, message: 'SERVER_OFFLINE' } as LicenseStatus;
-    
-    return await res.json() as LicenseStatus;
-  } catch {
-    return { is_valid: false, message: 'SERVER_OFFLINE' } as LicenseStatus;
   }
 }
 

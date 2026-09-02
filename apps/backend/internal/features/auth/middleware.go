@@ -3,10 +3,8 @@ package auth
 import (
 	"context"
 	"almaparung-api/internal/platform/logger"
-	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -89,67 +87,6 @@ func extractToken(r *http.Request) string {
 	}
 
 	return strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
-}
-
-func RequireLicense(db *sql.DB) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Bypass license check in development mode
-			if os.Getenv("DEV_MODE") == "true" {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			if canBypassLicenseForBootstrap(r) {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			status, _ := CheckLicense(db)
-			if !status.IsValid {
-				logger.Warn(r.Context(), "license check failed", logger.Field{
-					"correlation_id": logger.CorrelationID(r),
-					"ip":             r.RemoteAddr,
-					"path":           r.URL.Path,
-					"message":        status.Message,
-				})
-				writeAPIError(w, http.StatusPaymentRequired, logger.CorrelationID(r), "License Error: "+status.Message, nil)
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func canBypassLicenseForBootstrap(r *http.Request) bool {
-	claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims)
-	if !ok {
-		return false
-	}
-
-	role, _ := claims["role"].(string)
-	if role != "superadmin" {
-		return false
-	}
-
-	switch {
-	case r.URL.Path == "/api/me":
-		return true
-	case strings.HasPrefix(r.URL.Path, "/api/settings"):
-		return true
-	case strings.HasPrefix(r.URL.Path, "/api/users"):
-		return true
-	case r.URL.Path == "/api/upload" || strings.HasPrefix(r.URL.Path, "/api/upload/"):
-		return true
-	case strings.HasPrefix(r.URL.Path, "/api/project"):
-		return true
-	case strings.HasPrefix(r.URL.Path, "/api/raport"):
-		return true
-	case strings.HasPrefix(r.URL.Path, "/api/weights"):
-		return true
-	default:
-		return false
-	}
 }
 
 // RequireRole middleware: only allows users with specified roles.

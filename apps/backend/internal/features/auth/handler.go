@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
 	"database/sql"
@@ -310,21 +309,6 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": "Logout berhasil",
 	})
-}
-
-func (h *Handler) GetLicenseStatus(w http.ResponseWriter, r *http.Request) {
-	status, err := CheckLicense(database.DB)
-	if err != nil {
-		logger.Error(r.Context(), "failed checking license status", logger.Field{
-			"correlation_id": logger.CorrelationID(r),
-			"error":          err.Error(),
-		})
-		writeAPIError(w, http.StatusInternalServerError, logger.CorrelationID(r), "Gagal memeriksa status lisensi", nil)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(status)
 }
 
 // GET /api/me — Returns current user info from JWT claims

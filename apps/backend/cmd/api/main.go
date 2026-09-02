@@ -52,13 +52,7 @@ func main() {
 	// 1. Initialize Database
 	database.Connect(getEnv("DB_PATH", "./alma.db"))
 
-	// 2. Initialize License System
-	err := auth.InitLicense("./public.key")
-	if err != nil {
-		logger.Warn(context.Background(), "license public key not found or invalid", logger.Field{"error": err.Error()})
-	}
-
-	// 3. Setup Router
+	// 2. Setup Router
 	r := chi.NewRouter()
 
 	// Basic Middleware
@@ -161,7 +155,6 @@ func main() {
 		r.With(registerLimiter.Middleware).Post("/register", authHandler.Register)
 		r.With(googleLoginLimiter.Middleware).Post("/auth/google", authHandler.GoogleLogin)
 		r.Post("/logout", authHandler.Logout)
-		r.Get("/premium-check", authHandler.GetLicenseStatus)
 		r.Post("/telegram/webhook", notificationHandler.TelegramWebhook)
 
 		// Public Contact Message
@@ -172,7 +165,6 @@ func main() {
 			r.Get("/", faqHandler.List)
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
-				r.Use(auth.RequireLicense(database.DB))
 				r.Post("/", faqHandler.Create)
 				r.Put("/{id}", faqHandler.Update)
 				r.Delete("/{id}", faqHandler.Delete)
@@ -183,7 +175,6 @@ func main() {
 			r.Get("/", agendaHandler.List)
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
-				r.Use(auth.RequireLicense(database.DB))
 				r.Post("/", agendaHandler.Create)
 				r.Put("/{id}", agendaHandler.Update)
 				r.Delete("/{id}", agendaHandler.Delete)
@@ -279,7 +270,6 @@ func main() {
 
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
-			r.Use(auth.RequireLicense(database.DB))
 
 			r.Get("/me", authHandler.GetMe)
 			r.Post("/upload", upload.HandleUpload)
