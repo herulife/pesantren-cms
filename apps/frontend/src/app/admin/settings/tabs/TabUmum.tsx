@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSettings, updateSetting } from '@/lib/api';
 import { useToast } from '@/components/Toast';
-import { Save, RefreshCw, School, Database, ImageIcon, Type, Search } from 'lucide-react';
+import { Save, RefreshCw, School, Database, ImageIcon, Type, Search, Scale, Building2 } from 'lucide-react';
 
 export default function TabUmum() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -14,6 +14,10 @@ export default function TabUmum() {
     'school_name', 
     'web_logo_url', 
     'web_welcome_text', 
+    'berdiri',
+    'yayasan',
+    'nspp',
+    'legalitas',
     'seo_meta_description', 
     'seo_meta_keywords', 
     'seo_google_analytics'
@@ -102,6 +106,61 @@ export default function TabUmum() {
                 <input 
                    value={formValues['web_welcome_text'] || ''}
                    onChange={(e) => handleChange('web_welcome_text', e.target.value)}
+                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
+                />
+             </div>
+          </div>
+       </section>
+       
+       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-8 border-b border-slate-100 flex items-center gap-4">
+             <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                <Building2 size={24} />
+             </div>
+             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight font-outfit">Data Lembaga & Legalitas</h2>
+          </div>
+          <div className="p-8 grid grid-cols-2 gap-8">
+             <div className="space-y-4">
+                <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                   <Scale size={12} /> Berdiri Sejak
+                </label>
+                <input 
+                   value={formValues['berdiri'] || ''}
+                   onChange={(e) => handleChange('berdiri', e.target.value)}
+                   placeholder="Contoh: 2009"
+                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
+                />
+             </div>
+             <div className="space-y-4">
+                <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                   <Building2 size={12} /> Nama Yayasan
+                </label>
+                <input 
+                   value={formValues['yayasan'] || ''}
+                   onChange={(e) => handleChange('yayasan', e.target.value)}
+                   placeholder="Contoh: Tunas Muda Qurani"
+                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
+                />
+             </div>
+             <div className="space-y-4">
+                <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                   <Scale size={12} /> NSPP
+                </label>
+                <input 
+                   value={formValues['nspp'] || ''}
+                   onChange={(e) => handleChange('nspp', e.target.value)}
+                   placeholder="Contoh: 510032011292"
+                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
+                />
+             </div>
+             <div className="space-y-4">
+                <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                   <Scale size={12} /> Nomor Legalitas
+                </label>
+                <input 
+                   value={formValues['legalitas'] || ''}
+                   onChange={(e) => handleChange('legalitas', e.target.value)}
+                   placeholder="Contoh: AHU-038333.50.80.2014"
                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
                 />
              </div>
