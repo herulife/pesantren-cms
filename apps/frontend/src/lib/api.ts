@@ -2384,3 +2384,94 @@ export async function getMyRaport(semester: string = '1', academicYear: string =
 		return r.success ? r.data : null;
 	} catch (e) { console.error('[Raport] get my:', e); return null; }
 }
+
+
+// ===== Kesantrian: Data Santri CRUD =====
+
+export interface Santri {
+	id: number;
+	nis: string;
+	name: string;
+	nickname: string;
+	gender: string;
+	birth_place: string;
+	birth_date: string;
+	address: string;
+	class: string;
+	angkatan: string;
+	status: string;
+	parent_name: string;
+	parent_phone: string;
+	photo_url: string;
+	user_id?: number | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface SantriListResult {
+	items: Santri[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+export async function getSantriList(params: {
+	search?: string;
+	class?: string;
+	status?: string;
+	limit?: number;
+	offset?: number;
+} = {}): Promise<SantriListResult> {
+	try {
+		const qs = new URLSearchParams();
+		if (params.search) qs.append('search', params.search);
+		if (params.class) qs.append('class', params.class);
+		if (params.status) qs.append('status', params.status);
+		if (params.limit !== undefined) qs.append('limit', String(params.limit));
+		if (params.offset !== undefined) qs.append('offset', String(params.offset));
+		const r = await lmsFetch<SantriListResult>(`/santri?${qs.toString()}`);
+		return r.data || { items: [], total: 0, limit: 20, offset: 0 };
+	} catch (e) { console.error('[Kesantrian] list:', e); return { items: [], total: 0, limit: 20, offset: 0 }; }
+}
+
+export async function getSantri(id: number): Promise<Santri | null> {
+	try {
+		const r = await lmsFetch<Santri>(`/santri/${id}`);
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Kesantrian] get:', e); return null; }
+}
+
+export async function createSantri(data: Partial<Santri>): Promise<{ ok: boolean; message: string; errors?: Record<string, string> }> {
+	try {
+		const r = await lmsFetch('/santri', { method: 'POST', body: JSON.stringify(data) });
+		return { ok: r.success, message: r.message, errors: (r as any).errors };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menambah santri' }; }
+}
+
+export async function updateSantri(id: number, data: Partial<Santri>): Promise<{ ok: boolean; message: string; errors?: Record<string, string> }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+		return { ok: r.success, message: r.message, errors: (r as any).errors };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal memperbarui santri' }; }
+}
+
+export async function deleteSantri(id: number): Promise<boolean> {
+	try {
+		const r = await lmsFetch(`/santri/${id}`, { method: 'DELETE' });
+		return r.success;
+	} catch (e) { console.error('[Kesantrian] delete:', e); return false; }
+}
+
+export async function bulkCreateSantri(items: Partial<Santri>[]): Promise<{ ok: boolean; message: string; inserted?: number }> {
+	try {
+		const r = await lmsFetch('/santri/bulk', { method: 'POST', body: JSON.stringify({ items }) });
+		return { ok: r.success, message: r.message, inserted: (r.data as any)?.inserted };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal import santri' }; }
+}
+
+export async function bulkDeleteSantri(ids: number[]): Promise<{ ok: boolean; message: string; deleted?: number }> {
+	try {
+		const r = await lmsFetch('/santri/bulk', { method: 'DELETE', body: JSON.stringify({ ids }) });
+		return { ok: r.success, message: r.message, deleted: (r.data as any)?.deleted };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus santri' }; }
+}

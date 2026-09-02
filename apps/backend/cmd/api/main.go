@@ -20,6 +20,7 @@ import (
 	"almaparung-api/internal/features/programs"
 	"almaparung-api/internal/features/project"
 	"almaparung-api/internal/features/psb"
+	"almaparung-api/internal/features/santri"
 	"almaparung-api/internal/features/raport"
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/teachers"
@@ -75,6 +76,8 @@ func main() {
 	newsHandler := news.NewHandler(newsRepo)
 
 	psbRepo := psb.NewRepository(database.DB)
+	santriRepo := santri.NewRepository(database.DB)
+	santriHandler := santri.NewHandler(santriRepo)
 	projectRepo := project.NewRepository(database.DB)
 	projectHandler := project.NewHandler(projectRepo)
 	raportRepo := raport.NewRepository(database.DB)
@@ -305,6 +308,12 @@ func main() {
 				r.Use(auth.RequireRole("panitia_psb"))
 				r.Mount("/psb", psbHandler.Routes())
 				r.Mount("/contact", messageHandler.Routes())
+			})
+
+			// Kesantrian (Data Santri)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "panitia_psb"))
+				r.Mount("/santri", santriHandler.Routes())
 			})
 
 			// Academics Ops (LMS ALMAA: Project & E-Raport)

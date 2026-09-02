@@ -1,0 +1,305 @@
+'use client';
+
+import React, { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useToast } from '@/components/Toast';
+import { createSantri, getSantri, updateSantri } from '@/lib/api';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+
+const genderOptions = [
+  { value: '', label: 'Pilih Jenis Kelamin' },
+  { value: 'l', label: 'Laki-laki' },
+  { value: 'p', label: 'Perempuan' },
+];
+
+const statusOptions = [
+  { value: 'aktif', label: 'Aktif' },
+  { value: 'lulus', label: 'Lulus' },
+  { value: 'pindah', label: 'Pindah' },
+  { value: 'cuti', label: 'Cuti' },
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FormErrors = Record<string, string>;
+
+const initialForm = {
+  nis: '',
+  name: '',
+  nickname: '',
+  gender: '',
+  birth_place: '',
+  birth_date: '',
+  address: '',
+  class: '',
+  angkatan: '',
+  status: 'aktif',
+  parent_name: '',
+  parent_phone: '',
+};
+
+export default function SantriFormPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
+      <SantriFormContent />
+    </Suspense>
+  );
+}
+
+function SantriFormContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { showToast } = useToast();
+  const id = searchParams.get('id');
+  const isEdit = !!id;
+
+  const [form, setForm] = useState(initialForm);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(isEdit);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      getSantri(Number(id)).then((s) => {
+        if (s) {
+          setForm({
+            nis: s.nis,
+            name: s.name,
+            nickname: s.nickname || '',
+            gender: s.gender === 'laki-laki' ? 'l' : s.gender === 'perempuan' ? 'p' : s.gender,
+            birth_place: s.birth_place || '',
+            birth_date: s.birth_date || '',
+            address: s.address || '',
+            class: s.class,
+            angkatan: s.angkatan || '',
+            status: s.status || 'aktif',
+            parent_name: s.parent_name || '',
+            parent_phone: s.parent_phone || '',
+          });
+        } else {
+          showToast('error', 'Santri tidak ditemukan');
+          router.replace('/admin/kesantrian');
+        }
+        setLoading(false);
+      });
+    }
+  }, [id, router, showToast]);
+
+  const set = (key: keyof typeof initialForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    setErrors((prev) => ({ ...prev, [key]: '' }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const payload = {
+      nis: form.nis.trim(),
+      name: form.name.trim(),
+      nickname: form.nickname.trim(),
+      gender: form.gender,
+      birth_place: form.birth_place.trim(),
+      birth_date: form.birth_date,
+      address: form.address.trim(),
+      class: form.class.trim(),
+      angkatan: form.angkatan.trim(),
+      status: form.status,
+      parent_name: form.parent_name.trim(),
+      parent_phone: form.parent_phone.trim(),
+    };
+
+    let res;
+    if (isEdit && id) {
+      res = await updateSantri(Number(id), payload);
+    } else {
+      res = await createSantri(payload);
+    }
+
+    if (res.ok) {
+      showToast('success', isEdit ? 'Santri berhasil diperbarui' : 'Santri berhasil ditambahkan');
+      router.push('/admin/kesantrian');
+    } else {
+      if (res.errors) {
+        setErrors(res.errors);
+      }
+      showToast('error', res.message || 'Gagal menyimpan data santri');
+    }
+    setSaving(false);
+  };
+
+  const inputClass = (hasError?: string) =>
+    `mt-1 w-full rounded-xl border ${hasError ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'} px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10`;
+
+  return (
+    <div className="space-y-6">
+      <button
+        onClick={() => router.push('/admin/kesantrian')}
+        className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-sky-600"
+      >
+        <ArrowLeft size={16} /> Kembali ke Data Santri
+      </button>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">
+          {isEdit ? 'Edit Santri' : 'Tambah Santri'}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          {isEdit ? 'Perbarui informasi data santri.' : 'Lengkapi data di bawah untuk menambahkan santri baru.'}
+        </p>
+
+        {loading ? (
+          <div className="py-20 text-center text-sm text-slate-400">Memuat data...</div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                NIS <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={form.nis}
+                onChange={set('nis')}
+                placeholder="Contoh: 2026001"
+                className={inputClass(errors.nis)}
+              />
+              {errors.nis && <p className="mt-1 text-xs font-semibold text-red-500">{errors.nis}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                Nama Lengkap <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={form.name}
+                onChange={set('name')}
+                placeholder="Nama lengkap santri"
+                className={inputClass(errors.name)}
+              />
+              {errors.name && <p className="mt-1 text-xs font-semibold text-red-500">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Nama Panggilan</label>
+              <input
+                value={form.nickname}
+                onChange={set('nickname')}
+                placeholder="Nama panggilan sehari-hari"
+                className={inputClass(errors.nickname)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Jenis Kelamin</label>
+              <select value={form.gender} onChange={set('gender')} className={inputClass(errors.gender)}>
+                {genderOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              {errors.gender && <p className="mt-1 text-xs font-semibold text-red-500">{errors.gender}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Tempat Lahir</label>
+              <input
+                value={form.birth_place}
+                onChange={set('birth_place')}
+                placeholder="Kota kelahiran"
+                className={inputClass()}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Tanggal Lahir</label>
+              <input
+                type="date"
+                value={form.birth_date}
+                onChange={set('birth_date')}
+                className={inputClass(errors.birth_date)}
+              />
+              {errors.birth_date && <p className="mt-1 text-xs font-semibold text-red-500">{errors.birth_date}</p>}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Alamat</label>
+              <textarea
+                value={form.address}
+                onChange={set('address')}
+                rows={2}
+                placeholder="Alamat lengkap"
+                className={inputClass()}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                Kelas <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={form.class}
+                onChange={set('class')}
+                placeholder="Contoh: VII, VIII, IX"
+                className={inputClass(errors.class)}
+              />
+              {errors.class && <p className="mt-1 text-xs font-semibold text-red-500">{errors.class}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Angkatan</label>
+              <input
+                value={form.angkatan}
+                onChange={set('angkatan')}
+                placeholder="Contoh: 2026"
+                className={inputClass()}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Status</label>
+              <select value={form.status} onChange={set('status')} className={inputClass()}>
+                {statusOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Nama Wali</label>
+              <input
+                value={form.parent_name}
+                onChange={set('parent_name')}
+                placeholder="Nama orang tua / wali"
+                className={inputClass()}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">No. HP Wali</label>
+              <input
+                value={form.parent_phone}
+                onChange={set('parent_phone')}
+                placeholder="Contoh: 081234567890"
+                className={inputClass(errors.parent_phone)}
+              />
+              {errors.parent_phone && <p className="mt-1 text-xs font-semibold text-red-500">{errors.parent_phone}</p>}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 md:col-span-2">
+              <button
+                type="button"
+                onClick={() => router.push('/admin/kesantrian')}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-50"
+              >
+                <Save size={16} /> {saving ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}

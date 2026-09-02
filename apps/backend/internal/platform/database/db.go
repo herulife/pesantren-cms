@@ -401,6 +401,26 @@ func createTables() {
 		FOREIGN KEY (wallet_id) REFERENCES user_wallets(id)
 	);
 
+	CREATE TABLE IF NOT EXISTS santri (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nis TEXT UNIQUE NOT NULL,
+		name TEXT NOT NULL,
+		nickname TEXT,
+		gender TEXT,
+		birth_place TEXT,
+		birth_date TEXT,
+		address TEXT,
+		class TEXT NOT NULL,
+		angkatan TEXT,
+		status TEXT DEFAULT 'aktif',
+		parent_name TEXT,
+		parent_phone TEXT,
+		photo_url TEXT,
+		user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
 	CREATE TABLE IF NOT EXISTS project_subprojects (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
@@ -469,6 +489,11 @@ func createTables() {
 		FOREIGN KEY (student_id) REFERENCES users(id),
 		UNIQUE(student_id, semester, academic_year)
 	);
+
+	CREATE INDEX IF NOT EXISTS idx_santri_nis ON santri(nis);
+	CREATE INDEX IF NOT EXISTS idx_santri_class ON santri(class);
+	CREATE INDEX IF NOT EXISTS idx_santri_status ON santri(status);
+	CREATE INDEX IF NOT EXISTS idx_santri_name ON santri(name);
 	`
 
 	_, err := DB.Exec(query)

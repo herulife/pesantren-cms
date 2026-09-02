@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -35,6 +35,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { category: 'Kesantrian', icon: <FolderTree size={18} />, label: "Project & Kegiatan", href: "/admin/project", roles: ["bendahara"], docRef: 'academics' },
     { category: 'Kesantrian', icon: <UserCheck size={18} />, label: "Staf Pengajar", href: "/admin/teachers", roles: ["tim_media"], docRef: 'teachers' },
     { category: 'Kesantrian', icon: <Shield size={18} />, label: "Kedisiplinan", href: "/admin/disciplines", roles: ["panitia_psb"], docRef: 'disciplines' },
+    { category: 'Kesantrian', icon: <ClipboardList size={18} />, label: "Data Santri", href: "/admin/kesantrian", roles: ["superadmin", "panitia_psb"], docRef: 'academics' },
     
     // Keuangan & Donasi
     { category: 'Keuangan', icon: <Heart size={18} />, label: "Program Donasi", href: "/admin/donations", roles: ["bendahara"], docRef: 'donations' },
