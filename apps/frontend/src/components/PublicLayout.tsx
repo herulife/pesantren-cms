@@ -120,7 +120,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const isPsbActive = effectivePathname.startsWith('/psb');
   const isInformationActive =
     effectivePathname.startsWith('/galeri') ||
-    effectivePathname.startsWith('/videos') ||
+    effectivePathname.startsWith('/video-youtube') ||
     effectivePathname.startsWith('/news') ||
     effectivePathname.startsWith('/donations');
   const isContactActive = effectivePathname.startsWith('/kontak');
@@ -354,7 +354,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                     <Link href="/galeri" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
                       Galeri
                     </Link>
-                    <Link href="/videos" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
+                    <Link href="/video-youtube" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
                       Video
                     </Link>
                     <Link href="/news" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
@@ -505,7 +505,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                     <p className="px-1 text-[10px] font-black uppercase tracking-[0.25em] text-sky-500/80">Informasi</p>
                     <div className="mt-2 grid grid-cols-1 gap-2">
                       <Link href="/galeri" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-100">Galeri</Link>
-                      <Link href="/videos" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-100">Video</Link>
+                      <Link href="/video-youtube" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-100">Video</Link>
                       <Link href="/news" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-100">Berita</Link>
                       <Link href="/donations/wakaf-cat-tembok" onClick={() => setMobileMenuOpen(false)} className="rounded-xl bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-800 transition-colors hover:bg-cyan-100">Open Donasi</Link>
                     </div>
@@ -650,7 +650,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   { name: 'Profil Pondok', href: '/profil' },
                   { name: 'Program Pondok', href: '/program' },
                   { name: 'Berita', href: '/news' },
-                  { name: 'Video Kegiatan', href: '/videos' },
+                  { name: 'Video Kegiatan', href: '/video-youtube' },
                   { name: 'Galeri Kegiatan', href: '/galeri' },
                   { name: 'Kontak Pondok', href: '/kontak' },
                 ].map((link) => (

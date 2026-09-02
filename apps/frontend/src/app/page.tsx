@@ -929,7 +929,7 @@ export default function LandingPage() {
               eyebrow="Video Pilihan"
               title="Video pilihan untuk melihat suasana Al-Maa dari dekat"
               description="Beberapa tayangan singkat yang memperlihatkan kegiatan, pembinaan, dan kehidupan pondok."
-              actionHref="/videos"
+              actionHref="/video-youtube"
               actionLabel="Jelajahi video"
             />
           </motion.div>
