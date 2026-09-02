@@ -26,6 +26,10 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/save", h.Save)                 // require superadmin/bendahara
 	r.Get("/santri/{id}", h.GetByStudentID) // student self view / wali view
 	r.Get("/weights/default", h.DefaultWeights)
+	r.Get("/kesantrian", h.GetKesantrian)
+	r.Post("/kesantrian", h.SetKesantrian)
+	r.Get("/subjects", h.GetSubjects)
+	r.Put("/subjects/weights", h.UpdateSubjects)
 	return r
 }
 
