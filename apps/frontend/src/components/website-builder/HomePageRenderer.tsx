@@ -59,7 +59,7 @@ function renderSection(section: HomeSection, dataSources: HomeBuilderDataSources
     case 'hero':
       return <HeroBlock section={section} settings={dataSources.settings} />;
     case 'info-cards':
-      return <InfoCardsBlock section={section} />;
+      return <InfoCardsBlock section={section} settings={dataSources.settings} />;
     case 'profile':
       return <ProfileBlock section={section} />;
     case 'programs':

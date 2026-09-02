@@ -1,6 +1,7 @@
 import React from 'react';
 import { Building2, Landmark, ShieldCheck, Sparkles } from 'lucide-react';
 import { HomeSection } from '@/lib/website-builder';
+import { SettingsMap } from '@/lib/api';
 import { getArray, getNumber } from './helpers';
 
 type InfoItem = {
@@ -16,7 +17,20 @@ const fallbackItems: Array<{ label: string; value: string; description?: string;
   { label: 'Legalitas', value: 'AHU-038333.50.80.2014', icon: <Landmark size={18} /> },
 ];
 
-export default function InfoCardsBlock({ section }: { section: HomeSection }) {
+function buildSettingsItems(settings: SettingsMap | undefined): Array<{ label: string; value: string; description?: string; icon: React.ReactNode }> {
+  const berdiri = settings?.berdiri;
+  const yayasan = settings?.yayasan;
+  const nspp = settings?.nspp;
+  const legalitas = settings?.legalitas;
+  const items: Array<{ label: string; value: string; description?: string; icon: React.ReactNode }> = [];
+  if (berdiri) items.push({ label: 'Berdiri', value: `Sejak ${berdiri}`, icon: <Sparkles size={18} /> });
+  if (yayasan) items.push({ label: 'Yayasan', value: yayasan, icon: <Building2 size={18} /> });
+  if (nspp) items.push({ label: 'NSPP', value: nspp, icon: <ShieldCheck size={18} /> });
+  if (legalitas) items.push({ label: 'Legalitas', value: legalitas, icon: <Landmark size={18} /> });
+  return items;
+}
+
+export default function InfoCardsBlock({ section, settings }: { section: HomeSection; settings?: SettingsMap }) {
   const manualItems = getArray<InfoItem>(section, 'items')
     .map((item) => ({
       label: typeof item.label === 'string' ? item.label : '',
@@ -24,8 +38,15 @@ export default function InfoCardsBlock({ section }: { section: HomeSection }) {
       description: typeof item.description === 'string' ? item.description : '',
     }))
     .filter((item) => item.label && item.value);
-  const items: Array<{ label: string; value: string; description?: string; icon: React.ReactNode }> =
-    manualItems.length > 0 ? manualItems.map((item) => ({ ...item, icon: <Sparkles size={18} /> })) : fallbackItems;
+  const settingsItems = buildSettingsItems(settings);
+  let items: Array<{ label: string; value: string; description?: string; icon: React.ReactNode }>;
+  if (manualItems.length > 0) {
+    items = manualItems.map((item) => ({ ...item, icon: <Sparkles size={18} /> }));
+  } else if (settingsItems.length > 0) {
+    items = settingsItems;
+  } else {
+    items = fallbackItems;
+  }
   const columns = getNumber(section, 'columns', 4);
 
   return (
