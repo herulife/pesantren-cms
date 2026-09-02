@@ -47,7 +47,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	if err != nil || limit <= 0 {
 		limit = 100
 	}
-	if limit > 200 {
+	if limit > 100 {
 		limit = 200
 	}
 	offset, err := strconv.Atoi(offsetStr)

@@ -25,6 +25,21 @@ func sendJSONResponse(w http.ResponseWriter, status int, success bool, message s
 	})
 }
 
+func parsePagination(r *http.Request) (limit, offset int) {
+	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
 func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
@@ -49,7 +64,19 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if agendas == nil {
 		agendas = []Agenda{}
 	}
-	sendJSONResponse(w, http.StatusOK, true, "Daftar agenda berhasil dimuat", agendas)
+	limit, offset := parsePagination(r)
+	if len(agendas) > limit {
+		end := offset + limit
+		if end > len(agendas) {
+			end = len(agendas)
+		}
+		if offset < len(agendas) {
+			agendas = agendas[offset:end]
+		} else {
+			agendas = agendas[:0]
+		}
+	}
+		sendJSONResponse(w, http.StatusOK, true, "Daftar agenda berhasil dimuat", agendas)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

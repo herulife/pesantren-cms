@@ -6,12 +6,28 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
 	repo IRepository
+}
+
+func parsePagination(r *http.Request) (limit, offset int) {
+	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
 }
 
 func NewHandler(repo IRepository) *Handler {
@@ -45,6 +61,18 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limit, offset := parsePagination(r)
+	if len(programs) > limit {
+		end := offset + limit
+		if end > len(programs) {
+			end = len(programs)
+		}
+		if offset < len(programs) {
+			programs = programs[offset:end]
+		} else {
+			programs = []Program{}
+		}
+	}
 	// Always return an array
 	if programs == nil {
 		programs = []Program{}

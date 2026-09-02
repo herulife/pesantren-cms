@@ -26,6 +26,21 @@ func sendJSONResponse(w http.ResponseWriter, status int, success bool, message s
 	})
 }
 
+func parsePagination(r *http.Request) (limit, offset int) {
+	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
 func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
@@ -60,6 +75,18 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger.Info(r.Context(), "payments list completed", logger.Field{"operation": "payments_list", "count": len(ps)})
+	limit, offset := parsePagination(r)
+	if len(ps) > limit {
+		end := offset + limit
+		if end > len(ps) {
+			end = len(ps)
+		}
+		if offset < len(ps) {
+			ps = ps[offset:end]
+		} else {
+			ps = ps[:0]
+		}
+	}
 	sendJSONResponse(w, http.StatusOK, true, "Daftar pembayaran berhasil dimuat", ps)
 }
 

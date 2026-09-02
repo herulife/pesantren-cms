@@ -270,7 +270,8 @@ export default function DonationsAdminPage() {
                       
                       <button 
                         onClick={() => { setSelectedId(c.id); setIsDeleteOpen(true); }}
-                        className="absolute top-6 right-6 p-2.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl hover:bg-rose-500 hover:border-rose-500 transition-all opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0"
+                        aria-label="Hapus kampanye"
+                        className="absolute top-6 right-6 p-2.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl hover:bg-rose-500 hover:border-rose-500 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 lg:translate-x-4 lg:group-hover:translate-x-0 focus-visible:opacity-100 focus-visible:translate-x-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                       >
                          <Trash2 size={18} />
                       </button>

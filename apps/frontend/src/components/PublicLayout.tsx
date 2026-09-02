@@ -287,7 +287,10 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   type="button"
                   onClick={() => toggleDesktopDropdown('profil')}
                   aria-expanded={openDesktopDropdown === 'profil'}
-                  className={`flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  aria-haspopup="menu"
+                  aria-controls="menu-profil"
+                  onKeyDown={(e) => { if (e.key === 'Escape') setOpenDesktopDropdown(null); if (e.key === 'ArrowDown' && openDesktopDropdown !== 'profil') setOpenDesktopDropdown('profil'); }}
+                  className={`flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
                     isProfileActive || openDesktopDropdown === 'profil'
                       ? 'bg-sky-500/12 text-sky-700 shadow-inner shadow-sky-300/20'
                       : 'text-slate-700 hover:bg-sky-100 hover:text-sky-700'
@@ -295,16 +298,16 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                 >
                   Profil <ChevronDown size={12} className={`transition-transform ${openDesktopDropdown === 'profil' ? 'rotate-180' : ''}`} />
                 </button>
-                <div className={`absolute left-0 top-full pt-4 w-52 z-50 ${openDesktopDropdown === 'profil' ? 'block' : 'hidden'}`}>
+                <div id="menu-profil" role="menu" className={`absolute left-0 top-full pt-4 w-52 z-50 ${openDesktopDropdown === 'profil' ? 'block' : 'hidden'}`}>
                   <div className="overflow-hidden rounded-2xl border border-sky-100 bg-white py-2 shadow-[0_20px_50px_rgba(59,130,246,0.12)]">
                     <div className="border-b border-slate-100 px-4 pb-2 pt-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-600">Profil</p>
                       <p className="mt-1 text-xs text-slate-500">Kenali pondok dan para asatidz lebih dekat.</p>
                     </div>
-                    <Link href="/profil" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
+                    <Link href="/profil" role="menuitem" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
                       Profil Pesantren
                     </Link>
-                    <Link href="/sambutan" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
+                    <Link href="/sambutan" role="menuitem" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
                       Sambutan Pimpinan
                     </Link>
                     <Link href="/teachers" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700">
@@ -331,7 +334,10 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   type="button"
                   onClick={() => toggleDesktopDropdown('informasi')}
                   aria-expanded={openDesktopDropdown === 'informasi'}
-                  className={`flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  aria-haspopup="menu"
+                  aria-controls="menu-informasi"
+                  onKeyDown={(e) => { if (e.key === 'Escape') setOpenDesktopDropdown(null); if (e.key === 'ArrowDown' && openDesktopDropdown !== 'informasi') setOpenDesktopDropdown('informasi'); }}
+                  className={`flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
                     isInformationActive || openDesktopDropdown === 'informasi'
                       ? 'bg-sky-500/12 text-sky-700 shadow-inner shadow-sky-300/20'
                       : 'text-slate-700 hover:bg-sky-100 hover:text-sky-700'
@@ -339,7 +345,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                 >
                   Informasi <ChevronDown size={12} className={`transition-transform ${openDesktopDropdown === 'informasi' ? 'rotate-180' : ''}`} />
                 </button>
-                <div className={`absolute left-0 top-full pt-4 w-52 z-50 ${openDesktopDropdown === 'informasi' ? 'block' : 'hidden'}`}>
+                <div id="menu-informasi" role="menu" className={`absolute left-0 top-full pt-4 w-52 z-50 ${openDesktopDropdown === 'informasi' ? 'block' : 'hidden'}`}>
                   <div className="overflow-hidden rounded-2xl border border-sky-100 bg-white py-2 shadow-[0_20px_50px_rgba(59,130,246,0.12)]">
                     <div className="border-b border-slate-100 px-4 pb-2 pt-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-600">Informasi</p>
@@ -456,7 +462,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
             </div>
 
             {/* Mobile Hamburger */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-white shadow-[0_12px_30px_-18px_rgba(59,130,246,0.16)] transition-colors hover:bg-sky-50">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-expanded={mobileMenuOpen} aria-controls="mobile-nav" aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"} className="lg:hidden flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-white shadow-[0_12px_30px_-18px_rgba(59,130,246,0.16)] transition-colors hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2">
               {mobileMenuOpen ? <X size={20} className="text-sky-700" /> : <Menu size={20} className="text-sky-700" />}
             </button>
           </div>
@@ -464,7 +470,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="absolute left-0 top-full z-[999] w-full border-t border-sky-200 bg-white/98 shadow-2xl lg:hidden">
+          <div id="mobile-nav" role="navigation" aria-label="Menu navigasi mobile" className="absolute left-0 top-full z-[999] w-full border-t border-sky-200 bg-white/98 shadow-2xl lg:hidden">
             <div className="px-4 pb-4 pt-3">
               <div className="rounded-[1.5rem] border border-sky-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(239,246,255,0.96)_100%)] p-3 shadow-[0_24px_50px_-34px_rgba(59,130,246,0.18)] backdrop-blur-sm">
                 <div className="mb-3 flex items-center justify-between rounded-[1.2rem] border border-sky-100 bg-white/90 px-4 py-3">
