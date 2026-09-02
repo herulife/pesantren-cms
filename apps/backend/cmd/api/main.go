@@ -314,9 +314,14 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("panitia_psb"))
 				r.Mount("/psb", psbHandler.Routes())
-		r.Mount("/project", projectHandler.Routes())
-		r.Mount("/raport", raportHandler.Routes())
 				r.Mount("/contact", messageHandler.Routes())
+			})
+
+			// Academics Ops (LMS ALMAA: Project & E-Raport)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("bendahara", "tim_media", "superadmin"))
+				r.Mount("/project", projectHandler.Routes())
+				r.Mount("/raport", raportHandler.Routes())
 			})
 
 			// Portal PSB for calon santri / wali

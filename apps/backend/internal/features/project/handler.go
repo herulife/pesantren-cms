@@ -1,6 +1,7 @@
 package project
 
 import (
+	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/weight"
 	"almaparung-api/internal/validators"
@@ -47,6 +48,12 @@ func sendJSON(w http.ResponseWriter, status int, success bool, msg string, data 
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": success, "message": msg, "data": data})
 }
 
+
+func audit(r *http.Request, action, details string) {
+	if uid, ok := auth.CurrentUserID(r.Context()); ok {
+		logger.RecordActivity(&uid, action, details, r.RemoteAddr, r.UserAgent())
+	}
+}
 func (h *Handler) ListSubProjects(w http.ResponseWriter, r *http.Request) {
 	list, err := h.repo.GetAllSubProjects()
 	if err != nil {
@@ -95,6 +102,7 @@ func (h *Handler) CreateSubProject(w http.ResponseWriter, r *http.Request) {
 		sendJSON(w, 500, false, "Gagal membuat sub project", nil)
 		return
 	}
+	audit(r, "PROJECT_SUB_CREATE", "Buat sub project id="+strconv.Itoa(s.ID)+" ("+s.Name+") bobot="+strconv.FormatFloat(s.Weight, 'f', 1, 64))
 	sendJSON(w, 201, true, "Sub project berhasil dibuat", s)
 }
 
@@ -139,6 +147,7 @@ func (h *Handler) DeleteSubProject(w http.ResponseWriter, r *http.Request) {
 		sendJSON(w, 500, false, "Gagal hapus sub project", nil)
 		return
 	}
+	audit(r, "PROJECT_SUB_DELETE", "Hapus sub project id="+strconv.Itoa(id))
 	sendJSON(w, 200, true, "Sub project dihapus", nil)
 }
 

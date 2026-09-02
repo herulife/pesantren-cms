@@ -288,3 +288,125 @@ export function exportToExcel(
 	saveAs(blob, `${filename}.xlsx`);
 }
 
+
+/**
+ * E-Raport PDF (LMS ALMAA) — prints the final raport with mapel, project, kesantrian scores.
+ */
+export type ERaportPDFPayload = {
+	studentName: string;
+	studentID: number;
+	semester: string;
+	academicYear: string;
+	mapelScore: number;
+	projectScore: number;
+	kesantrianScore: number;
+	finalScore: number;
+	predikat: string;
+	weights: { mapel: number; project: number; kesantrian: number };
+	mapel: { subject: string; score: number; weight: number }[];
+	project: { name: string; score: number; weight: number }[];
+	kesantrian: { aspek: string; score: number }[];
+	printedAt?: string;
+};
+
+export function exportERaportPDF(payload: ERaportPDFPayload) {
+	const doc = new jsPDF('p', 'mm', 'a4');
+	const pageW = doc.internal.pageSize.getWidth();
+
+	// Header
+	doc.setFillColor(16, 105, 79);
+	doc.rect(0, 0, pageW, 42, 'F');
+	doc.setTextColor(255, 255, 255);
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(18);
+	doc.text('PONDOK PESANTREN AL-MAA', pageW / 2, 17, { align: 'center' });
+	doc.setFontSize(12);
+	doc.text('Laporan Hasil Belajar Santri (E-Raport)', pageW / 2, 26, { align: 'center' });
+	doc.setFontSize(10);
+	doc.setFont('helvetica', 'normal');
+	doc.text(`${payload.studentName}  ·  Semester ${payload.semester}  ·  TA ${payload.academicYear}`, pageW / 2, 35, { align: 'center' });
+
+	// Identity + Final score
+	doc.setTextColor(30, 41, 59);
+	doc.setFillColor(240, 253, 244);
+	doc.roundedRect(14, 50, pageW - 28, 20, 3, 3, 'F');
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(12);
+	doc.text(`Nilai Akhir: ${payload.finalScore.toFixed(2)}`, 20, 58);
+	doc.setFontSize(11);
+	doc.text(`Predikat: ${payload.predikat}`, 20, 65);
+	doc.setFont('helvetica', 'normal');
+
+	// Component weights
+	doc.setFontSize(10);
+	doc.setTextColor(71, 85, 105);
+	doc.text(`Komponen: Mapel ${payload.weights.mapel}% · Project ${payload.weights.project}% · Kesantrian ${payload.weights.kesantrian}%`, 14, 78);
+
+	// Table: components summary
+	let y = 84;
+	autoTable(doc, {
+		startY: y,
+		head: [['Komponen', 'Nilai', 'Bobot']],
+		body: [
+			['Mata Pelajaran', payload.mapelScore.toFixed(2), `${payload.weights.mapel}%`],
+			['Project (Qurani-Mandiri-Peduli)', payload.projectScore.toFixed(2), `${payload.weights.project}%`],
+			['Kesantrian', payload.kesantrianScore.toFixed(2), `${payload.weights.kesantrian}%`],
+		],
+		styles: { fontSize: 10 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+	y = (doc as any).lastAutoTable.finalY + 6;
+
+	// Mapel breakdown
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.setTextColor(15, 118, 110);
+	doc.text('Rincian Mata Pelajaran', 14, y);
+	doc.setFont('helvetica', 'normal');
+	y += 2;
+	autoTable(doc, {
+		startY: y,
+		head: [['Mata Pelajaran', 'Nilai', 'Bobot', 'Kontribusi']],
+		body: payload.mapel.map(m => [m.subject, m.score.toFixed(2), `${m.weight}%`, (m.score * m.weight / 100).toFixed(2)]),
+		styles: { fontSize: 9 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+	y = (doc as any).lastAutoTable.finalY + 6;
+
+	// Project breakdown
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.text('Rincian Project', 14, y);
+	doc.setFont('helvetica', 'normal');
+	y += 2;
+	autoTable(doc, {
+		startY: y,
+		head: [['Sub Project', 'Skor (1-4)', 'Bobot']],
+		body: payload.project.map(p => [p.name, p.score.toFixed(2), `${p.weight}%`]),
+		styles: { fontSize: 9 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+	y = (doc as any).lastAutoTable.finalY + 6;
+
+	// Kesantrian breakdown
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.text('Rincian Kesantrian', 14, y);
+	doc.setFont('helvetica', 'normal');
+	y += 2;
+	autoTable(doc, {
+		startY: y,
+		head: [['Aspek', 'Skor (1-4)']],
+		body: payload.kesantrian.map(k => [k.aspek, k.score.toFixed(1)]),
+		styles: { fontSize: 9 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+
+	// Footer
+	const fy = doc.internal.pageSize.getHeight() - 14;
+	doc.setFontSize(9);
+	doc.setTextColor(148, 163, 184);
+	doc.text(`Dicetak: ${payload.printedAt || new Date().toLocaleString('id-ID')} · Sistem LMS ALMAA`, 14, fy);
+
+	doc.save(`E-Raport-${payload.studentName.replace(/\s+/g, '-')}-${payload.semester}-${payload.academicYear.replace(/\//g, '-')}.pdf`);
+}

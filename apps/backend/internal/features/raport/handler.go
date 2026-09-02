@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/weight"
 )
 
@@ -97,6 +99,9 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	if err := h.repo.Upsert(ctx, &s); err != nil {
 		writeJSON(w, 500, "Gagal menyimpan rapor: "+err.Error(), nil)
 		return
+	}
+	if uid, ok := auth.CurrentUserID(ctx); ok {
+		logger.RecordActivity(&uid, "ERAPORT_LOCK", "Mengunci rapor santri id="+strconv.Itoa(s.StudentID)+" semester="+s.Semester+" final="+strconv.FormatFloat(s.FinalScore, 'f', 2, 64), r.RemoteAddr, r.UserAgent())
 	}
 	writeJSON(w, 200, "Rapor berhasil disimpan (locked)", s)
 }

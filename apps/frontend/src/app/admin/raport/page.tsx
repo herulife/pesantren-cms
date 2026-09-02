@@ -18,8 +18,9 @@ import {
 	updateSubjectWeights,
 	getSubProjects,
 } from '@/lib/api';
+import { exportERaportPDF } from '@/lib/export';
 import {
-	BookOpen, CheckCircle2, ClipboardList, GraduationCap, HeartHandshake, Layers, Printer, RefreshCw, Save, Scale, Search,
+	BookOpen, CheckCircle2, ClipboardList, Download, GraduationCap, HeartHandshake, Layers, Printer, RefreshCw, Save, Scale, Search,
 } from 'lucide-react';
 
 type TabKey = 'rekapitulasi' | 'maps' | 'kesantrian';
@@ -169,6 +170,30 @@ export default function ERaportPage() {
 		});
 		if (ok) { showToast('success', 'Rapor dikunci (locked)'); loadAll(); }
 		else showToast('error', 'Gagal mengunci rapor');
+	};
+
+	const handlePDF = () => {
+		if (!raport) return;
+		exportERaportPDF({
+			studentName: raport.student_name,
+			studentID: raport.student_id,
+			semester: raport.semester,
+			academicYear: raport.academic_year,
+			mapelScore: raport.mapel_score,
+			projectScore: raport.project_score,
+			kesantrianScore: raport.kesantrian_score,
+			finalScore: raport.final_score,
+			predikat: raport.predikat,
+			weights: {
+				mapel: raport.weights?.mapel ?? 50,
+				project: raport.weights?.project ?? 25,
+				kesantrian: raport.weights?.kesantrian ?? 25,
+			},
+			mapel: (raport.mapel_details || []).map(d => ({ subject: d.subject_name, score: d.score, weight: d.weight })),
+			project: (raport.project_details || []).map(d => ({ name: d.sub_project, score: d.score, weight: d.weight })),
+			kesantrian: ASPEK_OPTS.map(a => ({ aspek: a.label, score: Number(raport.kesantrian_detail?.[a.key] ?? 3) })),
+			printedAt: new Date().toLocaleString('id-ID'),
+		});
 	};
 
 	const handlePrint = () => {
@@ -338,6 +363,9 @@ export default function ERaportPage() {
 								<div className="flex flex-wrap gap-3">
 									<button onClick={handleLockRaport} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
 										<Save size={17} /> Kunci Rapor
+									</button>
+									<button onClick={handlePDF} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+										<Download size={17} /> Unduh PDF
 									</button>
 									<button onClick={handlePrint} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
 										<Printer size={17} /> Cetak
