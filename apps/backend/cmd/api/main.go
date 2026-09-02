@@ -18,6 +18,7 @@ import (
 	"almaparung-api/internal/features/notifications"
 	"almaparung-api/internal/features/payments"
 	"almaparung-api/internal/features/programs"
+	"almaparung-api/internal/features/project"
 	"almaparung-api/internal/features/psb"
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/teachers"
@@ -79,6 +80,8 @@ func main() {
 	newsHandler := news.NewHandler(newsRepo)
 
 	psbRepo := psb.NewRepository(database.DB)
+	projectRepo := project.NewRepository(database.DB)
+	projectHandler := project.NewHandler(projectRepo)
 	psbHandler := psb.NewHandler(psbRepo)
 
 	teacherRepo := teachers.NewRepository(database.DB)
@@ -308,6 +311,7 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("panitia_psb"))
 				r.Mount("/psb", psbHandler.Routes())
+		r.Mount("/project", projectHandler.Routes())
 				r.Mount("/contact", messageHandler.Routes())
 			})
 

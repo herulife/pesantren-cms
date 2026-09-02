@@ -400,6 +400,43 @@ func createTables() {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (wallet_id) REFERENCES user_wallets(id)
 	);
+
+	CREATE TABLE IF NOT EXISTS project_subprojects (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		code TEXT UNIQUE,
+		description TEXT,
+		weight REAL NOT NULL,
+		order_index INTEGER DEFAULT 0,
+		is_active INTEGER DEFAULT 1,
+		is_demo INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS project_activities (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		sub_project_id INTEGER NOT NULL REFERENCES project_subprojects(id) ON DELETE CASCADE,
+		name TEXT NOT NULL,
+		code TEXT,
+		description TEXT,
+		tujuan TEXT,
+		indikator TEXT,
+		weight REAL NOT NULL,
+		order_index INTEGER DEFAULT 0,
+		is_active INTEGER DEFAULT 1,
+		periode TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS project_indicators (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		activity_id INTEGER NOT NULL REFERENCES project_activities(id) ON DELETE CASCADE,
+		name TEXT NOT NULL,
+		weight REAL NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
 	`
 
 	_, err := DB.Exec(query)
