@@ -167,7 +167,7 @@ export default function BuilderPreviewHomePage() {
   const socialLinks = [
     { href: settings.social_instagram || 'https://instagram.com/darussunnahparung', label: 'Instagram', icon: <Camera size={18} /> },
     { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'Facebook', icon: <ThumbsUp size={18} /> },
-    { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YouTube', icon: <Play size={18} /> },
+    { href: settings.social_youtube || 'https://youtube.com/@abuhaunanrusydi', label: 'YouTube', icon: <Play size={18} /> },
   ].filter((item) => item.href);
 
   if (loading || (!user && !isLoading)) {

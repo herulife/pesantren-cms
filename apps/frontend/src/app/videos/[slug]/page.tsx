@@ -132,46 +132,62 @@ export default function VideoSeriesPage() {
               </div>
 
               {leadVideoId ? (
-                <div className="mb-12 overflow-hidden rounded-[2.5rem] border border-white/80 bg-white shadow-[0_25px_60px_-35px_rgba(15,23,42,0.3)]">
+                <div className="mb-12 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_25px_60px_-35px_rgba(15,23,42,0.25)] transition-shadow duration-500 hover:shadow-[0_30px_70px_-30px_rgba(16,185,129,0.15)]">
                   <div className="aspect-video">
                     <iframe
                       title={series.title}
-                      src={`https://www.youtube.com/embed/${leadVideoId}`}
+                      src={`https://www.youtube.com/embed/${leadVideoId}?rel=0`}
                       className="h-full w-full"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
                   </div>
-                  <div className="px-6 py-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Video Utama</p>
-                    <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-slate-900">{leadVideo.title}</h2>
+                  <div className="px-6 py-5 md:px-8 md:py-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">Video Utama</p>
+                    <h2 className="mt-2 text-xl font-black uppercase tracking-tight text-slate-900 md:text-2xl">{leadVideo.title}</h2>
                   </div>
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {sortedItems.map((video) => {
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {sortedItems.map((video, idx) => {
                   const thumbnail = video.thumbnail || getYouTubeThumbnailUrl(video.url);
+                  const videoId = extractYouTubeVideoId(video.url);
+                  const isLead = leadVideo && video.id === leadVideo.id && idx === 0;
                   return (
-                    <a key={video.id} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,0.25)]">
+                    <a key={video.id} href={video.url} target="_blank" rel="noopener noreferrer" className={`group overflow-hidden rounded-[1.5rem] border bg-white transition-all duration-500 hover:-translate-y-1 ${
+                      isLead
+                        ? 'border-emerald-200/60 shadow-[0_20px_50px_-25px_rgba(16,185,129,0.2)]'
+                        : 'border-slate-200/80 shadow-[0_18px_50px_-30px_rgba(15,23,42,0.18)] hover:shadow-[0_25px_60px_-20px_rgba(16,185,129,0.18)] hover:border-emerald-200/40'
+                    }`}>
                       <div className="relative aspect-video overflow-hidden bg-slate-900">
                         {thumbnail ? (
-                          <img src={thumbnail} alt={video.title} className="h-full w-full object-cover opacity-85 transition-transform duration-700 group-hover:scale-105" />
+                          <img src={thumbnail} alt={video.title} className="h-full w-full object-cover opacity-85 transition-all duration-700 group-hover:scale-110 group-hover:opacity-100" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-slate-500">
-                            <VideoIcon size={40} />
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-900 to-slate-900 text-emerald-300">
+                            <VideoIcon size={36} />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-100" />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
-                            <PlayCircle size={30} />
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md border border-white/25 transition-all duration-500 group-hover:scale-125 group-hover:bg-emerald-500/40 group-hover:border-emerald-300/50">
+                            <PlayCircle size={28} />
                           </div>
                         </div>
+                        {videoId && (
+                          <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
+                            YouTube
+                          </div>
+                        )}
+                        {isLead && (
+                          <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
+                            UTAMA
+                          </div>
+                        )}
                       </div>
                       <div className="px-5 py-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">Video</p>
-                        <h3 className="mt-2 text-lg font-black uppercase tracking-tight text-slate-900 line-clamp-2">{video.title}</h3>
+                        <h3 className="text-sm font-bold uppercase tracking-tight text-slate-900 line-clamp-2 transition-colors duration-300 group-hover:text-emerald-700">{video.title}</h3>
                       </div>
                     </a>
                   );

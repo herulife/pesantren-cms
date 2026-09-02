@@ -264,7 +264,7 @@ export default function WebsiteBuilderLivePreview({
       icon: <ThumbsUp size={18} />,
     },
     {
-      href: settings.social_youtube || 'https://youtube.com/@darussunnahparung',
+      href: settings.social_youtube || 'https://youtube.com/@abuhaunanrusydi',
       label: 'YouTube',
       icon: <Play size={18} />,
     },

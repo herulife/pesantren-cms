@@ -111,7 +111,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const socialLinks = [
     { href: settings.social_instagram || 'https://instagram.com/darussunnahparung', label: 'Instagram', icon: <Camera size={18} /> },
     { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'Facebook', icon: <ThumbsUp size={18} /> },
-    { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YouTube', icon: <Play size={18} /> },
+    { href: settings.social_youtube || 'https://youtube.com/@abuhaunanrusydi', label: 'YouTube', icon: <Play size={18} /> },
   ].filter((item) => item.href);
   const isProfileActive = effectivePathname === '/profil' || effectivePathname.startsWith('/teachers') || effectivePathname.startsWith('/facilities');
   const isProgramActive = effectivePathname.startsWith('/program');
@@ -244,7 +244,8 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
       <div className="public-site-shell min-h-screen bg-white font-sans antialiased">
       {/* ═══════════════════ NAVBAR ═══════════════════ */}
       {!hideNavbar ? (
-      <nav className="sticky top-0 z-[1000] border-b border-emerald-900/80 bg-emerald-950/95 shadow-[0_10px_30px_rgba(2,6,23,0.2)] backdrop-blur-md">
+      <nav className="sticky top-0 z-[1000] bg-emerald-950/95 shadow-[0_10px_30px_rgba(2,6,23,0.2)] backdrop-blur-md">
+        <div className="border-b border-emerald-900/80">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-[4.25rem] items-center justify-between md:h-20">
             {/* Logo */}
@@ -448,6 +449,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
               {mobileMenuOpen ? <X size={20} className="text-emerald-50" /> : <Menu size={20} className="text-emerald-50" />}
             </button>
           </div>
+        </div>
         </div>
 
         {/* Mobile Menu */}
