@@ -39,3 +39,6 @@ apps/backend/public/uploads/
 
 # Bun legacy binary lockfile
 raport/bun.lockb
+
+# Uploaded files
+data/uploads/
