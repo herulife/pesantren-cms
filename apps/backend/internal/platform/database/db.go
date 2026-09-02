@@ -437,6 +437,38 @@ func createTables() {
 		weight REAL NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
+
+	CREATE TABLE IF NOT EXISTS kesantrian_aspek (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		student_id INTEGER NOT NULL,
+		aspek TEXT NOT NULL,
+		semester TEXT NOT NULL,
+		academic_year TEXT NOT NULL,
+		score REAL NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (student_id) REFERENCES users(id),
+		UNIQUE(student_id, aspek, semester, academic_year)
+	);
+
+	CREATE TABLE IF NOT EXISTS raports (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		student_id INTEGER NOT NULL,
+		semester TEXT NOT NULL,
+		academic_year TEXT NOT NULL,
+		mapel_score REAL NOT NULL DEFAULT 0,
+		project_score REAL NOT NULL DEFAULT 0,
+		kesantrian_score REAL NOT NULL DEFAULT 0,
+		final_score REAL NOT NULL DEFAULT 0,
+		predikat TEXT DEFAULT '',
+		status TEXT DEFAULT 'draft',
+		notes TEXT DEFAULT '',
+		generated_by INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (student_id) REFERENCES users(id),
+		UNIQUE(student_id, semester, academic_year)
+	);
 	`
 
 	_, err := DB.Exec(query)
@@ -483,6 +515,10 @@ func createTables() {
 	addColumnIfNotExists("settings", "updated_at", "DATETIME")
 	addColumnIfNotExists("teachers", "email", "TEXT DEFAULT ''")
 	addColumnIfNotExists("teachers", "whatsapp", "TEXT DEFAULT ''")
+	addColumnIfNotExists("subjects", "weight", "REAL DEFAULT 100")
+	addColumnIfNotExists("subjects", "kkm", "REAL DEFAULT 75")
+	addColumnIfNotExists("subjects", "sort_order", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("subjects", "is_active", "INTEGER DEFAULT 1")
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 	_, _ = DB.Exec("UPDATE settings SET updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 

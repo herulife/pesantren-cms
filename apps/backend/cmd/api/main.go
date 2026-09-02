@@ -20,6 +20,7 @@ import (
 	"almaparung-api/internal/features/programs"
 	"almaparung-api/internal/features/project"
 	"almaparung-api/internal/features/psb"
+	"almaparung-api/internal/features/raport"
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
@@ -82,6 +83,8 @@ func main() {
 	psbRepo := psb.NewRepository(database.DB)
 	projectRepo := project.NewRepository(database.DB)
 	projectHandler := project.NewHandler(projectRepo)
+	raportRepo := raport.NewRepository(database.DB)
+	raportHandler := raport.NewHandler(raportRepo)
 	psbHandler := psb.NewHandler(psbRepo)
 
 	teacherRepo := teachers.NewRepository(database.DB)
@@ -312,6 +315,7 @@ func main() {
 				r.Use(auth.RequireRole("panitia_psb"))
 				r.Mount("/psb", psbHandler.Routes())
 		r.Mount("/project", projectHandler.Routes())
+		r.Mount("/raport", raportHandler.Routes())
 				r.Mount("/contact", messageHandler.Routes())
 			})
 
