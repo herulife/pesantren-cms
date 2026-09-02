@@ -159,7 +159,13 @@ func (r *Repository) DeleteActivity(id int) error {
 }
 
 func (r *Repository) GetIndicators(activityID int) ([]Indicator, error) {
-	rows, err := r.db.Query(`SELECT id, activity_id, name, weight, created_at FROM project_indicators WHERE activity_id = ? ORDER BY id ASC`, activityID)
+	var rows *sql.Rows
+	var err error
+	if activityID > 0 {
+		rows, err = r.db.Query(`SELECT id, activity_id, name, weight, created_at FROM project_indicators WHERE activity_id = ? ORDER BY id ASC`, activityID)
+	} else {
+		rows, err = r.db.Query(`SELECT id, activity_id, name, weight, created_at FROM project_indicators ORDER BY id ASC`)
+	}
 	if err != nil {
 		return nil, err
 	}
