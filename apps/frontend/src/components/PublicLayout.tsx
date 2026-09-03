@@ -676,6 +676,34 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
             </div>
           </div>
 
+          {/* Map Footer */}
+          <div className="mb-8 overflow-hidden rounded-[1.65rem] border border-sky-100 bg-white/82 p-3 shadow-[0_22px_50px_-36px_rgba(59,130,246,0.12)] backdrop-blur-sm md:p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="px-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-600/85">
+                Peta Lokasi Pondok
+              </p>
+              <a
+                href="https://maps.google.com/?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-[11px] font-black uppercase tracking-wide text-white transition-colors hover:bg-sky-700"
+              >
+                Buka di Google Maps <ArrowRight size={14} />
+              </a>
+            </div>
+            <div className="mt-3 h-56 w-full overflow-hidden rounded-[1.1rem] bg-slate-100 md:h-64">
+              <iframe
+                src="https://maps.google.com/maps?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                width="100%"
+                height="100%"
+                style={{ border: 0, pointerEvents: 'none' }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Peta lokasi Pondok Pesantren Al-Maa Parung"
+              />
+            </div>
+          </div>
+
           {/* Copyright */}
           <div className="flex flex-col items-center justify-between gap-3 border-t border-sky-100 pt-7 text-center text-sm text-slate-500 md:flex-row md:gap-4 md:pt-8 md:text-left">
             <div>&copy; 2026 {schoolName}. Seluruh hak cipta dilindungi.</div>

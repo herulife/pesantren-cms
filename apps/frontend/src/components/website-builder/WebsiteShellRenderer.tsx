@@ -374,6 +374,32 @@ export default function WebsiteShellRenderer({
                 </div>
               </div>
             </div>
+            <div className="mt-10 overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="px-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-300">
+                  Peta Lokasi Pondok
+                </p>
+                <a
+                  href="https://maps.google.com/?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-[11px] font-black uppercase tracking-wide text-white transition-colors hover:bg-sky-500"
+                >
+                  Buka di Google Maps
+                </a>
+              </div>
+              <div className="mt-3 h-56 w-full overflow-hidden rounded-2xl bg-slate-100 md:h-64">
+                <iframe
+                  src="https://maps.google.com/maps?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0, pointerEvents: 'none' }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Peta lokasi Pondok Pesantren Al-Maa Parung"
+                />
+              </div>
+            </div>
             <div className="mt-10 border-t border-white/10 pt-6 text-sm opacity-70">
               {shell.footer.copyright_text || `© 2026 ${schoolName}.`}
             </div>

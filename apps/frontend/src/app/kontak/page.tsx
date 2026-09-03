@@ -20,6 +20,7 @@ export function ContactPageContent() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [mapInteractive, setMapInteractive] = useState(false);
   const { showToast } = useToast();
   const pageContent = useWebsiteBuilderPageContent('kontak', defaultWebsiteBuilderPages.kontak);
   const context = usePublicSiteContext();
@@ -307,16 +308,36 @@ export function ContactPageContent() {
               {pageContent.map.button_label}
             </a>
           </div>
-          <div className="h-[400px] w-full overflow-hidden rounded-3xl bg-slate-100">
+          <div className="relative h-[400px] w-full overflow-hidden rounded-3xl bg-slate-100">
             <iframe
               src={pageContent.map.embed_url}
               width="100%"
               height="100%"
-              style={{ border: 0 }}
+              style={{ border: 0, pointerEvents: mapInteractive ? 'auto' : 'none' }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />
+            {!mapInteractive ? (
+              <button
+                type="button"
+                onClick={() => setMapInteractive(true)}
+                className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-slate-50/50 backdrop-blur-[1px]"
+                aria-label="Aktifkan peta"
+              >
+                <span className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-700 shadow-lg ring-1 ring-slate-200 transition hover:bg-sky-600 hover:text-white">
+                  <MapPin size={15} /> Ketuk untuk berinteraksi dengan peta
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMapInteractive(false)}
+                className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-slate-600 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-900 hover:text-white"
+              >
+                Tutup peta
+              </button>
+            )}
           </div>
         </div>
       </div>
