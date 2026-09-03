@@ -3,13 +3,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, PlayCircle } from 'lucide-react';
 import { HomeSection } from '@/lib/website-builder';
-import { getYouTubeThumbnailUrl, resolveDisplayImageUrl } from '@/lib/api';
+import { getYouTubeThumbnailUrl, resolveDisplayImageUrl, Video } from '@/lib/api';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import { VideoSeriesSummary } from '../HomePageRenderer';
 import { getArray, getNumber, getString } from './helpers';
 
-export default function VideoBlock({ section, series, isLoading }: { section: HomeSection; series: VideoSeriesSummary[]; isLoading: boolean }) {
+export default function VideoBlock({ section, series, videos, isLoading }: { section: HomeSection; series: VideoSeriesSummary[]; videos?: Video[]; isLoading: boolean }) {
   const eyebrow = getString(section, 'eyebrow', 'Video');
   const title = getString(section, 'title', 'Video Pondok');
   const subtitle = getString(section, 'subtitle', 'Rekaman kegiatan, kajian, dan dokumentasi video Al-Maa.');
@@ -32,6 +32,35 @@ export default function VideoBlock({ section, series, isLoading }: { section: Ho
         <PublicSectionIntro eyebrow={eyebrow} title={title} description={subtitle} actionHref={buttonUrl} actionLabel={buttonLabel} theme="dark" />
         {isLoading ? (
           <PublicGridSkeleton count={limit} className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3" itemClassName="h-56 rounded-[1.75rem] bg-white/10" />
+        ) : videos && videos.length > 0 ? (
+          <div className="mt-8 flex gap-4 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {videos.slice(0, 20).map((video) => {
+              const thumbnail = video.thumbnail || getYouTubeThumbnailUrl(video.url);
+              return (
+                <a key={video.id} href={video.url} target="_blank" rel="noopener noreferrer" className="group min-w-[260px] max-w-[320px] flex-none snap-start overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.6)] transition-all hover:-translate-y-1 hover:border-sky-400/30">
+                  <div className="relative h-40 overflow-hidden bg-slate-900">
+                    {thumbnail ? (
+                      <Image src={resolveDisplayImageUrl(thumbnail)} alt={video.title} fill unoptimized className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
+                    <div className="absolute left-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-500 text-white shadow-lg">
+                      <PlayCircle size={20} />
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-300">AlmaTV</p>
+                    <h4 className="mt-2 text-sm font-bold leading-snug text-white line-clamp-2">{video.title}</h4>
+                  </div>
+                </a>
+              );
+            })}
+            <a href={buttonUrl} className="group flex min-w-[180px] flex-none snap-start items-center justify-center rounded-[1.5rem] border border-dashed border-sky-400/40 bg-sky-500/10 px-6">
+              <div className="text-center">
+                <PlayCircle size={28} className="mx-auto text-sky-400" />
+                <p className="mt-3 text-sm font-black text-sky-300">{buttonLabel}</p>
+              </div>
+            </a>
+          </div>
         ) : items.length > 0 ? (
           <div className={`mt-8 grid gap-4 ${section.variant === 'spotlight' ? 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]' : 'md:grid-cols-3'}`}>
             {items.map((item, index) => {

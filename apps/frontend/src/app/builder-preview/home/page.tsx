@@ -203,6 +203,7 @@ export default function BuilderPreviewHomePage() {
     programs,
     galleryAlbums,
     videoSeries,
+    videos,
     settings,
     isLoading,
   };

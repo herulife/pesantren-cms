@@ -412,6 +412,7 @@ export default function LandingPage() {
             programs,
             galleryAlbums,
             videoSeries,
+            videos,
             settings,
             isLoading,
           }}

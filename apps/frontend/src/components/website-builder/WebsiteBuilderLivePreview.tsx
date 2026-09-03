@@ -348,6 +348,7 @@ export default function WebsiteBuilderLivePreview({
       programs: dataSources.programs,
       galleryAlbums,
       videoSeries,
+      videos: dataSources.videos,
       settings,
       isLoading: false,
     };

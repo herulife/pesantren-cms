@@ -45,6 +45,7 @@ export type HomeBuilderDataSources = {
   programs: Program[];
   galleryAlbums: GalleryAlbumSummary[];
   videoSeries: VideoSeriesSummary[];
+  videos: Video[];
   settings: SettingsMap;
   isLoading: boolean;
 };
@@ -69,7 +70,7 @@ function renderSection(section: HomeSection, dataSources: HomeBuilderDataSources
     case 'gallery':
       return <GalleryBlock section={section} albums={dataSources.galleryAlbums} isLoading={dataSources.isLoading} />;
     case 'videos':
-      return <VideoBlock section={section} series={dataSources.videoSeries} isLoading={dataSources.isLoading} />;
+      return <VideoBlock section={section} series={dataSources.videoSeries} videos={dataSources.videos} isLoading={dataSources.isLoading} />;
     case 'news':
       return <NewsBlock section={section} news={dataSources.news} isLoading={dataSources.isLoading} />;
     case 'agendas':
