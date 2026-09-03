@@ -92,13 +92,25 @@ func validateGrade(g *Grade) map[string][]string {
 	if g.TaskScore < 0 || g.TaskScore > 100 {
 		errs["task_score"] = []string{"Nilai tugas harus 0-100"}
 	}
-	if g.Semester != "" && g.Semester != "ganjil" && g.Semester != "genap" {
-		errs["semester"] = []string{"Semester harus ganjil atau genap"}
+	validSemesters := map[string]bool{"1": true, "2": true, "ganjil": true, "genap": true}
+	if g.Semester != "" && !validSemesters[strings.ToLower(g.Semester)] {
+		errs["semester"] = []string{"Semester harus 1 atau 2"}
 	}
 	if len(errs) == 0 {
 		return nil
 	}
 	return errs
+}
+
+func normalizeSemester(s string) string {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "1", "ganjil":
+		return "1"
+	case "2", "genap":
+		return "2"
+	default:
+		return s
+	}
 }
 
 func validateAttendance(a *Attendance) map[string][]string {
@@ -270,6 +282,7 @@ func (h *Handler) CreateGrade(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
 		return
 	}
+	g.Semester = normalizeSemester(g.Semester)
 	if errs := validateGrade(&g); errs != nil {
 		writeJSONValidationError(w, errs)
 		return
@@ -289,6 +302,7 @@ func (h *Handler) UpdateGrade(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Invalid request body", nil)
 		return
 	}
+	g.Semester = normalizeSemester(g.Semester)
 	if errs := validateGrade(&g); errs != nil {
 		writeJSONValidationError(w, errs)
 		return

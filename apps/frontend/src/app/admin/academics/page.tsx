@@ -74,8 +74,8 @@ export default function AcademicsPage() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('Ganjil');
-  const [selectedYear, setSelectedYear] = useState('2024/2025');
+  const [selectedSemester, setSelectedSemester] = useState('1');
+  const [selectedYear, setSelectedYear] = useState('2025/2026');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -121,7 +121,7 @@ export default function AcademicsPage() {
   const filteredGrades = useMemo(() => grades.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.subject_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [grades, searchQuery]);
   const filteredAttendance = useMemo(() => attendance.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [attendance, searchQuery]);
   const filteredTahfidz = useMemo(() => tahfidz.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || v.surah_name.toLowerCase().includes(searchQuery.toLowerCase())), [tahfidz, searchQuery]);
-  const semesterLabel = selectedSemester === 'Genap' ? 'Semester 2' : 'Semester 1';
+  const semesterLabel = selectedSemester === '2' ? 'Semester 2' : 'Semester 1';
   const academicPeriodLabel = `${semesterLabel} — Tahun Ajaran ${selectedYear}`;
   const averageGrade = filteredGrades.length ? (filteredGrades.reduce((sum, item) => sum + item.final_score, 0) / filteredGrades.length).toFixed(1) : '0.0';
   const hadirPct = filteredAttendance.length ? `${Math.round((filteredAttendance.filter((v) => v.status === 'hadir').length / filteredAttendance.length) * 100)}%` : '0%';
@@ -445,7 +445,7 @@ export default function AcademicsPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-[280px] flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari data akademik..." className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none focus:border-sky-500" /></div>
           {['grades', 'recap', 'reports'].includes(activeTab) && <>
-            <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option>Ganjil</option><option>Genap</option></select>
+            <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option value="1">Semester 1</option><option value="2">Semester 2</option></select>
             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
           </>}
           {activeTab === 'grades' && <>

@@ -22,7 +22,7 @@ import { ArrowLeft, BookOpen, Calendar, ClipboardList, Loader2, Pencil, Save, Us
 
 type FormType = 'grade' | 'attendance' | 'tahfidz' | 'bulk-grade' | 'bulk-edit';
 
-const gradeInit = { id: 0, student_id: '', subject_id: '', semester: 'Ganjil', academic_year: '2024/2025', uts_score: '', uas_score: '', task_score: '', notes: '' };
+const gradeInit = { id: 0, student_id: '', subject_id: '', semester: '1', academic_year: '2025/2026', uts_score: '', uas_score: '', task_score: '', notes: '' };
 const attendanceInit = { id: 0, student_id: '', date: new Date().toISOString().split('T')[0], status: 'hadir', notes: '' };
 const tahfidzInit = { id: 0, student_id: '', surah_name: '', juz: '', start_ayat: '', end_ayat: '', status: 'proses', musyrif_notes: '', evaluation_date: new Date().toISOString().split('T')[0] };
 
@@ -57,8 +57,8 @@ function AcademicsFormContent() {
 
   const type = (searchParams.get('type') || 'grade') as FormType;
   const id = searchParams.get('id');
-  const selectedSemester = searchParams.get('semester') || 'Ganjil';
-  const selectedYear = searchParams.get('year') || '2024/2025';
+  const selectedSemester = searchParams.get('semester') || '1';
+  const selectedYear = searchParams.get('year') || '2025/2026';
   const selectedDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +73,7 @@ function AcademicsFormContent() {
   const [bulkEditSubjectId, setBulkEditSubjectId] = useState(searchParams.get('subject_id') || '');
   const [bulkEditRows, setBulkEditRows] = useState<Array<{ id: number; student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; notes: string }>>([]);
 
-  const academicPeriodLabel = `${selectedSemester === 'Genap' ? 'Semester 2' : 'Semester 1'} - Tahun Ajaran ${selectedYear}`;
+  const academicPeriodLabel = `${selectedSemester === '2' ? 'Semester 2' : 'Semester 1'} - Tahun Ajaran ${selectedYear}`;
 
   useEffect(() => {
     const load = async () => {
@@ -381,8 +381,8 @@ function AcademicsFormContent() {
                   </Field>
                   <Field label="Semester">
                     <select value={gradeForm.semester} onChange={(event) => setGradeForm((prev) => ({ ...prev, semester: event.target.value }))} className={controlClass}>
-                      <option value="Ganjil">Ganjil</option>
-                      <option value="Genap">Genap</option>
+                      <option value="1">Semester 1</option>
+                      <option value="2">Semester 2</option>
                     </select>
                   </Field>
                   <Field label="Tahun Ajaran">
@@ -511,8 +511,8 @@ function AcademicsFormContent() {
                 </Field>
                 <Field label="Semester">
                   <select value={bulkGradeMeta.semester} onChange={(event) => setBulkGradeMeta((prev) => ({ ...prev, semester: event.target.value }))} className={controlClass}>
-                    <option value="Ganjil">Ganjil</option>
-                    <option value="Genap">Genap</option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
                   </select>
                 </Field>
                 <Field label="Tahun Ajaran">
