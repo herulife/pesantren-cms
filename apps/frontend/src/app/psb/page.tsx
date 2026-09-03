@@ -153,16 +153,28 @@ export function PsbPageContent() {
           </p>
           <div className="flex flex-col justify-center gap-6 sm:flex-row">
             <Link
-              href={pageContent.cta.primary_button.url}
+              href={
+                pageContent.cta.primary_button.url &&
+                !pageContent.cta.primary_button.url.includes('wa.me') &&
+                pageContent.cta.primary_button.url !== ''
+                  ? pageContent.cta.primary_button.url
+                  : '/portal/biodata'
+              }
               className="flex items-center gap-2 rounded-full bg-white px-10 py-5 text-lg font-black text-sky-900 shadow-xl shadow-white/10 transition-all hover:-translate-y-1 hover:bg-sky-50"
             >
-              {pageContent.cta.primary_button.label} <ArrowRight />
+              {pageContent.cta.primary_button.label &&
+              !pageContent.cta.primary_button.label.toLowerCase().includes('panitia')
+                ? pageContent.cta.primary_button.label
+                : 'Daftar Online Sekarang'}{' '}
+              <ArrowRight />
             </Link>
             <a
-              href={pageContent.cta.secondary_button.url}
+              href={pageContent.cta.secondary_button.url || 'https://wa.me/6287784423282'}
+              target={pageContent.cta.secondary_button.url?.includes('wa.me') ? '_blank' : undefined}
+              rel={pageContent.cta.secondary_button.url?.includes('wa.me') ? 'noopener noreferrer' : undefined}
               className="rounded-full border border-white/20 bg-white/10 px-10 py-5 text-lg font-black text-white backdrop-blur-md transition-all hover:bg-white/20"
             >
-              {pageContent.cta.secondary_button.label}
+              {pageContent.cta.secondary_button.label || 'Hubungi Panitia'}
             </a>
           </div>
         </div>

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard } from 'lucide-react';
+import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard, Check } from 'lucide-react';
 import { getMyPSBRegistration, type Registration } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -470,6 +470,51 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
             {/* Content Area */}
             <div className="min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
+              {!isLoading && !hasStudentAccess && !isRaportPage && (
+                <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online — 3 Langkah</p>
+                  <div className="mt-3 flex items-center gap-2">
+                    {[
+                      { href: '/portal/biodata', label: 'Biodata', done: biodataCompleted, icon: <User size={14} />, active: pathname.startsWith('/portal/biodata') },
+                      { href: '/portal/documents', label: 'Dokumen', done: documentsCompleted, icon: <Upload size={14} />, active: pathname.startsWith('/portal/documents') },
+                      { href: '/portal/payment', label: 'Pembayaran', done: paymentCompleted, icon: <CreditCard size={14} />, active: pathname.startsWith('/portal/payment') },
+                    ].map((step, idx, arr) => (
+                      <React.Fragment key={step.href}>
+                        <Link
+                          href={step.href}
+                          className={`flex flex-1 items-center gap-2 rounded-full px-3 py-2 text-xs font-black transition ${
+                            step.active
+                              ? 'bg-sky-600 text-white shadow'
+                              : step.done
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-slate-50 text-slate-500 border border-slate-200'
+                          }`}
+                        >
+                          <span
+                            className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
+                              step.active ? 'bg-white text-sky-600' : step.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200'
+                            }`}
+                          >
+                            {step.done ? <Check size={12} /> : idx + 1}
+                          </span>
+                          <span className="hidden sm:inline">{step.label}</span>
+                          <span className="sm:hidden">{step.label.slice(0, 3)}</span>
+                        </Link>
+                        {idx < arr.length - 1 && <span className={`hidden sm:block h-px flex-1 ${step.done ? 'bg-emerald-200' : 'bg-slate-200'}`} />}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px] font-medium text-slate-500">
+                    {biodataCompleted && documentsCompleted && paymentCompleted
+                      ? 'Semua langkah lengkap — pantau status di Dashboard.'
+                      : biodataCompleted && documentsCompleted
+                        ? 'Tinggal pembayaran untuk selesaikan pendaftaran.'
+                        : biodataCompleted
+                          ? 'Biodata selesai — lanjut unggah dokumen.'
+                          : 'Mulai dari biodata untuk lanjutkan pendaftaran.'}
+                  </p>
+                </div>
+              )}
                {isLoading && !isPortalDashboard ? (
                  <div className="mb-6 flex items-center gap-3 rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-500">
                    <RefreshCw size={16} className="animate-spin text-sky-600" />
