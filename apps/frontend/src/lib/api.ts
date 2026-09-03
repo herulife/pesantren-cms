@@ -1499,6 +1499,15 @@ export async function deletePayment(id: number) {
 	return parseResponse(res);
 }
 
+export async function updatePayment(id: number, data: Omit<Payment, 'id' | 'created_at' | 'user_name' | 'user_email'>) {
+	const res = await fetch(`${API_BASE_URL}/payments/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
 // Academics
 export async function getSubjects() {
 	try {

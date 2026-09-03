@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -45,11 +46,45 @@ func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
 
+func validatePayment(p *Payment) map[string][]string {
+	errs := map[string][]string{}
+	if p.UserID <= 0 {
+		errs["user_id"] = []string{"Santri wajib dipilih"}
+	}
+	if p.Amount <= 0 {
+		errs["amount"] = []string{"Jumlah pembayaran harus lebih dari 0"}
+	}
+	if strings.TrimSpace(p.Description) == "" {
+		errs["description"] = []string{"Keterangan wajib diisi"}
+	}
+	if p.Status != "" && p.Status != "pending" && p.Status != "success" && p.Status != "failed" {
+		errs["status"] = []string{"Status harus pending, success, atau failed"}
+	}
+	if strings.TrimSpace(p.Method) == "" {
+		errs["method"] = []string{"Metode pembayaran wajib diisi"}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
+}
+
+func writeValidationError(w http.ResponseWriter, errs map[string][]string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnprocessableEntity)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": false,
+		"message": "Validasi gagal",
+		"errors":  errs,
+	})
+}
+
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/all", h.GetAll)
 	r.Get("/users", h.GetAllUsers)
 	r.Post("/", h.Create)
+	r.Put("/{id}", h.Update)
 	r.Delete("/{id}", h.Delete)
 	return r
 }
@@ -98,6 +133,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	if strings.TrimSpace(p.Status) == "" {
+		p.Status = "success"
+	}
+	if strings.TrimSpace(p.Method) == "" {
+		p.Method = "manual"
+	}
+	if errs := validatePayment(&p); errs != nil {
+		writeValidationError(w, errs)
+		return
+	}
 
 	if err := h.repo.Create(&p); err != nil {
 		logger.Error(r.Context(), "payments create failed", logger.Field{"operation": "payments_create", "error": err.Error(), "user_id": p.UserID})
@@ -116,6 +161,46 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	logger.Info(r.Context(), "payments create completed", logger.Field{"operation": "payments_create", "user_id": p.UserID, "amount": p.Amount})
 
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil dicatat", nil)
+}
+
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	logger.Info(r.Context(), "payments update started", logger.Field{"operation": "payments_update"})
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "ID pembayaran tidak valid", nil)
+		return
+	}
+	var p Payment
+	if err := validators.DecodeJSON(w, r, &p); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+	p.ID = id
+	if strings.TrimSpace(p.Status) == "" {
+		p.Status = "success"
+	}
+	if strings.TrimSpace(p.Method) == "" {
+		p.Method = "manual"
+	}
+	if errs := validatePayment(&p); errs != nil {
+		writeValidationError(w, errs)
+		return
+	}
+	if err := h.repo.Update(&p); err != nil {
+		logger.Error(r.Context(), "payments update failed", logger.Field{"operation": "payments_update", "error": err.Error(), "payment_id": id})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	adminID := 0
+	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
+		if cid, ok := claims["id"].(float64); ok {
+			adminID = int(cid)
+		}
+	}
+	logger.RecordActivity(&adminID, "UPDATE_PAYMENT", fmt.Sprintf("Memperbarui pembayaran ID %d", id), r.RemoteAddr, r.UserAgent())
+	logger.Info(r.Context(), "payments update completed", logger.Field{"operation": "payments_update", "payment_id": id})
+	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil diperbarui", nil)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -154,6 +239,7 @@ type IRepository interface {
 	GetAll() ([]Payment, error)
 	GetByUserID(userID int) ([]Payment, error)
 	Create(p *Payment) error
+	Update(p *Payment) error
 	Delete(id int) error
 	GetUsers() ([]struct {
 		ID    int    `json:"id"`

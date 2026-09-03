@@ -97,6 +97,15 @@ func (r *Repository) Delete(id int) error {
 	return err
 }
 
+func (r *Repository) Update(p *Payment) error {
+	query := `UPDATE payments SET user_id = ?, amount = ?, description = ?, status = ?, method = ?, payment_date = ? WHERE id = ?`
+	if p.PaymentDate == "" {
+		p.PaymentDate = time.Now().Format("2006-01-02 15:04:05")
+	}
+	_, err := r.db.Exec(query, p.UserID, p.Amount, p.Description, p.Status, p.Method, p.PaymentDate, p.ID)
+	return err
+}
+
 func (r *Repository) GetUsers() ([]struct {
 	ID    int    `json:"id"`
 	Name  string `json:"name"`

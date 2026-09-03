@@ -45,8 +45,8 @@ function PaymentFormContent() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!formData.user_id || !formData.amount || !formData.description) {
-      showToast('error', 'Harap isi semua field wajib.');
+    if (!formData.user_id || !formData.amount || Number(formData.amount) <= 0 || !formData.description.trim()) {
+      showToast('error', 'Harap isi semua field wajib (santri, jumlah >0, keterangan).');
       return;
     }
 
@@ -105,12 +105,12 @@ function PaymentFormContent() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div className="space-y-3 md:col-span-2">
               <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <User size={12} /> Pilih Santri / User
+                <User size={12} /> Pilih Santri / User <span className="text-rose-500">*</span>
               </label>
               <select
                 value={formData.user_id}
                 onChange={(event) => setFormData((prev) => ({ ...prev, user_id: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                className={`w-full rounded-xl border bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 ${!formData.user_id ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`}
               >
                 <option value="">-- Pilih User --</option>
                 {users.map((user) => (
@@ -119,19 +119,21 @@ function PaymentFormContent() {
                   </option>
                 ))}
               </select>
+              {!formData.user_id ? <span className="text-[10px] font-bold text-rose-500">Wajib pilih santri</span> : null}
             </div>
 
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <Receipt size={12} /> Jumlah
+                <Receipt size={12} /> Jumlah <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 value={formData.amount}
                 onChange={(event) => setFormData((prev) => ({ ...prev, amount: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                className={`w-full rounded-xl border bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 ${!formData.amount || Number(formData.amount) <= 0 ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`}
                 placeholder="500000"
               />
+              {!formData.amount || Number(formData.amount) <= 0 ? <span className="text-[10px] font-bold text-rose-500">Wajib isi jumlah &gt;0</span> : null}
             </div>
 
             <div className="space-y-3">
@@ -147,14 +149,15 @@ function PaymentFormContent() {
             </div>
 
             <div className="space-y-3 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Keterangan</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Keterangan <span className="text-rose-500">*</span></label>
               <textarea
                 rows={4}
                 value={formData.description}
                 onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-medium text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                className={`w-full rounded-xl border bg-slate-50 px-6 py-4 font-medium text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 ${!formData.description.trim() ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`}
                 placeholder="Contoh: Pembayaran SPP Bulan April 2026"
               />
+              {!formData.description.trim() ? <span className="text-[10px] font-bold text-rose-500">Wajib diisi</span> : null}
             </div>
 
             <div className="space-y-3">
