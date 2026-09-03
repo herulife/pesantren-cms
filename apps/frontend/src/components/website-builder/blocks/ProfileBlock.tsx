@@ -2,16 +2,18 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Building2, CheckCircle2, GraduationCap, School } from 'lucide-react';
 import { HomeSection } from '@/lib/website-builder';
+import { SettingsMap } from '@/lib/api';
 import { getString } from './helpers';
 
-const highlights = [
-  { value: '2009', label: 'Tahun Berdiri', icon: <School size={18} /> },
-  { value: '6', label: 'Program Unggulan', icon: <BookOpen size={18} /> },
-  { value: '3', label: 'Kurikulum Inti', icon: <GraduationCap size={18} /> },
-  { value: '11', label: 'Fasilitas Utama', icon: <Building2 size={18} /> },
-];
-
-export default function ProfileBlock({ section }: { section: HomeSection }) {
+export default function ProfileBlock({ section, settings }: { section: HomeSection; settings?: SettingsMap }) {
+  const berdiri = settings?.berdiri?.trim() || '';
+  const berdiriValue = berdiri || '2009';
+  const highlights = [
+    { value: berdiriValue, label: 'Tahun Berdiri', icon: <School size={18} /> },
+    { value: '6', label: 'Program Unggulan', icon: <BookOpen size={18} /> },
+    { value: '3', label: 'Kurikulum Inti', icon: <GraduationCap size={18} /> },
+    { value: '11', label: 'Fasilitas Utama', icon: <Building2 size={18} /> },
+  ];
   const title = getString(
     section,
     'title',
@@ -20,7 +22,7 @@ export default function ProfileBlock({ section }: { section: HomeSection }) {
   const body = getString(
     section,
     'body',
-    "Pondok Pesantren Tahfidz Al-Qur'an Al-Maa berdiri sejak 2009 di Parung, Bogor. Pondok berikhtiar membina hafalan, adab, ilmu, dan kemandirian santri melalui ritme pendidikan terpadu."
+    `Pondok Pesantren Tahfidz Al-Qur'an Al-Maa berdiri sejak ${berdiriValue} di Parung, Bogor. Pondok berikhtiar membina hafalan, adab, ilmu, dan kemandirian santri melalui ritme pendidikan terpadu.`
   );
   const buttonLabel = getString(section, 'button_label', 'Lihat profil lengkap');
   const buttonUrl = getString(section, 'button_url', '/profil');
