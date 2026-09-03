@@ -138,7 +138,7 @@ export default function WebsiteShellRenderer({
             ? [{ label: schoolWebsite, url: isExternalHref(schoolWebsite) ? schoolWebsite : `https://${schoolWebsite.replace(/^\/+/, '')}` }]
             : []),
           ...(shell.footer.show_map_link
-            ? [{ label: 'Buka Maps', url: 'https://maps.google.com/?q=Pondok%20Pesantren%20Al-Maa%20Parung' }]
+            ? [{ label: 'Buka Maps', url: 'https://www.google.com/maps/place/Pondok+Pesantren+Tahfidzul+Qur\'an+Al-Maa/@-6.4225478,106.7226562,17z/data=!3m1!4b1!4m6!3m5!1s0x2e69e9aa915ed5e3:0x647bad5ad03e51aa!8m2!3d-6.4225478!4d106.7252311!16s%2Fg%2F11ghfn0150?entry=ttu' }]
             : []),
         ];
   const whatsappHref = shell.floating.whatsapp.url || `https://wa.me/${whatsappNumber}`;
@@ -380,7 +380,7 @@ export default function WebsiteShellRenderer({
                   Peta Lokasi Pondok
                 </p>
                 <a
-                  href="https://maps.google.com/?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor"
+                  href="https://www.google.com/maps/place/Pondok+Pesantren+Tahfidzul+Qur'an+Al-Maa/@-6.4225478,106.7226562,17z/data=!3m1!4b1!4m6!3m5!1s0x2e69e9aa915ed5e3:0x647bad5ad03e51aa!8m2!3d-6.4225478!4d106.7252311!16s%2Fg%2F11ghfn0150?entry=ttu"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-[11px] font-black uppercase tracking-wide text-white transition-colors hover:bg-sky-500"
@@ -390,7 +390,7 @@ export default function WebsiteShellRenderer({
               </div>
               <div className="mt-3 h-56 w-full overflow-hidden rounded-2xl bg-slate-100 md:h-64">
                 <iframe
-                  src="https://maps.google.com/maps?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                  src="https://www.google.com/maps?q=Pondok+Pesantren+Tahfidzul+Qur%27an+Al-Maa+Parung&t=&z=17&ie=UTF8&iwloc=&output=embed"
                   width="100%"
                   height="100%"
                   style={{ border: 0, pointerEvents: 'none' }}

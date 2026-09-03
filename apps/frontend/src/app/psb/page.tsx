@@ -112,7 +112,7 @@ export function PsbPageContent() {
                 <p className="mb-4 font-medium text-slate-700">{pageContent.location.address_text}</p>
                 <div className="relative h-56 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 shadow-sm">
                   <iframe
-                    src="https://maps.google.com/maps?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                    src="https://www.google.com/maps?q=Pondok+Pesantren+Tahfidzul+Qur%27an+Al-Maa+Parung&t=&z=17&ie=UTF8&iwloc=&output=embed"
                     width="100%"
                     height="100%"
                     style={{ border: 0, pointerEvents: mapInteractive ? 'auto' : 'none' }}
