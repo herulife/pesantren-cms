@@ -48,21 +48,30 @@ function SimpleInput({
   value,
   onChange,
   placeholder = '',
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  required?: boolean;
 }) {
+  const invalid = required && value.trim().length === 0;
   return (
     <label className="space-y-2">
-      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+        {label}
+        {required ? <span className="ml-1 text-rose-500">*</span> : null}
+      </span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800"
+        className={`w-full rounded-xl border bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 ${
+          invalid ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
+        }`}
       />
+      {invalid ? <span className="text-[10px] font-bold text-rose-500">Wajib diisi</span> : null}
     </label>
   );
 }
@@ -73,23 +82,32 @@ function SimpleTextarea({
   onChange,
   rows = 4,
   placeholder = '',
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   rows?: number;
   placeholder?: string;
+  required?: boolean;
 }) {
+  const invalid = required && value.trim().length === 0;
   return (
     <label className="space-y-2">
-      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+        {label}
+        {required ? <span className="ml-1 text-rose-500">*</span> : null}
+      </span>
       <textarea
         rows={rows}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800"
+        className={`w-full rounded-xl border bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 ${
+          invalid ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
+        }`}
       />
+      {invalid ? <span className="text-[10px] font-bold text-rose-500">Wajib diisi</span> : null}
     </label>
   );
 }
@@ -465,6 +483,7 @@ function ImageCardListEditor({
               <div className="space-y-4">
                 <SimpleInput
                   label="Judul"
+                  required
                   value={item.title}
                   onChange={(value) => onChange(replaceArrayItem(items, index, { ...item, title: value }))}
                 />
@@ -816,6 +835,7 @@ function ProgramEditor({
           />
           <SimpleTextarea
             label="Judul"
+            required
             value={page.featured.title}
             rows={3}
             onChange={(value) => onChange({ ...page, featured: { ...page.featured, title: value } })}
@@ -847,6 +867,7 @@ function ProgramEditor({
           />
           <SimpleTextarea
             label="Judul"
+            required
             value={page.curriculum.title}
             rows={3}
             onChange={(value) => onChange({ ...page, curriculum: { ...page.curriculum, title: value } })}

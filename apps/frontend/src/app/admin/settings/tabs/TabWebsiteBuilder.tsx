@@ -1306,7 +1306,26 @@ export default function TabWebsiteBuilder() {
     await updateSettingsBatch(entries.map(([key, value]) => ({ key, value })));
   }, []);
 
+  const getProgramValidationError = (): string | null => {
+    const program = pagesDraft.program;
+    if (program.featured.title.trim().length === 0) {
+      return 'Judul Program Unggulan (Program Inti) wajib diisi.';
+    }
+    for (let i = 0; i < program.featured.cards.length; i += 1) {
+      const card = program.featured.cards[i];
+      if (card.title.trim().length === 0) {
+        return `Judul Kartu Program Inti (Kartu ${i + 1}) wajib diisi.`;
+      }
+    }
+    return null;
+  };
+
   const saveDraft = async () => {
+    const programError = getProgramValidationError();
+    if (programError) {
+      showToast('error', programError);
+      return;
+    }
     setIsSavingDraft(true);
     try {
       const nextHome = { ...homeDraft, updated_at: new Date().toISOString() };
@@ -1342,6 +1361,11 @@ export default function TabWebsiteBuilder() {
   };
 
   const publishDraft = async (enableAfterPublish = false) => {
+    const programError = getProgramValidationError();
+    if (programError) {
+      showToast('error', programError);
+      return;
+    }
     setIsPublishing(true);
     try {
       const nextHome = { ...homeDraft, updated_at: new Date().toISOString() };
