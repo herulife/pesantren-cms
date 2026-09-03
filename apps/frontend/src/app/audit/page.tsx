@@ -1,10 +1,40 @@
 'use client';
 
 import PublicLayout from '@/components/PublicLayout';
-import { ShieldCheck, AlertTriangle, FileSearch, Layers, Bug, Lock, Palette, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, FileSearch, Layers, Bug, Lock, Palette, CheckCircle2, XCircle, Info, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
+import React, { useState } from 'react';
 
 export default function AuditPage() {
+  const [copied, setCopied] = useState(false);
+  const auditText = `# Audit Modul PSB — codex/pesantren-cms-import-2026-05-04 (Verdict: Minor)
+Scope: psb/handler, repository, portal/biodata, documents, payment, layout, lib/api, defaults
+
+1. Duplication Blocking — isFilled 4× (portal/biodata:64, layout:11), 14-field list diulang, fetch N+1 getMyPSBRegistration, validasi divergen frontend 14 field vs backend hanya full_name, upload URL ganda + maps duplikasi
+Fix: lib/psb/completeness.ts single source + PortalRegistrationContext
+
+2. Inconsistency Minor — handler.go:86 gender low==g dead branch, ParentName vs father dual repository.go:19, mount /psb vs /psb/me order sensitif, response shape APIResponse vs errors, scanRegistration time.Parse DateTime gagal RFC3339
+
+3. Dead code Minor — IRepository duplikat handler.go:488, currentUserID wrapper, portal/layout 609 LOC monolith, payment 7 useState banner duplikat
+
+Action: [Blocking] ekstrak isFilled, [Blocking] Provider single-fetch, [Minor] samakan validasi, hapus duplikat, normalisasi route, unifikasi error, fix scanRegistration, sentralisasi ADDRESS/MAP
+`;
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(auditText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = auditText;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
   return (
     <PublicLayout>
       {/* Hero */}
@@ -23,6 +53,13 @@ export default function AuditPage() {
             <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black text-white">Base: origin/main</span>
             <span className="rounded-full bg-amber-400 px-4 py-2 text-xs font-black text-slate-900">Verdict: Minor</span>
           </div>
+          <button
+            onClick={handleCopy}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-black text-slate-900 shadow transition hover:bg-sky-50"
+          >
+            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            {copied ? 'Tersalin!' : 'Copy Audit'}
+          </button>
         </div>
       </section>
 
@@ -155,6 +192,13 @@ export default function AuditPage() {
             <Link href="/psb" className="rounded-full bg-sky-600 px-6 py-3 text-sm font-black text-white">Kembali ke PSB</Link>
             <Link href="/portal/biodata" className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700">Buka Daftar Online</Link>
             <Link href="/" className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700">Beranda</Link>
+            <button
+              onClick={handleCopy}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              {copied ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
+              {copied ? 'Tersalin!' : 'Copy Audit'}
+            </button>
           </div>
           <p className="text-xs leading-6 text-slate-400">Generated {new Date().toISOString().slice(0,10)} · skill audit deep-dive code-quality · untuk modul PSB saja. Deep-dive security/UI menyusul — halaman ini akan diperbarui otomatis.</p>
         </div>
