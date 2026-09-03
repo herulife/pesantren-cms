@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import Image from 'next/image';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import PublicLayout from '@/components/PublicLayout';
 import { useWebsiteBuilderPageContent } from '@/components/PublicSiteContext';
@@ -18,6 +17,7 @@ import {
 
 export function PsbPageContent() {
   const pageContent = useWebsiteBuilderPageContent('psb', defaultWebsiteBuilderPages.psb);
+  const [mapInteractive, setMapInteractive] = useState(false);
 
   return (
     <>
@@ -110,23 +110,30 @@ export function PsbPageContent() {
                   <MapPin className="text-sky-600" /> {pageContent.location.title}
                 </h2>
                 <p className="mb-4 font-medium text-slate-700">{pageContent.location.address_text}</p>
-                <div className="relative h-52 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 shadow-sm">
-                  <Image
-                    src={pageContent.location.image_url}
-                    alt={pageContent.location.title}
-                    fill
-                    unoptimized
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover"
+                <div className="relative h-56 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 shadow-sm">
+                  <iframe
+                    src="https://maps.google.com/maps?q=Jl.%20H.%20Mawi%20Gg.%20Omega%20Kp.%20Jati%20Waru%20Parung%20Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, pointerEvents: mapInteractive ? 'auto' : 'none' }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title={`Peta ${pageContent.location.title}`}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-200">
-                      Lokasi Pondok
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-slate-200">{pageContent.location.subtitle}</p>
-                  </div>
+                  {!mapInteractive ? (
+                    <button
+                      type="button"
+                      onClick={() => setMapInteractive(true)}
+                      className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-slate-50/40 backdrop-blur-[1px]"
+                      aria-label="Aktifkan peta"
+                    >
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wide text-slate-700 shadow-lg ring-1 ring-slate-200 transition hover:bg-sky-600 hover:text-white">
+                        <MapPin size={15} /> Ketuk untuk melihat peta
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{pageContent.location.subtitle}</p>
               </div>
             </div>
           </div>

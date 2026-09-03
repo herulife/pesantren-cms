@@ -400,7 +400,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
       ],
     },
     location: {
-      eyebrow: 'Lokasi Pendaftaran',
+      eyebrow: 'Pendaftaran',
       title: 'Datang atau hubungi panitia untuk arahan berikutnya',
       subtitle:
         'Hubungi panitia pendaftaran untuk petunjuk kunjungan, tanya program, dan memastikan alur pendaftaran terbaru.',
