@@ -421,6 +421,9 @@ export default function LandingPage() {
     );
   }
 
+  const schoolPhone =
+    settings.school_phone || '0857 7694 8779';
+
   return (
     <PublicLayout>
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#f4fbff_0%,#e6f4ff_100%)]">
@@ -632,11 +635,11 @@ export default function LandingPage() {
                   Parung, Bogor 16330
                 </span>
                 <a
-                  href="tel:081382410582"
+                  href={`tel:${schoolPhone.replace(/[^\d+]/g, '')}`}
                   className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-sky-200 hover:text-sky-700 md:px-5"
                 >
                   <PhoneCall size={16} className="text-sky-500" />
-                  0857 7694 8779
+                  {schoolPhone}
                 </a>
               </div>
             </motion.div>

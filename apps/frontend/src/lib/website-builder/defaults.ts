@@ -57,7 +57,7 @@ export const defaultWebsiteBuilderShell: WebsiteBuilderShell = {
       position: 'bottom-right',
       mobile_offset: 'default',
       label: 'WhatsApp',
-      url: 'https://wa.me/6285776948779',
+      url: 'https://wa.me/6287784423282',
     },
     back_to_top: {
       enabled: true,
@@ -413,7 +413,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
       title: 'Siap bergabung di Al-Maa?',
       subtitle:
         'Hubungi panitia PSB untuk pertanyaan seputar syarat, jadwal, biaya, dan kesiapan pendaftaran santri baru.',
-      primary_button: { label: 'Hubungi Panitia PSB', url: 'https://wa.me/6285776948779', style: 'primary' },
+      primary_button: { label: 'Hubungi Panitia PSB', url: 'https://wa.me/6287784423282', style: 'primary' },
       secondary_button: { label: 'Lihat halaman kontak', url: '/kontak', style: 'secondary' },
     },
   },

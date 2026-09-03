@@ -162,7 +162,9 @@ export default function BuilderPreviewHomePage() {
   const schoolPhone = settings.school_phone || '0814 1324 1748';
   const schoolEmail = settings.school_email || '';
   const schoolWebsite = settings.school_website || '';
-  const whatsappNumber = schoolPhone.replace(/\D/g, '') || '6281413241748';
+  const adminWhatsAppRaw = settings.whatsapp_admin_numbers || '';
+  const adminWhatsApp = (adminWhatsAppRaw.split('\n')[0] || '').replace(/\D/g, '');
+  const whatsappNumber = adminWhatsApp || '6285776948779';
   const previewMode: BuilderPreviewMode = pathname.startsWith('/builder-compare') ? 'compare' : 'draft';
   const socialLinks = [
     { href: settings.social_instagram || 'https://instagram.com/yayasanalmaa', label: 'Instagram', icon: <Camera size={18} /> },
