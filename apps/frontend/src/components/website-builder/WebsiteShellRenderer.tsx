@@ -141,10 +141,10 @@ export default function WebsiteShellRenderer({
             ? [{ label: 'Buka Maps', url: 'https://www.google.com/maps/place/Pondok+Pesantren+Tahfidzul+Qur\'an+Al-Maa/@-6.4225478,106.7226562,17z/data=!3m1!4b1!4m6!3m5!1s0x2e69e9aa915ed5e3:0x647bad5ad03e51aa!8m2!3d-6.4225478!4d106.7252311!16s%2Fg%2F11ghfn0150?entry=ttu' }]
             : []),
         ];
-  const whatsappHref = shell.floating.whatsapp.url || `https://wa.me/${whatsappNumber}`;
+  const whatsappHref = whatsappNumber ? `https://wa.me/${whatsappNumber}` : shell.floating.whatsapp.url;
   const showNavbar = !hideNavbar && shell.navbar.enabled;
   const showFooter = shell.footer.enabled;
-  const showWhatsApp = shell.floating.whatsapp.enabled;
+  const showWhatsApp = !!whatsappNumber || shell.floating.whatsapp.enabled;
   const showBackButton = shell.floating.back_to_top.enabled && showBackToTop;
 
   return (
