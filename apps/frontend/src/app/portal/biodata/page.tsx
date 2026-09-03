@@ -291,7 +291,7 @@ export default function BiodataPage() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   {card.items.map((item) => (
                     <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-700">{item.label}</p>
                       <p className={`mt-2 text-sm font-bold leading-6 ${item.value === '-' ? 'text-slate-400' : 'text-slate-800'}`}>
                         {item.value}
                       </p>
@@ -322,7 +322,7 @@ export default function BiodataPage() {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Nama Lengkap</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Nama Lengkap</label>
               <input
                 type="text"
                 value={formData.full_name}
@@ -333,7 +333,7 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Nama Panggilan</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Nama Panggilan</label>
               <input
                 type="text"
                 value={formData.nickname}
@@ -344,7 +344,7 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Jenis Kelamin</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Jenis Kelamin</label>
               <select
                 value={formData.gender}
                 onChange={(e) => handleChange('gender', e.target.value)}
@@ -358,7 +358,7 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">NIK <span className="text-rose-500">*</span></label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">NIK <span className="text-rose-500">*</span></label>
               <input
                 type="text"
                 value={formData.nik}
@@ -374,7 +374,7 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Tempat Lahir</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Tempat Lahir</label>
               <input
                 type="text"
                 value={formData.birth_place}
@@ -385,7 +385,7 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Tanggal Lahir</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Tanggal Lahir</label>
               <input
                 type="date"
                 value={formData.birth_date}
@@ -396,7 +396,7 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Asal Sekolah</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Asal Sekolah</label>
               <input
                 type="text"
                 value={formData.school_origin}
@@ -407,7 +407,7 @@ export default function BiodataPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Pilihan Program</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Pilihan Program</label>
               <input
                 type="text"
                 value={formData.program_choice}
@@ -419,7 +419,7 @@ export default function BiodataPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Alamat Lengkap</label>
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Alamat Lengkap</label>
               <textarea
                 rows={3}
                 value={formData.address}

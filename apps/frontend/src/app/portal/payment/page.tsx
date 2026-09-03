@@ -53,19 +53,19 @@ const paymentStatusMeta: Record<PaymentStatus, { label: string; title: string; d
     label: 'Belum Bayar',
     title: 'Upload Bukti Pembayaran Pendaftaran',
     description: 'Lengkapi nominal, tanggal transfer, lalu unggah bukti pembayaran agar panitia bisa melakukan verifikasi.',
-    className: 'border-amber-100 bg-amber-50 text-amber-700',
+    className: 'border-slate-200 bg-slate-50 text-slate-700',
   },
   pending: {
     label: 'Menunggu Verifikasi',
     title: 'Bukti Pembayaran Sedang Dicek',
     description: 'Bukti pembayaran sudah masuk. Panitia akan memeriksa nominal dan bukti transfer yang kamu kirim.',
-    className: 'border-sky-100 bg-sky-50 text-sky-700',
+    className: 'border-amber-200 bg-amber-50 text-amber-800',
   },
   paid: {
     label: 'Lunas',
     title: 'Pembayaran Sudah Diverifikasi',
     description: 'Pembayaran pendaftaran sudah dinyatakan lunas. Kamu bisa memantau status pendaftaran dari dashboard portal.',
-    className: 'border-sky-100 bg-sky-50 text-sky-700',
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   },
   rejected: {
     label: 'Perlu Upload Ulang',

@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   FileText,
   MapPin,
+  MessageCircle,
   Sparkles,
 } from 'lucide-react';
 
@@ -140,7 +141,7 @@ export function PsbPageContent() {
         </div>
       </section>
 
-      <section className="border-t border-sky-800 bg-gradient-to-br from-sky-900 to-sky-900 py-24">
+      <section className="border-t border-sky-800 bg-gradient-to-br from-sky-800 to-sky-950 py-24">
         <div className="container mx-auto max-w-4xl px-4 text-center">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-200">
             {pageContent.cta.eyebrow}
@@ -160,20 +161,21 @@ export function PsbPageContent() {
                   ? pageContent.cta.primary_button.url
                   : '/portal/biodata'
               }
-              className="flex items-center gap-2 rounded-full bg-white px-10 py-5 text-lg font-black text-sky-900 shadow-xl shadow-white/10 transition-all hover:-translate-y-1 hover:bg-sky-50"
+              className="flex items-center gap-2 rounded-full bg-white px-8 py-4 text-base font-black text-sky-900 shadow-xl shadow-white/10 transition-all hover:-translate-y-1 hover:bg-sky-50"
             >
               {pageContent.cta.primary_button.label &&
               !pageContent.cta.primary_button.label.toLowerCase().includes('panitia')
                 ? pageContent.cta.primary_button.label
                 : 'Daftar Online Sekarang'}{' '}
-              <ArrowRight />
+              <ArrowRight size={18} />
             </Link>
             <a
               href={pageContent.cta.secondary_button.url || 'https://wa.me/6287784423282'}
               target={pageContent.cta.secondary_button.url?.includes('wa.me') ? '_blank' : undefined}
               rel={pageContent.cta.secondary_button.url?.includes('wa.me') ? 'noopener noreferrer' : undefined}
-              className="rounded-full border border-white/20 bg-white/10 px-10 py-5 text-lg font-black text-white backdrop-blur-md transition-all hover:bg-white/20"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-white bg-transparent px-7 py-4 text-base font-black text-white transition-all hover:bg-white hover:text-sky-900"
             >
+              <MessageCircle size={18} />
               {pageContent.cta.secondary_button.label || 'Hubungi Panitia'}
             </a>
           </div>
