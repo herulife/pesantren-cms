@@ -54,7 +54,7 @@ func (r *Repository) FindAllCampaigns(activeOnly bool, search string) ([]Campaig
 	}
 	query += " ORDER BY created_at DESC"
 
-	rows, err := r.db.Query(query)
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,15 +63,16 @@ func (r *Repository) FindAllCampaigns(activeOnly bool, search string) ([]Campaig
 	var list []Campaign
 	for rows.Next() {
 		var c Campaign
-		var endDate, createdAt, updatedAt string
+		var endDate sql.NullString
+		var createdAt, updatedAt string
 		err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.TargetAmount, &c.CollectedAmount, &c.ImageURL, &c.IsActive, &endDate, &createdAt, &updatedAt)
 		if err != nil {
 			return nil, err
 		}
 		c.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
 		c.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-		if endDate != "" {
-			t, _ := time.Parse("2006-01-02 15:04:05", endDate)
+		if endDate.Valid && endDate.String != "" {
+			t, _ := time.Parse("2006-01-02 15:04:05", endDate.String)
 			c.EndDate = &t
 		}
 		list = append(list, c)
@@ -110,14 +111,24 @@ func (r *Repository) FindAllDonations(campaignID int, status, search string) ([]
 	var list []Donation
 	for rows.Next() {
 		var d Donation
-		var verifiedAt, createdAt string
-		err := rows.Scan(&d.ID, &d.CampaignID, &d.CampaignTitle, &d.DonorName, &d.DonorPhone, &d.Amount, &d.PaymentMethod, &d.ProofURL, &d.Status, &verifiedAt, &d.VerifiedBy, &createdAt)
+		var campaignTitle sql.NullString
+		var verifiedAt sql.NullString
+		var createdAt string
+		var verifiedBy sql.NullInt64
+		err := rows.Scan(&d.ID, &d.CampaignID, &campaignTitle, &d.DonorName, &d.DonorPhone, &d.Amount, &d.PaymentMethod, &d.ProofURL, &d.Status, &verifiedAt, &verifiedBy, &createdAt)
 		if err != nil {
 			return nil, err
 		}
+		if campaignTitle.Valid {
+			d.CampaignTitle = campaignTitle.String
+		}
+		if verifiedBy.Valid {
+			v := int(verifiedBy.Int64)
+			d.VerifiedBy = &v
+		}
 		d.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		if verifiedAt != "" {
-			t, _ := time.Parse("2006-01-02 15:04:05", verifiedAt)
+		if verifiedAt.Valid && verifiedAt.String != "" {
+			t, _ := time.Parse("2006-01-02 15:04:05", verifiedAt.String)
 			d.VerifiedAt = &t
 		}
 		list = append(list, d)
@@ -133,14 +144,24 @@ func (r *Repository) FindDonationByID(id int) (*Donation, error) {
 		WHERE d.id = ?`
 
 	var d Donation
-	var verifiedAt, createdAt string
-	err := r.db.QueryRow(query, id).Scan(&d.ID, &d.CampaignID, &d.CampaignTitle, &d.DonorName, &d.DonorPhone, &d.Amount, &d.PaymentMethod, &d.ProofURL, &d.Status, &verifiedAt, &d.VerifiedBy, &createdAt)
+	var campaignTitle sql.NullString
+	var verifiedAt sql.NullString
+	var createdAt string
+	var verifiedBy sql.NullInt64
+	err := r.db.QueryRow(query, id).Scan(&d.ID, &d.CampaignID, &campaignTitle, &d.DonorName, &d.DonorPhone, &d.Amount, &d.PaymentMethod, &d.ProofURL, &d.Status, &verifiedAt, &verifiedBy, &createdAt)
 	if err != nil {
 		return nil, err
 	}
+	if campaignTitle.Valid {
+		d.CampaignTitle = campaignTitle.String
+	}
+	if verifiedBy.Valid {
+		v := int(verifiedBy.Int64)
+		d.VerifiedBy = &v
+	}
 	d.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	if verifiedAt != "" {
-		t, _ := time.Parse("2006-01-02 15:04:05", verifiedAt)
+	if verifiedAt.Valid && verifiedAt.String != "" {
+		t, _ := time.Parse("2006-01-02 15:04:05", verifiedAt.String)
 		d.VerifiedAt = &t
 	}
 	return &d, nil

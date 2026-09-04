@@ -63,9 +63,11 @@ export default function DonationsPage() {
               <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
                 Setiap bantuanmu ikut menghadirkan ruang belajar yang lebih nyaman, layak, dan
                 penuh semangat bagi santri Al-Maa Parung Bogor. Ini bukan sekadar renovasi kecil,
-                tapi bagian dari amal jariyah yang terus mengalir. Setelah transfer, silakan kirim bukti ke nomor WhatsApp konfirmasi yang tersedia. Setelah transfer, silakan kirim
-                bukti ke nomor WhatsApp konfirmasi yang tersedia.
+                tapi bagian dari amal jariyah yang terus mengalir. Setelah transfer, silakan kirim bukti ke nomor WhatsApp konfirmasi yang tersedia.
               </p>
+              <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-sm">
+                <strong className="font-black">Info Bootstrap:</strong> Donasi via <span className="font-bold">{featuredOpenDonation.bankName} {featuredOpenDonation.accountNumber}</span> a.n. {featuredOpenDonation.accountHolder} — klik <span className="badge bg-primary text-white px-2 py-1 rounded text-xs font-black">WA Konfirmasi</span> setelah transfer. <span className="badge bg-success text-white px-2 py-1 rounded text-xs font-black">Amanah</span> <span className="badge bg-info text-white px-2 py-1 rounded text-xs font-black">Transparan</span>
+              </div>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href={`/donations/${featuredOpenDonation.slug}`}
@@ -103,6 +105,18 @@ export default function DonationsPage() {
                     Rp {featuredTargetAmount.toLocaleString('id-ID')}
                   </p>
                 </div>
+              </div>
+              <div className="mt-4">
+                <div className="flex justify-between text-xs font-black uppercase tracking-wide text-slate-600">
+                  <span>Terkumpul Rp 0</span>
+                  <span>Target Rp {featuredTargetAmount.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="mt-2 h-3 w-full rounded-full bg-slate-200 border border-slate-100">
+                  <div className="h-3 rounded-full bg-blue-600" style={{ width: '5%' }}></div>
+                </div>
+                <p className="mt-2 text-xs font-bold text-slate-500">
+                  <span className="inline-flex items-center rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">0% terkumpul</span> — progress bootstrap
+                </p>
               </div>
               <p className="mt-4 text-sm leading-7 text-slate-600">
                 {featuredOpenDonation.summary} Konfirmasi dan arahan transfer sementara diarahkan

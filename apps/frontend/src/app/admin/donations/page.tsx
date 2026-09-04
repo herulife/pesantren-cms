@@ -139,6 +139,10 @@ export default function DonationsAdminPage() {
         </Link>
       </div>
 
+      <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-sm">
+        <strong className="font-black">AdminLTE Info:</strong> Kelola kampanye donasi layaknya <span className="inline-flex items-center rounded bg-blue-600 px-2 py-0.5 text-xs font-black text-white">Campaign</span> &amp; <span className="inline-flex items-center rounded bg-emerald-600 px-2 py-0.5 text-xs font-black text-white">Transaksi</span> — <span className="font-bold">Buat Kampanye</span> untuk wakaf baru, <span className="font-bold">Verifikasi</span> untuk pending. <span className="badge bg-primary">Bootstrap</span> <span className="badge bg-info">AdminLTE</span>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-sky-900/10 transition-all duration-500">
           <div className="flex justify-between items-start mb-6">

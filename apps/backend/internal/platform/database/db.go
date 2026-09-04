@@ -490,6 +490,34 @@ func createTables() {
 		UNIQUE(student_id, semester, academic_year)
 	);
 
+	CREATE TABLE IF NOT EXISTS donation_campaigns (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		description TEXT DEFAULT '',
+		target_amount REAL DEFAULT 0,
+		collected_amount REAL DEFAULT 0,
+		image_url TEXT DEFAULT '',
+		is_active INTEGER DEFAULT 1,
+		end_date DATETIME,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS donations (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		campaign_id INTEGER,
+		donor_name TEXT NOT NULL,
+		donor_phone TEXT DEFAULT '',
+		amount REAL NOT NULL,
+		payment_method TEXT DEFAULT 'transfer',
+		proof_url TEXT DEFAULT '',
+		status TEXT DEFAULT 'pending',
+		verified_at DATETIME,
+		verified_by INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY(campaign_id) REFERENCES donation_campaigns(id) ON DELETE SET NULL
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_santri_nis ON santri(nis);
 	CREATE INDEX IF NOT EXISTS idx_santri_class ON santri(class);
 	CREATE INDEX IF NOT EXISTS idx_santri_status ON santri(status);
