@@ -42,6 +42,10 @@ export default function DonationsPage() {
   const featuredCampaign = findFeaturedDonationCampaign(campaigns);
   const featuredTargetAmount = featuredCampaign?.target_amount ?? featuredOpenDonation.target;
   const visibleCampaigns = campaigns.filter((campaign) => campaign.id !== featuredCampaign?.id);
+  // Menu-driven display — pakai DB campaign bila ada, fallback ke hardcode
+  const displayTitle = featuredCampaign?.title ?? featuredOpenDonation.title;
+  const displayDescription = featuredCampaign?.description || featuredOpenDonation.summary;
+  const displayDetailHref = featuredCampaign ? buildCampaignDetailHref(featuredCampaign) : `/donations/${featuredOpenDonation.slug}`;
 
   return (
     <PublicLayout>
@@ -58,19 +62,17 @@ export default function DonationsPage() {
                 Open Donasi Baru
               </div>
               <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight text-slate-900 md:text-6xl">
-                Wakaf cat tembok untuk ruang kelas para penghafal Al-Quran.
+                {displayTitle}
               </h1>
               <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
-                Setiap bantuanmu ikut menghadirkan ruang belajar yang lebih nyaman, layak, dan
-                penuh semangat bagi santri Al-Maa Parung Bogor. Ini bukan sekadar renovasi kecil,
-                tapi bagian dari amal jariyah yang terus mengalir. Setelah transfer, silakan kirim bukti ke nomor WhatsApp konfirmasi yang tersedia.
+                {displayDescription}
               </p>
               <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-sm">
                 <strong className="font-black">Info Bootstrap:</strong> Donasi via <span className="font-bold">{featuredOpenDonation.bankName} {featuredOpenDonation.accountNumber}</span> a.n. {featuredOpenDonation.accountHolder} — klik <span className="badge bg-primary text-white px-2 py-1 rounded text-xs font-black">WA Konfirmasi</span> setelah transfer. <span className="badge bg-success text-white px-2 py-1 rounded text-xs font-black">Amanah</span> <span className="badge bg-info text-white px-2 py-1 rounded text-xs font-black">Transparan</span>
               </div>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
-                  href={`/donations/${featuredOpenDonation.slug}`}
+                  href={displayDetailHref}
                   className="inline-flex items-center gap-2 rounded-[1rem] bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
                 >
                   Lihat Halaman Donasi <ArrowRight size={16} />
@@ -168,8 +170,8 @@ export default function DonationsPage() {
           <div className="overflow-hidden rounded-[2rem] border border-sky-100 bg-white shadow-[0_28px_80px_-44px_rgba(56,189,248,0.4)]">
             <div className="relative h-[420px] bg-slate-100">
               <Image
-                src={featuredOpenDonation.posterImage}
-                alt={featuredOpenDonation.title}
+                src={featuredCampaign?.image_url ? resolveDisplayImageUrl(featuredCampaign.image_url) : featuredOpenDonation.posterImage}
+                alt={displayTitle}
                 fill
                 unoptimized
                 className="object-cover"
@@ -214,7 +216,7 @@ export default function DonationsPage() {
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                href={`/donations/${featuredOpenDonation.slug}`}
+                href={displayDetailHref}
                 className="inline-flex items-center gap-2 rounded-[1rem] bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
               >
                 Buka Detail Donasi <ArrowRight size={16} />
