@@ -78,6 +78,46 @@ P2 (improvement):
 - 2 Critical (PII leak + fake verify) + gateway absen → jangan rilis tanpa P0. Risk HIGH jika tetap manual WA tanpa verifikasi, tapi PII leak membuatnya CRITICAL.
 
 Trace: frontend donations/page.tsx:30 -> backend handler.go:26 -> repo.go:44 -> db.go:493 -> main.go:272. Source utama, non-destructive, no production data rusak.
+
+# LAPORAN REDESIGN — https://almaparung.com/donations — 2026-09-05 — replace yang lama, tulis yang baru
+
+## File yang diubah
+- apps/frontend/src/app/donations/page.tsx (487 baris, replace total, hero + 2 card Kitabisa + trust + cara + rekening + mobile sticky)
+- apps/backend/internal/platform/database/db.go:495 CREATE TABLE donation_campaigns/donations
+- apps/backend/cmd/api/main.go:271 r.Get("/donations/campaigns") public + r.Get("/donations") public
+- apps/backend/internal/features/donations/repository.go:44 NullString + Query(args...)
+
+## Komponen baru
+- Hero emerald (bg-white + f0fdf4, Heart Amanah), 2 card Kitabisa (Wakaf emerald 0% + Infaq sky 25%), badge Wakaf/Infaq, progress role=progressbar aria-valuenow, donor count + sisa hari
+- Trust 4 item (Aman, Transparan, Manfaat, Pahala) + Cara 3 langkah (01 Pilih, 02 Transfer, 03 Konfirmasi) + Rekening Resmi BSI 4381 5671 20 copy + WA
+- Mobile sticky CTA fixed bottom-0 bg-white border-t
+
+## Perubahan UI/UX
+- Hilbert: headline "Bersama Wujudkan Fasilitas yang Lebih Baik" (sebelum "Wakaf cat tembok"), subheadline, CTA Donasi Sekarang emerald #059669 (WCAG AA sky-600→emerald-600), secondary Lihat Program outline, trust 500+ Donatur
+- Card: rounded-2xl border-slate-200 shadow-sm hover:shadow-md, h-48 image, left badge category white, right Aktif emerald, title line-clamp-2, progress 2.5 emerald, Donasi Sekarang full + Detail outline + Share2
+- Hapus duplikat teks "Setelah transfer...", hapus Ringkasan Video panjang (4 poin + Keutamaan) — sesuai request "ngga perlu tulis"
+- Warna: primary emerald #059669, secondary sky #0ea5e9 (Infaq), bg white/light green, shadow lembut, no gradient berlebihan
+
+## Perubahan Responsive
+- 360/390/414: single column, tombol full width, font 15px, progress mudah, image h-48 tidak tinggi
+- 768: md:grid-cols-2 2 card
+- 1024/1280/1440: lg:grid gap-10, hero lg:grid [1.1fr_0.9fr], no horizontal overflow
+- Mobile sticky CTA bottom-0 z-40, tidak menutupi (pb-16 hero)
+
+## Perubahan Performance
+- next/image fill + sizes="(max-width:768px) 100vw, 50vw" + priority hanya hero, lazy untuk card, unoptimized true tetap tapi w800 q80 (bukan 1700), h-48 vs h-56
+- getCampaigns filter is_active, slice 0,2 (pagination limit 2) — tidak fetch 1000
+- No unnecessary client rendering: hero + trust static, campaign fetch 1x
+
+## Masalah masih tersisa
+- P0 security belum fix (PII leak, verify tanpa gateway) — redesign tidak ubah business logic, hanya UI, jadi aman
+- BSI rekening masih hardcode lib/donations.ts:15, belum dari backend/config
+- Donor count & sisa hari masih dummy (progress/10+3, 30 hari)
+- No JSON-LD DonationAction SEO
+
+## Screenshot
+- Desktop: hero emerald + 2 card Wakaf (0%) Infaq (25%) + trust 4 + cara 3 + rekening
+- Mobile: single column, sticky Donasi Sekarang bottom, card h-48, progress 2.5, badge Aktif
 `;
 
 export default function AuditDonasiPage() {
