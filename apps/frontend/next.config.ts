@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'via.placeholder.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'plus.unsplash.com' },
+      { protocol: 'https', hostname: 'almaparung.com' },
+      { protocol: 'https', hostname: 'www.almaparung.com' },
       { protocol: 'http', hostname: 'localhost' },
     ],
   },
