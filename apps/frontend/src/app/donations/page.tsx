@@ -310,34 +310,7 @@ export default function DonationsPage() {
               </div>
             </div>
 
-            {/* Ringkasan estetik */}
             <div className="space-y-4">
-              <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50/70 p-5">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sky-700">Ringkasan Video</p>
-                <p className="mt-2 text-sm font-bold leading-6 text-slate-900">Ajakan wakaf cat tembok — dari keprihatinan menjadi harapan.</p>
-                <p className="mt-2 text-sm leading-7 text-slate-600">Di menit awal, kamera menyorot dinding ruang kelas yang catnya memudar, ada lembab di sudut, dan cahaya yang kurang merata. Pengurus menjelaskan bahwa 60 santri (30 ikhwan + 30 akhwat, jenjang SMP–SMK) setiap hari mengulang hafalan di ruang itu — tempat ayat dihafal, disetorkan, dan dijaga.</p>
-              </div>
-              <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-sm font-black text-slate-900">Deskripsi panjang — apa yang disampaikan di video:</p>
-                <div className="mt-3 space-y-3 text-sm leading-7 text-slate-600">
-                  <p>
-                    <span className="font-bold text-slate-800">1) Kondisi saat ini:</span> cat tembok kusam dan mengelupas di beberapa sisi, membuat ruang terasa pengap dan kurang cerah. Santri tetap semangat murojaah, namun suasana belajar yang lebih bersih akan sangat membantu konsentrasi dan kekhusyukan.
-                  </p>
-                  <p>
-                    <span className="font-bold text-slate-800">2) Rencana wakaf:</span> penggalangan <span className="font-bold text-slate-800">Rp 15.000.000</span> untuk pengecatan menyeluruh — meliputi cat interior berkualitas, kuas/roller, dempul dan amplas untuk dinding lembab, serta upah tukang agar hasil rapi dan tahan lama. Target pengerjaan dibuat menyeluruh, bukan tambal sulam, agar tidak cepat rusak.
-                  </p>
-                  <p>
-                    <span className="font-bold text-slate-800">3) Dampak:</span> ruang yang cerah membuat santri lebih betah berlama-lama mengulang hafalan, belajar diniyah, dan beradab di kelas. Setiap huruf yang dihafal di ruang itu insyaAllah menjadi aliran pahala bagi muhsinin — amal jariyah yang terus hidup bersama ilmu yang dijaga santri.
-                  </p>
-                  <p>
-                    <span className="font-bold text-slate-800">4) Transparansi:</span> donasi dikelola pondok dan difokuskan hanya untuk cat tembok ruang kelas. Setelah transfer, donatur diminta mengirim bukti ke WA konfirmasi <span className="font-bold text-sky-700">0819 3250 6078</span> agar pencatatan rapi dan doa bisa disampaikan langsung oleh pengurus dan santri.
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50/80 p-5">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sky-700">Keutamaan</p>
-                <p className="mt-2 text-sm leading-7 text-slate-700">“Jika manusia meninggal, terputus amalnya kecuali tiga: sedekah jariyah, ilmu yang bermanfaat, dan anak shalih yang mendoakannya.” — wakaf cat tembok ini menggabungkan ketiganya: sedekah untuk tempat ilmu, ilmu Al-Quran yang dijaga santri, dan doa santri untuk muhsinin.</p>
-              </div>
               <div className="flex flex-wrap gap-3">
                 <a href={featuredOpenDonation.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-sky-600/20 hover:bg-sky-700">Donasi via WA</a>
                 <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-red-200 hover:text-red-600">Tonton di YouTube</a>
@@ -403,9 +376,9 @@ export default function DonationsPage() {
                 />
               ))}
             </div>
-          ) : visibleCampaigns.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {visibleCampaigns.map((campaign) => {
+          ) : campaigns.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {campaigns.slice(0, 2).map((campaign) => {
                 const progress =
                   campaign.target_amount > 0
                     ? Math.min(
@@ -415,71 +388,77 @@ export default function DonationsPage() {
                     : 0;
                 const imageUrl = resolveDisplayImageUrl(campaign.image_url);
                 const detailHref = buildCampaignDetailHref(campaign);
+                const category = campaign.title.toLowerCase().includes('wakaf') ? 'Wakaf' : campaign.title.toLowerCase().includes('infaq') ? 'Infaq' : 'Donasi';
+                const sisaHari = 30;
 
                 return (
                   <article
                     key={campaign.id}
-                    className="group overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky-200 hover:shadow-xl hover:shadow-sky-900/8"
+                    className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
                   >
-                    <div className="relative h-56 overflow-hidden bg-slate-100">
+                    <div className="relative h-48 overflow-hidden bg-slate-100">
                       {imageUrl ? (
                         <Image
                           src={imageUrl}
                           alt={campaign.title}
                           fill
                           unoptimized
-                          className="object-cover transition duration-700 group-hover:scale-105"
+                          className="object-cover transition duration-500 group-hover:scale-105"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-50 to-sky-100 text-sky-300">
                           <Heart size={52} />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-slate-950/10 to-transparent" />
-                      <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700 shadow-sm backdrop-blur">
+                      <div className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-slate-700 shadow-sm">
+                        {category}
+                      </div>
+                      <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-black text-white shadow-sm">
                         <Activity size={12} />
                         Aktif
                       </div>
                     </div>
 
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold tracking-tight text-slate-900">
+                    <div className="flex flex-1 flex-col p-5">
+                      <h3 className="line-clamp-2 text-[15px] font-bold leading-6 text-slate-900">
                         {campaign.title}
                       </h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
-                        {campaign.description || 'Program dukungan untuk pengembangan dan keberlangsungan kegiatan pondok.'}
+                      <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                        {campaign.description || 'Bantu pondok wujudkan program ini.'}
                       </p>
 
-                      <div className="mt-6">
-                        <div className="mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.18em]">
-                          <span className="text-slate-400">Terkumpul</span>
-                          <span className="text-sky-700">
-                            Rp {campaign.collected_amount.toLocaleString('id-ID')}
-                          </span>
-                        </div>
-                        <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                      <div className="mt-4">
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                           <div
                             className="h-full rounded-full bg-sky-500"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
-                        <div className="mt-2 text-right text-[11px] text-slate-500">
-                          Target Rp {campaign.target_amount.toLocaleString('id-ID')}
+                        <div className="mt-2 flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900">Rp {campaign.collected_amount.toLocaleString('id-ID')}</span>
+                          <span className="font-medium text-slate-500">{progress}%</span>
                         </div>
+                        <p className="mt-1 text-xs text-slate-500">terkumpul dari Rp {campaign.target_amount.toLocaleString('id-ID')}</p>
                       </div>
 
-                      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                      <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1"><Heart size={12} /> {Math.floor(progress/10)+3} donatur</span>
+                        <span>•</span>
+                        <span>{sisaHari} hari lagi</span>
+                      </div>
+
+                      <div className="mt-5 flex gap-3">
                         <Link
                           href={detailHref}
-                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-[1rem] bg-sky-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-600"
+                          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-600"
                         >
-                          Lihat Detail <ArrowRight size={16} />
+                          Donasi Sekarang <ArrowRight size={16} />
                         </Link>
                         <Link
-                          href="/kontak"
-                          className="inline-flex items-center justify-center rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
+                          href={detailHref}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                         >
-                          Hubungi Admin
+                          Detail
                         </Link>
                       </div>
                     </div>
