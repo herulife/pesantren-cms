@@ -1201,6 +1201,24 @@ export async function deleteCampaign(id: number) {
 	return parseResponse(res);
 }
 
+export async function getCampaign(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/campaigns/${id}`, {
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	const result = await parseResponse(res);
+	return result.data as Campaign;
+}
+
+export async function updateCampaign(id: number, campaign: Partial<Campaign>) {
+	const res = await fetch(`${API_BASE_URL}/donations/campaigns/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(campaign)
+	});
+	return parseResponse(res);
+}
+
 export async function addFaq(faq: Omit<Faq, 'id' | 'order_num'>) {
 	const res = await fetch(`${API_BASE_URL}/faqs`, {
 		method: 'POST',

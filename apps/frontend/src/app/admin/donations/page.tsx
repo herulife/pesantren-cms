@@ -6,7 +6,7 @@ import { getCampaigns, getDonations, deleteCampaign, verifyDonation, Campaign, D
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { Heart, Plus, TrendingUp, Users, DollarSign, ArrowUpRight, Trash2, Search, CheckCircle, Clock, FileDown, FileSpreadsheet, Filter, Calendar } from 'lucide-react';
+import { Heart, Plus, TrendingUp, Users, DollarSign, ArrowUpRight, Trash2, Pencil, Search, CheckCircle, Clock, FileDown, FileSpreadsheet, Filter, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DonationsAdminPage() {
@@ -272,13 +272,22 @@ export default function DonationsAdminPage() {
                         {c.is_active ? 'Kampanye Aktif' : 'Telah Berakhir'}
                       </div>
                       
-                      <button 
-                        onClick={() => { setSelectedId(c.id); setIsDeleteOpen(true); }}
-                        aria-label="Hapus kampanye"
-                        className="absolute top-6 right-6 p-2.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl hover:bg-rose-500 hover:border-rose-500 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 lg:translate-x-4 lg:group-hover:translate-x-0 focus-visible:opacity-100 focus-visible:translate-x-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-                      >
-                         <Trash2 size={18} />
-                      </button>
+                      <div className="absolute top-6 right-6 flex gap-2">
+                        <Link
+                          href={`/admin/donations/add?id=${c.id}`}
+                          aria-label="Edit kampanye"
+                          className="p-2.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl hover:bg-sky-500 hover:border-sky-500 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                        >
+                          <Pencil size={18} />
+                        </Link>
+                        <button 
+                          onClick={() => { setSelectedId(c.id); setIsDeleteOpen(true); }}
+                          aria-label="Hapus kampanye"
+                          className="p-2.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl hover:bg-rose-500 hover:border-rose-500 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                        >
+                           <Trash2 size={18} />
+                        </button>
+                      </div>
 
                       <div className="absolute bottom-6 left-6 right-6">
                          <h3 className="font-black text-white text-lg tracking-tight leading-tight uppercase line-clamp-1">{c.title}</h3>

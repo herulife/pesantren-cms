@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { addCampaign, uploadImage } from '@/lib/api';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { addCampaign, updateCampaign, getCampaign, uploadImage } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { DollarSign, Calendar, Image as ImageIcon, Loader2, ArrowLeft, Save, Send } from 'lucide-react';
 import GallerySelectionModal from '@/components/GallerySelectionModal';
 import Link from 'next/link';
 
-export default function AddDonationCampaignPage() {
+function AddDonationCampaignContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('id');
+  const isEdit = !!editId;
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -21,6 +24,21 @@ export default function AddDonationCampaignPage() {
     end_date: ''
   });
 
+  useEffect(() => {
+    if (editId) {
+      getCampaign(Number(editId)).then((c) => {
+        setFormData({
+          title: c.title || '',
+          description: c.description || '',
+          target_amount: c.target_amount || 0,
+          image_url: c.image_url || '',
+          is_active: c.is_active ?? 1,
+          end_date: c.end_date ? new Date(c.end_date).toISOString().split('T')[0] : ''
+        });
+      }).catch(() => showToast('error', 'Gagal memuat kampanye'));
+    }
+  }, [editId]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,17 +49,18 @@ export default function AddDonationCampaignPage() {
        showToast('error', 'Judul kampanye tidak boleh kosong!');
        return;
     }
-    const res = await addCampaign({
+    const payload = {
       ...formData,
       target_amount: Number(formData.target_amount),
       end_date: formData.end_date || null
-    });
+    };
+    const res = isEdit ? await updateCampaign(Number(editId), payload) : await addCampaign(payload);
     
     if (res.success) {
-      showToast('success', 'Kampanye donasi berhasil dibuat!');
+      showToast('success', isEdit ? 'Kampanye berhasil diperbarui!' : 'Kampanye donasi berhasil dibuat!');
       router.push('/admin/donations');
     } else {
-      showToast('error', 'Gagal membuat kampanye.');
+      showToast('error', isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.');
     }
   };
 
@@ -113,7 +132,7 @@ export default function AddDonationCampaignPage() {
       </div>
 
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">Buat Kampanye Baru</h1>
+        <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">{isEdit ? 'Edit Kampanye' : 'Buat Kampanye Baru'}</h1>
       </div>
 
       <form onSubmit={handleAddSubmit} className="relative">
@@ -176,7 +195,7 @@ export default function AddDonationCampaignPage() {
                       className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-bold hover:bg-sky-700 transition-all shadow-md shadow-sky-500/20 disabled:opacity-50"
                     >
                       <Send size={16} />
-                      Sebarkan
+                      {isEdit ? 'Perbarui' : 'Sebarkan'}
                     </button>
                  </div>
               </div>
@@ -278,5 +297,13 @@ export default function AddDonationCampaignPage() {
         onSelect={handleGallerySelect}
       />
     </>
+  );
+}
+
+export default function AddDonationCampaignPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
+      <AddDonationCampaignContent />
+    </Suspense>
   );
 }

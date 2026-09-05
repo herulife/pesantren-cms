@@ -31,6 +31,20 @@ func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
 
+func (h *Handler) GetCampaign(w http.ResponseWriter, r *http.Request) {
+	startedAt := time.Now()
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	logger.Info(r.Context(), "donation campaign get started", logger.Field{"operation": "donations_campaign_get", "campaign_id": id})
+	c, err := h.repo.FindCampaignByID(id)
+	if err != nil {
+		logger.Error(r.Context(), "donation campaign get failed", logger.Field{"operation": "donations_campaign_get", "campaign_id": id, "error": err.Error()})
+		sendJSONResponse(w, http.StatusNotFound, false, "Program donasi tidak ditemukan", nil)
+		return
+	}
+	logger.Info(r.Context(), "donation campaign get completed", logger.Field{"operation": "donations_campaign_get", "campaign_id": id, "duration_ms": time.Since(startedAt).Milliseconds()})
+	sendJSONResponse(w, http.StatusOK, true, "Program donasi berhasil dimuat", c)
+}
+
 func (h *Handler) GetCampaigns(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
 	logger.Info(r.Context(), "donation campaigns list started", logger.Field{"operation": "donations_campaigns_list"})
@@ -93,6 +107,30 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusCreated, true, "Program donasi berhasil ditambahkan", nil)
 }
 
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	startedAt := time.Now()
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	logger.Info(r.Context(), "donation campaign update started", logger.Field{"operation": "donations_campaign_update", "campaign_id": id})
+	var c Campaign
+	if err := validators.DecodeJSON(w, r, &c); err != nil {
+		logger.Warn(r.Context(), "donation campaign update rejected", logger.Field{"operation": "donations_campaign_update"})
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+	c.ID = id
+	if err := h.repo.UpdateCampaign(&c); err != nil {
+		logger.Error(r.Context(), "donation campaign update failed", logger.Field{"operation": "donations_campaign_update", "campaign_id": id, "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	logger.Info(r.Context(), "donation campaign update completed", logger.Field{
+		"operation":   "donations_campaign_update",
+		"campaign_id": id,
+		"duration_ms": time.Since(startedAt).Milliseconds(),
+	})
+	sendJSONResponse(w, http.StatusOK, true, "Program donasi berhasil diperbarui", nil)
+}
+
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -153,7 +191,9 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/campaigns", h.GetCampaigns)
+	r.Get("/campaigns/{id}", h.GetCampaign)
 	r.Post("/campaigns", h.Create)
+	r.Put("/campaigns/{id}", h.Update)
 	r.Delete("/campaigns/{id}", h.Delete)
 	r.Get("/list", h.GetDonations)
 	r.Put("/verify/{id}", h.VerifyDonation)
@@ -165,10 +205,12 @@ func (h *Handler) Routes() chi.Router {
 // IRepository ...
 type IRepository interface {
 	FindAllCampaigns(activeOnly bool, search string) ([]Campaign, error)
+	FindCampaignByID(id int) (*Campaign, error)
 	FindAllDonations(campaignID int, status, search string) ([]Donation, error)
 	FindDonationByID(id int) (*Donation, error)
 	VerifyDonation(id int, verifiedBy int) error
 	CreateCampaign(c *Campaign) error
+	UpdateCampaign(c *Campaign) error
 	DeleteCampaign(id int) error
 	UpdateCampaignAmount(id int, amount float64) error
 }

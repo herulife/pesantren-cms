@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import PublicLayout from '@/components/PublicLayout';
-import { getCampaigns, Campaign, resolveDisplayImageUrl } from '@/lib/api';
+import { getCampaigns, Campaign, resolveDisplayImageUrl, getPublicSettingsMap, SettingsMap } from '@/lib/api';
 import {
   buildCampaignDetailHref,
   featuredOpenDonation,
@@ -28,12 +28,14 @@ export default function DonationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [settings, setSettings] = useState<SettingsMap>({});
 
   useEffect(() => {
     async function fetchCampaigns() {
       try {
-        const data = await getCampaigns();
+        const [data, s] = await Promise.all([getCampaigns(), getPublicSettingsMap()]);
         setCampaigns(data.filter((c) => c.is_active));
+        setSettings(s);
         setError(null);
       } catch (e) {
         console.error('Error fetching campaigns:', e);
@@ -48,9 +50,16 @@ export default function DonationsPage() {
   const featuredCampaign = findFeaturedDonationCampaign(campaigns);
   const allCampaigns = campaigns.slice(0, 2);
   const displayCampaigns = allCampaigns.length > 0 ? allCampaigns : [];
+  const donationBankName = settings.donation_bank_name || featuredOpenDonation.bankName;
+  const donationAccountNumber = settings.donation_account_number || featuredOpenDonation.accountNumber;
+  const donationAccountHolder = settings.donation_account_holder || featuredOpenDonation.accountHolder;
+  const donationWhatsappRaw = settings.donation_whatsapp || featuredOpenDonation.whatsappUrl.replace('https://wa.me/', '').replace(/\D/g, '');
+  const donationWhatsapp = donationWhatsappRaw.replace(/\D/g, '');
+  const donationWhatsappUrl = donationWhatsapp ? `https://wa.me/${donationWhatsapp}` : featuredOpenDonation.whatsappUrl;
+  const donationContactLabel = donationWhatsapp ? donationWhatsapp.replace(/(\d{4})(\d{4})(\d+)/, '$1 $2 $3') : featuredOpenDonation.contactLabel;
 
   const handleCopyRekening = async () => {
-    const text = `${featuredOpenDonation.bankName} ${featuredOpenDonation.accountNumber} a.n. ${featuredOpenDonation.accountHolder}`;
+    const text = `${donationBankName} ${donationAccountNumber} a.n. ${donationAccountHolder}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -261,6 +270,33 @@ export default function DonationsPage() {
         </div>
       </section>
 
+      {/* VIDEO */}
+      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="aspect-video w-full overflow-hidden bg-slate-950">
+              <iframe
+                src="https://www.youtube.com/embed/zi7yo4KEtiM"
+                title="Video Donasi - Pondok Pesantren Al-Maa Parung"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 px-4 py-3">
+              <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-200">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> YouTube • Alma Parung • Donasi
+              </span>
+              <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/15">Buka di YouTube ↗</a>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3 justify-center">
+            <a href={donationWhatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700">Donasi via WA</a>
+            <a href="https://youtu.be/zi7yo4KEtiM" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-red-200 hover:text-red-600">Tonton di YouTube</a>
+          </div>
+        </div>
+      </section>
+
       {/* TRUST SECTION */}
       <section className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
@@ -315,24 +351,24 @@ export default function DonationsPage() {
             <p className="mt-1 text-sm text-slate-600">Transfer ke rekening resmi berikut</p>
 
             <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Bank Syariah Indonesia (BSI)</p>
-              <p className="mt-2 font-mono text-xl font-black tracking-wide text-slate-900">4381 5671 20</p>
-              <p className="mt-1 text-sm font-medium text-slate-600">Atas nama: Yayasan Alma Parung</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{donationBankName}</p>
+              <p className="mt-2 font-mono text-xl font-black tracking-wide text-slate-900">{donationAccountNumber}</p>
+              <p className="mt-1 text-sm font-medium text-slate-600">Atas nama: {donationAccountHolder}</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   onClick={handleCopyRekening}
                   className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
-                  aria-label="Salin nomor rekening BSI 4381 5671 20"
+                  aria-label={`Salin nomor rekening ${donationBankName} ${donationAccountNumber}`}
                 >
                   {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                   {copied ? 'Tersalin!' : 'Salin Nomor Rekening'}
                 </button>
                 <a
-                  href={featuredOpenDonation.whatsappUrl}
+                  href={donationWhatsappUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-                  aria-label="Konfirmasi via WhatsApp ke 0819 3250 6078"
+                  aria-label={`Konfirmasi via WhatsApp ke ${donationContactLabel}`}
                 >
                   Konfirmasi via WhatsApp
                 </a>

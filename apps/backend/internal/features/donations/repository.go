@@ -203,11 +203,35 @@ func (r *Repository) VerifyDonation(id int, verifiedBy int) error {
 	return tx.Commit()
 }
 
+func (r *Repository) FindCampaignByID(id int) (*Campaign, error) {
+	var c Campaign
+	var endDate sql.NullString
+	var createdAt, updatedAt string
+	err := r.db.QueryRow("SELECT id, title, description, target_amount, collected_amount, image_url, is_active, end_date, created_at, updated_at FROM donation_campaigns WHERE id = ?", id).Scan(&c.ID, &c.Title, &c.Description, &c.TargetAmount, &c.CollectedAmount, &c.ImageURL, &c.IsActive, &endDate, &createdAt, &updatedAt)
+	if err != nil {
+		return nil, err
+	}
+	c.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+	c.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+	if endDate.Valid && endDate.String != "" {
+		t, _ := time.Parse("2006-01-02 15:04:05", endDate.String)
+		c.EndDate = &t
+	}
+	return &c, nil
+}
+
 func (r *Repository) CreateCampaign(c *Campaign) error {
 	_, err := r.db.Exec(`
 		INSERT INTO donation_campaigns (title, description, target_amount, image_url, is_active, end_date)
 		VALUES (?, ?, ?, ?, ?, ?)`,
 		c.Title, c.Description, c.TargetAmount, c.ImageURL, c.IsActive, c.EndDate)
+	return err
+}
+
+func (r *Repository) UpdateCampaign(c *Campaign) error {
+	_, err := r.db.Exec(`
+		UPDATE donation_campaigns SET title = ?, description = ?, target_amount = ?, image_url = ?, is_active = ?, end_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		c.Title, c.Description, c.TargetAmount, c.ImageURL, c.IsActive, c.EndDate, c.ID)
 	return err
 }
 
