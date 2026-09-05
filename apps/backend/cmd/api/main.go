@@ -141,10 +141,10 @@ func main() {
 	walletRepo := wallet.NewRepository(database.DB)
 	walletHandler := wallet.NewHandler(walletRepo)
 
-	loginLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
-	googleLoginLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
-	registerLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
-	contactLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
+	loginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
+	googleLoginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
+	registerLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
+	contactLimiter := appmiddleware.NewRateLimiter(20, time.Hour)
 
 	// 5. Mount Routes
 	r.Route("/api", func(r chi.Router) {
