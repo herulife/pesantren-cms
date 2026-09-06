@@ -45,8 +45,16 @@ function AddDonationCampaignContent() {
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title) {
-       showToast('error', 'Judul kampanye tidak boleh kosong!');
+    if (!formData.title.trim() || formData.title.trim().length < 5) {
+       showToast('error', 'Judul minimal 5 karakter!');
+       return;
+    }
+    if (!formData.description.trim() || formData.description.trim().length < 10) {
+       showToast('error', 'Deskripsi minimal 10 karakter!');
+       return;
+    }
+    if (!formData.target_amount || Number(formData.target_amount) <= 0) {
+       showToast('error', 'Target dana harus lebih dari 0!');
        return;
     }
     const payload = {
@@ -54,13 +62,18 @@ function AddDonationCampaignContent() {
       target_amount: Number(formData.target_amount),
       end_date: formData.end_date || null
     };
-    const res = isEdit ? await updateCampaign(Number(editId), payload) : await addCampaign(payload);
-    
-    if (res.success) {
-      showToast('success', isEdit ? 'Kampanye berhasil diperbarui!' : 'Kampanye donasi berhasil dibuat!');
-      router.push('/admin/donations');
-    } else {
-      showToast('error', isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.');
+    try {
+      const res = isEdit ? await updateCampaign(Number(editId), payload) : await addCampaign(payload);
+      if (res.success) {
+        showToast('success', isEdit ? 'Kampanye berhasil diperbarui!' : 'Kampanye donasi berhasil dibuat!');
+        router.push('/admin/donations');
+      } else {
+        const msg = (res as any).errors ? Object.values((res as any).errors).flat().join(', ') : (res.message || (isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.'));
+        showToast('error', msg);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan';
+      showToast('error', msg);
     }
   };
 
