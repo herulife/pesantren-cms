@@ -94,6 +94,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	req := validators.CampaignRequest{Title: c.Title, Description: c.Description, TargetAmount: c.TargetAmount, ImageURL: c.ImageURL, IsActive: c.IsActive, EndDate: c.EndDate}
+	if errs := validators.ValidateCampaignRequest(&req); errs != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
 
 	if err := h.repo.CreateCampaign(&c); err != nil {
 		logger.Error(r.Context(), "donation campaign create failed", logger.Field{"operation": "donations_campaign_create", "error": err.Error()})
@@ -118,6 +125,13 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.ID = id
+	req := validators.CampaignRequest{Title: c.Title, Description: c.Description, TargetAmount: c.TargetAmount, ImageURL: c.ImageURL, IsActive: c.IsActive, EndDate: c.EndDate}
+	if errs := validators.ValidateCampaignRequest(&req); errs != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
 	if err := h.repo.UpdateCampaign(&c); err != nil {
 		logger.Error(r.Context(), "donation campaign update failed", logger.Field{"operation": "donations_campaign_update", "campaign_id": id, "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)

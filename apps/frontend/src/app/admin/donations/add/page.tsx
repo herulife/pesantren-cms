@@ -205,35 +205,46 @@ function AddDonationCampaignContent() {
                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
                     <h3 className="font-bold text-slate-800 text-sm">Target & Waktu</h3>
                  </div>
-                 <div className="p-5 space-y-5">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Target Dana (Rp)</label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input 
-                          required
-                          type="number"
-                          value={formData.target_amount || ''}
-                          onChange={(e) => setFormData({...formData, target_amount: Number(e.target.value)})}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Tenggat Waktu</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input 
-                          type="date"
-                          value={formData.end_date}
-                          onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                        />
-                      </div>
-                    </div>
-                 </div>
+                  <div className="p-5 space-y-5">
+                     <div className="space-y-2">
+                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Target Dana (Rp) *</label>
+                       <div className="relative">
+                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                         <input 
+                           required
+                           type="number"
+                           min="1000"
+                           value={formData.target_amount || ''}
+                           onChange={(e) => setFormData({...formData, target_amount: Number(e.target.value)})}
+                           className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                           placeholder="0"
+                         />
+                       </div>
+                     </div>
+                     
+                     <div className="space-y-2">
+                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Tenggat Waktu</label>
+                       <div className="relative">
+                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                         <input 
+                           type="date"
+                           value={formData.end_date}
+                           onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                           min={new Date().toISOString().split('T')[0]}
+                           className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                         />
+                       </div>
+                     </div>
+
+                     <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Status Aktif</label>
+                       <label className="relative inline-flex items-center cursor-pointer">
+                         <input type="checkbox" checked={formData.is_active === 1} onChange={(e) => setFormData({...formData, is_active: e.target.checked ? 1 : 0})} className="sr-only peer" />
+                         <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                         <span className="ml-3 text-sm font-bold text-slate-700">{formData.is_active === 1 ? 'Aktif' : 'Nonaktif'}</span>
+                       </label>
+                     </div>
+                  </div>
               </div>
 
               {/* META BOX 3: Poster Gambar */}
