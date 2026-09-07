@@ -6,6 +6,7 @@ import (
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -85,15 +86,48 @@ func (h *Handler) GetDonations(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Daftar donasi berhasil dimuat", list)
 }
 
+func parseEndDate(raw json.RawMessage) (*time.Time, error) {
+	if len(raw) == 0 || string(raw) == "null" || string(raw) == `""` {
+		return nil, nil
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err != nil {
+		return nil, err
+	}
+	if s == "" {
+		return nil, nil
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02", "2006-01-02T15:04:05Z07:00"} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid date format: %s", s)
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
 	logger.Info(r.Context(), "donation campaign create started", logger.Field{"operation": "donations_campaign_create"})
-	var c Campaign
-	if err := validators.DecodeJSON(w, r, &c); err != nil {
+	var raw map[string]json.RawMessage
+	if err := validators.DecodeJSON(w, r, &raw); err != nil {
 		logger.Warn(r.Context(), "donation campaign create rejected", logger.Field{"operation": "donations_campaign_create"})
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	var c Campaign
+	// decode with custom end_date handling
+	if v, ok := raw["end_date"]; ok {
+		if t, err := parseEndDate(v); err != nil {
+			sendJSONResponse(w, http.StatusBadRequest, false, "Format tanggal tidak valid (YYYY-MM-DD)", nil)
+			return
+		} else {
+			c.EndDate = t
+		}
+		delete(raw, "end_date")
+	}
+	// re-marshal remaining and decode to Campaign
+	rem, _ := json.Marshal(raw)
+	_ = json.Unmarshal(rem, &c)
 	req := validators.CampaignRequest{Title: c.Title, Description: c.Description, TargetAmount: c.TargetAmount, ImageURL: c.ImageURL, IsActive: c.IsActive, EndDate: c.EndDate}
 	if errs := validators.ValidateCampaignRequest(&req); errs != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -118,12 +152,24 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	logger.Info(r.Context(), "donation campaign update started", logger.Field{"operation": "donations_campaign_update", "campaign_id": id})
-	var c Campaign
-	if err := validators.DecodeJSON(w, r, &c); err != nil {
+	var raw map[string]json.RawMessage
+	if err := validators.DecodeJSON(w, r, &raw); err != nil {
 		logger.Warn(r.Context(), "donation campaign update rejected", logger.Field{"operation": "donations_campaign_update"})
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	var c Campaign
+	if v, ok := raw["end_date"]; ok {
+		if t, err := parseEndDate(v); err != nil {
+			sendJSONResponse(w, http.StatusBadRequest, false, "Format tanggal tidak valid (YYYY-MM-DD)", nil)
+			return
+		} else {
+			c.EndDate = t
+		}
+		delete(raw, "end_date")
+	}
+	rem, _ := json.Marshal(raw)
+	_ = json.Unmarshal(rem, &c)
 	c.ID = id
 	req := validators.CampaignRequest{Title: c.Title, Description: c.Description, TargetAmount: c.TargetAmount, ImageURL: c.ImageURL, IsActive: c.IsActive, EndDate: c.EndDate}
 	if errs := validators.ValidateCampaignRequest(&req); errs != nil {

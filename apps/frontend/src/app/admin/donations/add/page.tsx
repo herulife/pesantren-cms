@@ -60,7 +60,7 @@ function AddDonationCampaignContent() {
     const payload = {
       ...formData,
       target_amount: Number(formData.target_amount),
-      end_date: formData.end_date || null
+      end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null
     };
     try {
       const res = isEdit ? await updateCampaign(Number(editId), payload) : await addCampaign(payload);
