@@ -188,8 +188,8 @@ func sanitizeImage(file io.Reader) ([]byte, string, error) {
 	case "gif":
 		err = gif.Encode(&buf, img, nil)
 	case "webp":
-		err = png.Encode(&buf, img)
-		format = "png"
+		// WebP murni — simpan as-is tanpa re-encode ke PNG (hemat, tetap WebP)
+		return raw, "webp", nil
 	default:
 		return nil, "", fmt.Errorf("unsupported image format: %s", format)
 	}

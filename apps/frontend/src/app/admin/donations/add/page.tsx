@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { addCampaign, updateCampaign, getCampaign, uploadImage } from '@/lib/api';
+import { addCampaign, updateCampaign, getCampaign, uploadImage, resolveDisplayImageUrl } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { DollarSign, Calendar, Image as ImageIcon, Loader2, ArrowLeft, Save, Send } from 'lucide-react';
 import GallerySelectionModal from '@/components/GallerySelectionModal';
@@ -31,7 +31,7 @@ function AddDonationCampaignContent() {
           title: c.title || '',
           description: c.description || '',
           target_amount: c.target_amount || 0,
-          image_url: c.image_url || '',
+          image_url: resolveDisplayImageUrl(c.image_url || ''),
           is_active: c.is_active ?? 1,
           end_date: c.end_date ? new Date(c.end_date).toISOString().split('T')[0] : ''
         });
@@ -114,7 +114,8 @@ function AddDonationCampaignContent() {
            
            const upRes = await uploadImage(webpFile);
            if (upRes.success) {
-             setFormData(prev => ({ ...prev, image_url: upRes.url }));
+             const displayUrl = resolveDisplayImageUrl(upRes.url || upRes.data?.url);
+             setFormData(prev => ({ ...prev, image_url: displayUrl }));
              showToast('success', 'Gambar kampanye diunggah berformat WebP!');
            } else {
              showToast('error', 'Gagal mengunggah gambar kampanye.');
@@ -131,7 +132,7 @@ function AddDonationCampaignContent() {
   };
 
   const handleGallerySelect = (url: string) => {
-    setFormData(prev => ({ ...prev, image_url: url }));
+    setFormData(prev => ({ ...prev, image_url: resolveDisplayImageUrl(url) }));
     setIsGalleryOpen(false);
     showToast('success', 'Poster kampanye dipilih dari galeri!');
   };
