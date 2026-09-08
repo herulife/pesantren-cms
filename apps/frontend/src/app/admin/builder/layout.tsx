@@ -22,7 +22,6 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
             <Link href="/admin/builder" className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white font-black text-sm">A</span>
               <span className="hidden font-outfit text-sm font-bold tracking-tight text-slate-900 sm:block">Al-Maa Builder</span>
-              <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 sm:inline-flex">WordPress-like</span>
             </Link>
             <nav className="hidden items-center gap-1 lg:flex">
               {nav.slice(1).map((n) => {
@@ -64,9 +63,9 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
               </nav>
             </div>
 
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="text-xs font-black uppercase tracking-widest text-amber-700">Tips Estetik</p>
-              <p className="mt-2 text-xs leading-6 text-amber-800">Font halus <span className="font-outfit font-bold">Outfit</span> untuk judul, <span className="font-bold">Plus Jakarta</span> untuk form. Card putih, radius 12px, shadow lembut.</p>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Bantuan</p>
+              <p className="mt-2 text-xs leading-6 text-slate-600">Kelola halaman builder. Preview untuk lihat perubahan, Simpan Draft untuk simpan, Publish untuk tampil di situs.</p>
             </div>
           </div>
         </aside>

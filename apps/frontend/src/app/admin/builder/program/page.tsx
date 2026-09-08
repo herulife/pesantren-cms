@@ -144,8 +144,8 @@ export default function BuilderProgramPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800">
-        <span className="font-black">Estetik:</span> Card putih, radius 12px, shadow lembut `0 4px 12px rgba(0,0,0,0.04)`, font Outfit 700 untuk `Judul`, Plus Jakarta 500 untuk `Subtitle`, `Tag Ekskul` pill `Daftar Ekstrakurikuler (Pill)` — kelola data ekskul dinamis via <Link href="/admin/programs?category=ekskul" className="font-bold underline">Admin → Program (ekskul)</Link>.
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-600">
+        Kelola daftar ekstrakurikuler (pill) — untuk data ekskul dinamis buka <Link href="/admin/programs?category=ekskul" className="font-bold text-slate-900 underline">Admin → Program (ekskul)</Link>.
       </div>
 
       <div className="mt-6">
