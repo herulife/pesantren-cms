@@ -1317,6 +1317,12 @@ export default function TabWebsiteBuilder() {
         return `Judul Kartu Program Inti (Kartu ${i + 1}) wajib diisi.`;
       }
     }
+    if (program.extracurricular.title.trim().length === 0) {
+      return 'Judul Ekstrakurikuler wajib diisi.';
+    }
+    if (program.extracurricular.tags.length === 0) {
+      return 'Minimal 1 Tag Ekstrakurikuler wajib diisi.';
+    }
     return null;
   };
 

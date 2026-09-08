@@ -898,6 +898,7 @@ function ProgramEditor({
           />
           <SimpleTextarea
             label="Judul"
+            required
             value={page.extracurricular.title}
             rows={3}
             onChange={(value) =>
@@ -913,14 +914,15 @@ function ProgramEditor({
             }
           />
           <StringListEditor
-            title="Tag Ekskul"
+            title="Daftar Ekstrakurikuler (Pill)"
             items={page.extracurricular.tags}
             onChange={(items) =>
               onChange({ ...page, extracurricular: { ...page.extracurricular, tags: items } })
             }
-            addLabel="Tambah Ekskul"
+            addLabel="Tambah Ekstrakurikuler"
             placeholder="Panahan / Karate / Tata Boga"
           />
+          <p className="text-xs leading-5 text-slate-500">Pill hanya untuk tampilan di /program — kelola data ekskul dinamis via Admin → Program (kategori Ekskul).</p>
         </div>
       </div>
 
