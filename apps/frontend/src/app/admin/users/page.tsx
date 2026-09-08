@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword } from '@/lib/api';
+import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword, getSettings, updateSetting } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -374,6 +374,87 @@ export default function UsersPage() {
             </button>
           );
         })}
+      </div>
+
+      {/* Hak Akses Menu per Role */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 border border-sky-100"><Shield size={18} /></div>
+            <div>
+              <h3 className="font-black text-slate-900 text-sm uppercase tracking-wide">Hak Akses Menu</h3>
+              <p className="text-xs text-slate-500 mt-1">Atur menu apa yang bisa diakses per role — mis. bendahara uncheck Berita jadi tidak tampil.</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              const allMenus = [
+                '/admin/news','/admin/programs','/admin/gallery','/admin/videos','/admin/psb','/admin/raport','/admin/academics','/admin/project','/admin/teachers','/admin/disciplines','/admin/kesantrian','/admin/donations','/admin/payments','/admin/facilities','/admin/messages','/admin/notifications','/admin/users','/admin/logs','/admin/settings','/admin/builder','/admin/help'
+              ];
+              const perms: Record<string,string[]> = {};
+              ROLE_OPTIONS.forEach(r => {
+                if (r.value === 'superadmin') perms[r.value] = allMenus;
+                else if (r.value === 'bendahara') perms[r.value] = ['/admin/donations','/admin/payments','/admin/raport','/admin/academics'];
+                else if (r.value === 'panitia_psb') perms[r.value] = ['/admin/psb','/admin/kesantrian','/admin/disciplines'];
+                else if (r.value === 'tim_media') perms[r.value] = ['/admin/news','/admin/programs','/admin/gallery','/admin/videos'];
+                else perms[r.value] = [];
+              });
+              await updateSetting('role_menu_permissions', JSON.stringify(perms));
+              showToast('success','Hak akses direset ke default');
+            }}
+            className="text-xs font-bold text-slate-500 hover:text-slate-700 underline"
+          >
+            Reset Default
+          </button>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {ROLE_OPTIONS.filter(r=>r.value!=='user').map(role => {
+            const RoleIcon = role.icon;
+            return (
+              <div key={role.value} className="rounded-xl border border-slate-200 p-4 bg-slate-50/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`p-2 rounded-lg ${role.bg} ${role.color} border ${role.ring}`}><RoleIcon size={14} /></span>
+                  <span className="font-black text-xs uppercase tracking-wide text-slate-800">{role.label}</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3">Uncheck untuk sembunyikan menu. Super Admin selalu lihat semua.</p>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {[
+                    {href:'/admin/news',label:'Berita'},
+                    {href:'/admin/programs',label:'Program Pondok'},
+                    {href:'/admin/gallery',label:'Galeri Foto'},
+                    {href:'/admin/videos',label:'Video Kegiatan'},
+                    {href:'/admin/psb',label:'Data Santri (PSB)'},
+                    {href:'/admin/raport',label:'eRapor'},
+                    {href:'/admin/academics',label:'Nilai Akademik'},
+                    {href:'/admin/donations',label:'Program Donasi'},
+                    {href:'/admin/payments',label:'Pembayaran SPP'},
+                    {href:'/admin/settings',label:'Pengaturan'},
+                    {href:'/admin/builder',label:'Website Builder'},
+                  ].map(item => (
+                    <label key={item.href} className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 cursor-pointer">
+                      <input type="checkbox" defaultChecked className="rounded" onChange={async (e)=>{
+                        try {
+                          const s = await getSettings();
+                          const raw = s.find(x=>x.key==='role_menu_permissions')?.value || '{}';
+                          let perms: Record<string,string[]> = {};
+                          try { perms = JSON.parse(raw); } catch {}
+                          const list = perms[role.value] || [];
+                          const next = e.target.checked ? [...new Set([...list, item.href])] : list.filter(x=>x!==item.href);
+                          perms[role.value] = next;
+                          await updateSetting('role_menu_permissions', JSON.stringify(perms));
+                          showToast('success', `${role.label} ${e.target.checked ? 'diberi' : 'dicabut'} akses ${item.label}`);
+                        } catch {}
+                      }} />
+                      <span className="font-medium text-slate-700">{item.label}</span>
+                      <span className="ml-auto text-[10px] text-slate-400">{item.href}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-4 text-xs text-slate-500">Contoh: Bendahara uncheck <b>Berita</b> → user bendahara tidak lihat menu Berita di Sidebar.</p>
       </div>
 
       {/* Search & Filter Bar */}

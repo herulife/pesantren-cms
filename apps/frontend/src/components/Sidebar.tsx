@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
+import { getSettings } from '@/lib/api';
 import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen } from 'lucide-react';
 
 interface MenuItem {
@@ -17,7 +18,20 @@ interface MenuItem {
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
-  const { logout, hasRole } = useAuth();
+  const { logout, hasRole, user } = useAuth();
+  const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    getSettings().then((s) => {
+      const raw = s.find((x) => x.key === 'role_menu_permissions')?.value;
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') setRolePerms(parsed);
+        } catch {}
+      }
+    }).catch(()=>{});
+  }, []);
 
   const menuItems: MenuItem[] = [
     { category: 'Utama', icon: <LayoutDashboard size={18} />, label: "Dashboard Utama", href: "/admin", docRef: 'dashboard' },
@@ -55,10 +69,20 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { category: 'Sistem', icon: <HelpCircle size={18} />, label: "Tutorial", href: "/admin/help" },
   ];
 
-  // Filter by role
+  // Filter by role + dynamic role_menu_permissions (admin can uncheck Berita for bendahara etc.)
   const visibleItems = menuItems.filter(item => {
-    if (!item.roles || item.roles.length === 0) return true; // accessible by all
-    return hasRole(...item.roles);
+    if (!item.roles || item.roles.length === 0) return true;
+    if (!hasRole(...item.roles)) return false;
+    const role = user?.role;
+    if (role && role !== 'superadmin' && rolePerms[role] && Array.isArray(rolePerms[role])) {
+      // Jika ada setting untuk role ini, pakai itu (bisa kosong = tidak ada akses tambahan)
+      // Jika setting belum ada (belum pernah save), fallback ke hardcoded true
+      const hasSetting = Object.prototype.hasOwnProperty.call(rolePerms, role);
+      if (hasSetting) {
+        return rolePerms[role].includes(item.href);
+      }
+    }
+    return true;
   });
 
   return (
