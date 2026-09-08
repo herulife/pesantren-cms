@@ -1,0 +1,3 @@
+'use client';
+import Link from 'next/link';
+export default function Page(){return <div className='p-8'><p className='text-xs font-black uppercase tracking-widest text-slate-400'>Builder • profil</p><h1 className='mt-2 font-outfit text-2xl font-black capitalize'>profil</h1><p className='mt-2 text-sm text-slate-500'>Halaman Builder profil segera hadir — untuk sekarang kelola via <Link href='/admin/settings' className='font-bold text-sky-600 underline'>Pengaturan → Website Builder</Link> tab.</p><Link href='/admin/builder' className='mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white'>Kembali ke Builder</Link></div>;}
