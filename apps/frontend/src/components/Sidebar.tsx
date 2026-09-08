@@ -51,6 +51,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { category: 'Sistem', icon: <UserCog size={18} />, label: "Manajemen Pengguna", href: "/admin/users", roles: ["superadmin"], docRef: 'users' },
     { category: 'Sistem', icon: <ScrollText size={18} />, label: "Log Sistem", href: "/admin/logs", roles: ["superadmin"], docRef: 'logs' },
     { category: 'Sistem', icon: <Settings size={18} />, label: "Pengaturan Utama", href: "/admin/settings", roles: ["superadmin"], docRef: 'settings' },
+    { category: 'Sistem', icon: <LayoutDashboard size={18} />, label: "Website Builder", href: "/admin/builder", roles: ["superadmin"], docRef: 'builder' },
     { category: 'Sistem', icon: <HelpCircle size={18} />, label: "Tutorial", href: "/admin/help" },
   ];
 
