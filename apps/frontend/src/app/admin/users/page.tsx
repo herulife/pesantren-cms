@@ -101,7 +101,7 @@ export default function UsersPage() {
     password: '',
     confirmPassword: '',
   });
-  const [customMenus, setCustomMenus] = useState<any[]>([]);
+  // customMenus dihapus — hanya Hak Akses Menu per role
 
   const fetchUsers = useCallback(async (search = searchQuery) => {
     setIsLoading(true);
@@ -121,13 +121,6 @@ export default function UsersPage() {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery, fetchUsers]);
-
-  useEffect(() => {
-    getSettings().then(s=>{
-      const raw=s.find(x=>x.key==='custom_menu_items')?.value||'[]';
-      try{ const list=JSON.parse(raw); if(Array.isArray(list)) setCustomMenus(list); }catch{}
-    }).catch(()=>{});
-  }, []);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -463,75 +456,6 @@ export default function UsersPage() {
           })}
         </div>
         <p className="mt-4 text-xs text-slate-500">Contoh: Bendahara uncheck <b>Berita</b> → user bendahara tidak lihat menu Berita di Sidebar.</p>
-      </div>
-
-      {/* Menu Kustom — Superadmin bisa tambah menu apapun */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100"><Plus size={18} /></div>
-          <div>
-            <h3 className="font-black text-slate-900 text-sm uppercase tracking-wide">Menu Kustom</h3>
-            <p className="text-xs text-slate-500 mt-1">Superadmin bisa tambah menu apapun — bukan hanya yang tertulis. Isi label, link, kategori, ikon, dan role.</p>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-5">
-          <input id="custom-label" placeholder="Label: Laporan Keuangan" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium" />
-          <input id="custom-href" placeholder="Href: /admin/reports" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-mono" />
-          <input id="custom-category" placeholder="Kategori: Keuangan" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-          <select id="custom-icon" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-            <option value="LayoutDashboard">Dashboard</option>
-            <option value="Heart">Heart</option>
-            <option value="FileText">FileText</option>
-            <option value="Users">Users</option>
-          </select>
-          <button
-            onClick={async ()=>{
-              const label=(document.getElementById('custom-label') as HTMLInputElement).value.trim();
-              const href=(document.getElementById('custom-href') as HTMLInputElement).value.trim();
-              const category=(document.getElementById('custom-category') as HTMLInputElement).value.trim()||'Kustom';
-              const icon=(document.getElementById('custom-icon') as HTMLSelectElement).value;
-              if(!label||!href){ showToast('error','Label & href wajib'); return; }
-              try{
-                const s=await getSettings();
-                const raw=s.find(x=>x.key==='custom_menu_items')?.value||'[]';
-                let list:any[]=[]; try{list=JSON.parse(raw);}catch{}
-                list.push({label,href,category,icon,roles:['bendahara','tim_media','panitia_psb']});
-                await updateSetting('custom_menu_items', JSON.stringify(list));
-                showToast('success',`Menu ${label} ditambahkan`);
-                (document.getElementById('custom-label') as HTMLInputElement).value='';
-                (document.getElementById('custom-href') as HTMLInputElement).value='';
-              }catch{ showToast('error','Gagal tambah menu'); }
-            }}
-            className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700"
-          >
-            + Tambah Menu
-          </button>
-        </div>
-        <p className="mt-3 text-xs text-slate-400">Menu baru akan muncul di Sidebar untuk role yang dipilih. Kelola via <span className="font-bold">custom_menu_items</span> di settings.</p>
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-black uppercase tracking-wide text-slate-700">Menu Kustom Saat Ini ({customMenus.length})</p>
-          <div className="mt-3 space-y-2">
-            {customMenus.length===0 ? <p className="text-xs text-slate-500">Belum ada menu kustom — tambah di atas.</p> : customMenus.map((m:any, idx:number)=>(
-              <div key={idx} className="flex items-center justify-between rounded-lg bg-white border border-slate-200 px-3 py-2">
-                <div>
-                  <p className="text-xs font-bold text-slate-800">{m.label} <span className="font-mono text-[10px] text-slate-500">{m.href}</span></p>
-                  <p className="text-[11px] text-slate-500">{m.category} • {m.icon}</p>
-                </div>
-                <button
-                  onClick={async()=>{
-                    const next=customMenus.filter((_,i)=>i!==idx);
-                    await updateSetting('custom_menu_items', JSON.stringify(next));
-                    setCustomMenus(next);
-                    showToast('success','Menu dihapus');
-                  }}
-                  className="text-xs font-bold text-rose-600 hover:underline"
-                >
-                  Hapus
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Search & Filter Bar */}

@@ -20,7 +20,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { logout, hasRole, user } = useAuth();
   const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
-  const [customMenus, setCustomMenus] = useState<MenuItem[]>([]);
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -29,29 +28,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         try {
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed === 'object') setRolePerms(parsed);
-        } catch {}
-      }
-      const customRaw = s.find((x) => x.key === 'custom_menu_items')?.value;
-      if (customRaw) {
-        try {
-          const list = JSON.parse(customRaw);
-          if (Array.isArray(list)) {
-            const iconMap: Record<string, React.ReactNode> = {
-              LayoutDashboard: <LayoutDashboard size={18} />,
-              Heart: <Heart size={18} />,
-              FileText: <FileText size={18} />,
-              Users: <Users size={18} />,
-            };
-            const mapped: MenuItem[] = list.map((it: any) => ({
-              category: it.category || 'Kustom',
-              icon: iconMap[it.icon] || <LayoutDashboard size={18} />,
-              label: it.label,
-              href: it.href,
-              roles: it.roles || ['bendahara','tim_media','panitia_psb'],
-              docRef: 'custom',
-            }));
-            setCustomMenus(mapped);
-          }
         } catch {}
       }
     }).catch(()=>{});
@@ -93,9 +69,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { category: 'Sistem', icon: <HelpCircle size={18} />, label: "Tutorial", href: "/admin/help" },
   ];
 
-  const allMenuItems = [...menuItems, ...customMenus];
   // Filter by role + dynamic role_menu_permissions (admin can uncheck Berita for bendahara etc.)
-  const visibleItems = allMenuItems.filter(item => {
+  const visibleItems = menuItems.filter(item => {
     if (!item.roles || item.roles.length === 0) return true;
     if (!hasRole(...item.roles)) return false;
     const role = user?.role;
