@@ -424,11 +424,10 @@ export default function UsersPage() {
           {ROLE_OPTIONS.filter(r=>r.value!=='user' && r.value!=='superadmin').map(role => {
             const RoleIcon = role.icon;
             const saved = rolePerms[role.value];
-            const effective = (href: string, entitled: boolean) =>
-              permsLoading ? entitled : (saved ? saved.includes(href) : entitled);
+            // Daftar yang tampil = standar role ini (tersimpan di DB, atau bawaan bila belum ada).
+            const current = permsLoading ? standardMenusForRole(role.value) : (saved ?? standardMenusForRole(role.value));
             const toggleMenu = async (href: string, label: string, nextChecked: boolean) => {
-              const base = saved ?? standardMenusForRole(role.value);
-              const next = nextChecked ? [...new Set([...base, href])] : base.filter(x=>x!==href);
+              const next = nextChecked ? [...new Set([...current, href])] : current.filter(x=>x!==href);
               const perms = { ...rolePerms, [role.value]: next };
               setRolePerms(perms);
               try {
@@ -439,44 +438,58 @@ export default function UsersPage() {
                 showToast('error', 'Gagal menyimpan, data dimuat ulang');
               }
             };
+            const inList = ROLE_MENU_DEFS.filter(m => current.includes(m.href));
+            const notInList = ROLE_MENU_DEFS.filter(m => !current.includes(m.href));
             const groups: Record<string, typeof ROLE_MENU_DEFS> = {};
-            ROLE_MENU_DEFS.forEach(m => { (groups[m.category] = groups[m.category] || []).push(m); });
+            inList.forEach(m => { (groups[m.category] = groups[m.category] || []).push(m); });
+            const renderRow = (item: typeof ROLE_MENU_DEFS[number], checked: boolean) => {
+              const locked = !item.roles;
+              return (
+                <label key={item.href} className={`flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs ${locked ? 'opacity-70' : 'hover:bg-slate-50 cursor-pointer'}`}>
+                  <input type="checkbox" disabled={permsLoading || locked} className="rounded"
+                    checked={checked}
+                    onChange={(e)=>{ void toggleMenu(item.href, item.label, e.target.checked); }} />
+                  <span className="font-medium text-slate-700">{item.label}</span>
+                  {locked
+                    ? <span className="ml-auto text-[10px] text-slate-400">selalu tampil</span>
+                    : <span className="ml-auto text-[10px] text-slate-400">{item.href}</span>}
+                </label>
+              );
+            };
             return (
               <div key={role.value} className="rounded-xl border border-slate-200 p-4 bg-slate-50/50">
                 <div className="flex items-center gap-2 mb-3">
                   <span className={`p-2 rounded-lg ${role.bg} ${role.color} border ${role.ring}`}><RoleIcon size={14} /></span>
                   <span className="font-black text-xs uppercase tracking-wide text-slate-800">{role.label}</span>
+                  <span className="ml-auto rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-500">{current.length} menu</span>
                 </div>
-                <p className="text-[11px] text-slate-500 mb-3">Centang = boleh akses. Menu <i>selalu tampil</i> terkunci. Super Admin selalu lihat semua.</p>
+                <p className="text-[11px] text-slate-500 mb-3">Daftar di bawah ini <b>sama dengan standar</b> {role.label}. Uncheck untuk mencabut, menu <i>selalu tampil</i> terkunci.</p>
                 <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                   {Object.entries(groups).map(([cat, items]) => (
                     <div key={cat}>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{cat}</p>
                       <div className="space-y-2">
-                        {items.map(item => {
-                          const locked = !item.roles;
-                          const entitled = locked || (item.roles?.includes(role.value) ?? false);
-                          return (
-                            <label key={item.href} className={`flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs ${locked ? 'opacity-70' : 'hover:bg-slate-50 cursor-pointer'}`}>
-                              <input type="checkbox" disabled={permsLoading || locked} className="rounded"
-                                checked={effective(item.href, entitled)}
-                                onChange={(e)=>{ void toggleMenu(item.href, item.label, e.target.checked); }} />
-                              <span className="font-medium text-slate-700">{item.label}</span>
-                              {locked
-                                ? <span className="ml-auto text-[10px] text-slate-400">selalu tampil</span>
-                                : <span className="ml-auto text-[10px] text-slate-400">{item.href}</span>}
-                            </label>
-                          );
-                        })}
+                        {items.map(item => renderRow(item, true))}
                       </div>
                     </div>
                   ))}
+                  {notInList.length > 0 && (
+                    <details className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2">
+                      <summary className="cursor-pointer text-xs font-bold text-sky-700 hover:underline">
+                        Tambah menu lain ({notInList.length}) — di luar standar {role.label}
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        {notInList.map(item => renderRow(item, false))}
+                      </div>
+                      <p className="mt-2 text-[10px] leading-5 text-slate-400">Menu di luar standar hanya memunculkan menunya; akses datanya tetap mengikuti aturan role di server.</p>
+                    </details>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
-        <p className="mt-4 text-xs text-slate-500">Contoh: Bendahara uncheck <b>Berita</b> → user bendahara tidak lihat menu Berita di Sidebar.</p>
+        <p className="mt-4 text-xs text-slate-500">Standar tersimpan di database (<span className="font-mono">role_menu_permissions</span>) dan tetap sama setelah logout. Contoh: Bendahara uncheck <b>Notifikasi WA</b> → user bendahara tidak lihat menu itu di Sidebar.</p>
       </div>
 
       {/* Search & Filter Bar */}
