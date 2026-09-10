@@ -1,13 +1,30 @@
 package auth
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// AUDIT FIX [6.1]: OAuth/p registered users must not share one guessable
+// password hash. Each gets a unique random 256-bit dummy so password-login
+// into SSO accounts is infeasible without a real password set.
+func randomDummyPasswordHash() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(raw)), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
 
 type User struct {
 	ID           int        `json:"id"`
@@ -72,8 +89,13 @@ func (r *Repository) CreateUser(user *User) error {
 			return err
 		}
 	} else {
-		// DUMMY hash for OAuth users
-		hash, _ = bcrypt.GenerateFromPassword([]byte("oauth_dummy_secret"), bcrypt.DefaultCost)
+		// AUDIT FIX [6.1]: unique random dummy — see randomDummyPasswordHash.
+		var dummy string
+		dummy, err = randomDummyPasswordHash()
+		if err != nil {
+			return err
+		}
+		hash = []byte(dummy)
 	}
 
 	res, err := r.db.Exec("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
@@ -165,6 +187,8 @@ func (r *Repository) DeleteUser(id int) error {
 		{query: "DELETE FROM payments WHERE user_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM registrations WHERE user_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM activity_logs WHERE user_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM kesantrian_aspek WHERE student_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM raports WHERE student_id = ?", args: []interface{}{id}},
 	}
 
 	for _, stmt := range statements {
