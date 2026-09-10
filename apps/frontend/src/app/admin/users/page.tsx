@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword, getSettings, updateSetting } from '@/lib/api';
+import { ROLE_MENU_DEFS, standardMenusForRole, standardRolePermissions } from '@/lib/roleMenus';
 import { useAuth } from '@/components/AuthProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -409,20 +410,10 @@ export default function UsersPage() {
           </div>
           <button
             onClick={async () => {
-              const allMenus = [
-                '/admin/news','/admin/programs','/admin/gallery','/admin/videos','/admin/psb','/admin/raport','/admin/academics','/admin/project','/admin/teachers','/admin/disciplines','/admin/kesantrian','/admin/donations','/admin/payments','/admin/facilities','/admin/messages','/admin/notifications','/admin/users','/admin/logs','/admin/settings','/admin/builder','/admin/help'
-              ];
-              const perms: Record<string,string[]> = {};
-              ROLE_OPTIONS.forEach(r => {
-                if (r.value === 'superadmin') perms[r.value] = allMenus;
-                else if (r.value === 'bendahara') perms[r.value] = ['/admin/donations','/admin/payments','/admin/raport','/admin/academics'];
-                else if (r.value === 'panitia_psb') perms[r.value] = ['/admin/psb','/admin/kesantrian','/admin/disciplines'];
-                else if (r.value === 'tim_media') perms[r.value] = ['/admin/news','/admin/programs','/admin/gallery','/admin/videos'];
-                else perms[r.value] = [];
-              });
+              const perms = standardRolePermissions();
               await updateSetting('role_menu_permissions', JSON.stringify(perms));
               setRolePerms(perms);
-              showToast('success','Hak akses direset ke default');
+              showToast('success','Hak akses direset ke standar role');
             }}
             className="text-xs font-bold text-slate-500 hover:text-slate-700 underline"
           >
@@ -430,48 +421,55 @@ export default function UsersPage() {
           </button>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
-          {ROLE_OPTIONS.filter(r=>r.value!=='user').map(role => {
+          {ROLE_OPTIONS.filter(r=>r.value!=='user' && r.value!=='superadmin').map(role => {
             const RoleIcon = role.icon;
+            const saved = rolePerms[role.value];
+            const effective = (href: string, entitled: boolean) =>
+              permsLoading ? entitled : (saved ? saved.includes(href) : entitled);
+            const toggleMenu = async (href: string, label: string, nextChecked: boolean) => {
+              const base = saved ?? standardMenusForRole(role.value);
+              const next = nextChecked ? [...new Set([...base, href])] : base.filter(x=>x!==href);
+              const perms = { ...rolePerms, [role.value]: next };
+              setRolePerms(perms);
+              try {
+                await updateSetting('role_menu_permissions', JSON.stringify(perms));
+                showToast('success', `${role.label} ${nextChecked ? 'diberi' : 'dicabut'} akses ${label}`);
+              } catch {
+                await fetchRolePerms();
+                showToast('error', 'Gagal menyimpan, data dimuat ulang');
+              }
+            };
+            const groups: Record<string, typeof ROLE_MENU_DEFS> = {};
+            ROLE_MENU_DEFS.forEach(m => { (groups[m.category] = groups[m.category] || []).push(m); });
             return (
               <div key={role.value} className="rounded-xl border border-slate-200 p-4 bg-slate-50/50">
                 <div className="flex items-center gap-2 mb-3">
                   <span className={`p-2 rounded-lg ${role.bg} ${role.color} border ${role.ring}`}><RoleIcon size={14} /></span>
                   <span className="font-black text-xs uppercase tracking-wide text-slate-800">{role.label}</span>
                 </div>
-                <p className="text-[11px] text-slate-500 mb-3">Uncheck untuk sembunyikan menu. Super Admin selalu lihat semua.</p>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {[
-                    {href:'/admin/news',label:'Berita'},
-                    {href:'/admin/programs',label:'Program Pondok'},
-                    {href:'/admin/gallery',label:'Galeri Foto'},
-                    {href:'/admin/videos',label:'Video Kegiatan'},
-                    {href:'/admin/psb',label:'Data Santri (PSB)'},
-                    {href:'/admin/raport',label:'eRapor'},
-                    {href:'/admin/academics',label:'Nilai Akademik'},
-                    {href:'/admin/donations',label:'Program Donasi'},
-                    {href:'/admin/payments',label:'Pembayaran SPP'},
-                    {href:'/admin/settings',label:'Pengaturan'},
-                    {href:'/admin/builder',label:'Website Builder'},
-                  ].map(item => (
-                    <label key={item.href} className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 cursor-pointer">
-                      <input type="checkbox" disabled={permsLoading} className="rounded"
-                        checked={permsLoading ? true : (rolePerms[role.value]?.includes(item.href) ?? true)}
-                        onChange={async (e)=>{
-                        try {
-                          const list = rolePerms[role.value] || [];
-                          const next = e.target.checked ? [...new Set([...list, item.href])] : list.filter(x=>x!==item.href);
-                          const perms = { ...rolePerms, [role.value]: next };
-                          setRolePerms(perms);
-                          await updateSetting('role_menu_permissions', JSON.stringify(perms));
-                          showToast('success', `${role.label} ${e.target.checked ? 'diberi' : 'dicabut'} akses ${item.label}`);
-                        } catch {
-                          await fetchRolePerms();
-                          showToast('error', 'Gagal menyimpan, data dimuat ulang');
-                        }
-                      }} />
-                      <span className="font-medium text-slate-700">{item.label}</span>
-                      <span className="ml-auto text-[10px] text-slate-400">{item.href}</span>
-                    </label>
+                <p className="text-[11px] text-slate-500 mb-3">Centang = boleh akses. Menu <i>selalu tampil</i> terkunci. Super Admin selalu lihat semua.</p>
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {Object.entries(groups).map(([cat, items]) => (
+                    <div key={cat}>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{cat}</p>
+                      <div className="space-y-2">
+                        {items.map(item => {
+                          const locked = !item.roles;
+                          const entitled = locked || (item.roles?.includes(role.value) ?? false);
+                          return (
+                            <label key={item.href} className={`flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs ${locked ? 'opacity-70' : 'hover:bg-slate-50 cursor-pointer'}`}>
+                              <input type="checkbox" disabled={permsLoading || locked} className="rounded"
+                                checked={effective(item.href, entitled)}
+                                onChange={(e)=>{ void toggleMenu(item.href, item.label, e.target.checked); }} />
+                              <span className="font-medium text-slate-700">{item.label}</span>
+                              {locked
+                                ? <span className="ml-auto text-[10px] text-slate-400">selalu tampil</span>
+                                : <span className="ml-auto text-[10px] text-slate-400">{item.href}</span>}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import { getRoleMenuPermissions } from '@/lib/api';
+import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
 import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText } from 'lucide-react';
 
 interface MenuItem {
@@ -27,54 +28,54 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     }).catch(()=>{});
   }, []);
 
-  const menuItems: MenuItem[] = [
-    { category: 'Utama', icon: <LayoutDashboard size={18} />, label: "Dashboard Utama", href: "/admin", docRef: 'dashboard' },
-    
-    // Publikasi
-    { category: 'Konten & Publikasi', icon: <Layers size={18} />, label: "Program Pondok", href: "/admin/programs", roles: ["tim_media"], docRef: 'programs' },
-    { category: 'Konten & Publikasi', icon: <Newspaper size={18} />, label: "Berita", href: "/admin/news", roles: ["tim_media"], docRef: 'news' },
-    { category: 'Konten & Publikasi', icon: <Calendar size={18} />, label: "Agenda Kegiatan", href: "/admin/agendas", docRef: 'agendas' },
-    { category: 'Konten & Publikasi', icon: <ImageIcon size={18} />, label: "Galeri Foto", href: "/admin/gallery", roles: ["tim_media"], docRef: 'gallery' },
-    { category: 'Konten & Publikasi', icon: <Video size={18} />, label: "Video Kegiatan", href: "/admin/videos", roles: ["tim_media"], docRef: 'videos' },
-    
-    // Akademik & Kesantrian
-    { category: 'Kesantrian', icon: <Users size={18} />, label: "Data Santri (PSB)", href: "/admin/psb", roles: ["panitia_psb"], docRef: 'psb' },
-    { category: 'Kesantrian', icon: <GraduationCap size={18} />, label: "eRapor", href: "/admin/raport", roles: ["bendahara"], docRef: 'academics' },
-    { category: 'Kesantrian', icon: <BookOpen size={18} />, label: "Nilai Akademik", href: "/admin/academics", roles: ["bendahara"], docRef: 'academics' },
-    { category: 'Kesantrian', icon: <FolderTree size={18} />, label: "Project & Kegiatan", href: "/admin/project", roles: ["bendahara"], docRef: 'academics' },
-    { category: 'Kesantrian', icon: <UserCheck size={18} />, label: "Staf Pengajar", href: "/admin/teachers", roles: ["tim_media"], docRef: 'teachers' },
-    { category: 'Kesantrian', icon: <Shield size={18} />, label: "Kedisiplinan", href: "/admin/disciplines", roles: ["panitia_psb"], docRef: 'disciplines' },
-    { category: 'Kesantrian', icon: <ClipboardList size={18} />, label: "Data Santri", href: "/admin/kesantrian", roles: ["superadmin", "panitia_psb"], docRef: 'academics' },
-    
-    // Keuangan & Donasi
-    { category: 'Keuangan', icon: <Heart size={18} />, label: "Program Donasi", href: "/admin/donations", roles: ["bendahara"], docRef: 'donations' },
-    { category: 'Keuangan', icon: <CreditCard size={18} />, label: "Pembayaran SPP", href: "/admin/payments", roles: ["bendahara"], docRef: 'payments' },
-    
-    // Institusi & Layanan
-    { category: 'Layanan', icon: <Building size={18} />, label: "Fasilitas Publik", href: "/admin/facilities", roles: ["tim_media"], docRef: 'facilities' },
-    { category: 'Layanan', icon: <MessageSquare size={18} />, label: "Pesan & Inbox", href: "/admin/messages", roles: ["panitia_psb"], docRef: 'messages' },
-    
-    // Sistem
-    { category: 'Sistem', icon: <Bell size={18} />, label: "Notifikasi WA", href: "/admin/notifications", roles: ["bendahara"], docRef: 'notifications' },
-    { category: 'Sistem', icon: <UserCog size={18} />, label: "Manajemen Pengguna", href: "/admin/users", roles: ["superadmin"], docRef: 'users' },
-    { category: 'Sistem', icon: <ScrollText size={18} />, label: "Log Sistem", href: "/admin/logs", roles: ["superadmin"], docRef: 'logs' },
-    { category: 'Sistem', icon: <Settings size={18} />, label: "Pengaturan Utama", href: "/admin/settings", roles: ["superadmin"], docRef: 'settings' },
-    { category: 'Sistem', icon: <LayoutDashboard size={18} />, label: "Website Builder", href: "/admin/builder", roles: ["superadmin"], docRef: 'builder' },
-    { category: 'Sistem', icon: <HelpCircle size={18} />, label: "Tutorial", href: "/admin/help" },
-  ];
+  const ICONS: Record<string, React.ReactNode> = {
+    '/admin': <LayoutDashboard size={18} />,
+    '/admin/programs': <Layers size={18} />,
+    '/admin/news': <Newspaper size={18} />,
+    '/admin/agendas': <Calendar size={18} />,
+    '/admin/gallery': <ImageIcon size={18} />,
+    '/admin/videos': <Video size={18} />,
+    '/admin/psb': <Users size={18} />,
+    '/admin/raport': <GraduationCap size={18} />,
+    '/admin/academics': <BookOpen size={18} />,
+    '/admin/project': <FolderTree size={18} />,
+    '/admin/teachers': <UserCheck size={18} />,
+    '/admin/disciplines': <Shield size={18} />,
+    '/admin/kesantrian': <ClipboardList size={18} />,
+    '/admin/donations': <Heart size={18} />,
+    '/admin/payments': <CreditCard size={18} />,
+    '/admin/facilities': <Building size={18} />,
+    '/admin/messages': <MessageSquare size={18} />,
+    '/admin/notifications': <Bell size={18} />,
+    '/admin/users': <UserCog size={18} />,
+    '/admin/logs': <ScrollText size={18} />,
+    '/admin/settings': <Settings size={18} />,
+    '/admin/builder': <LayoutDashboard size={18} />,
+    '/admin/help': <HelpCircle size={18} />,
+  };
 
-  // Filter by role + dynamic role_menu_permissions (admin can uncheck Berita for bendahara etc.)
+  // Daftar menu dari katalog bersama (lib/roleMenus) agar tidak drift
+  // dengan checkbox Hak Akses di Manajemen Pengguna.
+  const menuItems: MenuItem[] = ROLE_MENU_DEFS.map((d) => ({
+    category: d.category,
+    icon: ICONS[d.href] ?? <FileText size={18} />,
+    label: d.label,
+    href: d.href,
+    roles: d.roles,
+    docRef: d.docRef,
+  }));
+
+  // Filter menu: daftar tersimpan mengatur penuh per role (bisa tambah
+  // maupun kurang dari standar). Tanpa simpanan -> pakai standar role.
+  // Catatan: backend tetap menegakkan RequireRole, jadi menu yang diberi
+  // di luar jatah role-nya akan tampil tapi API-nya menolak (403).
   const visibleItems = menuItems.filter(item => {
     if (!item.roles || item.roles.length === 0) return true;
-    if (!hasRole(...item.roles)) return false;
     const role = user?.role;
-    if (role && role !== 'superadmin' && rolePerms[role] && Array.isArray(rolePerms[role])) {
-      const hasSetting = Object.prototype.hasOwnProperty.call(rolePerms, role);
-      if (hasSetting) {
-        return rolePerms[role].includes(item.href);
-      }
-    }
-    return true;
+    if (role === 'superadmin') return true;
+    const saved = role ? rolePerms[role] : undefined;
+    if (saved && Array.isArray(saved)) return saved.includes(item.href);
+    return hasRole(...item.roles);
   });
 
   return (
