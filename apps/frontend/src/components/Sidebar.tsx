@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
-import { getSettings } from '@/lib/api';
+import { getRoleMenuPermissions } from '@/lib/api';
 import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText } from 'lucide-react';
 
 interface MenuItem {
@@ -22,14 +22,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    getSettings().then((s) => {
-      const raw = s.find((x) => x.key === 'role_menu_permissions')?.value;
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === 'object') setRolePerms(parsed);
-        } catch {}
-      }
+    getRoleMenuPermissions().then((parsed) => {
+      setRolePerms(parsed);
     }).catch(()=>{});
   }, []);
 
@@ -37,8 +31,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { category: 'Utama', icon: <LayoutDashboard size={18} />, label: "Dashboard Utama", href: "/admin", docRef: 'dashboard' },
     
     // Publikasi
-    { category: 'Konten & Publikasi', icon: <Newspaper size={18} />, label: "Berita", href: "/admin/news", roles: ["tim_media"], docRef: 'news' },
     { category: 'Konten & Publikasi', icon: <Layers size={18} />, label: "Program Pondok", href: "/admin/programs", roles: ["tim_media"], docRef: 'programs' },
+    { category: 'Konten & Publikasi', icon: <Newspaper size={18} />, label: "Berita", href: "/admin/news", roles: ["tim_media"], docRef: 'news' },
     { category: 'Konten & Publikasi', icon: <Calendar size={18} />, label: "Agenda Kegiatan", href: "/admin/agendas", docRef: 'agendas' },
     { category: 'Konten & Publikasi', icon: <ImageIcon size={18} />, label: "Galeri Foto", href: "/admin/gallery", roles: ["tim_media"], docRef: 'gallery' },
     { category: 'Konten & Publikasi', icon: <Video size={18} />, label: "Video Kegiatan", href: "/admin/videos", roles: ["tim_media"], docRef: 'videos' },

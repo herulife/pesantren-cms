@@ -60,6 +60,8 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	// AUDIT FIX [6.7]: baseline security headers.
+	r.Use(appmiddleware.SecurityHeaders)
 
 	// CORS Configuration
 	r.Use(cors.Handler(cors.Options{
@@ -114,6 +116,7 @@ func main() {
 	programRepo := programs.NewRepository(database.DB)
 	programHandler := programs.NewHandler(programRepo)
 
+
 	messageRepo := messages.NewRepository(database.DB)
 	messageHandler := messages.NewHandler(messageRepo)
 
@@ -145,6 +148,10 @@ func main() {
 	googleLoginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	registerLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	contactLimiter := appmiddleware.NewRateLimiter(20, time.Hour)
+	// AUDIT FIX [6.8]: spam/DoS protection. Upload stays open to role "user"
+	// (portal butuh upload bukti), dibatasi 30/jam. Webhook Telegram 120/menit.
+	uploadLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
+	webhookLimiter := appmiddleware.NewRateLimiter(120, time.Minute)
 
 	// 5. Mount Routes
 	r.Route("/api", func(r chi.Router) {
@@ -158,7 +165,7 @@ func main() {
 		r.With(registerLimiter.Middleware).Post("/register", authHandler.Register)
 		r.With(googleLoginLimiter.Middleware).Post("/auth/google", authHandler.GoogleLogin)
 		r.Post("/logout", authHandler.Logout)
-		r.Post("/telegram/webhook", notificationHandler.TelegramWebhook)
+		r.With(webhookLimiter.Middleware).Post("/telegram/webhook", notificationHandler.TelegramWebhook)
 
 		// Public Contact Message
 		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
@@ -279,7 +286,8 @@ func main() {
 			r.Use(auth.AuthMiddleware)
 
 			r.Get("/me", authHandler.GetMe)
-			r.Post("/upload", upload.HandleUpload)
+			r.Get("/settings/role-permissions", settingHandler.GetRolePermissions)
+			r.With(uploadLimiter.Middleware).Post("/upload", upload.HandleUpload)
 
 			// Superadmin Only
 			r.Group(func(r chi.Router) {
@@ -383,7 +391,15 @@ func main() {
 		"allowed_origins": getAllowedOrigins(),
 		"log_level":       getEnv("LOG_LEVEL", "info"),
 	})
-	if err := http.ListenAndServe(port, r); err != nil {
+	srv := &http.Server{
+		Addr:              port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       90 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Error(context.Background(), "api server stopped unexpectedly", logger.Field{"error": err.Error()})
 		os.Exit(1)
 	}

@@ -62,6 +62,8 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 		"social_instagram",
 		"social_facebook",
 		"social_youtube",
+		"social_tiktok",
+		"social_twitter",
 		"welcome_speech_name",
 		"welcome_speech_role",
 		"welcome_speech_image",
@@ -97,6 +99,20 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSONResponse(w, http.StatusOK, true, "Pengaturan publik berhasil dimuat", publicList)
+}
+
+// GetRolePermissions mengembalikan peta hak akses menu per role.
+// Bisa dibaca semua user yang sudah login (bukan hanya superadmin)
+// agar Sidebar tiap role bisa memfilter menu sesuai pengaturan.
+func (h *Handler) GetRolePermissions(w http.ResponseWriter, r *http.Request) {
+	value, err := h.repo.GetByKey("role_menu_permissions")
+	if err != nil || value == "" {
+		value = "{}"
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Hak akses menu berhasil dimuat", map[string]string{
+		"key":   "role_menu_permissions",
+		"value": value,
+	})
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {

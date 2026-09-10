@@ -372,7 +372,8 @@ async function parseResponse(res: Response) {
 		} else {
 			errMsg = localizeApiMessage(errMsg);
 		}
-		console.error(`[API] Request failed: ${res.url} - ${errMsg}`);
+		// AUDIT FIX [6.10]: URL & detail mentah tidak di-log ke console browser.
+		console.error('[API] Request failed');
 		throw new Error(errMsg);
 	}
 	
@@ -726,7 +727,7 @@ export async function getPrograms(params: { category?: string, search?: string }
 		const queryParams = new URLSearchParams();
 		if (params.category) queryParams.append('category', params.category);
 		if (params.search) queryParams.append('search', params.search);
-		
+
 		const res = await fetch(`${API_BASE_URL}/programs?${queryParams.toString()}`, withCredentials({ cache: 'no-store' }));
 		if (!res.ok) return [];
 		const result = await parseResponse(res);
@@ -991,7 +992,7 @@ export async function updateProgram(id: number | string, program: Partial<Progra
 }
 
 export async function deleteProgram(id: number | string) {
-	const res = await fetch(`${API_BASE_URL}/programs/${id}`, { 
+	const res = await fetch(`${API_BASE_URL}/programs/${id}`, {
 		method: 'DELETE',
 		headers: getAuthHeaders()
 	});
@@ -1457,9 +1458,12 @@ export async function uploadImage(file: File) {
 	const formData = new FormData();
 	formData.append('image', file);
 
-	const res = await fetch(`${API_BASE_URL}/upload`, {
+	// Pakai rawFetch (tanpa timeout 30 detik apiFetch): upload foto HP
+	// yang besar lewat koneksi lambat sering terputus di tengah jalan.
+	const res = await rawFetch(`${API_BASE_URL}/upload`, {
 		method: 'POST',
-		body: formData
+		body: formData,
+		credentials: 'include'
 	});
 	const result = await parseResponse(res);
 	if (result?.data?.url && !result.url) {
@@ -1855,6 +1859,23 @@ export async function getPublicSettingsMap() {
 		acc[setting.key] = setting.value || '';
 		return acc;
 	}, {});
+}
+
+export async function getRoleMenuPermissions(): Promise<Record<string, string[]>> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/settings/role-permissions`, {
+			credentials: 'include',
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		const raw = result?.data?.value || '{}';
+		const parsed = JSON.parse(raw);
+		if (parsed && typeof parsed === 'object') return parsed as Record<string, string[]>;
+		return {};
+	} catch (e) {
+		console.error(`[API] Fetch role permissions error:`, e);
+		return {};
+	}
 }
 
 export async function updateSetting(key: string, value: string) {

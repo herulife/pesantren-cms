@@ -102,6 +102,26 @@ export default function UsersPage() {
     confirmPassword: '',
   });
   // customMenus dihapus — hanya Hak Akses Menu per role
+  const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
+  const [permsLoading, setPermsLoading] = useState(true);
+
+  const fetchRolePerms = useCallback(async () => {
+    setPermsLoading(true);
+    try {
+      const s = await getSettings();
+      const raw = s.find(x => x.key === 'role_menu_permissions')?.value || '{}';
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') setRolePerms(parsed);
+      } catch {}
+    } finally {
+      setPermsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchRolePerms();
+  }, [fetchRolePerms]);
 
   const fetchUsers = useCallback(async (search = searchQuery) => {
     setIsLoading(true);
@@ -401,6 +421,7 @@ export default function UsersPage() {
                 else perms[r.value] = [];
               });
               await updateSetting('role_menu_permissions', JSON.stringify(perms));
+              setRolePerms(perms);
               showToast('success','Hak akses direset ke default');
             }}
             className="text-xs font-bold text-slate-500 hover:text-slate-700 underline"
@@ -433,18 +454,20 @@ export default function UsersPage() {
                     {href:'/admin/builder',label:'Website Builder'},
                   ].map(item => (
                     <label key={item.href} className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 cursor-pointer">
-                      <input type="checkbox" defaultChecked className="rounded" onChange={async (e)=>{
+                      <input type="checkbox" disabled={permsLoading} className="rounded"
+                        checked={permsLoading ? true : (rolePerms[role.value]?.includes(item.href) ?? true)}
+                        onChange={async (e)=>{
                         try {
-                          const s = await getSettings();
-                          const raw = s.find(x=>x.key==='role_menu_permissions')?.value || '{}';
-                          let perms: Record<string,string[]> = {};
-                          try { perms = JSON.parse(raw); } catch {}
-                          const list = perms[role.value] || [];
+                          const list = rolePerms[role.value] || [];
                           const next = e.target.checked ? [...new Set([...list, item.href])] : list.filter(x=>x!==item.href);
-                          perms[role.value] = next;
+                          const perms = { ...rolePerms, [role.value]: next };
+                          setRolePerms(perms);
                           await updateSetting('role_menu_permissions', JSON.stringify(perms));
                           showToast('success', `${role.label} ${e.target.checked ? 'diberi' : 'dicabut'} akses ${item.label}`);
-                        } catch {}
+                        } catch {
+                          await fetchRolePerms();
+                          showToast('error', 'Gagal menyimpan, data dimuat ulang');
+                        }
                       }} />
                       <span className="font-medium text-slate-700">{item.label}</span>
                       <span className="ml-auto text-[10px] text-slate-400">{item.href}</span>
