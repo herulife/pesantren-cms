@@ -1106,6 +1106,37 @@ export async function deleteSppBill(id: number) {
 	return parseResponse(res);
 }
 
+export interface SppReportRow {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_bills: number;
+	status: string;
+}
+
+export async function getSppReport(params: { period_start: string; period_end: string; class?: string; santri_id?: number }) {
+	try {
+		const query = new URLSearchParams();
+		query.set('period_start', params.period_start);
+		query.set('period_end', params.period_end);
+		if (params.class) query.set('class', params.class);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/spp/report?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as SppReportRow[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP report error:`, e);
+		return [];
+	}
+}
+
 // Mutations
 export async function createProgram(program: Omit<Program, 'id' | 'created_at' | 'updated_at'>) {
 	const res = await fetch(`${API_BASE_URL}/programs`, {

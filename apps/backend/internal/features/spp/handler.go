@@ -81,6 +81,7 @@ func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/bills", h.ListBills)
 	r.Get("/bills/summary", h.Summary)
+	r.Get("/report", h.Report)
 	r.Get("/santri", h.ListSantri)
 	r.Post("/bills/generate", h.Generate)
 	r.Post("/bills", h.Create)
@@ -138,6 +139,32 @@ func (h *Handler) Summary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sendJSONResponse(w, http.StatusOK, true, "Ringkasan tagihan SPP berhasil dimuat", s)
+}
+
+func (h *Handler) Report(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	start := strings.TrimSpace(q.Get("period_start"))
+	end := strings.TrimSpace(q.Get("period_end"))
+	class := strings.TrimSpace(q.Get("class"))
+	santriID, _ := strconv.Atoi(q.Get("santri_id"))
+	if !periodPattern.MatchString(start) || !periodPattern.MatchString(end) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Periode awal/akhir harus format YYYY-MM (contoh: 2026-09)", nil)
+		return
+	}
+	if end < start {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Periode akhir tidak boleh sebelum periode awal", nil)
+		return
+	}
+	rows, err := h.repo.Report(start, end, class, santriID)
+	if err != nil {
+		logger.Error(r.Context(), "spp report failed", logger.Field{"operation": "spp_report", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	if rows == nil {
+		rows = []SppReportRow{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Laporan tagihan per santri berhasil dimuat", rows)
 }
 
 type generateRequest struct {
@@ -361,5 +388,6 @@ type IRepository interface {
 	PayBill(id, amount int, method, paidAt, notes string) error
 	CancelBill(id int) error
 	Summary(period string) (*SppSummary, error)
+	Report(periodStart, periodEnd, class string, santriID int) ([]SppReportRow, error)
 	ListActiveSantri() ([]SppSantri, error)
 }

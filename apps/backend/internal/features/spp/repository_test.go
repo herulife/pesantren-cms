@@ -158,3 +158,48 @@ func TestSummaryTotals(t *testing.T) {
 		t.Fatalf("unexpected counts: %+v", s)
 	}
 }
+
+func TestReportPerSantri(t *testing.T) {
+	repo := NewRepository(newSppTestDB(t))
+
+	if _, _, err := repo.GenerateBills("2026-09", 100000, ""); err != nil {
+		t.Fatalf("GenerateBills returned error: %v", err)
+	}
+	if _, _, err := repo.GenerateBills("2026-10", 100000, ""); err != nil {
+		t.Fatalf("GenerateBills returned error: %v", err)
+	}
+	bills, _ := repo.ListBills("2026-09", "", 0)
+	if err := repo.PayBill(bills[0].ID, 100000, "manual", "", ""); err != nil {
+		t.Fatalf("PayBill returned error: %v", err)
+	}
+
+	rows, err := repo.Report("2026-09", "2026-10", "", 0)
+	if err != nil {
+		t.Fatalf("Report returned error: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("expected 2 santri rows, got %d", len(rows))
+	}
+	for _, r := range rows {
+		if r.Billed != 200000 {
+			t.Fatalf("expected billed 200000 for %s, got %d", r.Name, r.Billed)
+		}
+	}
+	if rows[0].Collected != 100000 || rows[0].Status != "partial" {
+		t.Fatalf("expected first santri partial/100000, got %+v", rows[0])
+	}
+	if rows[1].Collected != 0 || rows[1].Status != "unpaid" {
+		t.Fatalf("expected second santri unpaid/0, got %+v", rows[1])
+	}
+	if rows[0].Outstanding != 100000 {
+		t.Fatalf("expected outstanding 100000, got %d", rows[0].Outstanding)
+	}
+
+	filtered, err := repo.Report("2026-09", "2026-10", "VII Putri", 0)
+	if err != nil {
+		t.Fatalf("Report class filter returned error: %v", err)
+	}
+	if len(filtered) != 1 || filtered[0].Name != "Santri B" {
+		t.Fatalf("expected only Santri B, got %+v", filtered)
+	}
+}

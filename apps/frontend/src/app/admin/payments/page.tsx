@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getPayments, createPayment, deletePayment, getPaymentUsers, Payment, CompactUser } from '@/lib/api';
 import SppBills from './SppBills';
+import SppReport from './SppReport';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -18,7 +19,7 @@ export default function PaymentsAdminPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [activeTab, setActiveTab] = useState<'bills' | 'manual'>('bills');
+  const [activeTab, setActiveTab] = useState<'bills' | 'manual' | 'report'>('bills');
   const { showToast } = useToast();
 
   const fetchData = async () => {
@@ -203,9 +204,17 @@ export default function PaymentsAdminPage() {
         >
           Pembayaran Manual
         </button>
+        <button
+          onClick={() => setActiveTab('report')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'report' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Laporan Tagihan
+        </button>
       </div>
 
       {activeTab === 'bills' && <SppBills />}
+
+      {activeTab === 'report' && <SppReport />}
 
       {activeTab === 'manual' && (
       <>

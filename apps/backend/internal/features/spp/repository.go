@@ -286,6 +286,68 @@ func (r *Repository) Summary(period string) (*SppSummary, error) {
 	return s, nil
 }
 
+type SppReportRow struct {
+	SantriID  int    `json:"santri_id"`
+	NIS       string `json:"nis"`
+	Name      string `json:"name"`
+	Class     string `json:"class"`
+	Billed    int    `json:"billed"`
+	Collected int    `json:"collected"`
+	Outstanding int  `json:"outstanding"`
+	CountBills int   `json:"count_bills"`
+	Status    string `json:"status"`
+}
+
+func (r *Repository) Report(periodStart, periodEnd, class string, santriID int) ([]SppReportRow, error) {
+	query := `
+		SELECT s.id, s.nis, s.name, s.class,
+		       COALESCE(SUM(b.amount),0), COALESCE(SUM(b.paid_amount),0), COUNT(b.id)
+		FROM santri s
+		LEFT JOIN spp_bills b ON b.santri_id = s.id AND b.period >= ? AND b.period <= ?
+		WHERE s.status = 'aktif'
+	`
+	args := []interface{}{periodStart, periodEnd}
+	if class != "" {
+		query += ` AND s.class = ?`
+		args = append(args, class)
+	}
+	if santriID > 0 {
+		query += ` AND s.id = ?`
+		args = append(args, santriID)
+	}
+	query += ` GROUP BY s.id, s.nis, s.name, s.class ORDER BY s.name ASC`
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	list := []SppReportRow{}
+	for rows.Next() {
+		var row SppReportRow
+		if err := rows.Scan(&row.SantriID, &row.NIS, &row.Name, &row.Class,
+			&row.Billed, &row.Collected, &row.CountBills); err != nil {
+			return nil, err
+		}
+		row.Outstanding = row.Billed - row.Collected
+		switch {
+		case row.CountBills == 0:
+			row.Status = "none"
+		case row.Outstanding <= 0:
+			row.Status = "paid"
+		case row.Collected > 0:
+			row.Status = "partial"
+		default:
+			row.Status = "unpaid"
+		}
+		list = append(list, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
 func (r *Repository) ListActiveSantri() ([]SppSantri, error) {
 	rows, err := r.db.Query(`SELECT id, nis, name, class FROM santri WHERE status = 'aktif' ORDER BY name ASC`)
 	if err != nil {
