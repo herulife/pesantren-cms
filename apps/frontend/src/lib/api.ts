@@ -3033,3 +3033,61 @@ export async function getReportPerGuru(params: { semester?: string; year?: strin
     return (result.data || []) as PerGuruRow[];
   } catch (e) { console.error("[API] Fetch per-guru error:", e); return []; }
 }
+
+export interface Employee { code: string; name: string; gender: string; birth_place: string; birth_date: string; phone: string; email: string; kind: string; is_active: number; created_at: string; updated_at: string; }
+export interface TeacherAttendance { id: number; employee_code: string; employee_name?: string; date: string; status: string; notes: string; time_in: string; time_out: string; minutes: number; }
+export interface PerGuruSummary { without_info: number; present: number; sick: number; permit: number; total_minutes: number; count: number; }
+export interface RekapAbsensi { code: string; name: string; days: number; present: number; sick: number; permit: number; alpha: number; percent: number; }
+
+export async function getEmployees(search = "") {
+  try {
+    const q = new URLSearchParams();
+    if (search) q.set("search", search);
+    const res = await fetch(`${API_BASE_URL}/hr/employees?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as Employee[];
+  } catch (e) { console.error("[API] Fetch employees error:", e); return []; }
+}
+export async function createEmployee(data: { code: string; name: string; gender?: string; birth_place?: string; birth_date?: string; phone?: string; email?: string; kind: string }) {
+  const res = await fetch(`${API_BASE_URL}/hr/employees`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteEmployee(code: string) {
+  const res = await fetch(`${API_BASE_URL}/hr/employees/${encodeURIComponent(code)}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function getTeacherAttendance(params: { code?: string; from?: string; to?: string } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.code) q.set("code", params.code);
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    const res = await fetch(`${API_BASE_URL}/hr/attendance?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as TeacherAttendance[];
+  } catch (e) { console.error("[API] Fetch attendance error:", e); return []; }
+}
+export async function createTeacherAttendance(data: { employee_code: string; date: string; status: string; notes?: string; time_in?: string; time_out?: string }) {
+  const res = await fetch(`${API_BASE_URL}/hr/attendance`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteTeacherAttendance(id: number) {
+  const res = await fetch(`${API_BASE_URL}/hr/attendance/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function getPerGuru(code: string, from: string, to: string): Promise<{ summary: PerGuruSummary; rows: TeacherAttendance[] } | null> {
+  try {
+    const q = new URLSearchParams({ code, from, to });
+    const res = await fetch(`${API_BASE_URL}/hr/per-guru?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || null) as { summary: PerGuruSummary; rows: TeacherAttendance[] } | null;
+  } catch (e) { console.error("[API] Fetch per-guru error:", e); return null; }
+}
+export async function getRekapAbsensi(from: string, to: string) {
+  try {
+    const q = new URLSearchParams({ from, to });
+    const res = await fetch(`${API_BASE_URL}/hr/rekap?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as RekapAbsensi[];
+  } catch (e) { console.error("[API] Fetch rekap error:", e); return []; }
+}

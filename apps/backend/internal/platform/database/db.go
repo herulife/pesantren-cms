@@ -192,6 +192,35 @@ func createTables() {
 	CREATE INDEX IF NOT EXISTS idx_kas_tx_date ON kas_transactions(date DESC);
 	CREATE INDEX IF NOT EXISTS idx_kas_tx_kind ON kas_transactions(kind);
 
+	CREATE TABLE IF NOT EXISTS employees (
+		code TEXT PRIMARY KEY,
+		name TEXT NOT NULL,
+		gender TEXT DEFAULT '',
+		birth_place TEXT DEFAULT '',
+		birth_date TEXT DEFAULT '',
+		phone TEXT DEFAULT '',
+		email TEXT DEFAULT '',
+		kind TEXT NOT NULL DEFAULT 'Guru',
+		is_active INTEGER NOT NULL DEFAULT 1,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS teacher_attendance (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		employee_code TEXT NOT NULL,
+		date TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT 'Masuk',
+		notes TEXT DEFAULT '',
+		time_in TEXT DEFAULT '',
+		time_out TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (employee_code) REFERENCES employees(code),
+		UNIQUE(employee_code, date)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_teacher_att_date ON teacher_attendance(date DESC);
+
 	CREATE TABLE IF NOT EXISTS academic_years (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL UNIQUE,

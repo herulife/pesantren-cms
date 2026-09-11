@@ -27,6 +27,7 @@ import (
 	"almaparung-api/internal/features/iuran"
 	"almaparung-api/internal/features/school"
 	"almaparung-api/internal/features/kas"
+	"almaparung-api/internal/features/hr"
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
@@ -138,6 +139,9 @@ func main() {
 
 	kasRepo := kas.NewRepository(database.DB)
 	kasHandler := kas.NewHandler(kasRepo)
+
+	hrRepo := hr.NewRepository(database.DB)
+	hrHandler := hr.NewHandler(hrRepo)
 
 	logRepo := logs.NewRepository(database.DB)
 	logHandler := logs.NewHandler(logRepo)
@@ -338,6 +342,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
 			r.Mount("/school", schoolHandler.Routes())
+			r.Mount("/hr", hrHandler.Routes())
 		})
 
 		// Panitia PSB Ops
