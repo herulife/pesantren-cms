@@ -537,6 +537,18 @@ func createTables() {
 		FOREIGN KEY(campaign_id) REFERENCES donation_campaigns(id) ON DELETE SET NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS donors (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		address TEXT DEFAULT '',
+		phone TEXT DEFAULT '',
+		notes TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_donors_name ON donors(name);
+
 	CREATE INDEX IF NOT EXISTS idx_santri_nis ON santri(nis);
 	CREATE INDEX IF NOT EXISTS idx_santri_class ON santri(class);
 	CREATE INDEX IF NOT EXISTS idx_santri_status ON santri(status);
@@ -591,6 +603,9 @@ func createTables() {
 	addColumnIfNotExists("subjects", "kkm", "REAL DEFAULT 75")
 	addColumnIfNotExists("subjects", "sort_order", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("subjects", "is_active", "INTEGER DEFAULT 1")
+	addColumnIfNotExists("donations", "donor_id", "INTEGER")
+	addColumnIfNotExists("donations", "type", "TEXT DEFAULT ''")
+	addColumnIfNotExists("donations", "notes", "TEXT DEFAULT ''")
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 	_, _ = DB.Exec("UPDATE settings SET updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 

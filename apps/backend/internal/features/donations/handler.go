@@ -5,7 +5,9 @@ import (
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -71,8 +73,9 @@ func (h *Handler) GetDonations(w http.ResponseWriter, r *http.Request) {
 	campaignID, _ := strconv.Atoi(r.URL.Query().Get("campaign_id"))
 	status := r.URL.Query().Get("status")
 	search := r.URL.Query().Get("search")
+	donationType := r.URL.Query().Get("type")
 
-	list, err := h.repo.FindAllDonations(campaignID, status, search)
+	list, err := h.repo.FindAllDonations(campaignID, status, search, donationType)
 	if err != nil {
 		logger.Error(r.Context(), "donations list failed", logger.Field{"operation": "donations_list", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -248,6 +251,172 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Donasi berhasil diverifikasi dan notifikasi dikirim", nil)
 }
 
+func (h *Handler) GetDonors(w http.ResponseWriter, r *http.Request) {
+	search := r.URL.Query().Get("search")
+	list, err := h.repo.FindAllDonors(search)
+	if err != nil {
+		logger.Error(r.Context(), "donors list failed", logger.Field{"operation": "donors_list", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	if list == nil {
+		list = []Donor{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Daftar donatur berhasil dimuat", list)
+}
+
+func (h *Handler) CreateDonor(w http.ResponseWriter, r *http.Request) {
+	var req validators.DonorRequest
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+	if errs := validators.ValidateDonorRequest(&req); errs != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
+	d := &Donor{Name: req.Name, Address: req.Address, Phone: req.Phone, Notes: req.Notes}
+	if err := h.repo.CreateDonor(d); err != nil {
+		logger.Error(r.Context(), "donor create failed", logger.Field{"operation": "donor_create", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusCreated, true, "Donatur berhasil ditambahkan", nil)
+}
+
+func (h *Handler) UpdateDonor(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var req validators.DonorRequest
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+	if errs := validators.ValidateDonorRequest(&req); errs != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
+	d := &Donor{ID: id, Name: req.Name, Address: req.Address, Phone: req.Phone, Notes: req.Notes}
+	if err := h.repo.UpdateDonor(d); err != nil {
+		logger.Error(r.Context(), "donor update failed", logger.Field{"operation": "donor_update", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Donatur berhasil diperbarui", nil)
+}
+
+func (h *Handler) DeleteDonor(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if err := h.repo.DeleteDonor(id); err != nil {
+		logger.Error(r.Context(), "donor delete failed", logger.Field{"operation": "donor_delete", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Donatur berhasil dihapus", nil)
+}
+
+func (h *Handler) CreateDonation(w http.ResponseWriter, r *http.Request) {
+	var req validators.DonationRequest
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+	if errs := validators.ValidateDonationRequest(&req); errs != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
+	d := &Donation{
+		CampaignID: req.CampaignID, DonorName: req.DonorName, DonorPhone: req.DonorPhone,
+		Amount: req.Amount, Type: req.Type, PaymentMethod: req.Method, ProofURL: req.ProofURL, Notes: req.Notes,
+	}
+	if req.DonorID > 0 {
+		donor, err := h.repo.FindDonorByID(req.DonorID)
+		if err != nil {
+			sendJSONResponse(w, http.StatusBadRequest, false, "Donatur tidak ditemukan", nil)
+			return
+		}
+		d.DonorID = &req.DonorID
+		if d.DonorName == "" {
+			d.DonorName = donor.Name
+		}
+		if d.DonorPhone == "" {
+			d.DonorPhone = donor.Phone
+		}
+	}
+	if d.PaymentMethod == "" {
+		d.PaymentMethod = "transfer"
+	}
+	if _, err := h.repo.CreateDonation(d); err != nil {
+		logger.Error(r.Context(), "donation create failed", logger.Field{"operation": "donation_create", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusCreated, true, "Transaksi donasi berhasil dicatat", nil)
+}
+
+func (h *Handler) UpdateDonation(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var req validators.DonationRequest
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+	if errs := validators.ValidateDonationRequest(&req); errs != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
+	d := &Donation{
+		ID: id, CampaignID: req.CampaignID, DonorName: req.DonorName, DonorPhone: req.DonorPhone,
+		Amount: req.Amount, Type: req.Type, PaymentMethod: req.Method, ProofURL: req.ProofURL, Notes: req.Notes,
+	}
+	if req.DonorID > 0 {
+		if _, err := h.repo.FindDonorByID(req.DonorID); err != nil {
+			sendJSONResponse(w, http.StatusBadRequest, false, "Donatur tidak ditemukan", nil)
+			return
+		}
+		d.DonorID = &req.DonorID
+	}
+	if err := h.repo.UpdateDonation(d); err != nil {
+		if err == errDonationLocked {
+			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
+			return
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			sendJSONResponse(w, http.StatusNotFound, false, "Transaksi tidak ditemukan", nil)
+			return
+		}
+		logger.Error(r.Context(), "donation update failed", logger.Field{"operation": "donation_update", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Transaksi donasi berhasil diperbarui", nil)
+}
+
+func (h *Handler) DeleteDonation(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if err := h.repo.DeleteDonation(id); err != nil {
+		if err == errDonationLocked {
+			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
+			return
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			sendJSONResponse(w, http.StatusNotFound, false, "Transaksi tidak ditemukan", nil)
+			return
+		}
+		logger.Error(r.Context(), "donation delete failed", logger.Field{"operation": "donation_delete", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Transaksi donasi berhasil dihapus", nil)
+}
+
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/campaigns", h.GetCampaigns)
@@ -256,7 +425,14 @@ func (h *Handler) Routes() chi.Router {
 	r.Put("/campaigns/{id}", h.Update)
 	r.Delete("/campaigns/{id}", h.Delete)
 	r.Get("/list", h.GetDonations)
+	r.Post("/list", h.CreateDonation)
+	r.Put("/list/{id}", h.UpdateDonation)
+	r.Delete("/list/{id}", h.DeleteDonation)
 	r.Put("/verify/{id}", h.VerifyDonation)
+	r.Get("/donors", h.GetDonors)
+	r.Post("/donors", h.CreateDonor)
+	r.Put("/donors/{id}", h.UpdateDonor)
+	r.Delete("/donors/{id}", h.DeleteDonor)
 	return r
 }
 
@@ -266,11 +442,19 @@ func (h *Handler) Routes() chi.Router {
 type IRepository interface {
 	FindAllCampaigns(activeOnly bool, search string) ([]Campaign, error)
 	FindCampaignByID(id int) (*Campaign, error)
-	FindAllDonations(campaignID int, status, search string) ([]Donation, error)
+	FindAllDonations(campaignID int, status, search, donationType string) ([]Donation, error)
 	FindDonationByID(id int) (*Donation, error)
+	CreateDonation(d *Donation) (int64, error)
+	UpdateDonation(d *Donation) error
+	DeleteDonation(id int) error
 	VerifyDonation(id int, verifiedBy int) error
 	CreateCampaign(c *Campaign) error
 	UpdateCampaign(c *Campaign) error
 	DeleteCampaign(id int) error
 	UpdateCampaignAmount(id int, amount float64) error
+	FindAllDonors(search string) ([]Donor, error)
+	FindDonorByID(id int) (*Donor, error)
+	CreateDonor(d *Donor) error
+	UpdateDonor(d *Donor) error
+	DeleteDonor(id int) error
 }

@@ -523,13 +523,16 @@ export interface Donation {
 	id: number;
 	campaign_id: number;
 	campaign_title: string;
+	donor_id?: number | null;
 	donor_name: string;
 	donor_phone: string;
 	amount: number;
+	type?: string;
 	message: string;
 	payment_method: string;
 	status: string;
 	donation_date: string;
+	notes?: string;
 	created_at: string;
 }
 
@@ -869,12 +872,13 @@ export async function getCampaigns(params: { activeOnly?: boolean, search?: stri
 	}
 }
 
-export async function getDonations(params: { campaignID?: number, status?: string, search?: string } = {}) {
+export async function getDonations(params: { campaignID?: number, status?: string, search?: string, type?: string } = {}) {
 	try {
 		const queryParams = new URLSearchParams();
 		if (params.campaignID) queryParams.append('campaign_id', params.campaignID.toString());
 		if (params.status) queryParams.append('status', params.status);
 		if (params.search) queryParams.append('search', params.search);
+		if (params.type) queryParams.append('type', params.type);
 
 		const res = await fetch(`${API_BASE_URL}/donations/list?${queryParams.toString()}`, { cache: 'no-store' });
 		if (!res.ok) return [];
@@ -884,6 +888,82 @@ export async function getDonations(params: { campaignID?: number, status?: strin
 		console.error(`[API] Fetch donations error:`, e);
 		return [];
 	}
+}
+
+export interface Donor {
+	id: number;
+	name: string;
+	address: string;
+	phone: string;
+	notes: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export async function getDonors(search: string = '') {
+	try {
+		const queryParams = new URLSearchParams();
+		if (search) queryParams.append('search', search);
+		const res = await fetch(`${API_BASE_URL}/donations/donors?${queryParams.toString()}`, { cache: 'no-store' });
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		return (result.data || []) as Donor[];
+	} catch (e) {
+		console.error(`[API] Fetch donors error:`, e);
+		return [];
+	}
+}
+
+export async function createDonor(data: Omit<Donor, 'id' | 'created_at' | 'updated_at'>) {
+	const res = await fetch(`${API_BASE_URL}/donations/donors`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateDonor(id: number, data: Omit<Donor, 'id' | 'created_at' | 'updated_at'>) {
+	const res = await fetch(`${API_BASE_URL}/donations/donors/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteDonor(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/donors/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function createDonation(data: { campaign_id: number; donor_id?: number; donor_name: string; donor_phone?: string; amount: number; type?: string; method?: string; proof_url?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/donations/list`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateDonation(id: number, data: { campaign_id: number; donor_id?: number; donor_name: string; donor_phone?: string; amount: number; type?: string; method?: string; proof_url?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/donations/list/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteDonation(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/list/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
 }
 
 export async function getVideos(params: { search?: string, limit?: number, offset?: number } = {}) {

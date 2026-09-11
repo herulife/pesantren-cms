@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import React, { useState, useEffect, useCallback } from 'react';
-import { getCampaigns, getDonations, deleteCampaign, verifyDonation, Campaign, Donation } from '@/lib/api';
+import { getCampaigns, getDonations, deleteCampaign, verifyDonation, Campaign, Donation, getDonors, createDonor, updateDonor, deleteDonor, Donor, createDonation, updateDonation, deleteDonation } from '@/lib/api';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { Heart, Plus, TrendingUp, Users, DollarSign, ArrowUpRight, Trash2, Pencil, Search, CheckCircle, Clock, FileDown, FileSpreadsheet, Filter, Calendar } from 'lucide-react';
+import { Heart, Plus, TrendingUp, Users, DollarSign, ArrowUpRight, Trash2, Pencil, Search, CheckCircle, Clock, FileDown, FileSpreadsheet, Filter, Calendar, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DonationsAdminPage() {
@@ -15,15 +15,30 @@ export default function DonationsAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   // UI States
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'transactions'>('campaigns');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'transactions' | 'donors'>('campaigns');
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  
+  const [deleteTarget, setDeleteTarget] = useState<'campaign' | 'donor' | 'donation'>('campaign');
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [campaignFilter, setCampaignFilter] = useState<number | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  // Donatur States
+  const [donors, setDonors] = useState<Donor[]>([]);
+  const [isDonorModalOpen, setIsDonorModalOpen] = useState(false);
+  const [editingDonor, setEditingDonor] = useState<Donor | null>(null);
+  const [donorForm, setDonorForm] = useState({ name: '', address: '', phone: '', notes: '' });
+
+  // Transaction Form States
+  const [isTxModalOpen, setIsTxModalOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState<Donation | null>(null);
+  const [txForm, setTxForm] = useState({ campaign_id: '', donor_id: '', donor_name: '', donor_phone: '', amount: '', type: '', method: 'transfer', notes: '' });
+
+  const DONATION_TYPES = ['Infak', 'Sedekah', 'Wakaf', 'Zakat'];
 
   const { showToast } = useToast();
 
@@ -34,24 +49,34 @@ export default function DonationsAdminPage() {
     setIsLoading(false);
   }, [searchQuery]);
 
-  const fetchDonations = useCallback(async (search = searchQuery, status = filterStatus, campaignID = campaignFilter) => {
+  const fetchDonations = useCallback(async (search = searchQuery, status = filterStatus, campaignID = campaignFilter, type = typeFilter) => {
     setIsLoading(true);
-    const data = await getDonations({ 
-        search, 
+    const data = await getDonations({
+        search,
         status: status === 'all' ? '' : status,
-        campaignID: campaignID === 'all' ? undefined : campaignID
+        campaignID: campaignID === 'all' ? undefined : campaignID,
+        type: type === 'all' ? '' : type
     });
     setDonations(data);
     setIsLoading(false);
-  }, [searchQuery, filterStatus, campaignFilter]);
+  }, [searchQuery, filterStatus, campaignFilter, typeFilter]);
+
+  const fetchDonors = useCallback(async (search = searchQuery) => {
+    setIsLoading(true);
+    const data = await getDonors(search);
+    setDonors(data);
+    setIsLoading(false);
+  }, [searchQuery]);
 
   const fetchData = useCallback(() => {
     if (activeTab === 'campaigns') {
         fetchCampaigns(searchQuery);
+    } else if (activeTab === 'donors') {
+        fetchDonors(searchQuery);
     } else {
-        fetchDonations(searchQuery, filterStatus, campaignFilter);
+        fetchDonations(searchQuery, filterStatus, campaignFilter, typeFilter);
     }
-  }, [activeTab, searchQuery, filterStatus, campaignFilter, fetchCampaigns, fetchDonations]);
+  }, [activeTab, searchQuery, filterStatus, campaignFilter, typeFilter, fetchCampaigns, fetchDonations, fetchDonors]);
 
   // Handle Debounced Search
   useEffect(() => {
@@ -59,25 +84,121 @@ export default function DonationsAdminPage() {
         fetchData();
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, activeTab, filterStatus, campaignFilter, fetchData]);
+  }, [searchQuery, activeTab, filterStatus, campaignFilter, typeFilter, fetchData]);
 
   const handleDelete = async () => {
     if (!selectedId) return;
     setIsDeleting(true);
     try {
-      const res = await deleteCampaign(selectedId);
+      const res = deleteTarget === 'donor'
+        ? await deleteDonor(selectedId)
+        : deleteTarget === 'donation'
+          ? await deleteDonation(selectedId)
+          : await deleteCampaign(selectedId);
       if (res.success) {
-        showToast('success', 'Kampanye berhasil dihapus.');
+        showToast('success', deleteTarget === 'donor' ? 'Donatur berhasil dihapus.' : deleteTarget === 'donation' ? 'Transaksi berhasil dihapus.' : 'Kampanye berhasil dihapus.');
         fetchData();
         setIsDeleteOpen(false);
       } else {
-        showToast('error', 'Gagal menghapus kampanye.');
+        showToast('error', res.message || 'Gagal menghapus data.');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
       showToast('error', message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const openDonorModal = (d?: Donor) => {
+    if (d) {
+      setEditingDonor(d);
+      setDonorForm({ name: d.name, address: d.address || '', phone: d.phone || '', notes: d.notes || '' });
+    } else {
+      setEditingDonor(null);
+      setDonorForm({ name: '', address: '', phone: '', notes: '' });
+    }
+    setIsDonorModalOpen(true);
+  };
+
+  const handleSaveDonor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (donorForm.name.trim().length < 3) {
+      showToast('error', 'Nama donatur minimal 3 karakter.');
+      return;
+    }
+    try {
+      const res = editingDonor
+        ? await updateDonor(editingDonor.id, donorForm)
+        : await createDonor(donorForm);
+      if (res.success) {
+        showToast('success', editingDonor ? 'Donatur berhasil diperbarui.' : 'Donatur berhasil ditambahkan.');
+        setIsDonorModalOpen(false);
+        fetchData();
+      } else {
+        showToast('error', res.message || 'Gagal menyimpan donatur.');
+      }
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : 'Terjadi kesalahan sistem.');
+    }
+  };
+
+  const openTxModal = async (d?: Donation) => {
+    if (donors.length === 0) {
+      const list = await getDonors('');
+      setDonors(list);
+    }
+    if (campaigns.length === 0) {
+      const list = await getCampaigns({});
+      setCampaigns(list);
+    }
+    if (d) {
+      setEditingTx(d);
+      setTxForm({
+        campaign_id: String(d.campaign_id),
+        donor_id: d.donor_id ? String(d.donor_id) : '',
+        donor_name: d.donor_name,
+        donor_phone: d.donor_phone || '',
+        amount: String(d.amount),
+        type: d.type || '',
+        method: d.payment_method || 'transfer',
+        notes: d.notes || '',
+      });
+    } else {
+      setEditingTx(null);
+      setTxForm({ campaign_id: '', donor_id: '', donor_name: '', donor_phone: '', amount: '', type: '', method: 'transfer', notes: '' });
+    }
+    setIsTxModalOpen(true);
+  };
+
+  const handleSaveTx = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(txForm.amount);
+    if (!txForm.campaign_id || (!txForm.donor_id && !txForm.donor_name.trim()) || !amount || amount <= 0) {
+      showToast('error', 'Pilih kampanye, donatur, dan isi nominal yang valid.');
+      return;
+    }
+    const payload = {
+      campaign_id: parseInt(txForm.campaign_id),
+      donor_id: txForm.donor_id ? parseInt(txForm.donor_id) : undefined,
+      donor_name: txForm.donor_name.trim(),
+      donor_phone: txForm.donor_phone.trim(),
+      amount,
+      type: txForm.type,
+      method: txForm.method,
+      notes: txForm.notes,
+    };
+    try {
+      const res = editingTx ? await updateDonation(editingTx.id, payload) : await createDonation(payload);
+      if (res.success) {
+        showToast('success', editingTx ? 'Transaksi berhasil diperbarui.' : 'Transaksi berhasil dicatat.');
+        setIsTxModalOpen(false);
+        fetchData();
+      } else {
+        showToast('error', res.message || 'Gagal menyimpan transaksi.');
+      }
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : 'Terjadi kesalahan sistem.');
     }
   };
 
@@ -97,10 +218,11 @@ export default function DonationsAdminPage() {
   };
 
   const handleExportPDF = () => {
-    const columns = ['Donatur', 'Kampanye', 'Jumlah', 'Status', 'Tanggal'];
+    const columns = ['Donatur', 'Kampanye', 'Jenis', 'Jumlah', 'Status', 'Tanggal'];
     const rows = donations.map(d => [
       d.donor_name,
       d.campaign_title,
+      d.type || '-',
       `Rp ${d.amount.toLocaleString('id-ID')}`,
       d.status,
       new Date(d.created_at).toLocaleDateString('id-ID')
@@ -109,10 +231,11 @@ export default function DonationsAdminPage() {
   };
 
   const handleExportExcel = () => {
-    const columns = ['Donatur', 'Kampanye', 'Jumlah', 'Status', 'Tanggal'];
+    const columns = ['Donatur', 'Kampanye', 'Jenis', 'Jumlah', 'Status', 'Tanggal'];
     const rows = donations.map(d => [
       d.donor_name,
       d.campaign_title,
+      d.type || '-',
       d.amount,
       d.status,
       new Date(d.created_at).toLocaleDateString('id-ID')
@@ -130,13 +253,33 @@ export default function DonationsAdminPage() {
           <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">Sentra Filantropi</h1>
           <p className="text-slate-500 text-sm font-medium">Kelola dana umat, verifikasi kontribusi, dan pantau dampak sosial pondok.</p>
         </div>
-        <Link 
-          href="/admin/donations/add"
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95"
-        >
-          <Plus size={20} />
-          <span>Buat Kampanye</span>
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          {activeTab === 'transactions' && (
+            <button
+              onClick={() => openTxModal()}
+              className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 active:scale-95"
+            >
+              <Plus size={20} />
+              <span>Catat Transaksi</span>
+            </button>
+          )}
+          {activeTab === 'donors' && (
+            <button
+              onClick={() => openDonorModal()}
+              className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95"
+            >
+              <Plus size={20} />
+              <span>Tambah Donatur</span>
+            </button>
+          )}
+          <Link
+            href="/admin/donations/add"
+            className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95"
+          >
+            <Plus size={20} />
+            <span>Buat Kampanye</span>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
@@ -181,19 +324,25 @@ export default function DonationsAdminPage() {
                 >
                   Daftar Kampanye
                 </button>
-                <button 
+                <button
                   onClick={() => { setActiveTab('transactions'); setSearchQuery(''); }}
                   className={`flex-1 lg:flex-none px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transactions' ? 'bg-white text-sky-600 shadow-md border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Log Transaksi
                 </button>
-            </div>
+                <button
+                  onClick={() => { setActiveTab('donors'); setSearchQuery(''); }}
+                  className={`flex-1 lg:flex-none px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'donors' ? 'bg-white text-sky-600 shadow-md border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Donatur
+                </button>
+             </div>
 
             <div className="flex-1 w-full relative group">
                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors" size={18} />
                 <input 
                   type="text" 
-                  placeholder={activeTab === 'campaigns' ? "Cari judul kampanye atau deskripsi..." : "Cari nama donatur atau ID transaksi..."}
+                  placeholder={activeTab === 'campaigns' ? "Cari judul kampanye atau deskripsi..." : activeTab === 'donors' ? "Cari nama, alamat, atau HP donatur..." : "Cari nama donatur atau ID transaksi..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-sm shadow-inner"
@@ -220,13 +369,22 @@ export default function DonationsAdminPage() {
                 <option value="pending">Menunggu (Pending)</option>
               </select>
 
-              <select 
+              <select
                 value={campaignFilter}
                 onChange={(e) => setCampaignFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
                 className="flex-[1.5] px-6 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-xs text-slate-600 cursor-pointer appearance-none"
               >
                 <option value="all">Semua Program Kampanye</option>
                 {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="flex-1 px-6 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-xs text-slate-600 cursor-pointer appearance-none"
+              >
+                <option value="all">Semua Jenis Donasi</option>
+                {DONATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
 
               <div className="flex gap-2 shrink-0">
@@ -276,8 +434,8 @@ export default function DonationsAdminPage() {
                         >
                           <Pencil size={18} />
                         </Link>
-                        <button 
-                          onClick={() => { setSelectedId(c.id); setIsDeleteOpen(true); }}
+                        <button
+                          onClick={() => { setSelectedId(c.id); setDeleteTarget('campaign'); setIsDeleteOpen(true); }}
                           aria-label="Hapus kampanye"
                           className="p-2.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl hover:bg-rose-500 hover:border-rose-500 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                         >
@@ -328,6 +486,69 @@ export default function DonationsAdminPage() {
             </div>
           )}
         </div>
+      ) : activeTab === 'donors' ? (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[300px] mb-10">
+          {isLoading && donors.length === 0 ? (
+            <div className="py-20 text-center uppercase font-black text-slate-300 tracking-[0.3em] animate-pulse">
+              Memuat Data Donatur...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="pl-10 pr-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Nama Donatur</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Alamat</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No. HP</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Catatan</th>
+                    <th className="pr-10 pl-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Manajemen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-sm">
+                  {donors.length > 0 ? donors.map((d) => (
+                    <tr key={d.id} className="hover:bg-slate-50 transition-all group">
+                      <td className="pl-10 pr-6 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center font-black text-sky-600 text-base shadow-sm group-hover:scale-105 transition-transform">
+                            {d.name ? d.name.charAt(0).toUpperCase() : '?'}
+                          </div>
+                          <p className="font-black text-slate-900 uppercase tracking-tight">{d.name}</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6 text-slate-600 font-medium">{d.address || '-'}</td>
+                      <td className="px-6 py-6 text-slate-600 font-medium font-mono">{d.phone || '-'}</td>
+                      <td className="px-6 py-6 text-slate-600 font-medium">{d.notes || '-'}</td>
+                      <td className="pr-10 pl-6 py-6 text-right">
+                        <div className="flex justify-end items-center gap-2">
+                          <button
+                            onClick={() => openDonorModal(d)}
+                            aria-label="Ubah donatur"
+                            className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                          <button
+                            onClick={() => { setSelectedId(d.id); setDeleteTarget('donor'); setIsDeleteOpen(true); }}
+                            aria-label="Hapus donatur"
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={5} className="py-24 text-center">
+                        <p className="text-slate-400 font-medium">Belum ada data donatur. Klik “Tambah Donatur”.</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px] mb-10">
            {isLoading && donations.length === 0 ? (
@@ -338,13 +559,14 @@ export default function DonationsAdminPage() {
              <div className="overflow-x-auto">
                <table className="w-full text-left border-collapse">
                  <thead>
-                   <tr className="bg-slate-50/50 border-b border-slate-100">
-                     <th className="pl-10 pr-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Profil Donatur</th>
-                     <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Destinasi Dana</th>
-                     <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Nominal</th>
-                     <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
-                     <th className="pr-10 pl-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Manajemen</th>
-                   </tr>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="pl-10 pr-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Profil Donatur</th>
+                      <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Destinasi Dana</th>
+                      <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Jenis</th>
+                      <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Nominal</th>
+                      <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
+                      <th className="pr-10 pl-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Manajemen</th>
+                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-50 text-sm">
                    {donations.length > 0 ? donations.map((d) => (
@@ -369,9 +591,14 @@ export default function DonationsAdminPage() {
                             {d.campaign_title}
                          </div>
                        </td>
-                       <td className="px-6 py-6">
-                         <span className="font-black text-slate-900 text-base font-outfit">Rp {d.amount.toLocaleString('id-ID')}</span>
-                       </td>
+                        <td className="px-6 py-6">
+                          <span className="inline-flex items-center px-4 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl text-[10px] font-black text-emerald-700 uppercase tracking-tight">
+                            {d.type || '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-6">
+                          <span className="font-black text-slate-900 text-base font-outfit">Rp {d.amount.toLocaleString('id-ID')}</span>
+                        </td>
                        <td className="px-6 py-6">
                          {d.status === 'verified' ? (
                            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-sky-50 text-sky-600 border border-sky-100 shadow-sm">
@@ -383,24 +610,40 @@ export default function DonationsAdminPage() {
                            </span>
                          )}
                        </td>
-                       <td className="pr-10 pl-6 py-6 text-right">
-                         {d.status !== 'verified' ? (
-                           <button 
-                             onClick={() => handleVerify(d.id)}
-                             className="px-6 py-2.5 bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-sky-700 transition-all shadow-lg shadow-sky-200 active:scale-95"
-                           >
-                             Verifikasi Dana
-                           </button>
-                         ) : (
-                           <div className="flex justify-end gap-2 pr-2">
+                        <td className="pr-10 pl-6 py-6 text-right">
+                          <div className="flex justify-end items-center gap-2">
+                            {d.status !== 'verified' ? (
+                              <>
+                                <button
+                                  onClick={() => openTxModal(d)}
+                                  aria-label="Ubah transaksi"
+                                  className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all"
+                                >
+                                  <Pencil size={18} />
+                                </button>
+                                <button
+                                  onClick={() => { setSelectedId(d.id); setDeleteTarget('donation'); setIsDeleteOpen(true); }}
+                                  aria-label="Hapus transaksi"
+                                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                                <button
+                                  onClick={() => handleVerify(d.id)}
+                                  className="px-6 py-2.5 bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-sky-700 transition-all shadow-lg shadow-sky-200 active:scale-95"
+                                >
+                                  Verifikasi Dana
+                                </button>
+                              </>
+                            ) : (
                               <div className="p-2 text-sky-600 bg-sky-50 rounded-lg"><CheckCircle size={18} /></div>
-                           </div>
-                         )}
-                       </td>
+                            )}
+                          </div>
+                        </td>
                      </tr>
                    )) : (
-                     <tr>
-                       <td colSpan={5} className="py-40 text-center">
+                      <tr>
+                        <td colSpan={6} className="py-40 text-center">
                          <div className="w-20 h-20 bg-slate-50 flex items-center justify-center rounded-xl mx-auto mb-6 text-slate-200 shadow-inner">
                            <Search size={40} />
                          </div>
@@ -416,15 +659,216 @@ export default function DonationsAdminPage() {
         </div>
       )}
 
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDelete}
         isLoading={isDeleting}
-        title="Lumpuhkan Kampanye?"
-        message="Data penggalangan dana ini akan dihapus dari publik. Kontribusi dana yang sudah masuk tetap tersimpan dalam laporan audit."
-        confirmText="YA, LUMPUHKAN"
+        title={deleteTarget === 'donor' ? 'Hapus Donatur?' : deleteTarget === 'donation' ? 'Hapus Transaksi?' : 'Lumpuhkan Kampanye?'}
+        message={deleteTarget === 'donor'
+          ? 'Data donatur ini akan dihapus. Riwayat transaksinya tetap tersimpan.'
+          : deleteTarget === 'donation'
+            ? 'Transaksi yang belum terverifikasi ini akan dihapus permanen.'
+            : 'Data penggalangan dana ini akan dihapus dari publik. Kontribusi dana yang sudah masuk tetap tersimpan dalam laporan audit.'}
+        confirmText={deleteTarget === 'campaign' ? 'YA, LUMPUHKAN' : 'YA, HAPUS'}
       />
+
+      {isDonorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:px-0">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDonorModalOpen(false)}></div>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative shrink-0 overflow-hidden">
+            <form onSubmit={handleSaveDonor}>
+              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="text-2xl font-black text-slate-900 uppercase font-outfit tracking-tight">{editingDonor ? 'Ubah Donatur' : 'Tambah Donatur'}</h3>
+                <button type="button" onClick={() => setIsDonorModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
+              </div>
+              <div className="p-10 space-y-6">
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Nama Donatur *</label>
+                  <input
+                    value={donorForm.name}
+                    onChange={(e) => setDonorForm({ ...donorForm, name: e.target.value })}
+                    placeholder="Contoh: Hamba Allah"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Alamat</label>
+                    <input
+                      value={donorForm.address}
+                      onChange={(e) => setDonorForm({ ...donorForm, address: e.target.value })}
+                      placeholder="Contoh: Parung, Bogor"
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">No. HP</label>
+                    <input
+                      value={donorForm.phone}
+                      onChange={(e) => setDonorForm({ ...donorForm, phone: e.target.value })}
+                      placeholder="Contoh: 0812..."
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Catatan</label>
+                  <textarea
+                    rows={2}
+                    value={donorForm.notes}
+                    onChange={(e) => setDonorForm({ ...donorForm, notes: e.target.value })}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                  ></textarea>
+                </div>
+              </div>
+              <div className="px-10 py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsDonorModalOpen(false)}
+                  className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20"
+                >
+                  Simpan Donatur
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isTxModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:px-0">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsTxModalOpen(false)}></div>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative shrink-0 overflow-hidden">
+            <form onSubmit={handleSaveTx}>
+              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="text-2xl font-black text-slate-900 uppercase font-outfit tracking-tight">{editingTx ? 'Ubah Transaksi' : 'Catat Transaksi'}</h3>
+                <button type="button" onClick={() => setIsTxModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
+              </div>
+              <div className="p-10 space-y-6">
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Program Kampanye *</label>
+                  <select
+                    value={txForm.campaign_id}
+                    onChange={(e) => setTxForm({ ...txForm, campaign_id: e.target.value })}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-800"
+                  >
+                    <option value="">-- Pilih Kampanye --</option>
+                    {campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Donatur (Master)</label>
+                  <select
+                    value={txForm.donor_id}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      const d = donors.find((x) => String(x.id) === id);
+                      setTxForm({
+                        ...txForm,
+                        donor_id: id,
+                        donor_name: d ? d.name : txForm.donor_name,
+                        donor_phone: d ? d.phone : txForm.donor_phone,
+                      });
+                    }}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-800"
+                  >
+                    <option value="">-- Donatur baru (isi manual) --</option>
+                    {donors.map((d) => <option key={d.id} value={d.id}>{d.name}{d.phone ? ` (${d.phone})` : ''}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Nama Donatur *</label>
+                    <input
+                      value={txForm.donor_name}
+                      onChange={(e) => setTxForm({ ...txForm, donor_name: e.target.value })}
+                      placeholder="Contoh: Hamba Allah"
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">No. HP</label>
+                    <input
+                      value={txForm.donor_phone}
+                      onChange={(e) => setTxForm({ ...txForm, donor_phone: e.target.value })}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Nominal (Rp) *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={txForm.amount}
+                      onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })}
+                      placeholder="Contoh: 500000"
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Jenis Donasi</label>
+                    <select
+                      value={txForm.type}
+                      onChange={(e) => setTxForm({ ...txForm, type: e.target.value })}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-800"
+                    >
+                      <option value="">-- Pilih Jenis --</option>
+                      {DONATION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Metode</label>
+                    <select
+                      value={txForm.method}
+                      onChange={(e) => setTxForm({ ...txForm, method: e.target.value })}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-800"
+                    >
+                      <option value="transfer">Transfer Bank</option>
+                      <option value="manual">Tunai / Manual</option>
+                      <option value="other">Lainnya</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Catatan</label>
+                    <input
+                      value={txForm.notes}
+                      onChange={(e) => setTxForm({ ...txForm, notes: e.target.value })}
+                      placeholder="Keterangan tambahan"
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="px-10 py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsTxModalOpen(false)}
+                  className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20"
+                >
+                  Simpan Transaksi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -2,8 +2,11 @@ package donations
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
+
+var errDonationLocked = errors.New("transaksi yang sudah terverifikasi tidak bisa diubah/dihapus")
 
 type Campaign struct {
 	ID              int        `json:"id"`
@@ -22,15 +25,28 @@ type Donation struct {
 	ID            int        `json:"id"`
 	CampaignID    int        `json:"campaign_id"`
 	CampaignTitle string     `json:"campaign_title"`
+	DonorID       *int       `json:"donor_id"`
 	DonorName     string     `json:"donor_name"`
 	DonorPhone    string     `json:"donor_phone"`
 	Amount        float64    `json:"amount"`
+	Type          string     `json:"type"`
 	PaymentMethod string     `json:"payment_method"`
 	ProofURL      string     `json:"proof_url"`
+	Notes         string     `json:"notes"`
 	Status        string     `json:"status"`
 	VerifiedAt    *time.Time `json:"verified_at"`
 	VerifiedBy    *int       `json:"verified_by"`
 	CreatedAt     time.Time  `json:"created_at"`
+}
+
+type Donor struct {
+	ID        int       `json:"id"`
+	Name      string    `json:"name"`
+	Address   string    `json:"address"`
+	Phone     string    `json:"phone"`
+	Notes     string    `json:"notes"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Repository struct {
@@ -80,9 +96,9 @@ func (r *Repository) FindAllCampaigns(activeOnly bool, search string) ([]Campaig
 	return list, nil
 }
 
-func (r *Repository) FindAllDonations(campaignID int, status, search string) ([]Donation, error) {
+func (r *Repository) FindAllDonations(campaignID int, status, search, donationType string) ([]Donation, error) {
 	query := `
-		SELECT d.id, d.campaign_id, c.title as campaign_title, d.donor_name, d.donor_phone, d.amount, d.payment_method, d.proof_url, d.status, d.verified_at, d.verified_by, d.created_at 
+		SELECT d.id, d.campaign_id, c.title as campaign_title, d.donor_id, d.donor_name, d.donor_phone, d.amount, d.type, d.payment_method, d.proof_url, d.notes, d.status, d.verified_at, d.verified_by, d.created_at
 		FROM donations d
 		LEFT JOIN donation_campaigns c ON d.campaign_id = c.id
 		WHERE 1=1`
@@ -95,6 +111,10 @@ func (r *Repository) FindAllDonations(campaignID int, status, search string) ([]
 	if status != "" {
 		query += " AND d.status = ?"
 		args = append(args, status)
+	}
+	if donationType != "" {
+		query += " AND d.type = ?"
+		args = append(args, donationType)
 	}
 	if search != "" {
 		query += " AND (d.donor_name LIKE ? OR d.donor_phone LIKE ?)"
@@ -112,15 +132,20 @@ func (r *Repository) FindAllDonations(campaignID int, status, search string) ([]
 	for rows.Next() {
 		var d Donation
 		var campaignTitle sql.NullString
+		var donorID sql.NullInt64
 		var verifiedAt sql.NullString
 		var createdAt string
 		var verifiedBy sql.NullInt64
-		err := rows.Scan(&d.ID, &d.CampaignID, &campaignTitle, &d.DonorName, &d.DonorPhone, &d.Amount, &d.PaymentMethod, &d.ProofURL, &d.Status, &verifiedAt, &verifiedBy, &createdAt)
+		err := rows.Scan(&d.ID, &d.CampaignID, &campaignTitle, &donorID, &d.DonorName, &d.DonorPhone, &d.Amount, &d.Type, &d.PaymentMethod, &d.ProofURL, &d.Notes, &d.Status, &verifiedAt, &verifiedBy, &createdAt)
 		if err != nil {
 			return nil, err
 		}
 		if campaignTitle.Valid {
 			d.CampaignTitle = campaignTitle.String
+		}
+		if donorID.Valid {
+			v := int(donorID.Int64)
+			d.DonorID = &v
 		}
 		if verifiedBy.Valid {
 			v := int(verifiedBy.Int64)
@@ -136,24 +161,143 @@ func (r *Repository) FindAllDonations(campaignID int, status, search string) ([]
 	return list, nil
 }
 
+func (r *Repository) CreateDonation(d *Donation) (int64, error) {
+	res, err := r.db.Exec(`
+		INSERT INTO donations (campaign_id, donor_id, donor_name, donor_phone, amount, type, payment_method, proof_url, notes, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+		d.CampaignID, nullableInt(d.DonorID), d.DonorName, d.DonorPhone, d.Amount, d.Type, d.PaymentMethod, d.ProofURL, d.Notes)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func nullableInt(v *int) interface{} {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
+func (r *Repository) UpdateDonation(d *Donation) error {
+	var status string
+	err := r.db.QueryRow(`SELECT status FROM donations WHERE id = ?`, d.ID).Scan(&status)
+	if err != nil {
+		return err
+	}
+	if status == "verified" {
+		return errDonationLocked
+	}
+	_, err = r.db.Exec(`
+		UPDATE donations SET campaign_id = ?, donor_id = ?, donor_name = ?, donor_phone = ?, amount = ?, type = ?, payment_method = ?, proof_url = ?, notes = ? WHERE id = ?`,
+		d.CampaignID, nullableInt(d.DonorID), d.DonorName, d.DonorPhone, d.Amount, d.Type, d.PaymentMethod, d.ProofURL, d.Notes, d.ID)
+	return err
+}
+
+func (r *Repository) DeleteDonation(id int) error {
+	var status string
+	err := r.db.QueryRow(`SELECT status FROM donations WHERE id = ?`, id).Scan(&status)
+	if err != nil {
+		return err
+	}
+	if status == "verified" {
+		return errDonationLocked
+	}
+	_, err = r.db.Exec(`DELETE FROM donations WHERE id = ?`, id)
+	return err
+}
+
+func (r *Repository) FindAllDonors(search string) ([]Donor, error) {
+	query := `SELECT id, name, address, phone, notes, created_at, updated_at FROM donors WHERE 1=1`
+	var args []interface{}
+	if search != "" {
+		query += ` AND (name LIKE ? OR phone LIKE ?)`
+		args = append(args, "%"+search+"%", "%"+search+"%")
+	}
+	query += ` ORDER BY name ASC`
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []Donor
+	for rows.Next() {
+		var d Donor
+		var createdAt, updatedAt string
+		if err := rows.Scan(&d.ID, &d.Name, &d.Address, &d.Phone, &d.Notes, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		d.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		d.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+		list = append(list, d)
+	}
+	return list, nil
+}
+
+func (r *Repository) FindDonorByID(id int) (*Donor, error) {
+	var d Donor
+	var createdAt, updatedAt string
+	err := r.db.QueryRow(`SELECT id, name, address, phone, notes, created_at, updated_at FROM donors WHERE id = ?`, id).
+		Scan(&d.ID, &d.Name, &d.Address, &d.Phone, &d.Notes, &createdAt, &updatedAt)
+	if err != nil {
+		return nil, err
+	}
+	d.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+	d.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+	return &d, nil
+}
+
+func (r *Repository) CreateDonor(d *Donor) error {
+	_, err := r.db.Exec(`INSERT INTO donors (name, address, phone, notes) VALUES (?, ?, ?, ?)`,
+		d.Name, d.Address, d.Phone, d.Notes)
+	return err
+}
+
+func (r *Repository) UpdateDonor(d *Donor) error {
+	_, err := r.db.Exec(`UPDATE donors SET name = ?, address = ?, phone = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		d.Name, d.Address, d.Phone, d.Notes, d.ID)
+	return err
+}
+
+func (r *Repository) DeleteDonor(id int) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`UPDATE donations SET donor_id = NULL WHERE donor_id = ?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM donors WHERE id = ?`, id); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func (r *Repository) FindDonationByID(id int) (*Donation, error) {
 	query := `
-		SELECT d.id, d.campaign_id, c.title as campaign_title, d.donor_name, d.donor_phone, d.amount, d.payment_method, d.proof_url, d.status, d.verified_at, d.verified_by, d.created_at 
+		SELECT d.id, d.campaign_id, c.title as campaign_title, d.donor_id, d.donor_name, d.donor_phone, d.amount, d.type, d.payment_method, d.proof_url, d.notes, d.status, d.verified_at, d.verified_by, d.created_at
 		FROM donations d
 		LEFT JOIN donation_campaigns c ON d.campaign_id = c.id
 		WHERE d.id = ?`
 
 	var d Donation
 	var campaignTitle sql.NullString
+	var donorID sql.NullInt64
 	var verifiedAt sql.NullString
 	var createdAt string
 	var verifiedBy sql.NullInt64
-	err := r.db.QueryRow(query, id).Scan(&d.ID, &d.CampaignID, &campaignTitle, &d.DonorName, &d.DonorPhone, &d.Amount, &d.PaymentMethod, &d.ProofURL, &d.Status, &verifiedAt, &verifiedBy, &createdAt)
+	err := r.db.QueryRow(query, id).Scan(&d.ID, &d.CampaignID, &campaignTitle, &donorID, &d.DonorName, &d.DonorPhone, &d.Amount, &d.Type, &d.PaymentMethod, &d.ProofURL, &d.Notes, &d.Status, &verifiedAt, &verifiedBy, &createdAt)
 	if err != nil {
 		return nil, err
 	}
 	if campaignTitle.Valid {
 		d.CampaignTitle = campaignTitle.String
+	}
+	if donorID.Valid {
+		v := int(donorID.Int64)
+		d.DonorID = &v
 	}
 	if verifiedBy.Valid {
 		v := int(verifiedBy.Int64)
