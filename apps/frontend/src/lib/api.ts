@@ -2975,3 +2975,49 @@ export async function deleteAcademicYear(id: number) {
   const res = await fetch(`${API_BASE_URL}/school/years/${id}`, { method: "DELETE", headers: getAuthHeaders() });
   return parseResponse(res);
 }
+
+export interface KasCategory { id: number; name: string; kind: string; created_at: string; }
+export interface KasTransaction { id: number; date: string; kind: string; category_id: number; category?: string; amount: number; method: string; notes: string; created_by: number; created_at: string; }
+export interface KasSummary { income: number; expense: number; balance: number; count_in: number; count_out: number; }
+
+export async function getKasCategories(kind = "") {
+  try {
+    const res = await fetch(`${API_BASE_URL}/kas/categories${kind ? `?kind=${kind}` : ""}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as KasCategory[];
+  } catch (e) { console.error("[API] Fetch kas categories error:", e); return []; }
+}
+export async function createKasCategory(data: { name: string; kind: string }) {
+  const res = await fetch(`${API_BASE_URL}/kas/categories`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function getKasTransactions(params: { date_from?: string; date_to?: string; kind?: string; category_id?: number } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.date_from) q.set("date_from", params.date_from);
+    if (params.date_to) q.set("date_to", params.date_to);
+    if (params.kind) q.set("kind", params.kind);
+    if (params.category_id) q.set("category_id", String(params.category_id));
+    const res = await fetch(`${API_BASE_URL}/kas/transactions?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as KasTransaction[];
+  } catch (e) { console.error("[API] Fetch kas transactions error:", e); return []; }
+}
+export async function createKasTransaction(data: { date: string; kind: string; category_id?: number; amount: number; method?: string; notes?: string }) {
+  const res = await fetch(`${API_BASE_URL}/kas/transactions`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteKasTransaction(id: number) {
+  const res = await fetch(`${API_BASE_URL}/kas/transactions/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function getKasSummary(date_from = "", date_to = ""): Promise<KasSummary | null> {
+  try {
+    const q = new URLSearchParams();
+    if (date_from) q.set("date_from", date_from);
+    if (date_to) q.set("date_to", date_to);
+    const res = await fetch(`${API_BASE_URL}/kas/summary?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || null) as KasSummary | null;
+  } catch (e) { console.error("[API] Fetch kas summary error:", e); return null; }
+}

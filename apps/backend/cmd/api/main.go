@@ -26,6 +26,7 @@ import (
 	"almaparung-api/internal/features/spp"
 	"almaparung-api/internal/features/iuran"
 	"almaparung-api/internal/features/school"
+	"almaparung-api/internal/features/kas"
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
@@ -134,6 +135,9 @@ func main() {
 
 	schoolRepo := school.NewRepository(database.DB)
 	schoolHandler := school.NewHandler(schoolRepo)
+
+	kasRepo := kas.NewRepository(database.DB)
+	kasHandler := kas.NewHandler(kasRepo)
 
 	logRepo := logs.NewRepository(database.DB)
 	logHandler := logs.NewHandler(logRepo)
@@ -327,6 +331,7 @@ func main() {
 			r.Mount("/spp", sppHandler.Routes())
 			r.Mount("/iuran", iuranHandler.Routes())
 			r.Mount("/donations", donationHandler.Routes())
+			r.Mount("/kas", kasHandler.Routes())
 			})
 
 			// Master Sekolah (kelas + tahun ajaran): dibaca semua role operasional

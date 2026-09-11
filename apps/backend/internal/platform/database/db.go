@@ -169,6 +169,29 @@ func createTables() {
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
+	CREATE TABLE IF NOT EXISTS kas_categories (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		kind TEXT NOT NULL DEFAULT 'masuk',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(name, kind)
+	);
+
+	CREATE TABLE IF NOT EXISTS kas_transactions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		date TEXT NOT NULL,
+		kind TEXT NOT NULL DEFAULT 'masuk',
+		category_id INTEGER NOT NULL DEFAULT 0,
+		amount INTEGER NOT NULL,
+		method TEXT DEFAULT 'manual',
+		notes TEXT DEFAULT '',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_kas_tx_date ON kas_transactions(date DESC);
+	CREATE INDEX IF NOT EXISTS idx_kas_tx_kind ON kas_transactions(kind);
+
 	CREATE TABLE IF NOT EXISTS academic_years (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL UNIQUE,
@@ -745,6 +768,10 @@ func runMigrations() {
 		{
 			name: "tahfidz_student_eval_date_index",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_tahfidz_student_eval_date ON tahfidz_progress(student_id, evaluation_date DESC);`,
+		},
+		{
+			name: "kas_default_categories",
+			sql:  `INSERT OR IGNORE INTO kas_categories (name, kind) VALUES ('SPP','masuk'),('Iuran','masuk'),('Donasi','masuk'),('Operasional','keluar'),('Gaji','keluar');`,
 		},
 		{
 			name: "school_classes_backfill",
