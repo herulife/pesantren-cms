@@ -49,6 +49,8 @@ export default function SppBills() {
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [genAmount, setGenAmount] = useState('');
   const [genDueDate, setGenDueDate] = useState('');
+  const [genPeriodEnd, setGenPeriodEnd] = useState('');
+  const [genClass, setGenClass] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
@@ -92,7 +94,7 @@ export default function SppBills() {
     }
     setIsGenerating(true);
     try {
-      const res = await generateSppBills({ period, amount, due_date: genDueDate || undefined });
+      const res = await generateSppBills({ period, period_end: genPeriodEnd || undefined, amount, due_date: genDueDate || undefined, class: genClass || undefined });
       if (res.success) {
         showToast('success', res.message || 'Tagihan berhasil dibuat.');
         setIsGenerateOpen(false);
@@ -433,6 +435,17 @@ export default function SppBills() {
                 <div>
                   <label className={labelCls}>Jatuh Tempo (opsional)</label>
                   <input type="date" value={genDueDate} onChange={(e) => setGenDueDate(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Bulan Selesai (opsional, untuk rentang)</label>
+                  <input type="month" value={genPeriodEnd} onChange={(e) => setGenPeriodEnd(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Kelas (opsional)</label>
+                  <select value={genClass} onChange={(e) => setGenClass(e.target.value)} className={inputCls}>
+                    <option value="">Semua kelas</option>
+                    {Array.from(new Set(santriList.map((x) => x.class).filter(Boolean))).map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
               </div>
               <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex gap-4">

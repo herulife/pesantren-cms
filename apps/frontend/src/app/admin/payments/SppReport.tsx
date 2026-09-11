@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getSppReport, getSppSantri, SppReportRow, SppSantri } from '@/lib/api';
+import { getCombinedReport, getSppSantri, CombinedRow, SppSantri } from '@/lib/api';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import { useToast } from '@/components/Toast';
 import { Search, FileDown, FileSpreadsheet, Receipt, Wallet, Calendar } from 'lucide-react';
@@ -21,7 +21,7 @@ function statusBadge(status: string) {
 function statusLabel(status: string) {
   if (status === 'paid') return 'Lunas';
   if (status === 'partial') return 'Sebagian';
-  if (status === 'unpaid') return 'Belum Bayar';
+  if (status === 'unpaid') return 'Belum Lunas';
   return 'Belum Ada Tagihan';
 }
 
@@ -32,7 +32,7 @@ export default function SppReport() {
   const [classFilter, setClassFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [rows, setRows] = useState<SppReportRow[]>([]);
+  const [rows, setRows] = useState<CombinedRow[]>([]);
   const [santriList, setSantriList] = useState<SppSantri[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,7 +40,7 @@ export default function SppReport() {
     setIsLoading(true);
     try {
       const [rData, santri] = await Promise.all([
-        getSppReport({ period_start: s, period_end: e, class: cls === 'all' ? undefined : cls }),
+        getCombinedReport({ period_start: s, period_end: e, class: cls === 'all' ? undefined : cls }),
         getSppSantri(),
       ]);
       setRows(rData);
@@ -72,18 +72,18 @@ export default function SppReport() {
   const totalCollected = filtered.reduce((sum, r) => sum + r.collected, 0);
   const totalOutstanding = filtered.reduce((sum, r) => sum + r.outstanding, 0);
 
-  const exportColumns = ['NIS', 'Nama', 'Kelas', 'Tagihan', 'Sudah Dibayar', 'Sisa', 'Status'];
+  const exportColumns = ['No Induk', 'Nama', 'Kelas', 'Tagihan SPP', 'Tagihan Iuran', 'Total Tagihan', 'Sudah Dibayar', 'Sisa', 'Status'];
   const exportRows = () =>
-    filtered.map((r) => [r.nis || '-', r.name, r.class || '-', r.billed, r.collected, r.outstanding, statusLabel(r.status)]);
+    filtered.map((r) => [r.nis || '-', r.name, r.class || '-', r.spp_billed, r.iuran_billed, r.billed, r.collected, r.outstanding, statusLabel(r.status)]);
 
   const handleExportPDF = () => {
-    exportToPDF(`Laporan Tagihan SPP ${start} s/d ${end}`, exportColumns, exportRows().map((row) =>
-      row.map((v, i) => (i >= 3 && i <= 5 ? `Rp ${Number(v).toLocaleString('id-ID')}` : String(v)))
-    ), 'laporan_tagihan_spp');
+    exportToPDF(`Laporan Tagihan ${start} s/d ${end}`, exportColumns, exportRows().map((row) =>
+      row.map((v, i) => (i >= 3 && i <= 7 ? `Rp ${Number(v).toLocaleString('id-ID')}` : String(v)))
+    ), 'laporan_tagihan');
   };
 
   const handleExportExcel = () => {
-    exportToExcel(`Laporan Tagihan SPP ${start} s/d ${end}`, exportColumns, exportRows(), 'laporan_tagihan_spp');
+    exportToExcel(`Laporan Tagihan ${start} s/d ${end}`, exportColumns, exportRows(), 'laporan_tagihan');
   };
 
   const selectCls = 'px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700 cursor-pointer';
@@ -113,7 +113,7 @@ export default function SppReport() {
               <option value="all">Semua Status</option>
               <option value="paid">Lunas</option>
               <option value="partial">Sebagian</option>
-              <option value="unpaid">Belum Bayar</option>
+              <option value="unpaid">Belum Lunas</option>
               <option value="none">Belum Ada Tagihan</option>
             </select>
           </div>
@@ -186,6 +186,8 @@ export default function SppReport() {
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kelas</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tagihan SPP</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tagihan Iuran</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Tagihan</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Sudah Dibayar</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Sisa</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
@@ -197,6 +199,8 @@ export default function SppReport() {
                     <td className="px-8 py-5 font-mono text-slate-500">{r.nis || '-'}</td>
                     <td className="px-8 py-5 font-bold text-slate-800">{r.name}</td>
                     <td className="px-8 py-5 text-slate-600">{r.class || '-'}</td>
+                    <td className="px-8 py-5 font-bold text-slate-800">Rp {r.spp_billed.toLocaleString('id-ID')}</td>
+                    <td className="px-8 py-5 font-bold text-slate-800">Rp {r.iuran_billed.toLocaleString('id-ID')}</td>
                     <td className="px-8 py-5 font-black text-slate-900">Rp {r.billed.toLocaleString('id-ID')}</td>
                     <td className="px-8 py-5 font-bold text-emerald-700">Rp {r.collected.toLocaleString('id-ID')}</td>
                     <td className="px-8 py-5 font-bold text-rose-700">Rp {r.outstanding.toLocaleString('id-ID')}</td>

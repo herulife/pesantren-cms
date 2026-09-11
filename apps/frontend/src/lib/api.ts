@@ -1218,7 +1218,7 @@ export async function getIuranSantri() {
 	}
 }
 
-export async function generateSppBills(data: { period: string; amount: number; due_date?: string }) {
+export async function generateSppBills(data: { period: string; period_end?: string; amount: number; due_date?: string; class?: string; santri_ids?: number[] }) {
 	const res = await fetch(`${API_BASE_URL}/spp/bills/generate`, {
 		method: 'POST',
 		headers: getAuthHeaders(),
@@ -1304,6 +1304,46 @@ export async function cancelIuranBill(id: number) {
 		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
+}
+
+export async function deleteSppByPeriod(period: string) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/by-period?period=${encodeURIComponent(period)}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export interface CombinedRow {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+	spp_billed: number;
+	iuran_billed: number;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	status: string;
+}
+
+export async function getCombinedReport(params: { period_start: string; period_end: string; class?: string; santri_id?: number }) {
+	try {
+		const query = new URLSearchParams();
+		query.set('period_start', params.period_start);
+		query.set('period_end', params.period_end);
+		if (params.class) query.set('class', params.class);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/spp/combined-report?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as CombinedRow[];
+	} catch (e) {
+		console.error(`[API] Fetch combined report error:`, e);
+		return [];
+	}
 }
 
 export async function deleteSppBill(id: number) {

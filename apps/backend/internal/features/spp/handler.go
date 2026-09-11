@@ -89,6 +89,8 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/bills/{id}/pay", h.Pay)
 	r.Post("/bills/{id}/cancel", h.Cancel)
 	r.Delete("/bills/{id}", h.Delete)
+	r.Delete("/bills/by-period", h.DeleteByPeriod)
+	r.Get("/combined-report", h.CombinedReport)
 	return r
 }
 
@@ -168,9 +170,12 @@ func (h *Handler) Report(w http.ResponseWriter, r *http.Request) {
 }
 
 type generateRequest struct {
-	Period  string `json:"period"`
-	Amount  int    `json:"amount"`
-	DueDate string `json:"due_date"`
+	Period    string `json:"period"`
+	PeriodEnd string `json:"period_end"`
+	Amount    int    `json:"amount"`
+	DueDate   string `json:"due_date"`
+	Class     string `json:"class"`
+	SantriIDs []int  `json:"santri_ids"`
 }
 
 func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +185,9 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Period = strings.TrimSpace(req.Period)
+	req.PeriodEnd = strings.TrimSpace(req.PeriodEnd)
 	req.DueDate = strings.TrimSpace(req.DueDate)
+	req.Class = strings.TrimSpace(req.Class)
 	if errs := validateBill(req.Period, req.Amount); errs != nil {
 		writeValidationError(w, errs)
 		return
@@ -189,7 +196,11 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 		writeValidationError(w, errs)
 		return
 	}
-	created, skipped, err := h.repo.GenerateBills(req.Period, req.Amount, req.DueDate)
+	if req.PeriodEnd != "" && (!periodPattern.MatchString(req.PeriodEnd) || req.PeriodEnd < req.Period) {
+		writeValidationError(w, map[string][]string{"period_end": {"Akhir periode harus >= awal periode (YYYY-MM)"}})
+		return
+	}
+	created, skipped, err := h.repo.GenerateBills(req.Period, req.PeriodEnd, req.Amount, req.DueDate, req.Class, req.SantriIDs)
 	if err != nil {
 		logger.Error(r.Context(), "spp generate failed", logger.Field{"operation": "spp_generate", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -351,6 +362,44 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran SPP dibatalkan, tagihan kembali belum lunas", nil)
 }
 
+func (h *Handler) DeleteByPeriod(w http.ResponseWriter, r *http.Request) {
+	period := strings.TrimSpace(r.URL.Query().Get("period"))
+	if !periodPattern.MatchString(period) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Periode harus format YYYY-MM", nil)
+		return
+	}
+	n, err := h.repo.DeleteByPeriod(period)
+	if err != nil {
+		logger.Error(r.Context(), "spp delete by period failed", logger.Field{"operation": "spp_delete_period", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	aid := adminID(r)
+	logger.RecordActivity(&aid, "DELETE_SPP_PERIOD", fmt.Sprintf("Hapus %d tagihan SPP periode %s", n, period), r.RemoteAddr, r.UserAgent())
+	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("%d tagihan dihapus (yang sudah dibayar tidak ikut)", n), map[string]interface{}{"deleted": n})
+}
+
+func (h *Handler) CombinedReport(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	start := strings.TrimSpace(q.Get("period_start"))
+	end := strings.TrimSpace(q.Get("period_end"))
+	if !periodPattern.MatchString(start) || !periodPattern.MatchString(end) || end < start {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Rentang periode tidak valid (YYYY-MM s/d YYYY-MM)", nil)
+		return
+	}
+	santriID, _ := strconv.Atoi(q.Get("santri_id"))
+	rows, err := h.repo.CombinedReport(start, end, strings.TrimSpace(q.Get("class")), santriID)
+	if err != nil {
+		logger.Error(r.Context(), "spp combined report failed", logger.Field{"operation": "spp_combined_report", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	if rows == nil {
+		rows = []CombinedRow{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Laporan gabungan berhasil dimuat", rows)
+}
+
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -384,7 +433,9 @@ type IRepository interface {
 	CreateBill(b *SppBill) error
 	UpdateBill(id, amount int, dueDate, notes string) error
 	DeleteBill(id int) error
-	GenerateBills(period string, amount int, dueDate string) (created int, skipped int, err error)
+	DeleteByPeriod(period string) (int64, error)
+	CombinedReport(periodStart, periodEnd, class string, santriID int) ([]CombinedRow, error)
+	GenerateBills(period, periodEnd string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
 	PayBill(id, amount int, method, paidAt, notes string) error
 	CancelBill(id int) error
 	Summary(period string) (*SppSummary, error)

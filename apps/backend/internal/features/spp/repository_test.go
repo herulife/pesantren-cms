@@ -62,7 +62,7 @@ func newSppTestDB(t *testing.T) *sql.DB {
 func TestGenerateIsIdempotent(t *testing.T) {
 	repo := NewRepository(newSppTestDB(t))
 
-	created, skipped, err := repo.GenerateBills("2026-09", 150000, "2026-09-10")
+	created, skipped, err := repo.GenerateBills("2026-09", "", 150000, "2026-09-10", "", nil)
 	if err != nil {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestGenerateIsIdempotent(t *testing.T) {
 		t.Fatalf("expected created=2 skipped=0, got %d/%d", created, skipped)
 	}
 
-	created, skipped, err = repo.GenerateBills("2026-09", 150000, "2026-09-10")
+	created, skipped, err = repo.GenerateBills("2026-09", "", 150000, "2026-09-10", "", nil)
 	if err != nil {
 		t.Fatalf("second GenerateBills returned error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestGenerateIsIdempotent(t *testing.T) {
 func TestPayPartialThenFull(t *testing.T) {
 	repo := NewRepository(newSppTestDB(t))
 
-	if _, _, err := repo.GenerateBills("2026-09", 150000, ""); err != nil {
+	if _, _, err := repo.GenerateBills("2026-09", "", 150000, "", "", nil); err != nil {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
 
@@ -122,7 +122,7 @@ func TestPayPartialThenFull(t *testing.T) {
 func TestDeletePaidIsRejected(t *testing.T) {
 	repo := NewRepository(newSppTestDB(t))
 
-	if _, _, err := repo.GenerateBills("2026-09", 150000, ""); err != nil {
+	if _, _, err := repo.GenerateBills("2026-09", "", 150000, "", "", nil); err != nil {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
 	bills, _ := repo.ListBills("2026-09", "", 0)
@@ -139,7 +139,7 @@ func TestDeletePaidIsRejected(t *testing.T) {
 func TestSummaryTotals(t *testing.T) {
 	repo := NewRepository(newSppTestDB(t))
 
-	if _, _, err := repo.GenerateBills("2026-09", 100000, ""); err != nil {
+	if _, _, err := repo.GenerateBills("2026-09", "", 100000, "", "", nil); err != nil {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
 	bills, _ := repo.ListBills("2026-09", "", 0)
@@ -162,7 +162,7 @@ func TestSummaryTotals(t *testing.T) {
 func TestReportPerSantri(t *testing.T) {
 	repo := NewRepository(newSppTestDB(t))
 
-	if _, _, err := repo.GenerateBills("2026-09", 100000, ""); err != nil {
+	if _, _, err := repo.GenerateBills("2026-09", "", 100000, "", "", nil); err != nil {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
 	if _, _, err := repo.GenerateBills("2026-10", 100000, ""); err != nil {

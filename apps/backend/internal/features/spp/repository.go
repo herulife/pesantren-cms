@@ -2,6 +2,7 @@ package spp
 
 import (
 	"database/sql"
+	"fmt"
 	"errors"
 	"strings"
 	"time"
@@ -145,40 +146,156 @@ func (r *Repository) CreateBill(b *SppBill) error {
 	return err
 }
 
-func (r *Repository) GenerateBills(period string, amount int, dueDate string) (created int, skipped int, err error) {
-	var ids []int
-	rows, err := r.db.Query(`SELECT id FROM santri WHERE status = 'aktif' ORDER BY id`)
-	if err != nil {
-		return 0, 0, err
+func monthsBetween(start, end string) []string {
+	if end == "" {
+		end = start
 	}
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			rows.Close()
+	if end < start {
+		return nil
+	}
+	out := []string{}
+	cur := start
+	for cur <= end && len(out) < 24 {
+		out = append(out, cur)
+		var yi, mi int
+		_, _ = fmt.Sscanf(cur, "%d-%d", &yi, &mi)
+		mi++
+		if mi > 12 {
+			mi = 1
+			yi++
+		}
+		cur = fmt.Sprintf("%04d-%02d", yi, mi)
+	}
+	return out
+}
+
+func (r *Repository) GenerateBills(period, periodEnd string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error) {
+	months := monthsBetween(period, periodEnd)
+	if len(months) == 0 {
+		return 0, 0, nil
+	}
+	var ids []int
+	if len(santriIDs) > 0 {
+		ids = santriIDs
+	} else if class != "" {
+		rows, err := r.db.Query(`SELECT id FROM santri WHERE status = 'aktif' AND class = ? ORDER BY id`, class)
+		if err != nil {
 			return 0, 0, err
 		}
-		ids = append(ids, id)
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return 0, 0, err
+		for rows.Next() {
+			var id int
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return 0, 0, err
+			}
+			ids = append(ids, id)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return 0, 0, err
+		}
+	} else {
+		rows, err := r.db.Query(`SELECT id FROM santri WHERE status = 'aktif' ORDER BY id`)
+		if err != nil {
+			return 0, 0, err
+		}
+		for rows.Next() {
+			var id int
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return 0, 0, err
+			}
+			ids = append(ids, id)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return 0, 0, err
+		}
 	}
 
 	for _, id := range ids {
-		res, err := r.db.Exec(
-			`INSERT OR IGNORE INTO spp_bills (santri_id, period, amount, due_date) VALUES (?, ?, ?, ?)`,
-			id, period, amount, dueDate,
-		)
-		if err != nil {
-			return created, skipped, err
-		}
-		if n, _ := res.RowsAffected(); n > 0 {
-			created++
-		} else {
-			skipped++
+		for _, per := range months {
+			res, err := r.db.Exec(
+				`INSERT OR IGNORE INTO spp_bills (santri_id, period, amount, due_date) VALUES (?, ?, ?, ?)`,
+				id, per, amount, dueDate,
+			)
+			if err != nil {
+				return created, skipped, err
+			}
+			if n, _ := res.RowsAffected(); n > 0 {
+				created++
+			} else {
+				skipped++
+			}
 		}
 	}
 	return created, skipped, nil
+}
+
+func (r *Repository) DeleteByPeriod(period string) (int64, error) {
+	res, err := r.db.Exec(`DELETE FROM spp_bills WHERE period = ? AND paid_amount = 0`, period)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+type CombinedRow struct {
+	SantriID   int    `json:"santri_id"`
+	NIS        string `json:"nis"`
+	Name       string `json:"name"`
+	Class      string `json:"class"`
+	SppBilled  int    `json:"spp_billed"`
+	IuranBilled int   `json:"iuran_billed"`
+	Billed     int    `json:"billed"`
+	Collected  int    `json:"collected"`
+	Outstanding int   `json:"outstanding"`
+	Status     string `json:"status"`
+}
+
+func (r *Repository) CombinedReport(periodStart, periodEnd, class string, santriID int) ([]CombinedRow, error) {
+	q := `SELECT s.id, s.nis, s.name, s.class,
+		COALESCE((SELECT SUM(amount) FROM spp_bills b WHERE b.santri_id=s.id AND b.period>=? AND b.period<=?),0),
+		COALESCE((SELECT SUM(amount) FROM iuran_bills b WHERE b.santri_id=s.id AND b.period>=? AND b.period<=?),0),
+		COALESCE((SELECT SUM(paid_amount) FROM spp_bills b WHERE b.santri_id=s.id AND b.period>=? AND b.period<=?),0)
+		+ COALESCE((SELECT SUM(paid_amount) FROM iuran_bills b WHERE b.santri_id=s.id AND b.period>=? AND b.period<=?),0)
+		FROM santri s WHERE s.status='aktif'`
+	args := []interface{}{periodStart, periodEnd, periodStart, periodEnd, periodStart, periodEnd, periodStart, periodEnd}
+	if class != "" {
+		q += ` AND s.class=?`
+		args = append(args, class)
+	}
+	if santriID > 0 {
+		q += ` AND s.id=?`
+		args = append(args, santriID)
+	}
+	q += ` ORDER BY s.name`
+	rows, err := r.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []CombinedRow{}
+	for rows.Next() {
+		var c CombinedRow
+		if err := rows.Scan(&c.SantriID, &c.NIS, &c.Name, &c.Class, &c.SppBilled, &c.IuranBilled, &c.Collected); err != nil {
+			return nil, err
+		}
+		c.Billed = c.SppBilled + c.IuranBilled
+		c.Outstanding = c.Billed - c.Collected
+		switch {
+		case c.Billed == 0:
+			c.Status = "none"
+		case c.Outstanding <= 0:
+			c.Status = "paid"
+		case c.Collected > 0:
+			c.Status = "partial"
+		default:
+			c.Status = "unpaid"
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
 }
 
 func (r *Repository) UpdateBill(id, amount int, dueDate, notes string) error {
