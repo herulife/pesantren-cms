@@ -405,3 +405,59 @@ func (r *Repository) GetStudents() ([]struct {
 	}
 	return students, nil
 }
+
+type PerGuruRow struct {
+	TeacherID    int     `json:"teacher_id"`
+	TeacherName  string  `json:"teacher_name"`
+	SubjectCount int     `json:"subject_count"`
+	Subjects     string  `json:"subjects"`
+	StudentCount int     `json:"student_count"`
+	GradeCount   int     `json:"grade_count"`
+	AvgFinal     float64 `json:"avg_final"`
+}
+
+func (r *Repository) ReportPerGuru(semester, year string) ([]PerGuruRow, error) {
+	args := []interface{}{}
+	gradeFilter := ""
+	if semester != "" {
+		gradeFilter += " AND g.semester = ?"
+		args = append(args, semester)
+	}
+	if year != "" {
+		gradeFilter += " AND g.academic_year = ?"
+		args = append(args, year)
+	}
+	query := `
+		SELECT s.teacher_id, COALESCE(u.name, 'Belum ada pengampu'),
+			COUNT(DISTINCT s.id),
+			GROUP_CONCAT(DISTINCT s.name),
+			COUNT(DISTINCT g.student_id),
+			COUNT(g.id),
+			COALESCE(AVG(g.final_score), 0)
+		FROM subjects s
+		LEFT JOIN users u ON u.id = s.teacher_id
+		LEFT JOIN grades g ON g.subject_id = s.id` + gradeFilter + `
+		GROUP BY s.teacher_id
+		ORDER BY COALESCE(u.name, 'zzz')`
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PerGuruRow{}
+	for rows.Next() {
+		var row PerGuruRow
+		var tid sql.NullInt64
+		if err := rows.Scan(&tid, &row.TeacherName, &row.SubjectCount, &row.Subjects, &row.StudentCount, &row.GradeCount, &row.AvgFinal); err != nil {
+			return nil, err
+		}
+		if tid.Valid {
+			row.TeacherID = int(tid.Int64)
+		}
+		if row.Subjects == "" {
+			row.Subjects = "-"
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}

@@ -28,6 +28,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Delete("/subjects/{id}", h.DeleteSubject)
 	// Grades
 	r.Get("/grades", h.GetGrades) // ?semester=&year=
+	r.Get("/report-per-guru", h.ReportPerGuru) // ?semester=&year=
 	r.Get("/grades/student/{id}", h.GetGradesByStudent)
 	r.Post("/grades", h.CreateGrade)
 	r.Put("/grades/{id}", h.UpdateGrade)
@@ -247,6 +248,18 @@ func (h *Handler) GetGrades(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSONResponse(w, http.StatusOK, true, "Data nilai berhasil dimuat", gs)
+}
+
+func (h *Handler) ReportPerGuru(w http.ResponseWriter, r *http.Request) {
+	semester := r.URL.Query().Get("semester")
+	year := r.URL.Query().Get("year")
+	rows, err := h.repo.ReportPerGuru(semester, year)
+	if err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Laporan per guru berhasil dimuat", rows)
 }
 
 func (h *Handler) GetGradesByStudent(w http.ResponseWriter, r *http.Request) {

@@ -3021,3 +3021,15 @@ export async function getKasSummary(date_from = "", date_to = ""): Promise<KasSu
     return (result.data || null) as KasSummary | null;
   } catch (e) { console.error("[API] Fetch kas summary error:", e); return null; }
 }
+
+export interface PerGuruRow { teacher_id: number; teacher_name: string; subject_count: number; subjects: string; student_count: number; grade_count: number; avg_final: number; }
+export async function getReportPerGuru(params: { semester?: string; year?: string } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.semester) q.set("semester", params.semester);
+    if (params.year) q.set("year", params.year);
+    const res = await fetch(`${API_BASE_URL}/academics/report-per-guru?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as PerGuruRow[];
+  } catch (e) { console.error("[API] Fetch per-guru error:", e); return []; }
+}
