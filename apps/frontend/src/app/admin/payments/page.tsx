@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getPayments, createPayment, deletePayment, getPaymentUsers, Payment, CompactUser } from '@/lib/api';
+import SppBills from './SppBills';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -17,6 +18,7 @@ export default function PaymentsAdminPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [activeTab, setActiveTab] = useState<'bills' | 'manual'>('bills');
   const { showToast } = useToast();
 
   const fetchData = async () => {
@@ -161,6 +163,7 @@ export default function PaymentsAdminPage() {
           </h1>
           <p className="text-slate-500 text-sm">Catat dan kelola transaksi pembayaran SPP atau administrasi santri.</p>
         </div>
+        {activeTab === 'manual' && (
         <div className="flex items-center gap-2">
           <button 
             onClick={handleExportPDF}
@@ -184,8 +187,28 @@ export default function PaymentsAdminPage() {
             <span>Tambah Pembayaran</span>
           </Link>
         </div>
+        )}
       </div>
 
+      <div className="flex gap-2 mb-8">
+        <button
+          onClick={() => setActiveTab('bills')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'bills' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Tagihan SPP
+        </button>
+        <button
+          onClick={() => setActiveTab('manual')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'manual' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Pembayaran Manual
+        </button>
+      </div>
+
+      {activeTab === 'bills' && <SppBills />}
+
+      {activeTab === 'manual' && (
+      <>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center gap-6 relative overflow-hidden group">
@@ -321,6 +344,8 @@ export default function PaymentsAdminPage() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* MODAL TAMBAH */}
       {isAddModalOpen && (

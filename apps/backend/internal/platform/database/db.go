@@ -122,6 +122,25 @@ func createTables() {
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	);
 
+	CREATE TABLE IF NOT EXISTS spp_bills (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		santri_id INTEGER NOT NULL,
+		period TEXT NOT NULL,
+		amount INTEGER NOT NULL,
+		paid_amount INTEGER NOT NULL DEFAULT 0,
+		status TEXT NOT NULL DEFAULT 'unpaid',
+		due_date TEXT DEFAULT '',
+		paid_method TEXT DEFAULT '',
+		paid_at DATETIME,
+		notes TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (santri_id) REFERENCES santri(id),
+		UNIQUE(santri_id, period)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_spp_bills_period ON spp_bills(period);
+
 	CREATE TABLE IF NOT EXISTS activity_logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER,

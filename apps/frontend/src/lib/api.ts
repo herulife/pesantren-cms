@@ -972,6 +972,140 @@ export async function getPaymentUsers() {
 	}
 }
 
+export interface SppBill {
+	id: number;
+	santri_id: number;
+	santri_name?: string;
+	santri_nis?: string;
+	santri_class?: string;
+	period: string;
+	amount: number;
+	paid_amount: number;
+	status: string;
+	due_date: string;
+	paid_method: string;
+	paid_at?: string;
+	notes: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface SppSummary {
+	period: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_total: number;
+	count_paid: number;
+	count_partial: number;
+	count_unpaid: number;
+}
+
+export interface SppSantri {
+	id: number;
+	nis: string;
+	name: string;
+	class: string;
+}
+
+export async function getSppBills(params: { period?: string; status?: string; santri_id?: number } = {}) {
+	try {
+		const query = new URLSearchParams();
+		if (params.period) query.set('period', params.period);
+		if (params.status) query.set('status', params.status);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/spp/bills?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as SppBill[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP bills error:`, e);
+		return [];
+	}
+}
+
+export async function getSppSummary(period: string): Promise<SppSummary | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/spp/bills/summary?period=${encodeURIComponent(period)}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || null) as SppSummary | null;
+	} catch (e) {
+		console.error(`[API] Fetch SPP summary error:`, e);
+		return null;
+	}
+}
+
+export async function getSppSantri() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/spp/santri`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as SppSantri[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP santri error:`, e);
+		return [];
+	}
+}
+
+export async function generateSppBills(data: { period: string; amount: number; due_date?: string }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/generate`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function createSppBill(data: { santri_id: number; period: string; amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateSppBill(id: number, data: { amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function paySppBill(id: number, data: { amount: number; method?: string; paid_at?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}/pay`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function cancelSppBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}/cancel`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteSppBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 // Mutations
 export async function createProgram(program: Omit<Program, 'id' | 'created_at' | 'updated_at'>) {
 	const res = await fetch(`${API_BASE_URL}/programs`, {
