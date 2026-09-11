@@ -181,6 +181,7 @@ func createTables() {
 
 	CREATE TABLE IF NOT EXISTS kas_transactions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
 		date TEXT NOT NULL,
 		kind TEXT NOT NULL DEFAULT 'masuk',
 		category_id INTEGER NOT NULL DEFAULT 0,
@@ -193,6 +194,7 @@ func createTables() {
 
 	CREATE INDEX IF NOT EXISTS idx_kas_tx_date ON kas_transactions(date DESC);
 	CREATE INDEX IF NOT EXISTS idx_kas_tx_kind ON kas_transactions(kind);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_kas_tx_code ON kas_transactions(code);
 
 	CREATE TABLE IF NOT EXISTS employees (
 		code TEXT PRIMARY KEY,
@@ -663,6 +665,7 @@ func createTables() {
 	addColumnIfNotExists("videos", "series_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "series_slug", "TEXT DEFAULT ''")
 	addColumnIfNotExists("iuran_bills", "name", "TEXT DEFAULT ''")
+	addColumnIfNotExists("kas_transactions", "code", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "event_date", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "is_featured", "BOOLEAN DEFAULT 0")
 	addColumnIfNotExists("facilities", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")

@@ -15,6 +15,7 @@ type Category struct {
 
 type Transaction struct {
 	ID         int       `json:"id"`
+	Code       string    `json:"code"`
 	Date       string    `json:"date"`
 	Kind       string    `json:"kind"`
 	CategoryID int       `json:"category_id"`
@@ -23,15 +24,20 @@ type Transaction struct {
 	Method     string    `json:"method"`
 	Notes      string    `json:"notes"`
 	CreatedBy  int       `json:"created_by"`
+	Creator    string    `json:"creator,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 
 type Summary struct {
-	Income   int `json:"income"`
-	Expense  int `json:"expense"`
-	Balance  int `json:"balance"`
-	CountIn  int `json:"count_in"`
-	CountOut int `json:"count_out"`
+	Income       int `json:"income"`
+	Expense      int `json:"expense"`
+	Balance      int `json:"balance"`
+	CountIn      int `json:"count_in"`
+	CountOut     int `json:"count_out"`
+	SppIncome    int `json:"spp_income"`
+	IuranIncome  int `json:"iuran_income"`
+	DonasiIncome int `json:"donasi_income"`
+	KasIncome    int `json:"kas_income"`
 }
 
 type Repository struct{ db *sql.DB }
@@ -94,8 +100,8 @@ func (r *Repository) ListTransactions(dateFrom, dateTo, kind string, categoryID 
 		where = append(where, "t.category_id = ?")
 		args = append(args, categoryID)
 	}
-	q := `SELECT t.id, t.date, t.kind, t.category_id, COALESCE(c.name,''), t.amount, t.method, t.notes, t.created_by, t.created_at
-		FROM kas_transactions t LEFT JOIN kas_categories c ON c.id=t.category_id WHERE ` + strings.Join(where, " AND ") + ` ORDER BY t.date DESC, t.id DESC LIMIT ? OFFSET ?`
+	q := `SELECT t.id, t.code, t.date, t.kind, t.category_id, COALESCE(c.name,''), t.amount, t.method, t.notes, t.created_by, COALESCE(u.name,''), t.created_at
+		FROM kas_transactions t LEFT JOIN kas_categories c ON c.id=t.category_id LEFT JOIN users u ON u.id=t.created_by WHERE ` + strings.Join(where, " AND ") + ` ORDER BY t.date DESC, t.id DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(q, args...)
 	if err != nil {
@@ -105,7 +111,7 @@ func (r *Repository) ListTransactions(dateFrom, dateTo, kind string, categoryID 
 	out := []Transaction{}
 	for rows.Next() {
 		var t Transaction
-		if err := rows.Scan(&t.ID, &t.Date, &t.Kind, &t.CategoryID, &t.Category, &t.Amount, &t.Method, &t.Notes, &t.CreatedBy, &t.CreatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.Code, &t.Date, &t.Kind, &t.CategoryID, &t.Category, &t.Amount, &t.Method, &t.Notes, &t.CreatedBy, &t.Creator, &t.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, t)
@@ -119,7 +125,27 @@ func (r *Repository) CreateTransaction(t *Transaction) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	id, _ := res.LastInsertId()
+	code := "KA" + strings.ReplaceAll(t.Date, "-", "") + pad6(id)
+	_, _ = r.db.Exec(`UPDATE kas_transactions SET code=? WHERE id=?`, code, id)
+	return id, nil
+}
+
+func pad6(id int64) string {
+	n := ""
+	for v := id; v > 0; v /= 10 {
+		n = string(rune('0'+v%10)) + n
+	}
+	if n == "" {
+		n = "0"
+	}
+	for len(n) < 6 {
+		n = "0" + n
+	}
+	if len(n) > 6 {
+		return n[len(n)-6:]
+	}
+	return n
 }
 
 func (r *Repository) DeleteTransaction(id int) error {
@@ -140,9 +166,38 @@ func (r *Repository) Summary(dateFrom, dateTo string) (*Summary, error) {
 	}
 	s := &Summary{}
 	q := `SELECT COALESCE(SUM(CASE WHEN kind='masuk' THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='keluar' THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='masuk' THEN 1 ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='keluar' THEN 1 ELSE 0 END),0) FROM kas_transactions WHERE ` + strings.Join(where, " AND ")
-	if err := r.db.QueryRow(q, args...).Scan(&s.Income, &s.Expense, &s.CountIn, &s.CountOut); err != nil {
+	if err := r.db.QueryRow(q, args...).Scan(&s.KasIncome, &s.Expense, &s.CountIn, &s.CountOut); err != nil {
 		return nil, err
 	}
+	sppF, sppA := dateFilter("paid_at", dateFrom, dateTo)
+	if err := r.db.QueryRow(`SELECT COALESCE(SUM(paid_amount),0) FROM spp_bills WHERE paid_amount>0`+sppF, sppA...).Scan(&s.SppIncome); err != nil {
+		return nil, err
+	}
+	iurF, iurA := dateFilter("paid_at", dateFrom, dateTo)
+	if err := r.db.QueryRow(`SELECT COALESCE(SUM(paid_amount),0) FROM iuran_bills WHERE paid_amount>0`+iurF, iurA...).Scan(&s.IuranIncome); err != nil {
+		return nil, err
+	}
+	donF, donA := dateFilter("created_at", dateFrom, dateTo)
+	var donFloat float64
+	if err := r.db.QueryRow(`SELECT COALESCE(SUM(amount),0) FROM donations WHERE status='verified'`+donF, donA...).Scan(&donFloat); err != nil {
+		return nil, err
+	}
+	s.DonasiIncome = int(donFloat)
+	s.Income = s.SppIncome + s.IuranIncome + s.DonasiIncome + s.KasIncome
 	s.Balance = s.Income - s.Expense
 	return s, nil
+}
+
+func dateFilter(col, from, to string) (string, []interface{}) {
+	where := ""
+	args := []interface{}{}
+	if from != "" {
+		where += " AND substr(" + col + ",1,10)>=?"
+		args = append(args, from)
+	}
+	if to != "" {
+		where += " AND substr(" + col + ",1,10)<=?"
+		args = append(args, to)
+	}
+	return where, args
 }

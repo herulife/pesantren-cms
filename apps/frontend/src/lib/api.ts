@@ -3027,8 +3027,8 @@ export async function deleteAcademicYear(id: number) {
 }
 
 export interface KasCategory { id: number; name: string; kind: string; created_at: string; }
-export interface KasTransaction { id: number; date: string; kind: string; category_id: number; category?: string; amount: number; method: string; notes: string; created_by: number; created_at: string; }
-export interface KasSummary { income: number; expense: number; balance: number; count_in: number; count_out: number; }
+export interface KasTransaction { id: number; code: string; date: string; kind: string; category_id: number; category?: string; amount: number; method: string; notes: string; created_by: number; creator?: string; created_at: string; }
+export interface KasSummary { income: number; expense: number; balance: number; count_in: number; count_out: number; spp_income: number; iuran_income: number; donasi_income: number; kas_income: number; }
 
 export async function getKasCategories(kind = "") {
   try {

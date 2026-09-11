@@ -43,11 +43,22 @@ export default function KasAdminPage() {
     <div className="p-6">
       <h1 className="text-xl font-black mb-4">Kas &amp; Laba Rugi</h1>
       {summary && (
+        <>
+        <div className="bg-white border rounded-xl p-4 mb-4">
+          <p className="text-xs uppercase text-slate-400 font-bold mb-2">Rincian Pemasukan</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+            <div>SPP: <b className="text-emerald-600">{summary ? fmtRp(summary.spp_income) : "-"}</b></div>
+            <div>Iuran: <b className="text-emerald-600">{summary ? fmtRp(summary.iuran_income) : "-"}</b></div>
+            <div>Donasi: <b className="text-emerald-600">{summary ? fmtRp(summary.donasi_income) : "-"}</b></div>
+            <div>Kas lain: <b className="text-emerald-600">{summary ? fmtRp(summary.kas_income) : "-"}</b></div>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white border rounded-xl p-4"><p className="text-xs uppercase text-slate-400 font-bold">Pemasukan ({summary.count_in})</p><p className="text-lg font-black text-emerald-600">{fmtRp(summary.income)}</p></div>
           <div className="bg-white border rounded-xl p-4"><p className="text-xs uppercase text-slate-400 font-bold">Pengeluaran ({summary.count_out})</p><p className="text-lg font-black text-rose-600">{fmtRp(summary.expense)}</p></div>
           <div className="bg-white border rounded-xl p-4"><p className="text-xs uppercase text-slate-400 font-bold">Saldo / Laba</p><p className={`text-lg font-black ${summary.balance >= 0 ? "text-sky-600" : "text-rose-600"}`}>{fmtRp(summary.balance)}</p></div>
         </div>
+        </>
       )}
       <div className="flex gap-2 mb-6">
         <button onClick={() => setTab("tx")} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "tx" ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>Transaksi</button>
@@ -70,15 +81,15 @@ export default function KasAdminPage() {
           </form>
           <div className="bg-white border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-slate-50 text-left"><th className="p-3">Tanggal</th><th className="p-3">Jenis</th><th className="p-3">Kategori</th><th className="p-3">Nominal</th><th className="p-3">Ket</th><th className="p-3">Aksi</th></tr></thead>
+              <thead><tr className="bg-slate-50 text-left"><th className="p-3">Kode</th><th className="p-3">Tanggal</th><th className="p-3">Jenis</th><th className="p-3">Kategori</th><th className="p-3">Nominal</th><th className="p-3">Ket</th><th className="p-3">Oleh</th><th className="p-3">Aksi</th></tr></thead>
               <tbody>
                 {txs.map((t) => (
-                  <tr key={t.id} className="border-t"><td className="p-3">{t.date}</td>
+                  <tr key={t.id} className="border-t"><td className="p-3 font-mono">{t.code || "-"}</td><td className="p-3">{t.date}</td>
                     <td className="p-3"><span className={t.kind === "masuk" ? "text-emerald-600 font-bold" : "text-rose-600 font-bold"}>{t.kind}</span></td>
-                    <td className="p-3">{t.category || "-"}</td><td className="p-3 font-bold">{fmtRp(t.amount)}</td><td className="p-3">{t.notes || "-"}</td>
+                    <td className="p-3">{t.category || "-"}</td><td className="p-3 font-bold">{fmtRp(t.amount)}</td><td className="p-3">{t.notes || "-"}</td><td className="p-3">{t.creator || "-"}</td>
                     <td className="p-3"><button onClick={() => setDelId(t.id)} className="text-rose-600"><Trash2 size={16} /></button></td></tr>
                 ))}
-                {txs.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-slate-400">Belum ada transaksi.</td></tr>}
+                {txs.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-slate-400">Belum ada transaksi.</td></tr>}
               </tbody>
             </table>
           </div>
