@@ -1070,6 +1070,24 @@ export interface SppBill {
 	updated_at: string;
 }
 
+export interface IuranBill {
+	id: number;
+	santri_id: number;
+	santri_name?: string;
+	santri_nis?: string;
+	santri_class?: string;
+	period: string;
+	amount: number;
+	paid_amount: number;
+	status: string;
+	due_date: string;
+	paid_method: string;
+	paid_at?: string;
+	notes: string;
+	created_at: string;
+	updated_at: string;
+}
+
 export interface SppSummary {
 	period: string;
 	billed: number;
@@ -1081,7 +1099,25 @@ export interface SppSummary {
 	count_unpaid: number;
 }
 
+export interface IuranSummary {
+	period: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_total: number;
+	count_paid: number;
+	count_partial: number;
+	count_unpaid: number;
+}
+
 export interface SppSantri {
+	id: number;
+	nis: string;
+	name: string;
+	class: string;
+}
+
+export interface IuranSantri {
 	id: number;
 	nis: string;
 	name: string;
@@ -1106,6 +1142,24 @@ export async function getSppBills(params: { period?: string; status?: string; sa
 	}
 }
 
+export async function getIuranBills(params: { period?: string; status?: string; santri_id?: number } = {}) {
+	try {
+		const query = new URLSearchParams();
+		if (params.period) query.set('period', params.period);
+		if (params.status) query.set('status', params.status);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/iuran/bills?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as IuranBill[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP bills error:`, e);
+		return [];
+	}
+}
+
 export async function getSppSummary(period: string): Promise<SppSummary | null> {
 	try {
 		const res = await fetch(`${API_BASE_URL}/spp/bills/summary?period=${encodeURIComponent(period)}`, {
@@ -1114,6 +1168,20 @@ export async function getSppSummary(period: string): Promise<SppSummary | null> 
 		});
 		const result = await parseResponse(res);
 		return (result.data || null) as SppSummary | null;
+	} catch (e) {
+		console.error(`[API] Fetch SPP summary error:`, e);
+		return null;
+	}
+}
+
+export async function getIuranSummary(period: string): Promise<IuranSummary | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/iuran/bills/summary?period=${encodeURIComponent(period)}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || null) as IuranSummary | null;
 	} catch (e) {
 		console.error(`[API] Fetch SPP summary error:`, e);
 		return null;
@@ -1134,8 +1202,31 @@ export async function getSppSantri() {
 	}
 }
 
+export async function getIuranSantri() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/iuran/santri`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as IuranSantri[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP santri error:`, e);
+		return [];
+	}
+}
+
 export async function generateSppBills(data: { period: string; amount: number; due_date?: string }) {
 	const res = await fetch(`${API_BASE_URL}/spp/bills/generate`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function generateIuranBills(data: { period: string; amount: number; due_date?: string }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/generate`, {
 		method: 'POST',
 		headers: getAuthHeaders(),
 		body: JSON.stringify(data)
@@ -1152,8 +1243,26 @@ export async function createSppBill(data: { santri_id: number; period: string; a
 	return parseResponse(res);
 }
 
+export async function createIuranBill(data: { santri_id: number; period: string; amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
 export async function updateSppBill(id: number, data: { amount: number; due_date?: string; notes?: string }) {
 	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateIuranBill(id: number, data: { amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}`, {
 		method: 'PUT',
 		headers: getAuthHeaders(),
 		body: JSON.stringify(data)
@@ -1170,8 +1279,25 @@ export async function paySppBill(id: number, data: { amount: number; method?: st
 	return parseResponse(res);
 }
 
+export async function payIuranBill(id: number, data: { amount: number; method?: string; paid_at?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}/pay`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
 export async function cancelSppBill(id: number) {
 	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}/cancel`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function cancelIuranBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}/cancel`, {
 		method: 'POST',
 		headers: getAuthHeaders()
 	});
@@ -1186,7 +1312,27 @@ export async function deleteSppBill(id: number) {
 	return parseResponse(res);
 }
 
+export async function deleteIuranBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export interface SppReportRow {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_bills: number;
+	status: string;
+}
+
+export interface IuranReportRow {
 	santri_id: number;
 	nis: string;
 	name: string;
@@ -1211,6 +1357,25 @@ export async function getSppReport(params: { period_start: string; period_end: s
 		});
 		const result = await parseResponse(res);
 		return (result.data || []) as SppReportRow[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP report error:`, e);
+		return [];
+	}
+}
+
+export async function getIuranReport(params: { period_start: string; period_end: string; class?: string; santri_id?: number }) {
+	try {
+		const query = new URLSearchParams();
+		query.set('period_start', params.period_start);
+		query.set('period_end', params.period_end);
+		if (params.class) query.set('class', params.class);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/iuran/report?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as IuranReportRow[];
 	} catch (e) {
 		console.error(`[API] Fetch SPP report error:`, e);
 		return [];

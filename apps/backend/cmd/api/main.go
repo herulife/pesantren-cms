@@ -24,6 +24,7 @@ import (
 	"almaparung-api/internal/features/raport"
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/spp"
+	"almaparung-api/internal/features/iuran"
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
@@ -126,6 +127,9 @@ func main() {
 
 	sppRepo := spp.NewRepository(database.DB)
 	sppHandler := spp.NewHandler(sppRepo)
+
+	iuranRepo := iuran.NewRepository(database.DB)
+	iuranHandler := iuran.NewHandler(iuranRepo)
 
 	logRepo := logs.NewRepository(database.DB)
 	logHandler := logs.NewHandler(logRepo)
@@ -317,6 +321,7 @@ func main() {
 				r.Use(auth.RequireRole("bendahara"))
 			r.Mount("/payments", paymentHandler.Routes())
 			r.Mount("/spp", sppHandler.Routes())
+			r.Mount("/iuran", iuranHandler.Routes())
 			r.Mount("/donations", donationHandler.Routes())
 			})
 

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { getPayments, createPayment, deletePayment, getPaymentUsers, Payment, CompactUser } from '@/lib/api';
 import SppBills from './SppBills';
 import SppReport from './SppReport';
+import IuranBills from './IuranBills';
+import IuranReport from './IuranReport';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -19,7 +21,7 @@ export default function PaymentsAdminPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [activeTab, setActiveTab] = useState<'bills' | 'manual' | 'report'>('bills');
+  const [activeTab, setActiveTab] = useState<'bills' | 'manual' | 'report' | 'iuran' | 'iuran-report'>('bills');
   const { showToast } = useToast();
 
   const fetchData = async () => {
@@ -210,11 +212,27 @@ export default function PaymentsAdminPage() {
         >
           Laporan Tagihan
         </button>
+        <button
+          onClick={() => setActiveTab('iuran')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Tagihan Iuran
+        </button>
+        <button
+          onClick={() => setActiveTab('iuran-report')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran-report' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Laporan Iuran
+        </button>
       </div>
 
       {activeTab === 'bills' && <SppBills />}
 
+      {activeTab === 'iuran' && <IuranBills />}
+
       {activeTab === 'report' && <SppReport />}
+
+      {activeTab === 'iuran-report' && <IuranReport />}
 
       {activeTab === 'manual' && (
       <>
