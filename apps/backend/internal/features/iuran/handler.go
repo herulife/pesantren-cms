@@ -89,6 +89,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/bills/{id}/pay", h.Pay)
 	r.Post("/bills/{id}/cancel", h.Cancel)
 	r.Delete("/bills/{id}", h.Delete)
+	r.Delete("/bills/by-period", h.DeleteByPeriod)
 	return r
 }
 
@@ -114,7 +115,8 @@ func (h *Handler) ListBills(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Status harus unpaid, partial, atau paid", nil)
 		return
 	}
-	bills, err := h.repo.ListBills(period, status, santriID)
+	name := strings.TrimSpace(q.Get("name"))
+	bills, err := h.repo.ListBills(period, status, santriID, name)
 	if err != nil {
 		logger.Error(r.Context(), "iuran list bills failed", logger.Field{"operation": "iuran_list_bills", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -132,7 +134,7 @@ func (h *Handler) Summary(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Periode harus format YYYY-MM (contoh: 2026-09)", nil)
 		return
 	}
-	s, err := h.repo.Summary(period)
+	s, err := h.repo.Summary(period, strings.TrimSpace(r.URL.Query().Get("name")))
 	if err != nil {
 		logger.Error(r.Context(), "iuran summary failed", logger.Field{"operation": "iuran_summary", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -168,9 +170,12 @@ func (h *Handler) Report(w http.ResponseWriter, r *http.Request) {
 }
 
 type generateRequest struct {
-	Period  string `json:"period"`
-	Amount  int    `json:"amount"`
-	DueDate string `json:"due_date"`
+	Name      string `json:"name"`
+	Period    string `json:"period"`
+	Amount    int    `json:"amount"`
+	DueDate   string `json:"due_date"`
+	Class     string `json:"class"`
+	SantriIDs []int  `json:"santri_ids"`
 }
 
 func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
@@ -179,8 +184,14 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	req.Name = strings.TrimSpace(req.Name)
 	req.Period = strings.TrimSpace(req.Period)
 	req.DueDate = strings.TrimSpace(req.DueDate)
+	req.Class = strings.TrimSpace(req.Class)
+	if req.Name == "" {
+		writeValidationError(w, map[string][]string{"name": {"Nama iuran wajib diisi"}})
+		return
+	}
 	if errs := validateBill(req.Period, req.Amount); errs != nil {
 		writeValidationError(w, errs)
 		return
@@ -189,7 +200,7 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 		writeValidationError(w, errs)
 		return
 	}
-	created, skipped, err := h.repo.GenerateBills(req.Period, req.Amount, req.DueDate)
+	created, skipped, err := h.repo.GenerateBills(req.Name, req.Period, req.Amount, req.DueDate, req.Class, req.SantriIDs)
 	if err != nil {
 		logger.Error(r.Context(), "iuran generate failed", logger.Field{"operation": "iuran_generate", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -206,6 +217,7 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 
 type billRequest struct {
 	SantriID int    `json:"santri_id"`
+	Name     string `json:"name"`
 	Period   string `json:"period"`
 	Amount   int    `json:"amount"`
 	DueDate  string `json:"due_date"`
@@ -218,8 +230,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	req.Name = strings.TrimSpace(req.Name)
 	req.Period = strings.TrimSpace(req.Period)
 	req.DueDate = strings.TrimSpace(req.DueDate)
+	if req.Name == "" {
+		writeValidationError(w, map[string][]string{"name": {"Nama iuran wajib diisi"}})
+		return
+	}
 	if req.SantriID <= 0 {
 		writeValidationError(w, map[string][]string{"santri_id": {"Santri wajib dipilih"}})
 		return
@@ -232,7 +249,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		writeValidationError(w, errs)
 		return
 	}
-	b := &IuranBill{SantriID: req.SantriID, Period: req.Period, Amount: req.Amount, DueDate: req.DueDate, Notes: req.Notes}
+	b := &IuranBill{SantriID: req.SantriID, Name: req.Name, Period: req.Period, Amount: req.Amount, DueDate: req.DueDate, Notes: req.Notes}
 	if err := h.repo.CreateBill(b); err != nil {
 		if IsDuplicateError(err) {
 			sendJSONResponse(w, http.StatusConflict, false, "Tagihan santri ini untuk periode tersebut sudah ada", nil)
@@ -351,6 +368,25 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran IURAN dibatalkan, tagihan kembali belum lunas", nil)
 }
 
+func (h *Handler) DeleteByPeriod(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	name := strings.TrimSpace(q.Get("name"))
+	period := strings.TrimSpace(q.Get("period"))
+	if name == "" || !periodPattern.MatchString(period) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Nama iuran dan periode YYYY-MM wajib diisi", nil)
+		return
+	}
+	n, err := h.repo.DeleteByPeriod(name, period)
+	if err != nil {
+		logger.Error(r.Context(), "iuran delete by period failed", logger.Field{"operation": "iuran_delete_period", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	aid := adminID(r)
+	logger.RecordActivity(&aid, "DELETE_IURAN_PERIOD", fmt.Sprintf("Hapus %d tagihan IURAN %s periode %s", n, name, period), r.RemoteAddr, r.UserAgent())
+	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("%d tagihan dihapus (yang sudah dibayar tidak ikut)", n), map[string]interface{}{"deleted": n})
+}
+
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -379,15 +415,16 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // IRepository ...
 type IRepository interface {
-	ListBills(period, status string, santriID int) ([]IuranBill, error)
+	ListBills(period, status string, santriID int, name string) ([]IuranBill, error)
 	GetBill(id int) (*IuranBill, error)
 	CreateBill(b *IuranBill) error
 	UpdateBill(id, amount int, dueDate, notes string) error
 	DeleteBill(id int) error
-	GenerateBills(period string, amount int, dueDate string) (created int, skipped int, err error)
+	DeleteByPeriod(name, period string) (int64, error)
+	GenerateBills(name, period string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
 	PayBill(id, amount int, method, paidAt, notes string) error
 	CancelBill(id int) error
-	Summary(period string) (*IuranSummary, error)
+	Summary(period, name string) (*IuranSummary, error)
 	Report(periodStart, periodEnd, class string, santriID int) ([]IuranReportRow, error)
 	ListActiveSantri() ([]IuranSantri, error)
 }

@@ -47,13 +47,16 @@ export default function IuranBills() {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
+  const [genName, setGenName] = useState('');
   const [genAmount, setGenAmount] = useState('');
   const [genDueDate, setGenDueDate] = useState('');
+  const [genClass, setGenClass] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<IuranBill | null>(null);
-  const [billForm, setBillForm] = useState({ santri_id: '', amount: '', due_date: '', notes: '' });
+  const [billForm, setBillForm] = useState({ santri_id: '', name: '', amount: '', due_date: '', notes: '' });
 
   const [payBill, setPayBill] = useState<IuranBill | null>(null);
   const [payForm, setPayForm] = useState({ amount: '', method: 'manual', paid_at: new Date().toISOString().split('T')[0], notes: '' });
@@ -63,12 +66,12 @@ export default function IuranBills() {
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [isCancelOpen, setIsCancelOpen] = useState(false);
 
-  const fetchData = useCallback(async (p: string) => {
+  const fetchData = useCallback(async (p: string, n: string) => {
     setIsLoading(true);
     try {
       const [bData, sData, santri] = await Promise.all([
-        getIuranBills({ period: p }),
-        getIuranSummary(p),
+        getIuranBills({ period: p, name: n || undefined }),
+        getIuranSummary(p, n),
         getIuranSantri(),
       ]);
       setBills(bData);
@@ -80,25 +83,26 @@ export default function IuranBills() {
   }, []);
 
   useEffect(() => {
-    void fetchData(period);
-  }, [period, fetchData]);
+    void fetchData(period, nameFilter);
+  }, [period, nameFilter, fetchData]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseInt(genAmount, 10);
-    if (!period || !amount || amount <= 0) {
-      showToast('error', 'Isi periode dan nominal yang valid.');
+    if (!genName.trim() || !period || !amount || amount <= 0) {
+      showToast('error', 'Isi nama iuran, periode dan nominal yang valid.');
       return;
     }
     setIsGenerating(true);
     try {
-      const res = await generateIuranBills({ period, amount, due_date: genDueDate || undefined });
+      const res = await generateIuranBills({ name: genName.trim(), period, amount, due_date: genDueDate || undefined, class: genClass || undefined });
       if (res.success) {
         showToast('success', res.message || 'Tagihan berhasil dibuat.');
         setIsGenerateOpen(false);
         setGenAmount('');
         setGenDueDate('');
-        fetchData(period);
+        setGenClass('');
+        fetchData(period, nameFilter);
       } else {
         showToast('error', res.message || 'Gagal membuat tagihan.');
       }
@@ -129,8 +133,8 @@ export default function IuranBills() {
   const handleSaveBill = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseInt(billForm.amount, 10);
-    if (!billForm.santri_id || !amount || amount <= 0) {
-      showToast('error', 'Pilih santri dan isi nominal yang valid.');
+    if ((!editingBill && !billForm.name.trim()) || !billForm.santri_id || !amount || amount <= 0) {
+      showToast('error', 'Pilih santri, isi nama iuran dan nominal yang valid.');
       return;
     }
     try {
@@ -138,6 +142,7 @@ export default function IuranBills() {
         ? await updateIuranBill(editingBill.id, { amount, due_date: billForm.due_date || undefined, notes: billForm.notes })
         : await createIuranBill({
             santri_id: parseInt(billForm.santri_id, 10),
+            name: billForm.name.trim(),
             period,
             amount,
             due_date: billForm.due_date || undefined,
@@ -146,7 +151,7 @@ export default function IuranBills() {
       if (res.success) {
         showToast('success', editingBill ? 'Tagihan berhasil diperbarui.' : 'Tagihan berhasil dibuat.');
         setIsBillModalOpen(false);
-        fetchData(period);
+        fetchData(period, nameFilter);
       } else {
         const msg = (res as { errors?: Record<string, string[]> }).errors
           ? Object.values((res as { errors?: Record<string, string[]> }).errors || {}).flat().join(', ')
@@ -187,7 +192,7 @@ export default function IuranBills() {
       if (res.success) {
         showToast('success', 'Pembayaran berhasil dicatat.');
         setPayBill(null);
-        fetchData(period);
+        fetchData(period, nameFilter);
       } else {
         showToast('error', res.message || 'Gagal mencatat pembayaran.');
       }
@@ -203,7 +208,7 @@ export default function IuranBills() {
       if (res.success) {
         showToast('success', 'Pembayaran dibatalkan.');
         setIsCancelOpen(false);
-        fetchData(period);
+        fetchData(period, nameFilter);
       } else {
         showToast('error', res.message || 'Gagal membatalkan.');
       }
@@ -219,7 +224,7 @@ export default function IuranBills() {
       if (res.success) {
         showToast('success', 'Tagihan berhasil dihapus.');
         setIsDeleteOpen(false);
-        fetchData(period);
+        fetchData(period, nameFilter);
       } else {
         showToast('error', res.message || 'Gagal menghapus tagihan.');
       }
@@ -250,6 +255,15 @@ export default function IuranBills() {
             type="month"
             value={period}
             onChange={(e) => e.target.value && setPeriod(e.target.value)}
+            className="px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Iuran</label>
+          <input
+            placeholder="Semua (ketik nama)"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
             className="px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700"
           />
         </div>
@@ -425,7 +439,18 @@ export default function IuranBills() {
                 <button type="button" onClick={() => setIsGenerateOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
               </div>
               <div className="p-8 space-y-5">
-                <p className="text-sm text-slate-500">Buat tagihan untuk <b>{santriList.length} santri aktif</b>. Santri yang sudah punya tagihan periode ini dilewati otomatis.</p>
+                <p className="text-sm text-slate-500">Buat tagihan untuk <b>{genClass ? `kelas ${genClass}` : `${santriList.length} santri aktif`}</b>. Santri yang sudah punya tagihan iuran ini dilewati otomatis.</p>
+                <div>
+                  <label className={labelCls}>Nama Iuran *</label>
+                  <input placeholder="Contoh: Iuran Kegiatan" value={genName} onChange={(e) => setGenName(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Kelas (opsional, kosongkan = semua)</label>
+                  <select value={genClass} onChange={(e) => setGenClass(e.target.value)} className={inputCls}>
+                    <option value="">Semua kelas</option>
+                    {Array.from(new Set(santriList.map((x) => x.class).filter(Boolean))).map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
                 <div>
                   <label className={labelCls}>Nominal per Santri (Rp) *</label>
                   <input type="number" min="1" placeholder="Contoh: 150000" value={genAmount} onChange={(e) => setGenAmount(e.target.value)} className={inputCls} />
@@ -458,6 +483,12 @@ export default function IuranBills() {
               <div className="p-8 space-y-5">
                 <div>
                   <label className={labelCls}>Santri *</label>
+                  {!editingBill && (
+                    <div>
+                      <label className={labelCls}>Nama Iuran *</label>
+                      <input placeholder="Contoh: Iuran Kegiatan" value={billForm.name} onChange={(e) => setBillForm({ ...billForm, name: e.target.value })} className={inputCls} />
+                    </div>
+                  )}
                   <select value={billForm.santri_id} disabled={!!editingBill} onChange={(e) => setBillForm({ ...billForm, santri_id: e.target.value })} className={`${inputCls} disabled:opacity-60`}>
                     <option value="">-- Pilih Santri --</option>
                     {santriList.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}

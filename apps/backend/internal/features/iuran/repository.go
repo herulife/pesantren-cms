@@ -20,6 +20,7 @@ type IuranBill struct {
 	SantriName  string    `json:"santri_name,omitempty"`
 	SantriNIS   string    `json:"santri_nis,omitempty"`
 	SantriClass string    `json:"santri_class,omitempty"`
+	Name        string    `json:"name"`
 	Period      string    `json:"period"`
 	Amount      int       `json:"amount"`
 	PaidAmount  int       `json:"paid_amount"`
@@ -63,7 +64,7 @@ func scanBill(rows *sql.Rows) (IuranBill, error) {
 	var paidAt sql.NullString
 	var createdAt, updatedAt string
 	err := rows.Scan(&b.ID, &b.SantriID, &b.SantriName, &b.SantriNIS, &b.SantriClass,
-		&b.Period, &b.Amount, &b.PaidAmount, &b.Status, &b.DueDate,
+		&b.Name, &b.Period, &b.Amount, &b.PaidAmount, &b.Status, &b.DueDate,
 		&b.PaidMethod, &paidAt, &b.Notes, &createdAt, &updatedAt)
 	if err != nil {
 		return b, err
@@ -78,15 +79,19 @@ func scanBill(rows *sql.Rows) (IuranBill, error) {
 
 const billSelect = `
 	SELECT b.id, b.santri_id, s.name, s.nis, s.class,
-	       b.period, b.amount, b.paid_amount, b.status, b.due_date,
+	       b.name, b.period, b.amount, b.paid_amount, b.status, b.due_date,
 	       b.paid_method, b.paid_at, b.notes, b.created_at, b.updated_at
 	FROM iuran_bills b
 	JOIN santri s ON s.id = b.santri_id
 `
 
-func (r *Repository) ListBills(period, status string, santriID int) ([]IuranBill, error) {
+func (r *Repository) ListBills(period, status string, santriID int, name string) ([]IuranBill, error) {
 	query := billSelect + ` WHERE 1=1`
 	var args []interface{}
+	if name != "" {
+		query += ` AND b.name = ?`
+		args = append(args, name)
+	}
 	if period != "" {
 		query += ` AND b.period = ?`
 		args = append(args, period)
@@ -139,15 +144,35 @@ func IsDuplicateError(err error) bool {
 
 func (r *Repository) CreateBill(b *IuranBill) error {
 	_, err := r.db.Exec(
-		`INSERT INTO iuran_bills (santri_id, period, amount, due_date, notes) VALUES (?, ?, ?, ?, ?)`,
-		b.SantriID, b.Period, b.Amount, b.DueDate, b.Notes,
+		`INSERT INTO iuran_bills (santri_id, name, period, amount, due_date, notes) VALUES (?, ?, ?, ?, ?, ?)`,
+		b.SantriID, b.Name, b.Period, b.Amount, b.DueDate, b.Notes,
 	)
 	return err
 }
 
-func (r *Repository) GenerateBills(period string, amount int, dueDate string) (created int, skipped int, err error) {
+func (r *Repository) GenerateBills(name, period string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error) {
 	var ids []int
-	rows, err := r.db.Query(`SELECT id FROM santri WHERE status = 'aktif' ORDER BY id`)
+	if len(santriIDs) > 0 {
+		ids = santriIDs
+	} else if class != "" {
+		rows, err := r.db.Query(`SELECT id FROM santri WHERE status = 'aktif' AND class = ? ORDER BY id`, class)
+		if err != nil {
+			return 0, 0, err
+		}
+		for rows.Next() {
+			var id int
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return 0, 0, err
+			}
+			ids = append(ids, id)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return 0, 0, err
+		}
+	} else {
+		rows, err := r.db.Query(`SELECT id FROM santri WHERE status = 'aktif' ORDER BY id`)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -166,8 +191,8 @@ func (r *Repository) GenerateBills(period string, amount int, dueDate string) (c
 
 	for _, id := range ids {
 		res, err := r.db.Exec(
-			`INSERT OR IGNORE INTO iuran_bills (santri_id, period, amount, due_date) VALUES (?, ?, ?, ?)`,
-			id, period, amount, dueDate,
+			`INSERT OR IGNORE INTO iuran_bills (santri_id, name, period, amount, due_date) VALUES (?, ?, ?, ?, ?)`,
+			id, name, period, amount, dueDate,
 		)
 		if err != nil {
 			return created, skipped, err
@@ -208,6 +233,14 @@ func (r *Repository) DeleteBill(id int) error {
 	}
 	_, err = r.db.Exec(`DELETE FROM iuran_bills WHERE id = ?`, id)
 	return err
+}
+
+func (r *Repository) DeleteByPeriod(name, period string) (int64, error) {
+	res, err := r.db.Exec(`DELETE FROM iuran_bills WHERE name = ? AND period = ? AND paid_amount = 0`, name, period)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 func (r *Repository) PayBill(id, amount int, method, paidAt, notes string) error {
@@ -269,14 +302,19 @@ func (r *Repository) CancelBill(id int) error {
 	return nil
 }
 
-func (r *Repository) Summary(period string) (*IuranSummary, error) {
+func (r *Repository) Summary(period, name string) (*IuranSummary, error) {
 	s := &IuranSummary{Period: period}
 	query := `SELECT COALESCE(SUM(amount),0), COALESCE(SUM(paid_amount),0), COUNT(*),
 		SUM(CASE WHEN status='paid' THEN 1 ELSE 0 END),
 		SUM(CASE WHEN status='partial' THEN 1 ELSE 0 END),
 		SUM(CASE WHEN status='unpaid' THEN 1 ELSE 0 END)
 		FROM iuran_bills WHERE period = ?`
-	err := r.db.QueryRow(query, period).Scan(
+	args := []interface{}{period}
+	if name != "" {
+		query += ` AND name = ?`
+		args = append(args, name)
+	}
+	err := r.db.QueryRow(query, args...).Scan(
 		&s.Billed, &s.Collected, &s.CountTotal, &s.CountPaid, &s.CountPartial, &s.CountUnpaid,
 	)
 	if err != nil {

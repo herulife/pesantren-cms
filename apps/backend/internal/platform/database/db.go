@@ -144,6 +144,7 @@ func createTables() {
 	CREATE TABLE IF NOT EXISTS iuran_bills (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		santri_id INTEGER NOT NULL,
+		name TEXT NOT NULL DEFAULT '',
 		period TEXT NOT NULL,
 		amount INTEGER NOT NULL,
 		paid_amount INTEGER NOT NULL DEFAULT 0,
@@ -155,10 +156,11 @@ func createTables() {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (santri_id) REFERENCES santri(id),
-		UNIQUE(santri_id, period)
+		UNIQUE(santri_id, name, period)
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_iuran_bills_period ON iuran_bills(period);
+	CREATE INDEX IF NOT EXISTS idx_iuran_bills_name ON iuran_bills(name);
 
 	CREATE TABLE IF NOT EXISTS classes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -660,6 +662,7 @@ func createTables() {
 	addColumnIfNotExists("videos", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("videos", "series_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "series_slug", "TEXT DEFAULT ''")
+	addColumnIfNotExists("iuran_bills", "name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "event_date", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "is_featured", "BOOLEAN DEFAULT 0")
 	addColumnIfNotExists("facilities", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")

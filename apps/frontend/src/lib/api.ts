@@ -1142,12 +1142,13 @@ export async function getSppBills(params: { period?: string; status?: string; sa
 	}
 }
 
-export async function getIuranBills(params: { period?: string; status?: string; santri_id?: number } = {}) {
+export async function getIuranBills(params: { period?: string; status?: string; santri_id?: number; name?: string } = {}) {
 	try {
 		const query = new URLSearchParams();
 		if (params.period) query.set('period', params.period);
 		if (params.status) query.set('status', params.status);
 		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		if (params.name) query.set('name', params.name);
 		const res = await fetch(`${API_BASE_URL}/iuran/bills?${query.toString()}`, {
 			headers: getAuthHeaders(),
 			cache: 'no-store'
@@ -1174,9 +1175,10 @@ export async function getSppSummary(period: string): Promise<SppSummary | null> 
 	}
 }
 
-export async function getIuranSummary(period: string): Promise<IuranSummary | null> {
+export async function getIuranSummary(period: string, name = ""): Promise<IuranSummary | null> {
 	try {
-		const res = await fetch(`${API_BASE_URL}/iuran/bills/summary?period=${encodeURIComponent(period)}`, {
+		const q = `period=${encodeURIComponent(period)}${name ? `&name=${encodeURIComponent(name)}` : ""}`;
+		const res = await fetch(`${API_BASE_URL}/iuran/bills/summary?${q}`, {
 			headers: getAuthHeaders(),
 			cache: 'no-store'
 		});
@@ -1225,7 +1227,7 @@ export async function generateSppBills(data: { period: string; amount: number; d
 	return parseResponse(res);
 }
 
-export async function generateIuranBills(data: { period: string; amount: number; due_date?: string }) {
+export async function generateIuranBills(data: { name: string; period: string; amount: number; due_date?: string; class?: string; santri_ids?: number[] }) {
 	const res = await fetch(`${API_BASE_URL}/iuran/bills/generate`, {
 		method: 'POST',
 		headers: getAuthHeaders(),
@@ -1243,7 +1245,7 @@ export async function createSppBill(data: { santri_id: number; period: string; a
 	return parseResponse(res);
 }
 
-export async function createIuranBill(data: { santri_id: number; period: string; amount: number; due_date?: string; notes?: string }) {
+export async function createIuranBill(data: { santri_id: number; name: string; period: string; amount: number; due_date?: string; notes?: string }) {
 	const res = await fetch(`${API_BASE_URL}/iuran/bills`, {
 		method: 'POST',
 		headers: getAuthHeaders(),
@@ -1306,6 +1308,14 @@ export async function cancelIuranBill(id: number) {
 
 export async function deleteSppBill(id: number) {
 	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteIuranByPeriod(name: string, period: string) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/by-period?name=${encodeURIComponent(name)}&period=${encodeURIComponent(period)}`, {
 		method: 'DELETE',
 		headers: getAuthHeaders()
 	});
