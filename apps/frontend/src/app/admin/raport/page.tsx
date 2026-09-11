@@ -115,10 +115,12 @@ export default function ERaportPage() {
 		setStored(m);
 	}, [loadStudents, loadWeights, loadRaport, loadKes, selected, semester, year]);
 
+	// eslint-disable-next-line react-hooks/set-state-in-effect -- fetch awal saat mount
 	useEffect(() => { loadAll(); }, [loadAll]);
 
 	useEffect(() => {
 		if (selected) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect -- refetch saat santri dipilih
 			loadRaport(selected);
 			loadKes(selected);
 		}

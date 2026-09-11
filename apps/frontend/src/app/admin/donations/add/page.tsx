@@ -68,7 +68,7 @@ function AddDonationCampaignContent() {
         showToast('success', isEdit ? 'Kampanye berhasil diperbarui!' : 'Kampanye donasi berhasil dibuat!');
         router.push('/admin/donations');
       } else {
-        const msg = (res as any).errors ? Object.values((res as any).errors).flat().join(', ') : (res.message || (isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.'));
+        const msg = (res as { errors?: Record<string, string | string[]> }).errors ? Object.values((res as { errors?: Record<string, string | string[]> }).errors).flat().join(', ') : (res.message || (isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.'));
         showToast('error', msg);
       }
     } catch (err) {

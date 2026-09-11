@@ -93,6 +93,7 @@ export default function ProjectPage() {
 		setLoading(false);
 	}, []);
 
+	// eslint-disable-next-line react-hooks/set-state-in-effect -- fetch awal saat mount
 	useEffect(() => { load(); }, [load]);
 
 	const activitiesFor = useMemo(() => (sub: number) => acts.filter(a => a.sub_project_id === sub), [acts]);

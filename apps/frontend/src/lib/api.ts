@@ -2902,14 +2902,14 @@ export async function getSantri(id: number): Promise<Santri | null> {
 export async function createSantri(data: Partial<Santri>): Promise<{ ok: boolean; message: string; errors?: Record<string, string> }> {
 	try {
 		const r = await lmsFetch('/santri', { method: 'POST', body: JSON.stringify(data) });
-		return { ok: r.success, message: r.message, errors: (r as any).errors };
+		return { ok: r.success, message: r.message, errors: (r as { errors?: Record<string, string> }).errors };
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menambah santri' }; }
 }
 
 export async function updateSantri(id: number, data: Partial<Santri>): Promise<{ ok: boolean; message: string; errors?: Record<string, string> }> {
 	try {
 		const r = await lmsFetch(`/santri/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-		return { ok: r.success, message: r.message, errors: (r as any).errors };
+		return { ok: r.success, message: r.message, errors: (r as { errors?: Record<string, string> }).errors };
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal memperbarui santri' }; }
 }
 
@@ -2923,14 +2923,14 @@ export async function deleteSantri(id: number): Promise<boolean> {
 export async function bulkCreateSantri(items: Partial<Santri>[]): Promise<{ ok: boolean; message: string; inserted?: number }> {
 	try {
 		const r = await lmsFetch('/santri/bulk', { method: 'POST', body: JSON.stringify({ items }) });
-		return { ok: r.success, message: r.message, inserted: (r.data as any)?.inserted };
+		return { ok: r.success, message: r.message, inserted: (r.data as { inserted?: number } | undefined)?.inserted };
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal import santri' }; }
 }
 
 export async function bulkDeleteSantri(ids: number[]): Promise<{ ok: boolean; message: string; deleted?: number }> {
 	try {
 		const r = await lmsFetch('/santri/bulk', { method: 'DELETE', body: JSON.stringify({ ids }) });
-		return { ok: r.success, message: r.message, deleted: (r.data as any)?.deleted };
+		return { ok: r.success, message: r.message, deleted: (r.data as { deleted?: number } | undefined)?.deleted };
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus santri' }; }
 }
 

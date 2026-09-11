@@ -54,7 +54,7 @@ export default function SantriImportPage() {
 
   const { rows, header, errors } = useMemo(() => {
     const trimmed = rawText.trim();
-    if (!trimmed) return { rows: [] as any[], header: [] as string[], errors: [] as RowError[] };
+    if (!trimmed) return { rows: [] as ParsedRow[], header: [] as string[], errors: [] as RowError[] };
 
     const csv = parseCSV(trimmed);
     if (csv.length === 0) return { rows: [], header: [], errors: [] };

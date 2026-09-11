@@ -3,6 +3,8 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
+type JsPDFWithAutoTable = jsPDF & { lastAutoTable: { finalY: number } };
+
 type ReportScoreRow = {
 	subject: string;
 	semester: string;
@@ -355,7 +357,7 @@ export function exportERaportPDF(payload: ERaportPDFPayload) {
 		styles: { fontSize: 10 },
 		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
 	});
-	y = (doc as any).lastAutoTable.finalY + 6;
+	y = (doc as unknown as JsPDFWithAutoTable).lastAutoTable.finalY + 6;
 
 	// Mapel breakdown
 	doc.setFont('helvetica', 'bold');
@@ -371,7 +373,7 @@ export function exportERaportPDF(payload: ERaportPDFPayload) {
 		styles: { fontSize: 9 },
 		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
 	});
-	y = (doc as any).lastAutoTable.finalY + 6;
+	y = (doc as unknown as JsPDFWithAutoTable).lastAutoTable.finalY + 6;
 
 	// Project breakdown
 	doc.setFont('helvetica', 'bold');
@@ -386,7 +388,7 @@ export function exportERaportPDF(payload: ERaportPDFPayload) {
 		styles: { fontSize: 9 },
 		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
 	});
-	y = (doc as any).lastAutoTable.finalY + 6;
+	y = (doc as unknown as JsPDFWithAutoTable).lastAutoTable.finalY + 6;
 
 	// Kesantrian breakdown
 	doc.setFont('helvetica', 'bold');
