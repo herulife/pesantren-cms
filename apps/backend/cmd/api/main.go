@@ -25,6 +25,7 @@ import (
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/spp"
 	"almaparung-api/internal/features/iuran"
+	"almaparung-api/internal/features/school"
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
@@ -130,6 +131,9 @@ func main() {
 
 	iuranRepo := iuran.NewRepository(database.DB)
 	iuranHandler := iuran.NewHandler(iuranRepo)
+
+	schoolRepo := school.NewRepository(database.DB)
+	schoolHandler := school.NewHandler(schoolRepo)
 
 	logRepo := logs.NewRepository(database.DB)
 	logHandler := logs.NewHandler(logRepo)
@@ -325,7 +329,13 @@ func main() {
 			r.Mount("/donations", donationHandler.Routes())
 			})
 
-			// Panitia PSB Ops
+			// Master Sekolah (kelas + tahun ajaran): dibaca semua role operasional
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
+			r.Mount("/school", schoolHandler.Routes())
+		})
+
+		// Panitia PSB Ops
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("panitia_psb"))
 				r.Mount("/psb", psbHandler.Routes())

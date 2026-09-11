@@ -160,6 +160,25 @@ func createTables() {
 
 	CREATE INDEX IF NOT EXISTS idx_iuran_bills_period ON iuran_bills(period);
 
+	CREATE TABLE IF NOT EXISTS classes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL UNIQUE,
+		jenjang TEXT DEFAULT '',
+		is_active INTEGER NOT NULL DEFAULT 1,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS academic_years (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL UNIQUE,
+		start_date TEXT DEFAULT '',
+		end_date TEXT DEFAULT '',
+		is_active INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
 	CREATE TABLE IF NOT EXISTS activity_logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER,
@@ -726,6 +745,10 @@ func runMigrations() {
 		{
 			name: "tahfidz_student_eval_date_index",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_tahfidz_student_eval_date ON tahfidz_progress(student_id, evaluation_date DESC);`,
+		},
+		{
+			name: "school_classes_backfill",
+			sql:  `INSERT OR IGNORE INTO classes (name) SELECT DISTINCT TRIM(class) FROM santri WHERE TRIM(COALESCE(class,''))<>'';`,
 		},
 	}
 

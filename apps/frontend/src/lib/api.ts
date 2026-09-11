@@ -2933,3 +2933,45 @@ export async function bulkDeleteSantri(ids: number[]): Promise<{ ok: boolean; me
 		return { ok: r.success, message: r.message, deleted: (r.data as any)?.deleted };
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus santri' }; }
 }
+
+export interface SchoolClass { id: number; name: string; jenjang: string; is_active: number; created_at: string; updated_at: string; }
+export interface AcademicYear { id: number; name: string; start_date: string; end_date: string; is_active: number; created_at: string; updated_at: string; }
+
+export async function getClasses(activeOnly = false) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/school/classes${activeOnly ? "?active_only=true" : ""}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as SchoolClass[];
+  } catch (e) { console.error("[API] Fetch classes error:", e); return []; }
+}
+export async function createClass(data: { name: string; jenjang?: string }) {
+  const res = await fetch(`${API_BASE_URL}/school/classes`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function updateClass(id: number, data: { name: string; jenjang?: string; is_active: number }) {
+  const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteClass(id: number) {
+  const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function getAcademicYears() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/school/years`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as AcademicYear[];
+  } catch (e) { console.error("[API] Fetch years error:", e); return []; }
+}
+export async function createAcademicYear(data: { name: string; start_date?: string; end_date?: string }) {
+  const res = await fetch(`${API_BASE_URL}/school/years`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function activateAcademicYear(id: number) {
+  const res = await fetch(`${API_BASE_URL}/school/years/${id}/activate`, { method: "POST", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function deleteAcademicYear(id: number) {
+  const res = await fetch(`${API_BASE_URL}/school/years/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
