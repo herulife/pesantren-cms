@@ -70,6 +70,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/{id}", h.GetByID)
 	r.Post("/", h.Create)
 	r.Post("/bulk", h.BulkCreate)
+	r.Post("/set-class", h.SetClass)
 	r.Put("/{id}", h.Update)
 	r.Delete("/{id}", h.Delete)
 	r.Delete("/bulk", h.BulkDelete)
@@ -249,6 +250,36 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sendJSONResponse(w, http.StatusOK, true, "Santri berhasil dihapus", nil)
+}
+
+func (h *Handler) SetClass(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Items []struct {
+			ID    int    `json:"id"`
+			Class string `json:"class"`
+		} `json:"items"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
+		return
+	}
+	if len(req.Items) == 0 || len(req.Items) > 500 {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Maksimal 500 santri per simpan", nil)
+		return
+	}
+	m := map[int]string{}
+	for _, it := range req.Items {
+		if it.ID > 0 {
+			m[it.ID] = it.Class
+		}
+	}
+	n, err := h.repo.SetClassBulk(m)
+	if err != nil {
+		logger.Error(r.Context(), "santri set-class failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menyimpan kelas", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, strconv.Itoa(n)+" santri berhasil diset kelasnya", map[string]interface{}{"updated": n})
 }
 
 func (h *Handler) BulkDelete(w http.ResponseWriter, r *http.Request) {

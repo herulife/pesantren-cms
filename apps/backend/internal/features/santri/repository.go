@@ -149,6 +149,31 @@ func (r *Repository) Delete(id int) error {
 	return err
 }
 
+func (r *Repository) SetClassBulk(items map[int]string) (int, error) {
+	if len(items) == 0 {
+		return 0, nil
+	}
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	n := 0
+	for id, class := range items {
+		res, err := tx.Exec(`UPDATE santri SET class=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, strings.TrimSpace(class), id)
+		if err != nil {
+			return n, err
+		}
+		if c, _ := res.RowsAffected(); c > 0 {
+			n++
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return n, err
+	}
+	return n, nil
+}
+
 func (r *Repository) BulkDelete(ids []int) (int, error) {
 	if len(ids) == 0 {
 		return 0, nil

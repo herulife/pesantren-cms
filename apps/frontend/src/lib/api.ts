@@ -2942,6 +2942,13 @@ export async function getSantriList(params: {
 	} catch (e) { console.error('[Kesantrian] list:', e); return { items: [], total: 0, limit: 20, offset: 0 }; }
 }
 
+export async function setSantriClass(items: { id: number; class: string }[]): Promise<{ ok: boolean; message: string; updated?: number }> {
+	try {
+		const r = await lmsFetch<{ updated?: number }>('/santri/set-class', { method: 'POST', body: JSON.stringify({ items }) });
+		return { ok: r.success, message: r.message, updated: r.data?.updated };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menyimpan kelas' }; }
+}
+
 export async function getSantri(id: number): Promise<Santri | null> {
 	try {
 		const r = await lmsFetch<Santri>(`/santri/${id}`);

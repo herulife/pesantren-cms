@@ -1,12 +1,16 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { getClasses, createClass, deleteClass, getAcademicYears, createAcademicYear, activateAcademicYear, deleteAcademicYear, SchoolClass, AcademicYear } from "@/lib/api";
+import { getClasses, createClass, deleteClass, getAcademicYears, createAcademicYear, activateAcademicYear, deleteAcademicYear, getSantriList, setSantriClass, SchoolClass, AcademicYear, Santri } from "@/lib/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
 import { Plus, Trash2, CheckCircle } from "lucide-react";
 
 export default function SchoolAdminPage() {
-  const [tab, setTab] = useState<"classes" | "years">("classes");
+  const [tab, setTab] = useState<"classes" | "years" | "setkelas">("classes");
+  const [santris, setSantris] = useState<Santri[]>([]);
+  const [kelasMap, setKelasMap] = useState<Record<number, string>>({});
+  const [santriSearch, setSantriSearch] = useState("");
+  const [savingKelas, setSavingKelas] = useState(false);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [name, setName] = useState("");
@@ -19,6 +23,13 @@ export default function SchoolAdminPage() {
   const load = useCallback(async () => {
     const [c, y] = await Promise.all([getClasses(), getAcademicYears()]);
     setClasses(c); setYears(y);
+  }, []);
+  const loadSantris = useCallback(async () => {
+    const r = await getSantriList({ limit: 200 });
+    setSantris(r.items);
+    const m: Record<number, string> = {};
+    r.items.forEach((x) => { m[x.id] = x.class || ""; });
+    setKelasMap(m);
   }, []);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
@@ -49,6 +60,7 @@ export default function SchoolAdminPage() {
       <div className="flex gap-2 mb-6">
         <button onClick={() => setTab("classes")} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "classes" ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>Kelas</button>
         <button onClick={() => setTab("years")} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "years" ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>Tahun Ajaran</button>
+        <button onClick={() => { setTab("setkelas"); loadSantris(); }} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "setkelas" ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>Set Kelas</button>
       </div>
       {tab === "classes" ? (
         <>
@@ -70,7 +82,7 @@ export default function SchoolAdminPage() {
             </table>
           </div>
         </>
-      ) : (
+      ) : tab === "years" ? (
         <>
           <form onSubmit={addYear} className="flex gap-2 mb-4">
             <input value={yearName} onChange={(e) => setYearName(e.target.value)} placeholder="cth: 2025/2026" className="border rounded-xl px-3 py-2 text-sm" />
@@ -86,6 +98,43 @@ export default function SchoolAdminPage() {
                     <td className="p-3"><button onClick={() => { setDelId(y.id); setDelKind("year"); }} className="text-rose-600"><Trash2 size={16} /></button></td></tr>
                 ))}
                 {years.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-slate-400">Belum ada tahun ajaran.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex gap-2 mb-4">
+            <input value={santriSearch} onChange={(e) => setSantriSearch(e.target.value)} placeholder="Cari NIS/nama..." className="border rounded-xl px-3 py-2 text-sm flex-1" />
+            <button onClick={async () => {
+              const items = santris.filter((x) => {
+                const cur = kelasMap[x.id] ?? x.class ?? "";
+                return cur !== (x.class || "");
+              }).map((x) => ({ id: x.id, class: kelasMap[x.id] ?? "" }));
+              if (items.length === 0) { showToast("error", "Tidak ada perubahan kelas."); return; }
+              setSavingKelas(true);
+              const r = await setSantriClass(items);
+              setSavingKelas(false);
+              if (r.ok) { showToast("success", r.message); loadSantris(); }
+              else showToast("error", r.message);
+            }} disabled={savingKelas} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60">
+              {savingKelas ? "Menyimpan..." : "Simpan"}
+            </button>
+          </div>
+          <div className="bg-white border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-slate-50 text-left"><th className="p-3">No Induk</th><th className="p-3">Nama</th><th className="p-3">Kelas Saat Ini</th></tr></thead>
+              <tbody>
+                {santris.filter((x) => (x.nis + x.name).toLowerCase().includes(santriSearch.toLowerCase())).map((x) => (
+                  <tr key={x.id} className="border-t"><td className="p-3 font-mono">{x.nis}</td><td className="p-3 font-bold">{x.name}</td>
+                    <td className="p-3">
+                      <select value={kelasMap[x.id] ?? x.class ?? ""} onChange={(e) => setKelasMap({ ...kelasMap, [x.id]: e.target.value })} className="border rounded-xl px-3 py-2 text-sm">
+                        <option value="">- Pilih -</option>
+                        {classes.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </td></tr>
+                ))}
+                {santris.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-slate-400">Belum ada data santri.</td></tr>}
               </tbody>
             </table>
           </div>
