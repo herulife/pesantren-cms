@@ -1076,6 +1076,7 @@ export interface IuranBill {
 	santri_name?: string;
 	santri_nis?: string;
 	santri_class?: string;
+	name: string;
 	period: string;
 	amount: number;
 	paid_amount: number;
