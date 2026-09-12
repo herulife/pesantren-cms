@@ -1306,6 +1306,15 @@ export async function cancelIuranBill(id: number) {
 	return parseResponse(res);
 }
 
+export async function deleteSppBySantri(santri_id: number, period = "") {
+	const q = `santri_id=${santri_id}${period ? `&period=${encodeURIComponent(period)}` : ""}`;
+	const res = await fetch(`${API_BASE_URL}/spp/bills/by-santri?${q}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function deleteSppByPeriod(period: string) {
 	const res = await fetch(`${API_BASE_URL}/spp/bills/by-period?period=${encodeURIComponent(period)}`, {
 		method: 'DELETE',
@@ -1348,6 +1357,17 @@ export async function getCombinedReport(params: { period_start: string; period_e
 
 export async function deleteSppBill(id: number) {
 	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteIuranBySantri(santri_id: number, name = "", period = "") {
+	const q = new URLSearchParams({ santri_id: String(santri_id) });
+	if (name) q.set("name", name);
+	if (period) q.set("period", period);
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/by-santri?${q.toString()}`, {
 		method: 'DELETE',
 		headers: getAuthHeaders()
 	});

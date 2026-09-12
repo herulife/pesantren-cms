@@ -232,6 +232,20 @@ func (r *Repository) GenerateBills(period, periodEnd string, amount int, dueDate
 	return created, skipped, nil
 }
 
+func (r *Repository) DeleteBySantri(santriID int, period string) (int64, error) {
+	q := `DELETE FROM spp_bills WHERE santri_id = ? AND paid_amount = 0`
+	args := []interface{}{santriID}
+	if period != "" {
+		q += ` AND period = ?`
+		args = append(args, period)
+	}
+	res, err := r.db.Exec(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 func (r *Repository) DeleteByPeriod(period string) (int64, error) {
 	res, err := r.db.Exec(`DELETE FROM spp_bills WHERE period = ? AND paid_amount = 0`, period)
 	if err != nil {

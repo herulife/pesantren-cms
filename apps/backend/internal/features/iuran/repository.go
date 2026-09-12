@@ -235,6 +235,24 @@ func (r *Repository) DeleteBill(id int) error {
 	return err
 }
 
+func (r *Repository) DeleteBySantri(santriID int, name, period string) (int64, error) {
+	q := `DELETE FROM iuran_bills WHERE santri_id = ? AND paid_amount = 0`
+	args := []interface{}{santriID}
+	if name != "" {
+		q += ` AND name = ?`
+		args = append(args, name)
+	}
+	if period != "" {
+		q += ` AND period = ?`
+		args = append(args, period)
+	}
+	res, err := r.db.Exec(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 func (r *Repository) DeleteByPeriod(name, period string) (int64, error) {
 	res, err := r.db.Exec(`DELETE FROM iuran_bills WHERE name = ? AND period = ? AND paid_amount = 0`, name, period)
 	if err != nil {

@@ -90,6 +90,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/bills/{id}/cancel", h.Cancel)
 	r.Delete("/bills/{id}", h.Delete)
 	r.Delete("/bills/by-period", h.DeleteByPeriod)
+	r.Delete("/bills/by-santri", h.DeleteBySantri)
 	r.Get("/combined-report", h.CombinedReport)
 	return r
 }
@@ -379,6 +380,29 @@ func (h *Handler) DeleteByPeriod(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("%d tagihan dihapus (yang sudah dibayar tidak ikut)", n), map[string]interface{}{"deleted": n})
 }
 
+func (h *Handler) DeleteBySantri(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	santriID, _ := strconv.Atoi(q.Get("santri_id"))
+	period := strings.TrimSpace(q.Get("period"))
+	if santriID <= 0 {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Santri wajib dipilih", nil)
+		return
+	}
+	if period != "" && !periodPattern.MatchString(period) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Periode harus format YYYY-MM", nil)
+		return
+	}
+	n, err := h.repo.DeleteBySantri(santriID, period)
+	if err != nil {
+		logger.Error(r.Context(), "spp delete by santri failed", logger.Field{"operation": "spp_delete_santri", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	aid := adminID(r)
+	logger.RecordActivity(&aid, "DELETE_SPP_SANTRI", fmt.Sprintf("Hapus %d tagihan SPP santri ID %d", n, santriID), r.RemoteAddr, r.UserAgent())
+	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("%d tagihan dihapus (yang sudah dibayar tidak ikut)", n), map[string]interface{}{"deleted": n})
+}
+
 func (h *Handler) CombinedReport(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	start := strings.TrimSpace(q.Get("period_start"))
@@ -434,6 +458,7 @@ type IRepository interface {
 	UpdateBill(id, amount int, dueDate, notes string) error
 	DeleteBill(id int) error
 	DeleteByPeriod(period string) (int64, error)
+	DeleteBySantri(santriID int, period string) (int64, error)
 	CombinedReport(periodStart, periodEnd, class string, santriID int) ([]CombinedRow, error)
 	GenerateBills(period, periodEnd string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
 	PayBill(id, amount int, method, paidAt, notes string, byID int) error
