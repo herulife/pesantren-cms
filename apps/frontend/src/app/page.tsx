@@ -46,7 +46,6 @@ import {
   School,
   ShieldCheck,
   Sparkles,
-  Trees,
   Users,
 } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -519,7 +518,8 @@ export default function LandingPage() {
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url('${slideImage}')` }}
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,250,252,0.88)_0%,rgba(248,250,252,0.62)_30%,rgba(248,250,252,0.22)_55%,rgba(255,255,255,0)_80%)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,0.82)_0%,rgba(2,6,23,0.55)_38%,rgba(2,6,23,0.18)_68%,rgba(2,6,23,0)_92%)]" />
+                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-slate-950/60 to-transparent" />
 
                   <div className="container relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-8 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-20">
                     <div className="max-w-3xl">
@@ -530,26 +530,26 @@ export default function LandingPage() {
                         className="max-w-3xl"
                       >
                         <div className="lg:max-w-[42rem]">
-                          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-sky-200/90 bg-white/90 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 shadow-[0_12px_30px_-20px_rgba(56,189,248,0.45)] sm:text-[11px]">
+                          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-sky-100 backdrop-blur-md sm:text-[11px]">
                             <Sparkles size={14} />
                             Al-Maa Parung
                           </span>
-                          <h1 className="mt-4 line-clamp-3 max-w-[19ch] text-balance text-[2.1rem] font-black leading-[0.96] tracking-[-0.05em] text-slate-950 [text-shadow:0_10px_26px_rgba(255,255,255,0.28)] sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
+                          <h1 className="mt-4 line-clamp-3 max-w-[19ch] text-balance text-[2.1rem] font-black leading-[0.96] tracking-[-0.05em] text-white drop-shadow-[0_4px_18px_rgba(2,6,23,0.5)] sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
                             {slide.title}
                           </h1>
-                          <p className="mt-3 line-clamp-3 max-w-[32rem] text-[13px] font-medium leading-6 text-slate-800 sm:mt-5 sm:text-base md:line-clamp-3 md:text-lg">
+                          <p className="mt-3 line-clamp-3 max-w-[32rem] text-[13px] font-medium leading-6 text-slate-200 drop-shadow-[0_2px_10px_rgba(2,6,23,0.5)] sm:mt-5 sm:text-base md:line-clamp-3 md:text-lg">
                             {slide.subtitle}
                           </p>
                           <div className="mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row">
                             <Link
                               href={slide.button_url || '/psb'}
-                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full bg-gradient-to-r from-sky-500 via-sky-500 to-cyan-400 px-5 py-3 text-xs font-bold text-white shadow-[0_22px_48px_-22px_rgba(56,189,248,0.52)] ring-1 ring-white/25 transition-all hover:-translate-y-1 hover:brightness-105 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
+                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full bg-sky-500 px-5 py-3 text-xs font-bold text-white shadow-[0_22px_48px_-22px_rgba(56,189,248,0.6)] transition-all hover:-translate-y-1 hover:bg-sky-400 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
                             >
                               {slide.button_text || 'Lihat PSB'} <ArrowRight size={16} />
                             </Link>
                             <Link
                               href="/program"
-                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full border border-sky-200 bg-white/94 px-5 py-3 text-xs font-bold text-sky-700 shadow-[0_16px_34px_-24px_rgba(250,204,21,0.18)] transition-all hover:-translate-y-0.5 hover:bg-sky-50 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
+                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full border border-white/25 bg-white/10 px-5 py-3 text-xs font-bold text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/20 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
                             >
                               Buka Program
                             </Link>
