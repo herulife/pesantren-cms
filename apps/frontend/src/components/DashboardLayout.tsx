@@ -5,17 +5,10 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useAuth } from './AuthProvider';
-import { useAdminTheme } from './AdminTheme';
-import AdminBootstrapShell from './AdminBootstrapShell';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { user } = useAuth();
-  const { theme, setTheme } = useAdminTheme();
-
-  if (theme === 'bootstrap') {
-    return <AdminBootstrapShell>{children}</AdminBootstrapShell>;
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -58,14 +51,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setTheme('bootstrap')}
-              className="rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50"
-              title="Ganti ke mode Bootstrap ala SIMKS"
-            >
-              Bootstrap
-            </button>
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-slate-700">{user?.name || 'Admin'}</p>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">

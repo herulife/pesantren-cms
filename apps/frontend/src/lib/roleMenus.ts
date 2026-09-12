@@ -35,6 +35,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Sistem', label: 'Manajemen Pengguna', href: '/admin/users', roles: ['superadmin'], docRef: 'users' },
   { category: 'Sistem', label: 'Log Sistem', href: '/admin/logs', roles: ['superadmin'], docRef: 'logs' },
   { category: 'Sistem', label: 'Pengaturan Utama', href: '/admin/settings', roles: ['superadmin'], docRef: 'settings' },
+  { category: 'Sistem', label: 'Mode SIMKS 1:1', href: '/admin-bs', docRef: 'dashboard' },
   { category: 'Sistem', label: 'Tutorial', href: '/admin/help' },
 ];
 
