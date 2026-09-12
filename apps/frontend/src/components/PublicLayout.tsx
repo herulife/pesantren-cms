@@ -108,6 +108,10 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     pathname.startsWith('/donations');
   const isContactActive = pathname.startsWith('/kontak');
   const isPortalPage = pathname.startsWith('/portal');
+  const toggleDesktopDropdown = (menu: 'profil' | 'informasi') => {
+    setOpenDesktopDropdown((current) => (current === menu ? null : menu));
+  };
+
   const contextValue = {
     settings,
     effectivePathname: pathname,
