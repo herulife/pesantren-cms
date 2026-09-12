@@ -136,3 +136,85 @@ func (r *Repository) GetUsers() ([]struct {
 	}
 	return users, nil
 }
+
+type PayTx struct {
+	ID          int    `json:"id"`
+	Code        string `json:"code"`
+	Date        string `json:"date"`
+	SantriID    int    `json:"santri_id"`
+	SantriNIS   string `json:"santri_nis,omitempty"`
+	SantriName  string `json:"santri_name,omitempty"`
+	BillType    string `json:"bill_type"`
+	BillID      int    `json:"bill_id"`
+	Description string `json:"description"`
+	Amount      int    `json:"amount"`
+	Method      string `json:"method"`
+	Petugas     string `json:"petugas,omitempty"`
+}
+
+type UnpaidBill struct {
+	BillType string `json:"bill_type"`
+	BillID   int    `json:"bill_id"`
+	Period   string `json:"period"`
+	Name     string `json:"name"`
+	Amount   int    `json:"amount"`
+	Paid     int    `json:"paid"`
+	Remain   int    `json:"remain"`
+	DueDate  string `json:"due_date"`
+}
+
+func (r *Repository) ListPayTx(from, to, search string, limit, offset int) ([]PayTx, error) {
+	q := `SELECT t.id, t.code, t.date, t.santri_id, s.nis, s.name, t.bill_type, t.bill_id, t.description, t.amount, t.method, COALESCE(u.name,'')
+		FROM payment_transactions t JOIN santri s ON s.id=t.santri_id LEFT JOIN users u ON u.id=t.created_by WHERE 1=1`
+	args := []interface{}{}
+	if from != "" {
+		q += ` AND substr(t.date,1,10)>=?`
+		args = append(args, from)
+	}
+	if to != "" {
+		q += ` AND substr(t.date,1,10)<=?`
+		args = append(args, to)
+	}
+	if search != "" {
+		q += ` AND (s.nis LIKE ? OR s.name LIKE ? OR t.description LIKE ? OR t.code LIKE ?)`
+		like := "%" + search + "%"
+		args = append(args, like, like, like, like)
+	}
+	q += ` ORDER BY t.date DESC, t.id DESC LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+	rows, err := r.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PayTx{}
+	for rows.Next() {
+		var t PayTx
+		if err := rows.Scan(&t.ID, &t.Code, &t.Date, &t.SantriID, &t.SantriNIS, &t.SantriName, &t.BillType, &t.BillID, &t.Description, &t.Amount, &t.Method, &t.Petugas); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+func (r *Repository) UnpaidBills(santriID int) ([]UnpaidBill, error) {
+	q := `SELECT 'SPP', id, period, '', amount, paid_amount, amount-paid_amount, due_date FROM spp_bills WHERE santri_id=? AND status!='paid'
+		UNION ALL
+		SELECT 'IURAN', id, period, name, amount, paid_amount, amount-paid_amount, due_date FROM iuran_bills WHERE santri_id=? AND status!='paid'
+		ORDER BY period, bill_type`
+	rows, err := r.db.Query(q, santriID, santriID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []UnpaidBill{}
+	for rows.Next() {
+		var b UnpaidBill
+		if err := rows.Scan(&b.BillType, &b.BillID, &b.Period, &b.Name, &b.Amount, &b.Paid, &b.Remain, &b.DueDate); err != nil {
+			return nil, err
+		}
+		out = append(out, b)
+	}
+	return out, rows.Err()
+}

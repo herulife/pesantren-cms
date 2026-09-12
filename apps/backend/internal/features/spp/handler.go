@@ -324,7 +324,7 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		writeValidationError(w, map[string][]string{"amount": {"Jumlah bayar harus lebih dari 0"}})
 		return
 	}
-	if err := h.repo.PayBill(id, req.Amount, strings.TrimSpace(req.Method), strings.TrimSpace(req.PaidAt), req.Notes); err != nil {
+	if err := h.repo.PayBill(id, req.Amount, strings.TrimSpace(req.Method), strings.TrimSpace(req.PaidAt), req.Notes, adminID(r)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			sendJSONResponse(w, http.StatusNotFound, false, "Tagihan tidak ditemukan", nil)
 			return
@@ -436,7 +436,7 @@ type IRepository interface {
 	DeleteByPeriod(period string) (int64, error)
 	CombinedReport(periodStart, periodEnd, class string, santriID int) ([]CombinedRow, error)
 	GenerateBills(period, periodEnd string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
-	PayBill(id, amount int, method, paidAt, notes string) error
+	PayBill(id, amount int, method, paidAt, notes string, byID int) error
 	CancelBill(id int) error
 	Summary(period string) (*SppSummary, error)
 	Report(periodStart, periodEnd, class string, santriID int) ([]SppReportRow, error)

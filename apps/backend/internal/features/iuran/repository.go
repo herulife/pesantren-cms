@@ -243,7 +243,7 @@ func (r *Repository) DeleteByPeriod(name, period string) (int64, error) {
 	return res.RowsAffected()
 }
 
-func (r *Repository) PayBill(id, amount int, method, paidAt, notes string) error {
+func (r *Repository) PayBill(id, amount int, method, paidAt, notes string, byID int) error {
 	if paidAt == "" {
 		paidAt = time.Now().Format("2006-01-02 15:04:05")
 	}
@@ -260,8 +260,9 @@ func (r *Repository) PayBill(id, amount int, method, paidAt, notes string) error
 		}
 	}()
 
-	var total, paid int
-	err = tx.QueryRow(`SELECT amount, paid_amount FROM iuran_bills WHERE id = ?`, id).Scan(&total, &paid)
+	var total, paid, santriID int
+	var iname string
+	err = tx.QueryRow(`SELECT amount, paid_amount, santri_id, name FROM iuran_bills WHERE id = ?`, id).Scan(&total, &paid, &santriID, &iname)
 	if err != nil {
 		return err
 	}
@@ -283,6 +284,9 @@ func (r *Repository) PayBill(id, amount int, method, paidAt, notes string) error
 		newPaid, status, method, paidAt, notes, notes, id,
 	)
 	if err != nil {
+		return err
+	}
+	if err := insertLedger(tx, "IURAN", id, santriID, amount, method, paidAt, iname, byID); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -402,4 +406,55 @@ func (r *Repository) ListActiveSantri() ([]IuranSantri, error) {
 		list = append(list, s)
 	}
 	return list, nil
+}
+
+var idMonths = []string{"", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+
+func monthYearID(period string) string {
+	if len(period) < 7 {
+		return period
+	}
+	y, m := period[0:4], period[5:7]
+	mi := int(m[0]-'0')*10 + int(m[1]-'0')
+	if mi < 1 || mi > 12 {
+		return period
+	}
+	return idMonths[mi] + " " + y
+}
+
+func normPayMethod(m string) string {
+	switch m {
+	case "manual", "tunai", "Tunai", "":
+		return "Tunai"
+	case "transfer", "Transfer":
+		return "Transfer"
+	default:
+		return m
+	}
+}
+
+func insertLedger(tx *sql.Tx, billType string, billID, santriID, amount int, method, paidAt, desc string, byID int) error {
+	res, err := tx.Exec(`INSERT INTO payment_transactions (date, santri_id, bill_type, bill_id, description, amount, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		paidAt, santriID, billType, billID, desc, amount, normPayMethod(method), byID)
+	if err != nil {
+		return err
+	}
+	lid, _ := res.LastInsertId()
+	code := "KTR" + padLedger(lid)
+	_, err = tx.Exec(`UPDATE payment_transactions SET code=? WHERE id=?`, code, lid)
+	return err
+}
+
+func padLedger(id int64) string {
+	n := ""
+	for v := id; v > 0; v /= 10 {
+		n = string(rune('0'+v%10)) + n
+	}
+	if n == "" {
+		n = "0"
+	}
+	for len(n) < 6 {
+		n = "0" + n
+	}
+	return n
 }

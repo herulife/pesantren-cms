@@ -179,6 +179,25 @@ func createTables() {
 		UNIQUE(name, kind)
 	);
 
+	CREATE TABLE IF NOT EXISTS payment_transactions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
+		date TEXT NOT NULL,
+		santri_id INTEGER NOT NULL,
+		bill_type TEXT NOT NULL DEFAULT 'SPP',
+		bill_id INTEGER NOT NULL DEFAULT 0,
+		description TEXT NOT NULL DEFAULT '',
+		amount INTEGER NOT NULL,
+		method TEXT NOT NULL DEFAULT 'Tunai',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (santri_id) REFERENCES santri(id)
+	);
+
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_paytx_code ON payment_transactions(code);
+	CREATE INDEX IF NOT EXISTS idx_paytx_santri ON payment_transactions(santri_id);
+	CREATE INDEX IF NOT EXISTS idx_paytx_date ON payment_transactions(date DESC);
+
 	CREATE TABLE IF NOT EXISTS kas_transactions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		code TEXT NOT NULL DEFAULT '',

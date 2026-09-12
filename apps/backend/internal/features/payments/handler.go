@@ -82,11 +82,53 @@ func writeValidationError(w http.ResponseWriter, errs map[string][]string) {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/all", h.GetAll)
+	r.Get("/transactions", h.GetTransactions)
+	r.Get("/unpaid", h.GetUnpaid)
 	r.Get("/users", h.GetAllUsers)
 	r.Post("/", h.Create)
 	r.Put("/{id}", h.Update)
 	r.Delete("/{id}", h.Delete)
 	return r
+}
+
+func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	offset, _ := strconv.Atoi(q.Get("offset"))
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	list, err := h.repo.ListPayTx(q.Get("from"), q.Get("to"), strings.TrimSpace(q.Get("search")), limit, offset)
+	if err != nil {
+		logger.Error(r.Context(), "payments transactions failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat transaksi", nil)
+		return
+	}
+	if list == nil {
+		list = []PayTx{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Transaksi berhasil dimuat", list)
+}
+
+func (h *Handler) GetUnpaid(w http.ResponseWriter, r *http.Request) {
+	santriID, _ := strconv.Atoi(r.URL.Query().Get("santri_id"))
+	if santriID <= 0 {
+		sendJSONResponse(w, http.StatusBadRequest, false, "santri_id wajib diisi", nil)
+		return
+	}
+	list, err := h.repo.UnpaidBills(santriID)
+	if err != nil {
+		logger.Error(r.Context(), "payments unpaid failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat tagihan", nil)
+		return
+	}
+	if list == nil {
+		list = []UnpaidBill{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Tagihan belum lunas berhasil dimuat", list)
 }
 
 func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -246,4 +288,6 @@ type IRepository interface {
 		Name  string `json:"name"`
 		Email string `json:"email"`
 	}, error)
+	ListPayTx(from, to, search string, limit, offset int) ([]PayTx, error)
+	UnpaidBills(santriID int) ([]UnpaidBill, error)
 }

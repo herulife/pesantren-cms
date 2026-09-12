@@ -3148,3 +3148,25 @@ export async function getRekapAbsensi(from: string, to: string) {
     return (result.data || []) as RekapAbsensi[];
   } catch (e) { console.error("[API] Fetch rekap error:", e); return []; }
 }
+
+export interface PayTx { id: number; code: string; date: string; santri_id: number; santri_nis?: string; santri_name?: string; bill_type: string; bill_id: number; description: string; amount: number; method: string; petugas?: string; }
+export interface UnpaidBill { bill_type: string; bill_id: number; period: string; name: string; amount: number; paid: number; remain: number; due_date: string; }
+
+export async function getPayTransactions(params: { from?: string; to?: string; search?: string } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    if (params.search) q.set("search", params.search);
+    const res = await fetch(`${API_BASE_URL}/payments/transactions?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as PayTx[];
+  } catch (e) { console.error("[API] Fetch pay tx error:", e); return []; }
+}
+export async function getUnpaidBills(santri_id: number) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/payments/unpaid?santri_id=${santri_id}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as UnpaidBill[];
+  } catch (e) { console.error("[API] Fetch unpaid error:", e); return []; }
+}

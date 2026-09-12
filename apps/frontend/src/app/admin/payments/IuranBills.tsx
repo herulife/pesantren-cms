@@ -115,7 +115,7 @@ export default function IuranBills() {
 
   const openAddBill = () => {
     setEditingBill(null);
-    setBillForm({ santri_id: '', amount: '', due_date: '', notes: '' });
+    setBillForm({ santri_id: '', name: '', amount: '', due_date: '', notes: '' });
     setIsBillModalOpen(true);
   };
 
@@ -123,6 +123,7 @@ export default function IuranBills() {
     setEditingBill(b);
     setBillForm({
       santri_id: String(b.santri_id),
+      name: b.santri_name || '',
       amount: String(b.amount),
       due_date: (b.due_date || '').split(' ')[0],
       notes: b.notes || '',

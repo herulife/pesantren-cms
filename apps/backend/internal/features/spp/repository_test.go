@@ -92,7 +92,7 @@ func TestPayPartialThenFull(t *testing.T) {
 	}
 	id := bills[0].ID
 
-	if err := repo.PayBill(id, 50000, "manual", "", "cicilan 1"); err != nil {
+	if err := repo.PayBill(id, 50000, "manual", "", "cicilan 1", 0); err != nil {
 		t.Fatalf("partial PayBill returned error: %v", err)
 	}
 	b, err := repo.GetBill(id)
@@ -103,11 +103,11 @@ func TestPayPartialThenFull(t *testing.T) {
 		t.Fatalf("expected partial/50000, got %s/%d", b.Status, b.PaidAmount)
 	}
 
-	if err := repo.PayBill(id, 200000, "manual", "", ""); err != errBillOverpay {
+	if err := repo.PayBill(id, 200000, "manual", "", "", 0); err != errBillOverpay {
 		t.Fatalf("expected overpay error, got %v", err)
 	}
 
-	if err := repo.PayBill(id, 100000, "transfer", "", "pelunasan"); err != nil {
+	if err := repo.PayBill(id, 100000, "transfer", "", "pelunasan", 0); err != nil {
 		t.Fatalf("final PayBill returned error: %v", err)
 	}
 	b, err = repo.GetBill(id)
@@ -128,7 +128,7 @@ func TestDeletePaidIsRejected(t *testing.T) {
 	bills, _ := repo.ListBills("2026-09", "", 0)
 	id := bills[0].ID
 
-	if err := repo.PayBill(id, 150000, "manual", "", ""); err != nil {
+	if err := repo.PayBill(id, 150000, "manual", "", "", 0); err != nil {
 		t.Fatalf("PayBill returned error: %v", err)
 	}
 	if err := repo.DeleteBill(id); err != errBillHasPayments {
@@ -143,7 +143,7 @@ func TestSummaryTotals(t *testing.T) {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
 	bills, _ := repo.ListBills("2026-09", "", 0)
-	if err := repo.PayBill(bills[0].ID, 100000, "manual", "", ""); err != nil {
+	if err := repo.PayBill(bills[0].ID, 100000, "manual", "", "", 0); err != nil {
 		t.Fatalf("PayBill returned error: %v", err)
 	}
 
@@ -169,7 +169,7 @@ func TestReportPerSantri(t *testing.T) {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
 	bills, _ := repo.ListBills("2026-09", "", 0)
-	if err := repo.PayBill(bills[0].ID, 100000, "manual", "", ""); err != nil {
+	if err := repo.PayBill(bills[0].ID, 100000, "manual", "", "", 0); err != nil {
 		t.Fatalf("PayBill returned error: %v", err)
 	}
 

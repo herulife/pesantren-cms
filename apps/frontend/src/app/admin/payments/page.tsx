@@ -7,6 +7,8 @@ import SppBills from './SppBills';
 import SppReport from './SppReport';
 import IuranBills from './IuranBills';
 import IuranReport from './IuranReport';
+import PayTransactions from './PayTransactions';
+import Kasir from './Kasir';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -21,7 +23,7 @@ export default function PaymentsAdminPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [activeTab, setActiveTab] = useState<'bills' | 'manual' | 'report' | 'iuran' | 'iuran-report'>('bills');
+  const [activeTab, setActiveTab] = useState<'bills' | 'manual' | 'report' | 'iuran' | 'iuran-report' | 'kasir' | 'transaksi'>('bills');
   const { showToast } = useToast();
 
   const fetchData = async () => {
@@ -224,6 +226,18 @@ export default function PaymentsAdminPage() {
         >
           Laporan Iuran
         </button>
+        <button
+          onClick={() => setActiveTab('kasir')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'kasir' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Kasir
+        </button>
+        <button
+          onClick={() => setActiveTab('transaksi')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'transaksi' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Lap. Transaksi
+        </button>
       </div>
 
       {activeTab === 'bills' && <SppBills />}
@@ -233,6 +247,10 @@ export default function PaymentsAdminPage() {
       {activeTab === 'report' && <SppReport />}
 
       {activeTab === 'iuran-report' && <IuranReport />}
+
+      {activeTab === 'kasir' && <Kasir />}
+
+      {activeTab === 'transaksi' && <PayTransactions />}
 
       {activeTab === 'manual' && (
       <>
