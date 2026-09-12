@@ -8,7 +8,7 @@ import {
   usePublicSiteContext,
   useWebsiteBuilderPageContent,
 } from '@/components/PublicSiteContext';
-import { defaultWebsiteBuilderPages } from '@/lib/website-builder';
+import { defaultPageContent } from '@/lib/page-content';
 import { Send, MapPin, Phone, Clock, RefreshCw, MessageCircle } from 'lucide-react';
 
 export function ContactPageContent() {
@@ -22,7 +22,7 @@ export function ContactPageContent() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [mapInteractive, setMapInteractive] = useState(false);
   const { showToast } = useToast();
-  const pageContent = useWebsiteBuilderPageContent('kontak', defaultWebsiteBuilderPages.kontak);
+  const pageContent = useWebsiteBuilderPageContent('kontak', defaultPageContent.kontak);
   const context = usePublicSiteContext();
   const settings = context?.settings || {};
 

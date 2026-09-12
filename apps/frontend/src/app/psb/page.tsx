@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import PublicLayout from '@/components/PublicLayout';
 import { useWebsiteBuilderPageContent } from '@/components/PublicSiteContext';
-import { defaultWebsiteBuilderPages } from '@/lib/website-builder';
+import { defaultPageContent } from '@/lib/page-content';
 import {
   ArrowRight,
   Calendar,
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export function PsbPageContent() {
-  const pageContent = useWebsiteBuilderPageContent('psb', defaultWebsiteBuilderPages.psb);
+  const pageContent = useWebsiteBuilderPageContent('psb', defaultPageContent.psb);
   const [mapInteractive, setMapInteractive] = useState(false);
 
   return (

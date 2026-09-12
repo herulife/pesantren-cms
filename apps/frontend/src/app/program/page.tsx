@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import PublicLayout from '@/components/PublicLayout';
 import { usePublicSiteContext, useWebsiteBuilderPageContent } from '@/components/PublicSiteContext';
-import { defaultWebsiteBuilderPages } from '@/lib/website-builder';
+import { defaultPageContent } from '@/lib/page-content';
 import { getPrograms, Program, resolveDisplayImageUrl } from '@/lib/api';
 import {
   ArrowRight,
@@ -33,7 +33,7 @@ export function ProgramPageContent({
   previewPrograms?: Program[];
   disableFetch?: boolean;
 } = {}) {
-  const pageContent = useWebsiteBuilderPageContent('program', defaultWebsiteBuilderPages.program);
+  const pageContent = useWebsiteBuilderPageContent('program', defaultPageContent.program);
   const siteContext = usePublicSiteContext();
   const isSiteReady = siteContext ? siteContext.isSettingsLoaded : false;
   const [programs, setPrograms] = useState<Program[]>(previewPrograms || []);

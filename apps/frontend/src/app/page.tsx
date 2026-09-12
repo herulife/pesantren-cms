@@ -24,11 +24,9 @@ import {
   getYouTubeThumbnailUrl,
 } from '@/lib/api';
 import PublicLayout from '@/components/PublicLayout';
-import HomePageRenderer from '@/components/website-builder/HomePageRenderer';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import NewsCard from '@/components/NewsCard';
-import { parseWebsiteBuilderState } from '@/lib/website-builder';
 import { featuredOpenDonation, findFeaturedDonationCampaign, buildCampaignDetailHref } from '@/lib/donations';
 import {
   ArrowRight,
@@ -440,7 +438,6 @@ export default function LandingPage() {
   const isLoadingHero = isLoading;
   const renderedHeroSlides = isLoadingHero ? [] : heroSlides;
   const canSlideHero = renderedHeroSlides.length > 1;
-  const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
   const featuredCampaign = useMemo(() => findFeaturedDonationCampaign(campaigns), [campaigns]);
   const featuredTargetAmount = featuredCampaign?.target_amount ?? featuredOpenDonation.target;
   const featuredCollectedAmount = featuredCampaign?.collected_amount ?? featuredOpenDonation.progressAmount;
@@ -515,26 +512,6 @@ export default function LandingPage() {
         : fallbackExtracurriculars,
     [ekskulPrograms]
   );
-
-  if (builderState.enabled) {
-    return (
-      <PublicLayout>
-        <HomePageRenderer
-          layout={builderState.homePublished}
-          dataSources={{
-            news,
-            agendas,
-            programs,
-            galleryAlbums,
-            videoSeries,
-            videos,
-            settings,
-            isLoading,
-          }}
-        />
-      </PublicLayout>
-    );
-  }
 
   const schoolPhone =
     settings.school_phone || '0857 7694 8779';

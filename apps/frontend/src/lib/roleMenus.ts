@@ -35,7 +35,6 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Sistem', label: 'Manajemen Pengguna', href: '/admin/users', roles: ['superadmin'], docRef: 'users' },
   { category: 'Sistem', label: 'Log Sistem', href: '/admin/logs', roles: ['superadmin'], docRef: 'logs' },
   { category: 'Sistem', label: 'Pengaturan Utama', href: '/admin/settings', roles: ['superadmin'], docRef: 'settings' },
-  { category: 'Sistem', label: 'Website Builder', href: '/admin/builder', roles: ['superadmin'], docRef: 'builder' },
   { category: 'Sistem', label: 'Tutorial', href: '/admin/help' },
 ];
 

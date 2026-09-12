@@ -1,16 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight, Camera, ThumbsUp, Play, AtSign, Music2, Phone, Mail } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { getPublicSettingsMap, getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
-import { parseWebsiteBuilderState } from '@/lib/website-builder';
-import BuilderPreviewToolbar, { BuilderPreviewMode } from '@/components/website-builder/BuilderPreviewToolbar';
-import WebsiteShellRenderer from '@/components/website-builder/WebsiteShellRenderer';
-import { BuilderRenderMode, PublicSiteProvider } from '@/components/PublicSiteContext';
+import { getPublicSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
+import { PublicSiteProvider } from '@/components/PublicSiteContext';
 import CookieBanner from '@/components/CookieBanner';
 import AnalyticsLoader from '@/components/AnalyticsLoader';
 
@@ -21,7 +18,6 @@ type PublicLayoutProps = {
 
 export default function PublicLayout({ children, hideNavbar = false }: PublicLayoutProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -32,9 +28,6 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const desktopDropdownRef = useRef<HTMLUListElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const isBuilderCompare = pathname.startsWith('/builder-compare');
-  const isBuilderPreview = pathname.startsWith('/builder-preview') || isBuilderCompare;
-  const effectivePathname = isBuilderPreview ? (pathname.replace(/^\/builder-(preview|compare)/, '') || '/') : pathname;
 
   useEffect(() => {
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
@@ -43,17 +36,9 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   }, []);
 
   useEffect(() => {
-    if (isBuilderPreview && loading) {
-      return;
-    }
-
-    if (isBuilderPreview && (!user || user.role === 'user')) {
-      return;
-    }
-
     async function fetchSettings() {
       try {
-        const data = isBuilderPreview ? await getSettingsMap() : await getPublicSettingsMap();
+        const data = await getPublicSettingsMap();
         setSettings(data || {});
       } finally {
         setSettingsLoaded(true);
@@ -61,22 +46,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     }
 
     fetchSettings();
-  }, [isBuilderPreview, loading, user]);
-
-  useEffect(() => {
-    if (!isBuilderPreview || loading) {
-      return;
-    }
-
-    if (!user) {
-      router.replace('/login');
-      return;
-    }
-
-    if (user.role === 'user') {
-      router.replace('/portal');
-    }
-  }, [isBuilderPreview, loading, router, user]);
+  }, []);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -128,145 +98,24 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     { href: (settings.social_tiktok || '').trim(), label: 'TikTok', icon: <Music2 size={16} /> },
     { href: (settings.social_twitter || '').trim(), label: 'X (Twitter)', icon: <AtSign size={16} /> },
   ].filter((item) => item.href);
-  const isProfileActive = effectivePathname === '/profil' || effectivePathname.startsWith('/teachers') || effectivePathname.startsWith('/facilities');
-  const isProgramActive = effectivePathname.startsWith('/program');
-  const isPsbActive = effectivePathname.startsWith('/psb');
+  const isProfileActive = pathname === '/profil' || pathname.startsWith('/teachers') || pathname.startsWith('/facilities');
+  const isProgramActive = pathname.startsWith('/program');
+  const isPsbActive = pathname.startsWith('/psb');
   const isInformationActive =
-    effectivePathname.startsWith('/galeri') ||
-    effectivePathname.startsWith('/video-youtube') ||
-    effectivePathname.startsWith('/news') ||
-    effectivePathname.startsWith('/donations');
-  const isContactActive = effectivePathname.startsWith('/kontak');
-  const isPortalPage = effectivePathname.startsWith('/portal');
-  const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
-  const useBuilderShell = builderState.enabled || isBuilderPreview;
-  const previewMode: BuilderPreviewMode = isBuilderCompare ? 'compare' : 'draft';
-  const toggleDesktopDropdown = (menu: 'profil' | 'informasi') => {
-    setOpenDesktopDropdown((current) => (current === menu ? null : menu));
-  };
-
-  const createContextValue = (renderMode: BuilderRenderMode) => ({
+    pathname.startsWith('/galeri') ||
+    pathname.startsWith('/video-youtube') ||
+    pathname.startsWith('/news') ||
+    pathname.startsWith('/donations');
+  const isContactActive = pathname.startsWith('/kontak');
+  const isPortalPage = pathname.startsWith('/portal');
+  const contextValue = {
     settings,
-    builderState,
-    effectivePathname,
-    isBuilderPreview,
-    renderMode,
-    useBuilderContent: renderMode !== 'live',
+    effectivePathname: pathname,
     isSettingsLoaded: settingsLoaded,
-  });
-
-  if (isBuilderPreview && (loading || !user || user.role === 'user')) {
-    return (
-      <PublicSiteProvider value={createContextValue('draft')}>
-        <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f4fbff_0%,#e7f4ff_100%)] text-slate-900">
-          <div className="text-center">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
-            <p className="mt-4 text-sm font-bold text-sky-700">Menyiapkan preview builder...</p>
-          </div>
-        </div>
-      </PublicSiteProvider>
-    );
-  }
-
-  const shellRendererProps = {
-    hideNavbar,
-    pathname: effectivePathname,
-    logoUrl,
-    schoolName,
-    welcomeText,
-    schoolAddress,
-    schoolPhone,
-    schoolEmail,
-    schoolWebsite,
-    whatsappNumber,
-    socialLinks,
-    user,
-    loading,
-    logout,
-    showBackToTop,
-    scrollToTop,
-    isPortalPage,
   };
-
-  if (useBuilderShell) {
-    if (isBuilderPreview && previewMode === 'compare') {
-      return (
-        <div className="min-h-screen bg-slate-100">
-          <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname={effectivePathname} mode={previewMode} />
-
-          <div className="mx-auto max-w-[1720px] px-4 py-6 md:px-6">
-            <div className="grid gap-6 xl:grid-cols-2">
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Published</p>
-                  <h3 className="mt-2 text-lg font-black text-slate-950">Versi Live Sekarang</h3>
-                  <p className="mt-1 text-sm font-medium text-slate-600">
-                    Ini yang sedang dilihat pengunjung di website publik.
-                  </p>
-                </div>
-
-                <PublicSiteProvider value={createContextValue('published')}>
-                  <WebsiteShellRenderer
-                    {...shellRendererProps}
-                    shell={builderState.shellPublished}
-                    theme={builderState.themePublished}
-                  >
-                    {children}
-                  </WebsiteShellRenderer>
-                </PublicSiteProvider>
-              </div>
-
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700">Draft</p>
-                  <h3 className="mt-2 text-lg font-black text-slate-950">Versi Builder Yang Belum Live</h3>
-                  <p className="mt-1 text-sm font-medium text-slate-600">
-                    Cek perubahan shell dan halaman di sini sebelum dipublish.
-                  </p>
-                </div>
-
-                <PublicSiteProvider value={createContextValue('draft')}>
-                  <WebsiteShellRenderer
-                    {...shellRendererProps}
-                    shell={builderState.shellDraft}
-                    theme={builderState.themeDraft}
-                  >
-                    {children}
-                  </WebsiteShellRenderer>
-                </PublicSiteProvider>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <PublicSiteProvider
-        value={createContextValue(isBuilderPreview ? 'draft' : 'published')}
-      >
-        <WebsiteShellRenderer
-          {...shellRendererProps}
-          shell={isBuilderPreview ? builderState.shellDraft : builderState.shellPublished}
-          theme={isBuilderPreview ? builderState.themeDraft : builderState.themePublished}
-        >
-          {isBuilderPreview ? (
-            <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname={effectivePathname} mode={previewMode} />
-          ) : null}
-          {children}
-          {!isBuilderPreview ? (
-            <>
-              <CookieBanner />
-              <AnalyticsLoader />
-            </>
-          ) : null}
-        </WebsiteShellRenderer>
-      </PublicSiteProvider>
-    );
-  }
 
   return (
-    <PublicSiteProvider value={createContextValue('live')}>
+    <PublicSiteProvider value={contextValue}>
       <div className="public-site-shell min-h-screen bg-[linear-gradient(180deg,#f8fcff_0%,#eef7ff_100%)] font-sans antialiased">
       {/* ═══════════════════ TOPBAR SOSMED ═══════════════════ */}
       {/* Bar ramping di atas navbar: kontak kiri, ikon sosmed kanan. Disembunyikan bila hideNavbar. */}
@@ -611,12 +460,8 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
 
       {/* ═══════════════════ MAIN CONTENT ═══════════════════ */}
       <main>{children}</main>
-      {!isBuilderPreview ? (
-        <>
-          <CookieBanner />
-          <AnalyticsLoader />
-        </>
-      ) : null}
+      <CookieBanner />
+      <AnalyticsLoader />
 
       {/* ═══════════════════ FOOTER ═══════════════════ */}
       <footer className="relative overflow-hidden border-t border-sky-200 bg-[linear-gradient(180deg,#f8fbff_0%,#eaf5ff_100%)] pb-8 pt-12 md:pt-14">

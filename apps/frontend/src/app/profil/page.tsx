@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import PublicLayout from '@/components/PublicLayout';
 import { useWebsiteBuilderPageContent } from '@/components/PublicSiteContext';
-import { defaultWebsiteBuilderPages } from '@/lib/website-builder';
+import { defaultPageContent } from '@/lib/page-content';
 import {
   ArrowRight,
   Building2,
@@ -24,7 +24,7 @@ const institutionFactIcons = [
 ];
 
 export function ProfilPageContent() {
-  const pageContent = useWebsiteBuilderPageContent('profil', defaultWebsiteBuilderPages.profil);
+  const pageContent = useWebsiteBuilderPageContent('profil', defaultPageContent.profil);
   const phoneHref = `tel:${pageContent.about.phone_chip.replace(/\D/g, '')}`;
 
   return (

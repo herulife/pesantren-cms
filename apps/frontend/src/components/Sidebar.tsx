@@ -50,7 +50,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     '/admin/users': <UserCog size={18} />,
     '/admin/logs': <ScrollText size={18} />,
     '/admin/settings': <Settings size={18} />,
-    '/admin/builder': <LayoutDashboard size={18} />,
     '/admin/help': <HelpCircle size={18} />,
   };
 
