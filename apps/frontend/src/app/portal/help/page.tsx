@@ -3,7 +3,7 @@
 import React, { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRight, BookOpen, CircleHelp, ExternalLink, LayoutList } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, CircleHelp, ExternalLink, LayoutList } from 'lucide-react';
 import { getPortalDocById, portalDocSections } from '@/lib/portalDocs';
 
 function PortalHelpContent() {
@@ -48,19 +48,25 @@ function PortalHelpContent() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
               <BookOpen className="h-3.5 w-3.5" />
-              Panduan Portal
+              Panduan Wali
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
-              Bantuan Pendaftaran PSB
+              Cara Daftar & Pantau Anak, Langkah Demi Langkah
             </h1>
             <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
-              Panduan singkat untuk melengkapi biodata, mengunggah dokumen, dan memantau status pendaftaran.
+              Pilih kebutuhan di kiri, lalu ikuti nomor 1, 2, 3. Bahasanya sederhana, diikuti pelan-pelan pasti bisa.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Panduan Aktif</p>
-            <p className="mt-2 text-2xl font-black text-slate-900">{portalDocSections.length}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Jumlah Panduan</p>
+              <p className="mt-2 text-2xl font-black text-slate-900">{portalDocSections.length}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Cocok Untuk</p>
+              <p className="mt-2 text-2xl font-black text-emerald-800">Pemula</p>
+            </div>
           </div>
         </div>
       </section>
@@ -69,12 +75,12 @@ function PortalHelpContent() {
         <aside className="space-y-5">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Cari Panduan
+              Cari: butuh apa?
             </label>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Cari kata kunci..."
+              placeholder="Contoh: upload KK, lihat nilai..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:bg-white"
             />
           </div>
@@ -82,7 +88,7 @@ function PortalHelpContent() {
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
               <LayoutList className="h-4 w-4 text-sky-600" />
-              Daftar Panduan
+              Pilih kebutuhan
             </div>
 
             <div className="space-y-2">
@@ -105,7 +111,7 @@ function PortalHelpContent() {
 
               {filteredSections.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                  Tidak ada panduan yang cocok dengan pencarian ini.
+                  Tidak ketemu. Coba kata lain, contoh: daftar, foto, nilai.
                 </div>
               )}
             </div>
@@ -128,9 +134,9 @@ function PortalHelpContent() {
 
               <Link
                 href={`${currentSection.href}?from=docs`}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-700"
               >
-                Buka Halaman
+                Buka Halamannya
                 <ExternalLink className="h-4 w-4" />
               </Link>
             </div>
@@ -138,21 +144,22 @@ function PortalHelpContent() {
 
           <section className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900">Yang Bisa Dilakukan</h3>
+              <h3 className="text-lg font-bold text-slate-900">Di halaman ini bisa apa?</h3>
               <div className="mt-4 space-y-3">
                 {currentSection.quickActions.map((item) => (
-                  <div key={item} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                    {item}
+                  <div key={item} className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                    <Check className="mt-1 h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>{item}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900">Tips Singkat</h3>
+            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-amber-900">Tips biar lancar</h3>
               <div className="mt-4 space-y-3">
                 {currentSection.tips.map((item) => (
-                  <div key={item} className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                  <div key={item} className="rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700">
                     {item}
                   </div>
                 ))}
@@ -161,7 +168,7 @@ function PortalHelpContent() {
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900">Langkah Kerja</h3>
+            <h3 className="text-lg font-bold text-slate-900">Langkah-langkah (ikuti nomornya)</h3>
             <div className="mt-5 space-y-5">
               {currentSection.workflows.map((workflow) => (
                 <div key={workflow.title} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -169,10 +176,10 @@ function PortalHelpContent() {
                   <div className="mt-4 space-y-3">
                     {workflow.steps.map((step, index) => (
                       <div key={step} className="flex gap-3">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-600 text-sm font-black text-white">
                           {index + 1}
                         </div>
-                        <p className="pt-0.5 text-sm leading-6 text-slate-600">{step}</p>
+                        <p className="pt-1 text-sm leading-6 text-slate-700 sm:text-base">{step}</p>
                       </div>
                     ))}
                   </div>
@@ -182,17 +189,17 @@ function PortalHelpContent() {
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-slate-900 p-6 text-white shadow-sm">
-            <h3 className="text-xl font-bold">Panduan Selanjutnya</h3>
+            <h3 className="text-xl font-bold">Kalau sudah selesai semua</h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              Jika seluruh data dan dokumen sudah lengkap, pantau status di dashboard portal sampai panitia PSB
-              memberikan keputusan.
+              Pantau halaman depan portal. Tunggu kabar dari panitia PSB lewat WA atau status di sini.
+              Jangan daftar dua kali, cukup satu saja.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 href="/portal"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
               >
-                Kembali ke Dashboard
+                Kembali ke Halaman Depan
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

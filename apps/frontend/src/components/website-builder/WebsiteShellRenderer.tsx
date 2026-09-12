@@ -400,8 +400,12 @@ export default function WebsiteShellRenderer({
                 />
               </div>
             </div>
-            <div className="mt-10 border-t border-white/10 pt-6 text-sm opacity-70">
-              {shell.footer.copyright_text || `© 2026 ${schoolName}.`}
+            <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm opacity-70 sm:flex-row sm:items-center sm:justify-between">
+              <p>{shell.footer.copyright_text || `© 2026 ${schoolName}.`}</p>
+              <div className="flex gap-5">
+                <Link href="/privasi" className="transition hover:opacity-100 hover:underline">Privasi</Link>
+                <Link href="/syarat" className="transition hover:opacity-100 hover:underline">Syarat</Link>
+              </div>
             </div>
           </div>
         </footer>

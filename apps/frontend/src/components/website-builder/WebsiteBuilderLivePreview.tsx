@@ -27,7 +27,6 @@ import {
 import { PublicSiteProvider } from '@/components/PublicSiteContext';
 import { ContactPageContent } from '@/app/kontak/page';
 import { ProfilPageContent } from '@/app/profil/page';
-import { ProgramPageContent } from '@/app/program/page';
 import { PsbPageContent } from '@/app/psb/page';
 import {
   BuilderPageKey,
@@ -146,10 +145,6 @@ function renderPreviewContent(
 
   if (previewTarget === 'profil') {
     return <ProfilPageContent />;
-  }
-
-  if (previewTarget === 'program') {
-    return <ProgramPageContent previewPrograms={dataSources.programs} disableFetch />;
   }
 
   if (previewTarget === 'psb') {

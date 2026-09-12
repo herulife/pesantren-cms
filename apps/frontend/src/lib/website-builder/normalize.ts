@@ -292,12 +292,17 @@ export function normalizeHomeBuilderLayout(value: unknown): HomeBuilderLayout {
         .map((section, index): HomeSection | null => {
           const type = asChoice(section.type, homeSectionTypes, '' as HomeSectionType);
           if (!type) return null;
+          // Skema lama menyimpan field (title, subtitle, button_*, ...) sejajar id/type
+          // (contoh: home-donasi-banner). Gabungkan ke settings agar block tetap
+          // membaca datanya; isi settings bersarang tetap menang bila ada.
+          const { id, type: _t, enabled, variant, settings, ...legacyFlat } = section;
+          void _t;
           return {
-            id: asString(section.id, `${type}-${index + 1}`),
+            id: asString(id, `${type}-${index + 1}`),
             type,
-            enabled: asBoolean(section.enabled, true),
-            variant: asString(section.variant, 'default'),
-            settings: asRecord(section.settings),
+            enabled: asBoolean(enabled, true),
+            variant: asString(variant, 'default'),
+            settings: { ...asRecord(legacyFlat), ...asRecord(settings) },
           };
         })
         .filter((section): section is HomeSection => Boolean(section))
@@ -382,6 +387,7 @@ function normalizeProgramPage(value: unknown): ProgramPageBuilderContent {
       eyebrow: asString(featured.eyebrow, fallback.featured.eyebrow),
       title: asString(featured.title, fallback.featured.title),
       subtitle: asString(featured.subtitle, fallback.featured.subtitle),
+      source: asChoice(featured.source, ['auto', 'manual'] as const, 'auto'),
       cards: normalizeImageCards(featured.cards, fallback.featured.cards),
     },
     curriculum: {
@@ -394,6 +400,7 @@ function normalizeProgramPage(value: unknown): ProgramPageBuilderContent {
       eyebrow: asString(extracurricular.eyebrow, fallback.extracurricular.eyebrow),
       title: asString(extracurricular.title, fallback.extracurricular.title),
       subtitle: asString(extracurricular.subtitle, fallback.extracurricular.subtitle),
+      source: asChoice(extracurricular.source, ['auto', 'manual'] as const, 'auto'),
       tags: normalizeStringArray(extracurricular.tags, fallback.extracurricular.tags),
     },
     listing: {

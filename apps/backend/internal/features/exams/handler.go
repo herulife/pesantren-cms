@@ -145,6 +145,12 @@ func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
+	if errs := validateQuestion(&q); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
 
 	if err := h.repo.AddQuestion(&q); err != nil {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal menambahkan soal", nil)
@@ -166,6 +172,30 @@ func validateExam(e *Exam) map[string]string {
 	}
 	if e.Semester != "" && e.Semester != "ganjil" && e.Semester != "genap" {
 		errs["semester"] = "Semester harus ganjil/genap"
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
+}
+
+// AUDIT FIX: kunci jawaban harus menunjuk opsi yang ada; poin 0-100.
+func validateQuestion(q *Question) map[string]string {
+	errs := map[string]string{}
+	if q.ExamID <= 0 {
+		errs["exam_id"] = "Ujian wajib dipilih"
+	}
+	if len(q.QuestionText) < 3 {
+		errs["question_text"] = "Teks soal minimal 3 karakter"
+	}
+	if len(q.Options) < 2 {
+		errs["options"] = "Minimal 2 opsi jawaban"
+	}
+	if q.CorrectAnswerKey < 0 || q.CorrectAnswerKey >= len(q.Options) {
+		errs["correct_answer_key"] = "Kunci jawaban di luar rentang opsi"
+	}
+	if q.Points < 0 || q.Points > 100 {
+		errs["points"] = "Poin harus 0-100"
 	}
 	if len(errs) == 0 {
 		return nil

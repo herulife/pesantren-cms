@@ -45,6 +45,8 @@ type AgendaRequest struct {
 	Category    string  `json:"category"`
 }
 
+var allowedProgramCategories = map[string]bool{"program": true, "ekskul": true}
+
 func ValidateProgramRequest(req *ProgramRequest) ValidationErrors {
 	errs := ValidationErrors{}
 	req.Title = NormalizeText(req.Title)
@@ -53,6 +55,12 @@ func ValidateProgramRequest(req *ProgramRequest) ValidationErrors {
 	req.Excerpt = NormalizeText(req.Excerpt)
 	req.Content = NormalizeText(req.Content)
 	req.ImageURL = NormalizeText(req.ImageURL)
+	if req.Category == "" {
+		req.Category = "program"
+	}
+	if !allowedProgramCategories[req.Category] {
+		errs.Add("category", "Kategori harus program atau ekskul")
+	}
 
 	if len(req.Title) < 3 {
 		errs.Add("title", "Judul minimal 3 karakter")

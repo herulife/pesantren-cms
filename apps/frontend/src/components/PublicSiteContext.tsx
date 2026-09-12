@@ -17,6 +17,7 @@ type PublicSiteContextValue = {
   isBuilderPreview: boolean;
   renderMode: BuilderRenderMode;
   useBuilderContent: boolean;
+  isSettingsLoaded?: boolean;
 };
 
 const PublicSiteContext = createContext<PublicSiteContextValue | null>(null);

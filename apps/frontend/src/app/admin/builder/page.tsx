@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { LayoutDashboard, GraduationCap, Users, FileText, Phone, Palette, Eye, ArrowRight } from 'lucide-react';
 
 const pages = [
-  { href: '/admin/builder/program', label: 'Program', desc: 'Program Unggulan & Ekstrakurikuler', icon: GraduationCap, color: 'bg-emerald-50 text-emerald-600' },
+  { href: '/admin/programs', label: 'Program', desc: 'Data + tampilan Program & Ekskul', icon: GraduationCap, color: 'bg-emerald-50 text-emerald-600' },
   { href: '/admin/builder/psb', label: 'PSB', desc: 'Pendaftaran, Jadwal, Lokasi', icon: Users, color: 'bg-sky-50 text-sky-600' },
   { href: '/admin/builder/profil', label: 'Profil', desc: 'Visi Misi & Tentang', icon: FileText, color: 'bg-amber-50 text-amber-600' },
   { href: '/admin/builder/kontak', label: 'Kontak', desc: 'Alamat, Peta, Jam', icon: Phone, color: 'bg-slate-50 text-slate-600' },

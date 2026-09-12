@@ -156,6 +156,11 @@ export default function BiodataPage() {
     if (Object.keys(validation).length > 0) {
       setErrors(validation);
       showToast('error', 'Periksa kembali isian yang ditandai merah');
+      requestAnimationFrame(() => {
+        const firstInvalid = document.querySelector('[aria-invalid="true"]') as HTMLElement | null;
+        firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstInvalid?.focus({ preventScroll: true });
+      });
       return;
     }
     setErrors({});
@@ -327,6 +332,8 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.full_name}
                 onChange={(e) => handleChange('full_name', e.target.value)}
+                autoComplete="name"
+                aria-invalid={!!errors.full_name}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
@@ -338,6 +345,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.nickname}
                 onChange={(e) => handleChange('nickname', e.target.value)}
+                aria-invalid={!!errors.nickname}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Contoh: Ahmad"
               />
@@ -379,6 +387,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.birth_place}
                 onChange={(e) => handleChange('birth_place', e.target.value)}
+                aria-invalid={!!errors.birth_place}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
@@ -390,6 +399,8 @@ export default function BiodataPage() {
                 type="date"
                 value={formData.birth_date}
                 onChange={(e) => handleChange('birth_date', e.target.value)}
+                autoComplete="bday"
+                aria-invalid={!!errors.birth_date}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
@@ -401,6 +412,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.school_origin}
                 onChange={(e) => handleChange('school_origin', e.target.value)}
+                aria-invalid={!!errors.school_origin}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
@@ -412,6 +424,7 @@ export default function BiodataPage() {
                 type="text"
                 value={formData.program_choice}
                 onChange={(e) => handleChange('program_choice', e.target.value)}
+                aria-invalid={!!errors.program_choice}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Contoh: Tahfidz Reguler"
                 required
@@ -424,6 +437,8 @@ export default function BiodataPage() {
                 rows={3}
                 value={formData.address}
                 onChange={(e) => handleChange('address', e.target.value)}
+                autoComplete="street-address"
+                aria-invalid={!!errors.address}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 required
               />
@@ -441,18 +456,28 @@ export default function BiodataPage() {
             <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
               <h5 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">Informasi Ayah</h5>
               <div className="grid gap-4 md:grid-cols-2">
-                <input type="text" value={formData.father_name} onChange={(e) => handleChange('father_name', e.target.value)} placeholder="Nama Lengkap Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
-                <input type="text" value={formData.father_job} onChange={(e) => handleChange('father_job', e.target.value)} placeholder="Pekerjaan Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
-                <input type="tel" value={formData.father_phone} onChange={(e) => handleChange('father_phone', e.target.value)} placeholder="No. HP / WhatsApp Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none md:col-span-2" required />
+                <input type="text" value={formData.father_name} onChange={(e) => handleChange('father_name', e.target.value)}
+                autoComplete="name"
+                aria-invalid={!!errors.father_name} placeholder="Nama Lengkap Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                <input type="text" value={formData.father_job} onChange={(e) => handleChange('father_job', e.target.value)}
+                aria-invalid={!!errors.father_job} placeholder="Pekerjaan Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                <input type="tel" value={formData.father_phone} onChange={(e) => handleChange('father_phone', e.target.value)}
+                autoComplete="tel"
+                aria-invalid={!!errors.father_phone} placeholder="No. HP / WhatsApp Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none md:col-span-2" required />
               </div>
             </div>
 
             <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
               <h5 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">Informasi Ibu</h5>
               <div className="grid gap-4 md:grid-cols-2">
-                <input type="text" value={formData.mother_name} onChange={(e) => handleChange('mother_name', e.target.value)} placeholder="Nama Lengkap Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
-                <input type="text" value={formData.mother_job} onChange={(e) => handleChange('mother_job', e.target.value)} placeholder="Pekerjaan Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
-                <input type="tel" value={formData.mother_phone} onChange={(e) => handleChange('mother_phone', e.target.value)} placeholder="No. HP / WhatsApp Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none md:col-span-2" required />
+                <input type="text" value={formData.mother_name} onChange={(e) => handleChange('mother_name', e.target.value)}
+                autoComplete="name"
+                aria-invalid={!!errors.mother_name} placeholder="Nama Lengkap Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                <input type="text" value={formData.mother_job} onChange={(e) => handleChange('mother_job', e.target.value)}
+                aria-invalid={!!errors.mother_job} placeholder="Pekerjaan Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                <input type="tel" value={formData.mother_phone} onChange={(e) => handleChange('mother_phone', e.target.value)}
+                autoComplete="tel"
+                aria-invalid={!!errors.mother_phone} placeholder="No. HP / WhatsApp Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none md:col-span-2" required />
               </div>
             </div>
           </div>

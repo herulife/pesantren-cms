@@ -43,13 +43,6 @@ export default function NewsAdminPage() {
         limit,
         offset
     });
-    console.log('[NEWS DEBUG][ADMIN_LIST][FETCH]', {
-      currentStatus,
-      searchQuery,
-      currentPage,
-      offset,
-      response: res,
-    });
     setNews(res.data || []);
     setTotalItems(res.pagination?.total || 0);
     

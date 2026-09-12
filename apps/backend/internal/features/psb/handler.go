@@ -319,12 +319,25 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, http.StatusBadRequest, "Bukti pembayaran wajib diunggah")
 		return
 	}
+	// AUDIT FIX: tolak URL non-media (mis. javascript:) agar bukti tidak bisa dipalsukan.
+	if !validators.ValidateMediaURL(proofURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL bukti pembayaran tidak valid")
+		return
+	}
 	if req.PaymentAmount <= 0 {
 		SendErrorResponse(w, http.StatusBadRequest, "Nominal pembayaran wajib diisi")
 		return
 	}
+	// AUDIT FIX: batas atas wajar agar amount raksasa tidak lolos.
+	if req.PaymentAmount > 1000000000 {
+		SendErrorResponse(w, http.StatusBadRequest, "Nominal pembayaran tidak wajar")
+		return
+	}
 	if paymentDate == "" {
 		paymentDate = time.Now().Format("2006-01-02")
+	} else if !validators.ValidateDate(paymentDate) {
+		SendErrorResponse(w, http.StatusBadRequest, "Tanggal pembayaran harus berformat YYYY-MM-DD")
+		return
 	}
 
 	reg, err := h.repo.UpdatePaymentByUserID(r.Context(), userID, proofURL, req.PaymentAmount, paymentDate)

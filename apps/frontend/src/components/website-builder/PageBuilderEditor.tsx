@@ -847,6 +847,19 @@ function ProgramEditor({
           rows={4}
           onChange={(value) => onChange({ ...page, featured: { ...page.featured, subtitle: value } })}
         />
+        <label className="space-y-2">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Sumber Kartu</span>
+          <select
+            value={page.featured.source || 'auto'}
+            onChange={(event) =>
+              onChange({ ...page, featured: { ...page.featured, source: event.target.value as 'auto' | 'manual' } })
+            }
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+          >
+            <option value="auto">Otomatis — dari Data Program (kartu bawah jadi cadangan)</option>
+            <option value="manual">Manual — selalu pakai kartu di bawah ini</option>
+          </select>
+        </label>
       </div>
       <ImageCardListEditor
         title="Kartu Program Unggulan"
@@ -856,6 +869,7 @@ function ProgramEditor({
         uploadingTarget={uploadingTarget}
         uploadKeyPrefix="pages-program-featured-card"
       />
+      <p className="text-xs leading-5 text-slate-500">Tampil bila Sumber Kartu = Manual, atau sebagai cadangan saat mode Otomatis dan data kosong.</p>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -913,6 +927,22 @@ function ProgramEditor({
               onChange({ ...page, extracurricular: { ...page.extracurricular, subtitle: value } })
             }
           />
+          <label className="space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Sumber Pill</span>
+            <select
+              value={page.extracurricular.source || 'auto'}
+              onChange={(event) =>
+                onChange({
+                  ...page,
+                  extracurricular: { ...page.extracurricular, source: event.target.value as 'auto' | 'manual' },
+                })
+              }
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800"
+            >
+              <option value="auto">Otomatis — dari Data Ekskul (pill bawah jadi cadangan)</option>
+              <option value="manual">Manual — selalu pakai pill di bawah ini</option>
+            </select>
+          </label>
           <StringListEditor
             title="Daftar Ekstrakurikuler (Pill)"
             items={page.extracurricular.tags}
@@ -922,7 +952,7 @@ function ProgramEditor({
             addLabel="Tambah Ekstrakurikuler"
             placeholder="Panahan / Karate / Tata Boga"
           />
-          <p className="text-xs leading-5 text-slate-500">Pill hanya untuk tampilan di /program — kelola data ekskul dinamis via Admin → Program (kategori Ekskul).</p>
+          <p className="text-xs leading-5 text-slate-500">Tampil bila Sumber Pill = Manual, atau sebagai cadangan saat mode Otomatis dan data ekskul kosong.</p>
         </div>
       </div>
 

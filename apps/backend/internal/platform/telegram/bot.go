@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -127,7 +128,10 @@ func IsAllowedChat(chatID int64) bool {
 func WebhookSecretMatches(headerValue string) bool {
 	expected := strings.TrimSpace(os.Getenv("TELEGRAM_WEBHOOK_SECRET"))
 	if expected == "" {
-		return true
+		// AUDIT FIX [6.9]: fail-closed. Tanpa secret yang diset, tolak semua
+		// webhook agar tidak bisa dipicu publik. Set TELEGRAM_WEBHOOK_SECRET
+		// dan daftarkan via setWebhook agar integrasi jalan.
+		return false
 	}
-	return strings.TrimSpace(headerValue) == expected
+	return subtle.ConstantTimeCompare([]byte(strings.TrimSpace(headerValue)), []byte(expected)) == 1
 }

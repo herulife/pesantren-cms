@@ -4,13 +4,15 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight, Camera, ThumbsUp, Play } from 'lucide-react';
+import { ChevronDown, ChevronUp, Menu, X, MessageCircle, CircleUserRound, LogOut, ArrowRight, Camera, ThumbsUp, Play, AtSign, Music2, Phone, Mail } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { getPublicSettingsMap, getSettingsMap, resolveDisplayImageUrl, SettingsMap } from '@/lib/api';
 import { parseWebsiteBuilderState } from '@/lib/website-builder';
 import BuilderPreviewToolbar, { BuilderPreviewMode } from '@/components/website-builder/BuilderPreviewToolbar';
 import WebsiteShellRenderer from '@/components/website-builder/WebsiteShellRenderer';
 import { BuilderRenderMode, PublicSiteProvider } from '@/components/PublicSiteContext';
+import CookieBanner from '@/components/CookieBanner';
+import AnalyticsLoader from '@/components/AnalyticsLoader';
 
 type PublicLayoutProps = {
   children: React.ReactNode;
@@ -24,6 +26,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [settings, setSettings] = useState<SettingsMap>({});
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [openDesktopDropdown, setOpenDesktopDropdown] = useState<'profil' | 'informasi' | null>(null);
   const [openAccountMenu, setOpenAccountMenu] = useState(false);
   const desktopDropdownRef = useRef<HTMLUListElement | null>(null);
@@ -49,8 +52,12 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     }
 
     async function fetchSettings() {
-      const data = isBuilderPreview ? await getSettingsMap() : await getPublicSettingsMap();
-      setSettings(data || {});
+      try {
+        const data = isBuilderPreview ? await getSettingsMap() : await getPublicSettingsMap();
+        setSettings(data || {});
+      } finally {
+        setSettingsLoaded(true);
+      }
     }
 
     fetchSettings();
@@ -112,10 +119,14 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   const adminWhatsAppRaw = settings.whatsapp_admin_numbers || '';
   const adminWhatsApp = (adminWhatsAppRaw.split('\n')[0] || '').replace(/\D/g, '');
   const whatsappNumber = adminWhatsApp || '6285776948779';
+  // NOTE: lucide-react 1.7.0 menghapus brand icons (Instagram/Facebook/Youtube/Twitter),
+  // jadi dipakai ikon generik: Camera=Instagram, ThumbsUp=Facebook, Play=YouTube, Music2=TikTok, AtSign=X.
   const socialLinks = [
-    { href: settings.social_instagram || 'https://instagram.com/yayasanalmaa', label: 'Instagram', icon: <Camera size={18} /> },
-    { href: settings.social_facebook || '', label: 'Facebook', icon: <ThumbsUp size={18} /> },
-    { href: settings.social_youtube || '', label: 'YouTube', icon: <Play size={18} /> },
+    { href: (settings.social_instagram || '').trim() || 'https://instagram.com/yayasanalmaa', label: 'Instagram', icon: <Camera size={16} /> },
+    { href: (settings.social_facebook || '').trim(), label: 'Facebook', icon: <ThumbsUp size={16} /> },
+    { href: (settings.social_youtube || '').trim(), label: 'YouTube', icon: <Play size={16} /> },
+    { href: (settings.social_tiktok || '').trim(), label: 'TikTok', icon: <Music2 size={16} /> },
+    { href: (settings.social_twitter || '').trim(), label: 'X (Twitter)', icon: <AtSign size={16} /> },
   ].filter((item) => item.href);
   const isProfileActive = effectivePathname === '/profil' || effectivePathname.startsWith('/teachers') || effectivePathname.startsWith('/facilities');
   const isProgramActive = effectivePathname.startsWith('/program');
@@ -141,6 +152,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
     isBuilderPreview,
     renderMode,
     useBuilderContent: renderMode !== 'live',
+    isSettingsLoaded: settingsLoaded,
   });
 
   if (isBuilderPreview && (loading || !user || user.role === 'user')) {
@@ -242,6 +254,12 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
             <BuilderPreviewToolbar currentPreviewPath={pathname} effectivePathname={effectivePathname} mode={previewMode} />
           ) : null}
           {children}
+          {!isBuilderPreview ? (
+            <>
+              <CookieBanner />
+              <AnalyticsLoader />
+            </>
+          ) : null}
         </WebsiteShellRenderer>
       </PublicSiteProvider>
     );
@@ -250,6 +268,44 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
   return (
     <PublicSiteProvider value={createContextValue('live')}>
       <div className="public-site-shell min-h-screen bg-[linear-gradient(180deg,#f8fcff_0%,#eef7ff_100%)] font-sans antialiased">
+      {/* ═══════════════════ TOPBAR SOSMED ═══════════════════ */}
+      {/* Bar ramping di atas navbar: kontak kiri, ikon sosmed kanan. Disembunyikan bila hideNavbar. */}
+      {!hideNavbar ? (
+      <div className="relative z-[1001] border-b border-slate-800 bg-slate-950 text-slate-200">
+        <div className="mx-auto flex h-9 max-w-7xl items-center justify-between gap-3 px-4 text-[11px] sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-4">
+            <a href={`tel:${schoolPhone.replace(/[^\d+]/g, '')}`} className="inline-flex items-center gap-1.5 font-semibold text-slate-200 transition-colors hover:text-white">
+              <Phone size={12} className="text-sky-300" />
+              <span className="truncate">{schoolPhone}</span>
+            </a>
+            {schoolEmail ? (
+              <a href={`mailto:${schoolEmail}`} className="hidden items-center gap-1.5 font-medium text-slate-300 transition-colors hover:text-white sm:inline-flex">
+                <Mail size={12} className="text-sky-300" />
+                <span className="max-w-56 truncate">{schoolEmail}</span>
+              </a>
+            ) : null}
+          </div>
+          {socialLinks.length > 0 ? (
+            <div className="flex items-center gap-1">
+              <span className="mr-1 hidden text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 md:inline">Ikuti Kami</span>
+              {socialLinks.map((s) => (
+                <a
+                  key={`top-${s.label}`}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={s.label}
+                  aria-label={s.label}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-300 transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:text-white"
+                >
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      ) : null}
       {/* ═══════════════════ NAVBAR ═══════════════════ */}
       {!hideNavbar ? (
       <nav className="sticky top-0 z-[1000] border-b border-sky-200/80 bg-white/90 shadow-[0_12px_30px_rgba(59,130,246,0.08)] backdrop-blur-md">
@@ -555,6 +611,12 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
 
       {/* ═══════════════════ MAIN CONTENT ═══════════════════ */}
       <main>{children}</main>
+      {!isBuilderPreview ? (
+        <>
+          <CookieBanner />
+          <AnalyticsLoader />
+        </>
+      ) : null}
 
       {/* ═══════════════════ FOOTER ═══════════════════ */}
       <footer className="relative overflow-hidden border-t border-sky-200 bg-[linear-gradient(180deg,#f8fbff_0%,#eaf5ff_100%)] pb-8 pt-12 md:pt-14">
@@ -583,18 +645,35 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-center gap-3 md:items-end">
+            <div className="flex w-full flex-col items-center gap-3 md:w-auto md:items-end">
               <div className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-bold text-sky-700">
                 Kontak utama: {schoolPhone}
               </div>
-              <div className="flex items-center justify-center gap-3 md:max-w-sm md:justify-end">
-                {socialLinks.map((s) => (
-                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-700 transition-all hover:-translate-y-1 hover:border-sky-300 hover:bg-sky-100 hover:text-sky-800" aria-label={s.label}>
-                    {s.icon}
-                  </a>
-                ))}
-              </div>
+              {socialLinks.length > 0 ? (
+                <div className="w-full md:w-auto">
+                  <p className="mb-2 text-center text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 md:text-right">
+                    Ikuti Media Sosial
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-2 md:max-w-sm md:justify-end">
+                    {socialLinks.map((s) => (
+                      <a
+                        key={s.label}
+                        href={s.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={s.label}
+                        className="group inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white py-2 pl-2.5 pr-3.5 text-sky-700 transition-all hover:-translate-y-0.5 hover:border-sky-500 hover:bg-slate-950 hover:text-white"
+                        aria-label={s.label}
+                      >
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-sky-600 transition-colors group-hover:bg-white/10 group-hover:text-amber-300">
+                          {s.icon}
+                        </span>
+                        <span className="text-xs font-bold">{s.label.replace(' (Twitter)', '')}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -655,6 +734,8 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                   { name: 'Video Kegiatan', href: '/video-youtube' },
                   { name: 'Galeri Kegiatan', href: '/galeri' },
                   { name: 'Kontak Pondok', href: '/kontak' },
+                  { name: 'Privasi', href: '/privasi' },
+                  { name: 'Syarat Layanan', href: '/syarat' },
                 ].map((link) => (
                   <Link key={link.href} href={link.href} className="block rounded-xl px-3 py-2 text-sm text-slate-600 transition-all hover:bg-sky-50 hover:text-sky-700">
                     {link.name}
@@ -707,6 +788,10 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
           {/* Copyright */}
           <div className="flex flex-col items-center justify-between gap-3 border-t border-sky-100 pt-7 text-center text-sm text-slate-500 md:flex-row md:gap-4 md:pt-8 md:text-left">
             <div>&copy; 2026 {schoolName}. Seluruh hak cipta dilindungi.</div>
+            <div className="flex items-center gap-4">
+              <Link href="/privasi" className="font-medium text-sky-600 transition-colors hover:text-sky-700">Privasi</Link>
+              <Link href="/syarat" className="font-medium text-sky-600 transition-colors hover:text-sky-700">Syarat</Link>
+            </div>
             <div>Dikembangkan oleh <a href="https://herufidiyanto.netlify.app/" className="font-medium text-sky-600 transition-colors hover:text-sky-700">Heru F</a></div>
           </div>
         </div>

@@ -5,8 +5,10 @@ import (
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -16,6 +18,53 @@ type Handler struct {
 
 func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
+}
+
+// Pelindung brute-force PIN per pengguna: kunci 15 menit setelah 5x salah.
+// Disimpan di memori (reset saat server restart).
+const maxPinFails = 5
+const pinLockDuration = 15 * time.Minute
+const maxWalletAmount = 1000000000
+
+type pinFailState struct {
+	count       int
+	lockedUntil time.Time
+}
+
+var pinGuard = struct {
+	sync.Mutex
+	fails map[int]pinFailState
+}{fails: make(map[int]pinFailState)}
+
+func pinLockedMinutes(userID int) int {
+	pinGuard.Lock()
+	defer pinGuard.Unlock()
+	st := pinGuard.fails[userID]
+	if st.count >= maxPinFails && time.Now().Before(st.lockedUntil) {
+		return int(time.Until(st.lockedUntil).Minutes()) + 1
+	}
+	return 0
+}
+
+func pinRecordFail(userID int) int {
+	pinGuard.Lock()
+	defer pinGuard.Unlock()
+	st := pinGuard.fails[userID]
+	st.count++
+	if st.count >= maxPinFails {
+		st.lockedUntil = time.Now().Add(pinLockDuration)
+	}
+	pinGuard.fails[userID] = st
+	if st.count >= maxPinFails {
+		return int(pinLockDuration.Minutes())
+	}
+	return 0
+}
+
+func pinReset(userID int) {
+	pinGuard.Lock()
+	defer pinGuard.Unlock()
+	delete(pinGuard.fails, userID)
 }
 
 func (h *Handler) GetMyWallet(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +192,10 @@ func (h *Handler) TopUp(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Data top-up tidak valid", nil)
 		return
 	}
+	if body.Amount > maxWalletAmount {
+		writeJSONResponse(w, http.StatusBadRequest, false, "Nominal top-up tidak wajar", nil)
+		return
+	}
 	logger.Info(r.Context(), "wallet topup started", logger.Field{
 		"operation":      "wallet_topup",
 		"target_user_id": body.UserID,
@@ -182,6 +235,10 @@ func (h *Handler) Spend(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Unauthorized", nil)
 		return
 	}
+	if mins := pinLockedMinutes(userID); mins > 0 {
+		writeJSONResponse(w, http.StatusForbidden, false, fmt.Sprintf("Terlalu banyak salah PIN. Coba lagi %d menit.", mins), nil)
+		return
+	}
 	startedAt := time.Now()
 	logger.Info(r.Context(), "wallet spend started", logger.Field{
 		"operation": "wallet_spend",
@@ -201,10 +258,22 @@ func (h *Handler) Spend(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Data belanja tidak valid", nil)
 		return
 	}
+	if body.Amount > maxWalletAmount {
+		writeJSONResponse(w, http.StatusBadRequest, false, "Nominal belanja tidak wajar", nil)
+		return
+	}
 
 	// 1. Verify PIN
 	match, err := h.repo.VerifyPIN(userID, body.PIN)
 	if err != nil || !match {
+		if mins := pinRecordFail(userID); mins > 0 {
+			logger.Warn(r.Context(), "wallet spend pin locked", logger.Field{
+				"operation": "wallet_spend",
+				"user_id":   userID,
+			})
+			writeJSONResponse(w, http.StatusForbidden, false, fmt.Sprintf("Terlalu banyak salah PIN. Coba lagi %d menit.", mins), nil)
+			return
+		}
 		logger.Warn(r.Context(), "wallet spend pin verification failed", logger.Field{
 			"operation": "wallet_spend",
 			"user_id":   userID,
@@ -212,6 +281,7 @@ func (h *Handler) Spend(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusForbidden, false, "PIN salah", nil)
 		return
 	}
+	pinReset(userID)
 
 	// 2. Process
 	tr := &Transaction{

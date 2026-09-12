@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import PublicLayout from '@/components/PublicLayout';
-import { useWebsiteBuilderPageContent } from '@/components/PublicSiteContext';
+import { usePublicSiteContext, useWebsiteBuilderPageContent } from '@/components/PublicSiteContext';
 import { defaultWebsiteBuilderPages } from '@/lib/website-builder';
 import { getPrograms, Program, resolveDisplayImageUrl } from '@/lib/api';
 import {
@@ -34,6 +34,8 @@ export function ProgramPageContent({
   disableFetch?: boolean;
 } = {}) {
   const pageContent = useWebsiteBuilderPageContent('program', defaultWebsiteBuilderPages.program);
+  const siteContext = usePublicSiteContext();
+  const isSiteReady = siteContext ? siteContext.isSettingsLoaded : false;
   const [programs, setPrograms] = useState<Program[]>(previewPrograms || []);
   const [isLoading, setIsLoading] = useState(!disableFetch && !(previewPrograms && previewPrograms.length > 0));
 
@@ -79,9 +81,56 @@ export function ProgramPageContent({
     };
   }, [disableFetch, previewPrograms]);
 
+  // --- Program Inti & Ekstrakurikuler: sumber 'auto' (dari API) atau 'manual' (kartu builder) ---
+  // 'auto': pakai data Admin → Program Pondok bila ada, kartu builder jadi cadangan saat kosong.
+  // 'manual': selalu pakai kartu builder (diatur di tab Tampilan Halaman).
+  const intiPrograms = useMemo(
+    () =>
+      [...programs]
+        .filter((p) => (p.category || 'program') === 'program')
+        .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.title.localeCompare(b.title)),
+    [programs]
+  );
+  const ekskulPrograms = useMemo(
+    () =>
+      [...programs]
+        .filter((p) => p.category === 'ekskul')
+        .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.title.localeCompare(b.title)),
+    [programs]
+  );
+  const featuredSource = pageContent.featured.source || 'auto';
+  const ekskulSource = pageContent.extracurricular.source || 'auto';
+  // AUDIT FIX: fallback builder pun wajib dinormalisasi (pernah tersimpan
+  // URL localhost mentah yang rusak di browser pengunjung).
+  const normalizeBuilderCard = (c: { title: string; description: string; image_url: string }) => ({
+    title: c.title,
+    description: c.description,
+    image_url: resolveDisplayImageUrl(c.image_url) || '',
+  });
+  const featuredCards = useMemo(
+    () =>
+      featuredSource === 'manual' || intiPrograms.length === 0
+        ? pageContent.featured.cards.map(normalizeBuilderCard)
+        : intiPrograms.slice(0, 6).map((p) => ({
+            title: p.title,
+            description:
+              p.excerpt || p.content || 'Program pembinaan utama untuk santri.',
+            image_url: resolveDisplayImageUrl(p.image_url) || '',
+          })),
+    [featuredSource, intiPrograms, pageContent.featured.cards]
+  );
+  const ekskulTags = useMemo(
+    () =>
+      ekskulSource === 'manual' || ekskulPrograms.length === 0
+        ? pageContent.extracurricular.tags
+        : ekskulPrograms.map((p) => p.title),
+    [ekskulSource, ekskulPrograms, pageContent.extracurricular.tags]
+  );
+  const isFeaturedLoading = !isSiteReady || isLoading;
+
   return (
     <>
-      <section className="relative overflow-hidden border-b border-sky-900/80 bg-slate-950 py-24 text-white lg:py-28">
+      <section className="relative overflow-hidden border-b border-sky-900/80 bg-slate-950 py-16 text-white lg:py-20">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: `url('${pageContent.hero.background_image_url}')` }}
@@ -89,28 +138,18 @@ export function ProgramPageContent({
         <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(2,6,23,0.96)_10%,rgba(2,6,23,0.84)_44%,rgba(6,78,59,0.66)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.14),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.12),transparent_24%)]" />
         <div className="relative mx-auto max-w-6xl px-4">
-          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-sky-100 backdrop-blur-sm">
                 <span className="h-2 w-2 rounded-full bg-sky-300" />
                 {pageContent.hero.eyebrow}
               </p>
-              <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
+              <h1 className="mt-5 max-w-3xl text-3xl font-black tracking-tight md:text-5xl">
                 {pageContent.hero.title}
               </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-sky-50/90">
+              <p className="mt-4 line-clamp-2 max-w-2xl text-base leading-7 text-sky-50/90">
                 {pageContent.hero.subtitle}
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                {pageContent.hero.tags.map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-white/12 bg-black/18 px-4 py-2 text-xs font-semibold text-sky-50/90 backdrop-blur-sm"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
@@ -144,8 +183,18 @@ export function ProgramPageContent({
               {pageContent.featured.subtitle}
             </p>
           </div>
+          {isFeaturedLoading ? (
+            <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2, 3].map((index) => (
+                <div
+                  key={'program-skeleton-' + index}
+                  className="h-80 animate-pulse rounded-[2rem] border border-white/70 bg-white/70"
+                />
+              ))}
+            </div>
+          ) : (
           <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {pageContent.featured.cards.map((program, index) => (
+            {featuredCards.map((program, index) => (
               <div
                 key={`${program.title}-${index}`}
                 className="group overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_20px_50px_-35px_rgba(250,204,21,0.2)] backdrop-blur-sm"
@@ -173,6 +222,7 @@ export function ProgramPageContent({
               </div>
             ))}
           </div>
+          )}
         </div>
       </section>
 
@@ -208,7 +258,14 @@ export function ProgramPageContent({
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-300">{pageContent.extracurricular.subtitle}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              {pageContent.extracurricular.tags.map((item) => (
+              {!isSiteReady
+                ? [0, 1, 2, 3, 4, 5].map((index) => (
+                    <span
+                      key={'ekskul-skeleton-' + index}
+                      className="h-11 w-28 animate-pulse rounded-full border border-white/10 bg-white/10"
+                    />
+                  ))
+                : ekskulTags.map((item) => (
                 <span
                   key={item}
                   className="rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100"

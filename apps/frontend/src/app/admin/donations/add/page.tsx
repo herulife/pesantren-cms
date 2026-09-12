@@ -68,7 +68,8 @@ function AddDonationCampaignContent() {
         showToast('success', isEdit ? 'Kampanye berhasil diperbarui!' : 'Kampanye donasi berhasil dibuat!');
         router.push('/admin/donations');
       } else {
-        const msg = (res as { errors?: Record<string, string | string[]> }).errors ? Object.values((res as { errors?: Record<string, string | string[]> }).errors).flat().join(', ') : (res.message || (isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.'));
+        const errs = (res as { errors?: Record<string, string | string[]> }).errors ?? {};
+        const msg = Object.keys(errs).length ? Object.values(errs).flat().join(', ') : (res.message || (isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.'));
         showToast('error', msg);
       }
     } catch (err) {

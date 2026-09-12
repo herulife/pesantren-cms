@@ -57,7 +57,12 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
         : 'Kegiatan penunjang untuk melatih keterampilan, fokus, dan kemandirian santri.'),
     image: item.image_url || (isProgram ? 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80' : 'https://images.unsplash.com/photo-1566747675140-317e7484b10d?auto=format&fit=crop&w=1700&q=80'),
   }));
-  const cardPool = dynamicCards.length > 0 ? dynamicCards : cards.map((card) => ({ id: card.title, ...card }));
+  // AUDIT FIX: kartu contoh (cards) hanya dipakai sebagai hiasan bila section
+  // ini dipakai di luar konteks data (mis. preview builder tanpa API).
+  // Di situs live, data kosong = status jujur, bukan kartu kembaran.
+  const hasDynamicData = dynamicCards.length > 0;
+  void cards;
+  const cardPool = dynamicCards;
   const limit = Math.max(1, Math.min(cardPool.length, getNumber(section, 'limit', 4)));
   const visibleCards = cardPool.slice(0, limit);
   const eyebrow = getString(section, 'eyebrow', isProgram ? 'Program Inti' : 'Kegiatan Penunjang');
@@ -84,6 +89,21 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
           actionHref={buttonUrl}
           actionLabel={buttonLabel}
         />
+        {!hasDynamicData ? (
+          <div className={`mt-8 rounded-[1.8rem] border-2 border-dashed px-6 py-12 text-center ${isProgram ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/5'}`}>
+            <div className={`mx-auto mb-4 inline-flex rounded-full p-3 ${isProgram ? 'bg-sky-50 text-sky-600' : 'bg-white/10 text-sky-200'}`}>
+              <Icon size={24} />
+            </div>
+            <p className={`text-lg font-black ${isProgram ? 'text-slate-800' : 'text-white'}`}>
+              {isProgram ? 'Program inti segera diumumkan' : 'Kegiatan segera diumumkan'}
+            </p>
+            <p className={`mx-auto mt-2 max-w-md text-sm leading-6 ${isProgram ? 'text-slate-500' : 'text-slate-300'}`}>
+              {isProgram
+                ? 'Daftar pembinaan utama santri sedang disiapkan dan akan tampil di sini.'
+                : 'Daftar kegiatan penunjang santri sedang disiapkan dan akan tampil di sini.'}
+            </p>
+          </div>
+        ) : (
         <div className={`mt-8 grid gap-4 sm:grid-cols-2 ${section.variant === 'compact-grid' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
           {visibleCards.map((card) => (
             <article
@@ -114,6 +134,7 @@ export default function ProgramsBlock({ section, mode, programs }: ProgramsBlock
             </article>
           ))}
         </div>
+        )}
         <Link href={buttonUrl} className={`mt-8 inline-flex items-center gap-3 rounded-full px-6 py-3 text-sm font-black transition-all hover:-translate-y-0.5 ${isProgram ? 'border border-sky-200 bg-white text-sky-800' : 'border border-sky-500/30 bg-sky-500/10 text-sky-100'}`}>
           {buttonLabel} <ArrowRight size={16} />
         </Link>

@@ -25,7 +25,7 @@ import {
   formatGalleryAlbumTitle,
 } from '@/lib/api';
 import { parseWebsiteBuilderState } from '@/lib/website-builder';
-import { Camera, Play, ThumbsUp } from 'lucide-react';
+import { Camera, Play, ThumbsUp, Music2, AtSign } from 'lucide-react';
 
 type MaybeListResponse<T> = T[] | { data?: T[] | null } | null | undefined;
 
@@ -167,9 +167,11 @@ export default function BuilderPreviewHomePage() {
   const whatsappNumber = adminWhatsApp || '6285776948779';
   const previewMode: BuilderPreviewMode = pathname.startsWith('/builder-compare') ? 'compare' : 'draft';
   const socialLinks = [
-    { href: settings.social_instagram || 'https://instagram.com/yayasanalmaa', label: 'Instagram', icon: <Camera size={18} /> },
-    { href: settings.social_facebook || 'https://facebook.com/yayasanalmaa', label: 'Facebook', icon: <ThumbsUp size={18} /> },
-    { href: settings.social_youtube || 'https://youtube.com/@yayasanalmaa', label: 'YouTube', icon: <Play size={18} /> },
+    { href: (settings.social_instagram || '').trim() || 'https://instagram.com/yayasanalmaa', label: 'Instagram', icon: <Camera size={16} /> },
+    { href: (settings.social_facebook || '').trim() || 'https://facebook.com/yayasanalmaa', label: 'Facebook', icon: <ThumbsUp size={16} /> },
+    { href: (settings.social_youtube || '').trim() || 'https://youtube.com/@yayasanalmaa', label: 'YouTube', icon: <Play size={16} /> },
+    { href: (settings.social_tiktok || '').trim(), label: 'TikTok', icon: <Music2 size={16} /> },
+    { href: (settings.social_twitter || '').trim(), label: 'X (Twitter)', icon: <AtSign size={16} /> },
   ].filter((item) => item.href);
 
   if (loading || (!user && !isLoading)) {

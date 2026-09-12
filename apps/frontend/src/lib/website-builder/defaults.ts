@@ -310,6 +310,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
       title: 'Arah pembinaan inti Al-Maa',
       subtitle:
         'Program-program ini menjadi fondasi ritme belajar, ibadah, akhlak, dan kesiapan hidup santri sehari-hari.',
+      source: 'auto',
       cards: [
         {
           title: 'Tahfidz Al-Qur’an',
@@ -349,6 +350,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
       title: 'Ruang tumbuh yang menambah keterampilan, disiplin, dan kepercayaan diri santri.',
       subtitle:
         'Kegiatan penunjang membantu santri berkembang lebih aktif, terampil, dan siap menghadapi kehidupan nyata.',
+      source: 'auto',
       tags: ['Olahraga', 'Life Skill', 'Kebersihan', 'Kedisiplinan', 'Kebersamaan', 'Kepemimpinan'],
     },
     listing: {
@@ -406,7 +408,7 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
         'Hubungi panitia pendaftaran untuk petunjuk kunjungan, tanya program, dan memastikan alur pendaftaran terbaru.',
       address_text:
         'Jl. H. Mawi, Gg. Omega, Kp. Jati Waru, RT 003/RW 002, Waru, Kec. Parung, Kab. Bogor, Jawa Barat 16330',
-      image_url: 'https://images.unsplash.com/photo-1758985776354-4df674930917?auto=format&fit=crop&w=1700&q=80',
+      image_url: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1700&q=80',
     },
     cta: {
       eyebrow: 'Langkah Berikutnya',

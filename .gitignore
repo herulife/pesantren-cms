@@ -42,3 +42,7 @@ raport/bun.lockb
 
 # Uploaded files
 data/uploads/
+.bak-*
+
+# live data (jangan commit)
+data/

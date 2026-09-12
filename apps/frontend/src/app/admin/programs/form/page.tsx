@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useCallback, useState, useEffect, Suspense } from 'react';
+import React, { useCallback, useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getProgramById, createProgram, updateProgram, Program } from '@/lib/api';
-import { Save, ArrowLeft, Loader2, Image as ImageIcon, AlignLeft, LayoutList, Fingerprint, Star, ListOrdered } from 'lucide-react';
+import { getProgramById, createProgram, updateProgram, uploadImage, normalizeApiAssetUrl, resolveDisplayImageUrl, Program } from '@/lib/api';
+import { Save, ArrowLeft, Loader2, Upload, Image as ImageIcon, AlignLeft, LayoutList, Fingerprint, Star, ListOrdered } from 'lucide-react';
 import { useToast } from '@/components/Toast';
+import GallerySelectionModal from '@/components/GallerySelectionModal';
 
 export default function ProgramFormPage() {
 	return (
@@ -24,6 +25,10 @@ function ProgramFormContent() {
 	const { showToast } = useToast();
 	const [isLoading, setIsLoading] = useState(!!id);
 	const [isSaving, setIsSaving] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [isUploading, setIsUploading] = useState(false);
+	const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+	const fetchedRef = useRef(false);
 
 	const [formData, setFormData] = useState<Partial<Program>>({
 		title: '',
@@ -45,12 +50,13 @@ function ProgramFormContent() {
 			router.push('/admin/programs');
 		}
 		setIsLoading(false);
-	}, [id, router, showToast]);
+	}, [id]);
 
 	useEffect(() => {
-		if (!id) {
+		if (!id || fetchedRef.current) {
 			return;
 		}
+		fetchedRef.current = true;
 
 		const timeout = window.setTimeout(() => {
 			void fetchProgram();
@@ -70,6 +76,41 @@ function ProgramFormContent() {
 			title,
 			slug: !id ? generateSlug(title) : prev.slug
 		}));
+	};
+
+	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+			showToast('error', 'Format foto harus JPG, PNG, GIF, atau WEBP. Foto iPhone (HEIC) simpan dulu sebagai JPG.');
+			if (fileInputRef.current) fileInputRef.current.value = '';
+			return;
+		}
+		if (file.size > 5 * 1024 * 1024) {
+			showToast('error', 'Ukuran foto maksimal 5MB. Kecilkan dulu fotonya lalu coba lagi.');
+			if (fileInputRef.current) fileInputRef.current.value = '';
+			return;
+		}
+		setIsUploading(true);
+		try {
+			const res = await uploadImage(file);
+			const url = normalizeApiAssetUrl(res.url || res.data?.url || '');
+			if (!url) throw new Error('Gagal mengunggah gambar');
+			setFormData(prev => ({...prev, image_url: url}));
+			showToast('success', 'Gambar berhasil diunggah');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Gagal mengunggah gambar';
+			showToast('error', message);
+		} finally {
+			setIsUploading(false);
+			if (fileInputRef.current) fileInputRef.current.value = '';
+		}
+	};
+
+	const handleGallerySelect = (url: string) => {
+		setFormData(prev => ({...prev, image_url: normalizeApiAssetUrl(url)}));
+		setIsGalleryOpen(false);
+		showToast('success', 'Gambar dipilih dari galeri');
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -194,23 +235,51 @@ function ProgramFormContent() {
 						</div>
 					</div>
 
-					{/* Image URL */}
+					{/* Gambar Utama */}
 					<div className="space-y-3">
 						<label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-							<ImageIcon size={12} /> Tautan Gambar Utama (URL)
+							<ImageIcon size={12} /> Gambar Utama
 						</label>
-						<input 
-							type="text" 
-							value={formData.image_url}
-							onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-							className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-medium text-slate-600"
-							placeholder="https://..."
-						/>
-						{formData.image_url && (
-							<div className="mt-4 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-40 max-w-sm">
-								<img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+						<div className="flex flex-col sm:flex-row gap-3">
+							<input 
+								type="text" 
+								value={formData.image_url}
+								onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+								className="flex-1 px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-medium text-slate-600"
+								placeholder="https://... atau upload dari perangkat / galeri"
+							/>
+							<div className="flex gap-3">
+								<button
+									type="button"
+									onClick={() => fileInputRef.current?.click()}
+									disabled={isUploading}
+									className="inline-flex items-center gap-2 px-5 py-4 bg-sky-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-sky-700 transition-all disabled:opacity-50 whitespace-nowrap"
+								>
+									{isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+									<span>{isUploading ? 'Mengunggah...' : 'Upload'}</span>
+								</button>
+								<button
+									type="button"
+									onClick={() => setIsGalleryOpen(true)}
+									className="inline-flex items-center gap-2 px-5 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-sky-300 hover:text-sky-700 transition-all whitespace-nowrap"
+								>
+									<ImageIcon size={16} />
+									<span>Galeri</span>
+								</button>
 							</div>
-						)}
+						</div>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="image/*"
+							className="hidden"
+							onChange={handleFileUpload}
+						/>
+						{formData.image_url ? (
+							<div className="mt-4 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-40 max-w-sm">
+								<img src={resolveDisplayImageUrl(formData.image_url)} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+							</div>
+						) : null}
 					</div>
 
 					{/* Excerpt */}
@@ -272,6 +341,12 @@ function ProgramFormContent() {
 					</button>
 				</div>
 			</form>
+
+			<GallerySelectionModal
+				isOpen={isGalleryOpen}
+				onClose={() => setIsGalleryOpen(false)}
+				onSelect={handleGallerySelect}
+			/>
 		</div>
 	);
 }

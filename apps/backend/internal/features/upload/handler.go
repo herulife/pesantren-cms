@@ -11,6 +11,7 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"golang.org/x/image/draw"
 	"io"
 	"net/http"
 	"os"
@@ -22,6 +23,34 @@ import (
 )
 
 const maxUploadSize = 5 << 20
+
+// Sisi terpanjang gambar hasil upload (piksel). Foto lebih besar diperkecil proporsional.
+const maxUploadDimension = 1600
+
+func fitWithin(img image.Image, max int) image.Image {
+	b := img.Bounds()
+	w, h := b.Dx(), b.Dy()
+	if w <= max && h <= max {
+		return img
+	}
+	var nw, nh int
+	if w >= h {
+		nw = max
+		nh = h * max / w
+	} else {
+		nh = max
+		nw = w * max / h
+	}
+	if nw < 1 {
+		nw = 1
+	}
+	if nh < 1 {
+		nh = 1
+	}
+	dst := image.NewRGBA(image.Rect(0, 0, nw, nh))
+	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, b, draw.Src, nil)
+	return dst
+}
 
 func sendJSONResponse(w http.ResponseWriter, status int, success bool, message string, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -129,12 +158,11 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appURL := os.Getenv("APP_URL")
-	if appURL == "" {
-		appURL = "http://localhost:8080"
-	}
-
-	publicURL := fmt.Sprintf("%s/uploads/%s", appURL, newFileName)
+	// Kembalikan path relatif (bukan URL absolut) agar tidak mengikat satu host.
+	// URL absolut peninggalan APP_URL/localhost membuat gambar rusak di browser
+	// pengunjung (localhost menunjuk ke perangkat masing-masing). Frontend
+	// menulis ulang path ini ke origin API via normalizeApiAssetUrl.
+	publicURL := fmt.Sprintf("/uploads/%s", newFileName)
 
 	logger.Info(r.Context(), "upload completed", logger.Field{
 		"operation":      "upload_image",
@@ -178,6 +206,9 @@ func sanitizeImage(file io.Reader) ([]byte, string, error) {
 	if w > 5000 || h > 5000 {
 		return nil, "", fmt.Errorf("gambar terlalu besar, maksimal 5000x5000 piksel (dapat %dx%d)", w, h)
 	}
+
+	// Kompresi otomatis: foto HP besar diperkecil agar ringan dibuka pengunjung.
+	img = fitWithin(img, maxUploadDimension)
 
 	var buf bytes.Buffer
 	switch format {

@@ -202,6 +202,7 @@ export type ProgramPageBuilderContent = {
     eyebrow: string;
     title: string;
     subtitle: string;
+    source: 'auto' | 'manual';
     cards: BuilderImageCard[];
   };
   curriculum: {
@@ -214,6 +215,7 @@ export type ProgramPageBuilderContent = {
     eyebrow: string;
     title: string;
     subtitle: string;
+    source: 'auto' | 'manual';
     tags: string[];
   };
   listing: {

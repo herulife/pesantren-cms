@@ -7,6 +7,10 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { Plus, Trash2, ArrowUp, ArrowDown, HelpCircle, Search, X, Save, Pencil, Eye, EyeOff } from 'lucide-react';
 
+function stripHtml(raw: string): string {
+  return (raw || '').replace(/<[^>]*>/g, '').trim();
+}
+
 function FaqsAdminPageContent() {
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -221,7 +225,7 @@ function FaqsAdminPageContent() {
                        </button>
                     </div>
                   </div>
-                  <div className="mt-4 text-slate-500 text-sm leading-relaxed font-medium bg-slate-50/50 p-6 rounded-2xl border border-slate-100/50" dangerouslySetInnerHTML={{ __html: faq.answer }} />
+                  <div className="mt-4 text-slate-500 text-sm leading-relaxed font-medium bg-slate-50/50 p-6 rounded-2xl border border-slate-100/50 whitespace-pre-line">{stripHtml(faq.answer)}</div>
                 </div>
               </div>
             ))}

@@ -116,16 +116,9 @@ export default function AddNewsPage() {
     }
     const slug = formData.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     const excerpt = formData.excerpt.trim() || `${plainContent.substring(0, 120)}${plainContent.length > 120 ? '...' : ''}`;
-    const debugId = `news-add-${Date.now()}`;
     const payload = { ...buildNewsPayload({ ...formData, excerpt }), slug };
-    console.log('[NEWS DEBUG][ADD][SUBMIT]', {
-      debugId,
-      formData,
-      payload,
-    });
     try {
       const res = await addNews(payload);
-      console.log('[NEWS DEBUG][ADD][RESPONSE]', { debugId, res });
       if (res.success) {
         showToast('success', 'Berita berhasil diterbitkan!');
         router.push('/admin/news');
@@ -179,11 +172,6 @@ export default function AddNewsPage() {
 
   const handleGallerySelect = (url: string) => {
     const normalizedUrl = normalizeApiAssetUrl(url);
-    console.log('[NEWS DEBUG][ADD][GALLERY_SELECT]', {
-      selectedUrl: url,
-      normalizedUrl,
-      currentImageUrl: formData.image_url.String,
-    });
     if (normalizeApiAssetUrl(formData.image_url.String) === normalizedUrl) {
       showToast('info', 'Foto galeri yang dipilih sama dengan gambar unggulan yang sedang dipakai.');
       setIsGalleryOpen(false);

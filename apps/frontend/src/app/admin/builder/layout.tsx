@@ -6,7 +6,7 @@ import { LayoutDashboard, Eye, ExternalLink, Save, Rocket, Palette, FileText, Us
 
 const nav = [
   { href: '/admin/builder', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/admin/builder/program', label: 'Program', icon: GraduationCap, desc: 'Ekstrakurikuler & Kurikulum' },
+  { href: '/admin/programs', label: 'Program', icon: GraduationCap, desc: 'Data + tampilan' },
   { href: '/admin/builder/psb', label: 'PSB', icon: Users, desc: 'Pendaftaran' },
   { href: '/admin/builder/profil', label: 'Profil', icon: FileText, desc: 'Visi Misi' },
   { href: '/admin/builder/kontak', label: 'Kontak', icon: Palette, desc: 'Alamat & Peta' },

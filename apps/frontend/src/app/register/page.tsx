@@ -106,6 +106,7 @@ function RegisterPageContent() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 transition-all font-medium outline-none shadow-inner"
+                  autoComplete="name"
                   placeholder="Fulan bin Fulan"
                 />
               </div>
@@ -120,6 +121,7 @@ function RegisterPageContent() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 transition-all font-medium outline-none shadow-inner"
+                  autoComplete="email"
                   placeholder="fulan@almaparung.com"
                 />
               </div>
@@ -135,6 +137,7 @@ function RegisterPageContent() {
                   required
                   minLength={8}
                   className="w-full px-6 py-4 sm:py-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 transition-all font-medium outline-none shadow-inner"
+                  autoComplete="new-password"
                   placeholder="Minimal 8 karakter"
                 />
               </div>

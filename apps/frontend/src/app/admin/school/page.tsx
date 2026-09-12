@@ -140,7 +140,7 @@ export default function SchoolAdminPage() {
           </div>
         </>
       )}
-      <ConfirmDialog open={delId !== null} onClose={() => setDelId(null)} onConfirm={confirmDelete} title="Hapus data?" message="Data yang dihapus tidak bisa dikembalikan." />
+      <ConfirmDialog isOpen={delId !== null} onClose={() => setDelId(null)} onConfirm={confirmDelete} title="Hapus data?" message="Data yang dihapus tidak bisa dikembalikan." />
     </div>
   );
 }

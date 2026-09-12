@@ -222,6 +222,7 @@ export function ContactPageContent() {
                         onChange={handleChange}
                         required
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                        autoComplete="name"
                         placeholder="Cth: Abdullah"
                       />
                     </div>
@@ -235,6 +236,7 @@ export function ContactPageContent() {
                         value={formData.whatsapp}
                         onChange={handleChange}
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                        autoComplete="tel"
                         placeholder="Cth: 08123456789"
                       />
                     </div>
@@ -250,7 +252,8 @@ export function ContactPageContent() {
                       value={formData.email}
                       onChange={handleChange}
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
-                      placeholder="Cth: abdullah@email.com"
+                      autoComplete="email"
+                        placeholder="Cth: abdullah@email.com"
                     />
                   </div>
 
