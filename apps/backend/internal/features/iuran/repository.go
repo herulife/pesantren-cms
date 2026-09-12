@@ -188,6 +188,7 @@ func (r *Repository) GenerateBills(name, period string, amount int, dueDate, cla
 	if err := rows.Err(); err != nil {
 		return 0, 0, err
 	}
+	}
 
 	for _, id := range ids {
 		res, err := r.db.Exec(

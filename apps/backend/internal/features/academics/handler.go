@@ -521,6 +521,7 @@ type IRepository interface {
 	CreateGrade(g *Grade) error
 	UpdateGrade(id int, g *Grade) error
 	DeleteGrade(id int) error
+	ReportPerGuru(semester, year string) ([]PerGuruRow, error)
 	// Attendance
 	GetAttendance(date string) ([]Attendance, error)
 	CreateAttendance(a *Attendance) error

@@ -39,6 +39,7 @@ type IRepository interface {
 	Update(s *Santri) error
 	Delete(id int) error
 	BulkDelete(ids []int) (int, error)
+	SetClassBulk(items map[int]string) (int, error)
 }
 
 type Handler struct {
