@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSantriList, getSppSummary, getKasSummary, getCampaigns } from '@/lib/api';
-import { fmtRp, BsTitle } from '../ui';
+import { fmtRp, BsTitle } from './ui';
 
 function nowPeriod() {
   const d = new Date();
