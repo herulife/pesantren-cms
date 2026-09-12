@@ -29,7 +29,7 @@ import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import NewsCard from '@/components/NewsCard';
 import { parseWebsiteBuilderState } from '@/lib/website-builder';
-import { featuredOpenDonation, findFeaturedDonationCampaign } from '@/lib/donations';
+import { featuredOpenDonation, findFeaturedDonationCampaign, buildCampaignDetailHref } from '@/lib/donations';
 import {
   ArrowRight,
   BookOpen,
@@ -140,11 +140,11 @@ const focusAreas = [
   },
 ];
 
-const curriculumTracks = ['Kurikulum Pondok', 'Kurikulum DIKNAS', 'Kurikulum Tahfidz'];
+const fallbackCurriculumTracks = ['Kurikulum Pondok', 'Kurikulum DIKNAS', 'Kurikulum Tahfidz'];
 
-const extracurriculars = ['Panahan', 'Basket', 'Futsal', 'Karate', 'Tata Boga', 'Teknik Otomotif'];
+const fallbackExtracurriculars = ['Panahan', 'Basket', 'Futsal', 'Karate', 'Tata Boga', 'Teknik Otomotif'];
 
-const featuredProgramCards = [
+const fallbackFeaturedProgramCards = [
   {
     title: 'Akselerasi Tahfidz 30 Juz',
     subtitle: 'Target hafalan 30 juz dengan muraja\'ah yang terjadwal.',
@@ -167,7 +167,7 @@ const featuredProgramCards = [
   },
 ];
 
-const extracurricularCards = [
+const fallbackExtracurricularCards = [
   {
     title: 'Tata Boga',
     subtitle: 'Keterampilan hidup yang aplikatif dan bermanfaat.',
@@ -282,7 +282,50 @@ const defaultHeroSlides = [
   ),
 ];
 
-function parseHeroSlides(_settings: SettingsMap): HeroSlide[] {
+function parseHeroSlides(settings: SettingsMap): HeroSlide[] {
+  const raw = (settings.hero_slides || '').trim();
+  if (raw) {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const slides = parsed
+          .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+          .map((item, index) => {
+            const str = (v: unknown) => (typeof v === 'string' ? v : '');
+            return createHeroSlide(
+              {
+                id: str(item.id) || undefined,
+                title: str(item.title) || undefined,
+                subtitle: str(item.subtitle) || undefined,
+                image_url: str(item.image_url) || undefined,
+                button_text: str(item.button_text) || undefined,
+                button_url: str(item.button_url) || undefined,
+              },
+              `slide-${index + 1}`
+            );
+          })
+          .filter((slide) => slide.title.trim() || slide.subtitle.trim());
+        if (slides.length > 0) return slides;
+      }
+    } catch {
+      // abaikan JSON rusak, lanjut ke fallback
+    }
+  }
+  const bannerTitle = (settings.banner_title || '').trim();
+  if (bannerTitle) {
+    return [
+      createHeroSlide(
+        {
+          title: bannerTitle,
+          subtitle: (settings.banner_subtitle || '').trim() || undefined,
+          image_url: (settings.banner_image_url || '').trim() || undefined,
+          button_text: (settings.banner_button_text || '').trim() || undefined,
+          button_url: (settings.banner_button_url || '').trim() || undefined,
+        },
+        'banner-single'
+      ),
+    ];
+  }
   return defaultHeroSlides;
 }
 
@@ -400,6 +443,78 @@ export default function LandingPage() {
   const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
   const featuredCampaign = useMemo(() => findFeaturedDonationCampaign(campaigns), [campaigns]);
   const featuredTargetAmount = featuredCampaign?.target_amount ?? featuredOpenDonation.target;
+  const featuredCollectedAmount = featuredCampaign?.collected_amount ?? featuredOpenDonation.progressAmount;
+  const featuredProgressPct = featuredTargetAmount > 0 ? Math.min(100, Math.round((featuredCollectedAmount / featuredTargetAmount) * 100)) : 0;
+  const featuredDetailHref = featuredCampaign ? buildCampaignDetailHref(featuredCampaign) : `/donations/${featuredOpenDonation.slug}`;
+
+  // --- Program Inti & Ekstrakurikuler dinamis dari API /programs ---
+  // Admin kelola di /admin/programs dengan kategori 'program' (inti) dan 'ekskul'.
+  // Jika API kosong / gagal, fallback ke konstanta statis di atas agar tampilan tidak kosong.
+  const sortedPrograms = useMemo(() => {
+    return [...programs].sort((a, b) => {
+      const orderDiff = (a.order_index ?? 0) - (b.order_index ?? 0);
+      if (orderDiff !== 0) return orderDiff;
+      return a.title.localeCompare(b.title);
+    });
+  }, [programs]);
+
+  const intiPrograms = useMemo(
+    () => sortedPrograms.filter((p) => (p.category || 'program') === 'program'),
+    [sortedPrograms]
+  );
+  const ekskulPrograms = useMemo(
+    () => sortedPrograms.filter((p) => p.category === 'ekskul'),
+    [sortedPrograms]
+  );
+
+  const toCard = (p: Program, fallbackImage: string) => ({
+    title: p.title,
+    subtitle:
+      p.excerpt ||
+      p.content ||
+      'Program pembinaan untuk membentuk hafalan, adab, dan kemandirian santri.',
+    image: resolveDisplayImageUrl(p.image_url) || fallbackImage,
+  });
+
+  const displayFeaturedProgramCards = useMemo(
+    () =>
+      intiPrograms.length > 0
+        ? intiPrograms
+            .slice(0, 4)
+            .map((p) =>
+              toCard(p, fallbackFeaturedProgramCards[0]?.image || '')
+            )
+        : fallbackFeaturedProgramCards,
+    [intiPrograms]
+  );
+
+  const displayExtracurricularCards = useMemo(
+    () =>
+      ekskulPrograms.length > 0
+        ? ekskulPrograms
+            .slice(0, 4)
+            .map((p) =>
+              toCard(p, fallbackExtracurricularCards[0]?.image || '')
+            )
+        : fallbackExtracurricularCards,
+    [ekskulPrograms]
+  );
+
+  const displayCurriculumTracks = useMemo(
+    () =>
+      intiPrograms.length > 0
+        ? intiPrograms.slice(0, 6).map((p) => p.title)
+        : fallbackCurriculumTracks,
+    [intiPrograms]
+  );
+
+  const displayExtracurriculars = useMemo(
+    () =>
+      ekskulPrograms.length > 0
+        ? ekskulPrograms.slice(0, 8).map((p) => p.title)
+        : fallbackExtracurriculars,
+    [ekskulPrograms]
+  );
 
   if (builderState.enabled) {
     return (
@@ -583,15 +698,29 @@ export default function LandingPage() {
                     <span className="rounded-full border border-sky-100 bg-white px-3 py-2 text-xs font-bold text-slate-700">
                       Target Rp {featuredTargetAmount.toLocaleString('id-ID')}
                     </span>
+                    <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
+                      Terkumpul Rp {featuredCollectedAmount.toLocaleString('id-ID')} ({featuredProgressPct}%)
+                    </span>
                     <span className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-800">
                       {featuredOpenDonation.focus}
                     </span>
+                  </div>
+                  <div className="mt-2.5 h-2.5 w-full max-w-3xl overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-all"
+                      style={{ width: `${featuredProgressPct}%` }}
+                      role="progressbar"
+                      aria-valuenow={featuredProgressPct}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label="Progress donasi terkumpul"
+                    />
                   </div>
                 </div>
               </div>
               <div className="flex flex-col gap-2.5 lg:items-end">
                 <Link
-                  href={`/donations/${featuredOpenDonation.slug}`}
+                  href={featuredDetailHref}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 px-5 py-3 text-sm font-bold text-white shadow-[0_18px_40px_-24px_rgba(14,165,233,0.45)] transition-all hover:-translate-y-0.5 hover:brightness-105 lg:w-auto"
                 >
                   Lihat Open Donasi <ArrowRight size={16} />
@@ -692,7 +821,7 @@ export default function LandingPage() {
                 description="Tahfidz, adab, wawasan Islam, dan kesiapan hidup disusun berjalan seimbang setiap hari."
               />
               <div className="mt-7 grid gap-4 sm:mt-8 sm:grid-cols-2">
-                {featuredProgramCards.map((program) => (
+                {displayFeaturedProgramCards.map((program) => (
                   <div
                     key={program.title}
                     className="group overflow-hidden rounded-[1.7rem] border border-white/70 bg-white/90 shadow-[0_22px_48px_-34px_rgba(250,204,21,0.22)] backdrop-blur-sm transition-all hover:-translate-y-1 md:rounded-[1.9rem]"
@@ -719,7 +848,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <div className="mt-6 flex flex-wrap gap-3">
-                {curriculumTracks.map((track) => (
+                {displayCurriculumTracks.map((track) => (
                   <span
                     key={track}
                     className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-sky-700"
@@ -748,7 +877,7 @@ export default function LandingPage() {
                 Aktivitas penunjang yang membuat santri aktif, terampil, dan percaya diri.
               </h3>
               <div className="mt-7 grid gap-4 sm:mt-8 sm:grid-cols-2">
-                {extracurricularCards.map((item, index) => (
+                {displayExtracurricularCards.map((item, index) => (
                   <div
                     key={item.title}
                     className="group overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 shadow-[0_18px_40px_-32px_rgba(0,0,0,0.35)] backdrop-blur-sm transition-all hover:-translate-y-1 md:rounded-[1.65rem]"
@@ -773,7 +902,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
-                {extracurriculars.map((item) => (
+                {displayExtracurriculars.map((item) => (
                   <span
                     key={item}
                     className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200"
