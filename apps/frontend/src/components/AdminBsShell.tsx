@@ -23,9 +23,9 @@ export function LteCss() {
     add('admin-bs-css', BS_CSS);
     add('admin-bs-icons', BS_ICONS);
     add('admin-lte-css', LTE_CSS);
-    document.body.classList.add('admin-bs', 'layout-fixed', 'sidebar-expand-lg', 'sidebar-mini');
+    document.body.classList.add('admin-bs', 'layout-fixed', 'sidebar-expand-lg', 'sidebar-mini', 'text-sm');
     return () => {
-      document.body.classList.remove('admin-bs', 'layout-fixed', 'sidebar-expand-lg', 'sidebar-mini');
+      document.body.classList.remove('admin-bs', 'layout-fixed', 'sidebar-expand-lg', 'sidebar-mini', 'text-sm');
     };
   }, []);
   return null;
@@ -97,7 +97,7 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
   };
 
   return (
-    <div className={`app-wrapper${collapsed ? ' sidebar-collapse' : ''}`}>
+    <div className={`app-wrapper${collapsed ? ' sidebar-collapse' : ''}${mobileOpen ? ' sidebar-open' : ''}`}>
       <LteCss />
       <nav className="app-header navbar navbar-expand bg-body">
         <div className="container-fluid">
@@ -107,18 +107,15 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
                 <i className="bi bi-list" />
               </button>
             </li>
-            <li className="nav-item d-none d-md-block">
-              <span className="nav-link fw-bold">SIMKS Al-Maa</span>
-            </li>
           </ul>
           <ul className="navbar-nav ms-auto">
-            <li className="nav-item d-none d-md-block">
-              <span className="nav-link">
+            <li className="nav-item d-none d-md-flex align-items-center">
+              <span className="navbar-text">
                 {user?.name || 'Admin'} ({user?.role || '-'})
               </span>
             </li>
-            <li className="nav-item">
-              <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={() => logout()}>
+            <li className="nav-item ms-2">
+              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => logout()}>
                 Logout
               </button>
             </li>
@@ -126,32 +123,30 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
         </div>
       </nav>
 
-      <aside className={`app-sidebar bg-body-secondary shadow${mobileOpen ? ' sidebar-open' : ''}`} data-bs-theme="dark">
+      <aside className="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
         <div className="sidebar-brand">
-          <Link href="/admin-bs" className="brand-link">
-            <span className="brand-text fw-bold">Al-Maa Admin</span>
+          <Link href="/admin-bs" className="brand-link" onClick={() => setMobileOpen(false)}>
+            <span className="brand-text fw-light">SIMKS Al-Maa</span>
           </Link>
         </div>
         <div className="sidebar-wrapper">
-          <nav className="mt-2" onClick={() => setMobileOpen(false)}>
-            <ul className="nav sidebar-menu flex-column" role="menu">
+          <nav className="mt-2">
+            <ul className="nav sidebar-menu flex-column" role="menu" onClick={() => setMobileOpen(false)}>
               {MENU.map((g) => {
                 const items = g.items.filter((it) => can(it.roles));
                 if (items.length === 0) return null;
                 return (
-                  <li key={g.heading} className="nav-header">
-                    {g.heading.toUpperCase()}
-                    <ul className="nav nav-treeview" style={{ display: 'block' }}>
-                      {items.map((it) => (
-                        <li className="nav-item" key={it.href}>
-                          <Link href={it.href} className={`nav-link${pathname === it.href ? ' active' : ''}`}>
-                            <i className={`nav-icon bi ${it.icon}`} />
-                            <p>{it.label}</p>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
+                  <React.Fragment key={g.heading}>
+                    <li className="nav-header">{g.heading.toUpperCase()}</li>
+                    {items.map((it) => (
+                      <li className="nav-item" key={it.href}>
+                        <Link href={it.href} className={`nav-link${pathname === it.href ? ' active' : ''}`}>
+                          <i className={`nav-icon bi ${it.icon}`} />
+                          <p>{it.label}</p>
+                        </Link>
+                      </li>
+                    ))}
+                  </React.Fragment>
                 );
               })}
             </ul>
@@ -161,13 +156,21 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
 
       <main className="app-main">
         <div className="app-content">
-          <div className="container-fluid py-3">{children}</div>
+          <div className="container-fluid">{children}</div>
         </div>
       </main>
 
       <footer className="app-footer">
         <strong>Al-Maa Parung</strong> &middot; AdminLTE ala SIMKS
       </footer>
+      <button
+        type="button"
+        aria-label="Buka menu"
+        className="lte-fab d-lg-none"
+        onClick={() => setMobileOpen((v) => !v)}
+      >
+        <i className="bi bi-list" />
+      </button>
       {mobileOpen && (
         <button type="button" aria-label="Tutup menu" className="lte-backdrop d-lg-none" onClick={() => setMobileOpen(false)} />
       )}
