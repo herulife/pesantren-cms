@@ -30,7 +30,7 @@ export default function PayTransactions() {
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="NIS/nama/keterangan/kode..." className="border rounded-xl pl-9 pr-3 py-2 text-sm w-full" />
           </span>
         </label>
-        <button onClick={() => exportToExcel("Lap Transaksi", ["Tanggal", "Jam", "No Induk", "Nama", "Keterangan", "Jml Bayar", "Jenis", "Petugas", "Kode"], rows.map((r) => { const [d, t] = r.date.split(" "); return [d, t || "", r.santri_nis, r.santri_name, r.description, r.amount, r.method, r.petugas, r.code]; }), "lap_transaksi")} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><FileSpreadsheet size={16} /> Excel</button>
+        <button onClick={() => exportToExcel("Lap Transaksi", ["Tanggal", "Jam", "No Induk", "Nama", "Keterangan", "Jml Bayar", "Jenis", "Petugas", "Kode"], rows.map((r) => { const [d, t] = r.date.split(" "); return [d, t || "", r.santri_nis || "-", r.santri_name || "-", r.description, r.amount, r.method, r.petugas || "-", r.code]; }), "lap_transaksi")} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><FileSpreadsheet size={16} /> Excel</button>
       </div>
       <p className="text-sm mb-3">Total: <b>{fmtRp(total)}</b> ({rows.length} transaksi)</p>
       <div className="bg-white border rounded-xl overflow-hidden">
