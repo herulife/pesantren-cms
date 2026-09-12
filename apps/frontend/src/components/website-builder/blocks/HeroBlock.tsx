@@ -29,7 +29,34 @@ const defaultSlide: BuilderHeroSlide = {
   image_url: 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80',
 };
 
-function getSlides(section: HomeSection) {
+function parseGlobalSlides(settings: SettingsMap): BuilderHeroSlide[] {
+  const raw = (settings.hero_slides || '').trim();
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const slides = parsed
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      .map((item) => ({
+        title: typeof item.title === 'string' ? item.title.trim() : '',
+        subtitle: typeof item.subtitle === 'string' ? item.subtitle.trim() : '',
+        image_url:
+          typeof item.image_url === 'string' && item.image_url.trim()
+            ? item.image_url.trim()
+            : 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80',
+      }))
+      .filter((slide) => slide.title || slide.subtitle);
+    return slides.length > 0 ? slides : [];
+  } catch {
+    return [];
+  }
+}
+
+function getSlides(section: HomeSection, settings: SettingsMap) {
+  // Pengaturan slider global (admin Pengaturan) adalah sumber utama agar
+  // ubahan tagline langsung tampil tanpa republish builder.
+  const globalSlides = parseGlobalSlides(settings);
+  if (globalSlides.length > 0) return globalSlides;
   const rawSlides = Array.isArray(asRecord(section.settings).slides) ? (asRecord(section.settings).slides as unknown[]) : [];
   const slides = rawSlides
     .filter((slide) => slide && typeof slide === 'object')
@@ -152,7 +179,7 @@ function HeroContent({
 
 export default function HeroBlock({ section, settings }: HeroBlockProps) {
   const variant = section.variant || 'slider';
-  const parsedSlides = getSlides(section);
+  const parsedSlides = getSlides(section, settings);
   const slides =
     variant === 'slider'
       ? parsedSlides
