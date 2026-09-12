@@ -229,6 +229,19 @@ func createTables() {
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
+	CREATE TABLE IF NOT EXISTS raw_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		fp_id TEXT NOT NULL,
+		date TEXT NOT NULL,
+		time TEXT NOT NULL DEFAULT '',
+		verify TEXT DEFAULT '',
+		machine TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(fp_id, date, time)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_rawlogs_date ON raw_logs(date DESC);
+
 	CREATE TABLE IF NOT EXISTS teacher_attendance (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		employee_code TEXT NOT NULL,

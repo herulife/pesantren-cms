@@ -242,3 +242,98 @@ func (r *Repository) Rekap(from, to string, dayCount int) ([]RekapRow, error) {
 	}
 	return out, nil
 }
+
+type RawLog struct {
+	ID      int    `json:"id"`
+	FpID    string `json:"fp_id"`
+	Date    string `json:"date"`
+	Time    string `json:"time"`
+	Verify  string `json:"verify"`
+	Machine string `json:"machine"`
+}
+
+func (r *Repository) ImportRawLogs(rows []RawLog) (created, skipped int, err error) {
+	for _, l := range rows {
+		res, err := r.db.Exec(`INSERT OR IGNORE INTO raw_logs (fp_id, date, time, verify, machine) VALUES (?, ?, ?, ?, ?)`,
+			strings.TrimSpace(l.FpID), l.Date, l.Time, l.Verify, l.Machine)
+		if err != nil {
+			return created, skipped, err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			created++
+		} else {
+			skipped++
+		}
+	}
+	return created, skipped, nil
+}
+
+func (r *Repository) ListRawLogs(from, to string) ([]RawLog, error) {
+	q := `SELECT id, fp_id, date, time, verify, machine FROM raw_logs WHERE 1=1`
+	args := []interface{}{}
+	if from != "" {
+		q += ` AND date>=?`
+		args = append(args, from)
+	}
+	if to != "" {
+		q += ` AND date<=?`
+		args = append(args, to)
+	}
+	q += ` ORDER BY date DESC, time DESC LIMIT 500`
+	rows, err := r.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []RawLog{}
+	for rows.Next() {
+		var l RawLog
+		if err := rows.Scan(&l.ID, &l.FpID, &l.Date, &l.Time, &l.Verify, &l.Machine); err != nil {
+			return nil, err
+		}
+		out = append(out, l)
+	}
+	return out, rows.Err()
+}
+
+func (r *Repository) SyncAbsen(from, to string) (int, error) {
+	q := `SELECT DISTINCT fp_id, date FROM raw_logs WHERE 1=1`
+	args := []interface{}{}
+	if from != "" {
+		q += ` AND date>=?`
+		args = append(args, from)
+	}
+	if to != "" {
+		q += ` AND date<=?`
+		args = append(args, to)
+	}
+	rows, err := r.db.Query(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	type pair struct{ fp, date string }
+	var pairs []pair
+	for rows.Next() {
+		var x pair
+		if err := rows.Scan(&x.fp, &x.date); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		pairs = append(pairs, x)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, x := range pairs {
+		res, err := r.db.Exec(`INSERT OR IGNORE INTO teacher_attendance (employee_code, date, status, notes) VALUES (?, ?, 'Masuk', 'Sync fingerprint')`, x.fp, x.date)
+		if err != nil {
+			return n, err
+		}
+		if c, _ := res.RowsAffected(); c > 0 {
+			n++
+		}
+	}
+	return n, nil
+}

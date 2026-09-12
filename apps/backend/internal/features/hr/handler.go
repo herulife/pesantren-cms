@@ -34,6 +34,9 @@ func (h *Handler) Routes() chi.Router {
 	r.Put("/attendance/{id}", h.UpdateAttendance)
 	r.Delete("/attendance/{id}", h.DeleteAttendance)
 	r.Get("/per-guru", h.PerGuru)
+	r.Get("/raw-logs", h.ListRawLogs)
+	r.Post("/raw-logs/import", h.ImportRawLogs)
+	r.Post("/sync", h.SyncAbsen)
 	r.Get("/rekap", h.Rekap)
 	return r
 }
@@ -175,6 +178,59 @@ func (h *Handler) DeleteAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, true, "Absensi berhasil dihapus", nil)
+}
+
+func (h *Handler) ListRawLogs(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	list, err := h.repo.ListRawLogs(q.Get("from"), q.Get("to"))
+	if err != nil {
+		writeJSON(w, 500, false, "Gagal memuat raw log", nil)
+		return
+	}
+	if list == nil {
+		list = []RawLog{}
+	}
+	writeJSON(w, 200, true, "Raw log berhasil dimuat", list)
+}
+
+func (h *Handler) ImportRawLogs(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Rows []RawLog `json:"rows"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, 400, false, "Permintaan tidak valid", nil)
+		return
+	}
+	if len(req.Rows) == 0 || len(req.Rows) > 2000 {
+		writeJSON(w, 400, false, "Maksimal 2000 baris per import", nil)
+		return
+	}
+	for _, l := range req.Rows {
+		if strings.TrimSpace(l.FpID) == "" || !datePattern.MatchString(l.Date) {
+			writeJSON(w, 422, false, "Validasi gagal", map[string][]string{"rows": {"Setiap baris wajib ID FP + tanggal YYYY-MM-DD"}})
+			return
+		}
+	}
+	created, skipped, err := h.repo.ImportRawLogs(req.Rows)
+	if err != nil {
+		writeJSON(w, 500, false, "Gagal import raw log", nil)
+		return
+	}
+	writeJSON(w, 200, true, "Import selesai", map[string]interface{}{"created": created, "skipped": skipped})
+}
+
+func (h *Handler) SyncAbsen(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	n, err := h.repo.SyncAbsen(strings.TrimSpace(req.From), strings.TrimSpace(req.To))
+	if err != nil {
+		writeJSON(w, 500, false, "Gagal sync absen", nil)
+		return
+	}
+	writeJSON(w, 200, true, "Sync selesai", map[string]interface{}{"synced": n})
 }
 
 func (h *Handler) PerGuru(w http.ResponseWriter, r *http.Request) {

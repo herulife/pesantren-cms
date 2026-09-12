@@ -3190,3 +3190,23 @@ export async function getUnpaidBills(santri_id: number) {
     return (result.data || []) as UnpaidBill[];
   } catch (e) { console.error("[API] Fetch unpaid error:", e); return []; }
 }
+
+export interface RawLog { id: number; fp_id: string; date: string; time: string; verify: string; machine: string; }
+export async function getRawLogs(from = "", to = "") {
+  try {
+    const q = new URLSearchParams();
+    if (from) q.set("from", from);
+    if (to) q.set("to", to);
+    const res = await fetch(`${API_BASE_URL}/hr/raw-logs?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as RawLog[];
+  } catch (e) { console.error("[API] Fetch rawlog error:", e); return []; }
+}
+export async function importRawLogs(rows: { fp_id: string; date: string; time?: string; verify?: string; machine?: string }[]) {
+  const res = await fetch(`${API_BASE_URL}/hr/raw-logs/import`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ rows }) });
+  return parseResponse(res);
+}
+export async function syncAbsen(from: string, to: string) {
+  const res = await fetch(`${API_BASE_URL}/hr/sync`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ from, to }) });
+  return parseResponse(res);
+}

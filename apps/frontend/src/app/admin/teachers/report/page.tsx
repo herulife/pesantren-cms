@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { getEmployees, createEmployee, deleteEmployee, getTeacherAttendance, createTeacherAttendance, deleteTeacherAttendance, getPerGuru, getRekapAbsensi, Employee, TeacherAttendance, PerGuruSummary, RekapAbsensi } from "@/lib/api";
+import { getEmployees, createEmployee, deleteEmployee, getTeacherAttendance, createTeacherAttendance, deleteTeacherAttendance, getPerGuru, getRekapAbsensi, getRawLogs, importRawLogs, syncAbsen, Employee, TeacherAttendance, PerGuruSummary, RekapAbsensi, RawLog } from "@/lib/api";
 import { exportToExcel } from "@/lib/export";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
@@ -20,11 +20,17 @@ const today = () => new Date().toISOString().split("T")[0];
 const firstOfMonth = () => today().slice(0, 8) + "01";
 
 export default function TeacherAttendancePage() {
-  const [tab, setTab] = useState<"absen" | "perguru" | "rekap" | "pegawai">("perguru");
+  const [tab, setTab] = useState<"absen" | "perguru" | "rekap" | "pegawai" | "rawlog">("perguru");
+  const [rawLogs, setRawLogs] = useState<RawLog[]>([]);
+  const [rawText, setRawText] = useState("");
+  const [syncing, setSyncing] = useState(false);
   const [emps, setEmps] = useState<Employee[]>([]);
   const [code, setCode] = useState("");
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(today());
+  const loadRawLogs = useCallback(async () => {
+    setRawLogs(await getRawLogs(from, to));
+  }, [from, to]);
   const [summary, setSummary] = useState<PerGuruSummary | null>(null);
   const [rows, setRows] = useState<TeacherAttendance[]>([]);
   const [rekap, setRekap] = useState<RekapAbsensi[]>([]);
@@ -66,9 +72,9 @@ export default function TeacherAttendancePage() {
       <h1 className="text-xl font-black mb-1">Absensi Guru &amp; Lap. Per Guru</h1>
       <p className="text-sm text-slate-500 mb-4">Rekap absensi per guru: Masuk, Sakit, Ijin, Tanpa Keterangan + total jam.</p>
       <div className="flex flex-wrap gap-2 mb-6">
-        {(["perguru", "rekap", "absen", "pegawai"] as const).map((t) => (
+        {(["perguru", "rekap", "absen", "pegawai", "rawlog"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === t ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>
-            {t === "perguru" ? "Lap. Per Guru" : t === "rekap" ? "Rekap Absen" : t === "absen" ? "Data Absen" : "Pegawai"}
+            {t === "perguru" ? "Lap. Per Guru" : t === "rekap" ? "Rekap Absen" : t === "absen" ? "Data Absen" : t === "pegawai" ? "Pegawai" : "Raw Log"}
           </button>
         ))}
       </div>
@@ -168,8 +174,47 @@ export default function TeacherAttendancePage() {
         </>
       )}
 
-      <ConfirmDialog open={delId !== null} onClose={() => setDelId(null)} onConfirm={async () => { if (delId) { const r = await deleteTeacherAttendance(delId); if (r.success) showToast("success", "Dihapus."); } setDelId(null); }} title="Hapus absensi?" message="Data yang dihapus tidak bisa dikembalikan." />
-      <ConfirmDialog open={delCode !== null} onClose={() => setDelCode(null)} onConfirm={async () => { if (delCode) { const r = await deleteEmployee(delCode); if (r.success) { showToast("success", "Dihapus."); loadEmps(); } } setDelCode(null); }} title="Hapus pegawai?" message="Data yang dihapus tidak bisa dikembalikan." />
+      {tab === "rawlog" && (
+        <>
+          <p className="text-sm text-slate-500 mb-3">Data diambil langsung dari file log fingerprint yang sudah di-import. Format paste per baris: <code>ID_FP,Tanggal(YYYY-MM-DD),Jam,Verifikasi,Mesin</code></p>
+          <div className="flex flex-wrap gap-2 mb-4 items-end">
+            <button onClick={loadRawLogs} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Tampilkan</button>
+            <button onClick={async () => {
+              setSyncing(true);
+              const r = await syncAbsen(from, to);
+              setSyncing(false);
+              if (r.success) { showToast("success", "Sync selesai."); loadRawLogs(); }
+              else showToast("error", r.message || "Gagal sync.");
+            }} disabled={syncing} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60">
+              {syncing ? "Sync..." : "Sync Data Absen"}
+            </button>
+          </div>
+          <textarea value={rawText} onChange={(e) => setRawText(e.target.value)} rows={4} placeholder="19980430004,2026-09-11,07:00:01,1,1" className="border rounded-xl px-3 py-2 text-sm w-full font-mono mb-2" />
+          <button onClick={async () => {
+            const rows = rawText.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+              const p = l.split(/[;,]/).map((x) => x.trim());
+              return { fp_id: p[0] || "", date: p[1] || "", time: p[2] || "", verify: p[3] || "", machine: p[4] || "" };
+            }).filter((r) => r.fp_id && r.date);
+            if (rows.length === 0) { showToast("error", "Tidak ada baris valid."); return; }
+            const r = await importRawLogs(rows);
+            if (r.success) { showToast("success", "Import selesai."); setRawText(""); loadRawLogs(); }
+            else showToast("error", r.message || "Gagal import.");
+          }} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold mb-4">Import Log</button>
+          <div className="bg-white border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-slate-50 text-left"><th className="p-3">No</th><th className="p-3">ID FP</th><th className="p-3">Tgl Transaksi</th><th className="p-3">Jam</th><th className="p-3">Verifikasi</th><th className="p-3">Mesin</th></tr></thead>
+              <tbody>
+                {rawLogs.map((l, i) => (
+                  <tr key={l.id} className="border-t"><td className="p-3">{i + 1}</td><td className="p-3 font-mono">{l.fp_id}</td><td className="p-3">{l.date}</td><td className="p-3">{l.time || "-"}</td><td className="p-3">{l.verify || "-"}</td><td className="p-3">{l.machine || "-"}</td></tr>
+                ))}
+                {rawLogs.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-slate-400">Belum ada data. Import dulu lalu Sync.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      <ConfirmDialog isOpen={delId !== null} onClose={() => setDelId(null)} onConfirm={async () => { if (delId) { const r = await deleteTeacherAttendance(delId); if (r.success) showToast("success", "Dihapus."); } setDelId(null); }} title="Hapus absensi?" message="Data yang dihapus tidak bisa dikembalikan." />
+      <ConfirmDialog isOpen={delCode !== null} onClose={() => setDelCode(null)} onConfirm={async () => { if (delCode) { const r = await deleteEmployee(delCode); if (r.success) { showToast("success", "Dihapus."); loadEmps(); } } setDelCode(null); }} title="Hapus pegawai?" message="Data yang dihapus tidak bisa dikembalikan." />
     </div>
   );
 }
