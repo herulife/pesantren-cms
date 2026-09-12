@@ -79,7 +79,7 @@ const MENU: MenuGroup[] = [
     items: [
       { label: 'Manajemen User', href: '/admin-bs/users', icon: 'bi-people-fill', roles: ['superadmin'] },
       { label: 'Tahun Ajaran', href: '/admin-bs/tahun-ajaran', icon: 'bi-calendar-range', roles: ['superadmin', 'admin'] },
-      { label: 'Kembali Modern', href: '/admin', icon: 'bi-arrow-left-circle' },
+      { label: 'Back to Glass', href: '/admin', icon: 'bi-arrow-left-circle' },
     ],
   },
 ];
