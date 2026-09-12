@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -68,6 +68,34 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   // maupun kurang dari standar). Tanpa simpanan -> pakai standar role.
   // Catatan: backend tetap menegakkan RequireRole, jadi menu yang diberi
   // di luar jatah role-nya akan tampil tapi API-nya menolak (403).
+  const groupNames = Array.from(new Set(menuItems.map((item) => item.category)));
+  const groups: Array<[string, typeof menuItems]> = groupNames.map((cat) => [
+    cat,
+    menuItems.filter((item) => item.category === cat),
+  ]);
+
+  const [openCats, setOpenCats] = React.useState<Record<string, boolean>>(() => {
+    try {
+      const raw = window.localStorage.getItem('sidebar-cats');
+      if (raw) return JSON.parse(raw) as Record<string, boolean>;
+    } catch {
+      // abaikan
+    }
+    return {};
+  });
+
+  const toggleCat = (cat: string) => {
+    setOpenCats((prev) => {
+      const next = { ...prev, [cat]: !(prev[cat] ?? true) };
+      try {
+        window.localStorage.setItem('sidebar-cats', JSON.stringify(next));
+      } catch {
+        // abaikan
+      }
+      return next;
+    });
+  };
+
   const visibleItems = menuItems.filter(item => {
     if (!item.roles || item.roles.length === 0) return true;
     const role = user?.role;
@@ -103,20 +131,27 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style dangerouslySetInnerHTML={{__html: `nav::-webkit-scrollbar { display: none; }`}} />
-        {visibleItems.map((item, index) => {
-          const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
-          const showCategory = index === 0 || visibleItems[index - 1].category !== item.category;
-
+        {groups.map(([cat, items]) => {
+          const shown = items.filter((item) => visibleItems.includes(item));
+          if (shown.length === 0) return null;
+          const isOpen = openCats[cat] ?? true;
           return (
-            <React.Fragment key={item.href}>
-              {showCategory && item.category !== 'Utama' && (
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-[9.5px] font-bold uppercase tracking-widest text-sky-200/40">
-                    {item.category}
-                  </p>
-                </div>
-              )}
-              <div className={`flex items-center gap-2 rounded-lg transition-colors ${
+            <div key={cat}>
+              <button
+                type="button"
+                onClick={() => toggleCat(cat)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center justify-between px-3 pt-3 pb-1 text-left"
+              >
+                <p className="text-[9.5px] font-bold uppercase tracking-widest text-sky-200/40">
+                  {cat}
+                </p>
+                <ChevronDown size={14} className={`text-sky-200/40 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+              </button>
+              {isOpen && shown.map((item) => {
+                const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
+                return (
+              <div key={item.href} className={`flex items-center gap-2 rounded-lg transition-colors ${
                 isActive ? 'bg-gradient-to-r from-sky-500/18 via-sky-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
               }`}>
                 <Link href={item.href} onClick={onClose} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
@@ -144,7 +179,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
                 {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-sky-400 rounded-r-md"></div>}
               </div>
-            </React.Fragment>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
