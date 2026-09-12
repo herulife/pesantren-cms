@@ -25,6 +25,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Kesantrian', label: 'Nilai Akademik', href: '/admin/academics', roles: ['bendahara'], docRef: 'academics' },
   { category: 'Kesantrian', label: 'Project & Kegiatan', href: '/admin/project', roles: ['bendahara'], docRef: 'academics' },
   { category: 'Kesantrian', label: 'Staf Pengajar', href: '/admin/teachers', roles: ['tim_media'], docRef: 'teachers' },
+  { category: 'Kesantrian', label: 'Data Pegawai', href: '/admin/employees', roles: ['superadmin', 'admin'], docRef: 'teachers' },
   { category: 'Kesantrian', label: 'Kedisiplinan', href: '/admin/disciplines', roles: ['panitia_psb'], docRef: 'disciplines' },
   { category: 'Kesantrian', label: 'Data Santri', href: '/admin/kesantrian', roles: ['superadmin', 'panitia_psb'], docRef: 'academics' },
   { category: 'Keuangan', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
