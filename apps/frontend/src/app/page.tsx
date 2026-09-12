@@ -88,28 +88,6 @@ const institutionFacts = [
   { label: 'Fokus', value: 'Tahfidz & Adab', icon: <Landmark size={18} /> },
 ];
 
-const learningPillars = [
-  {
-    title: 'Berbasis Al-Quran',
-    desc: 'Hafalan, adab, dan pembelajaran bertumpu pada Al-Quran.',
-    icon: <BookOpen size={20} />,
-  },
-  {
-    title: 'Kurikulum Terpadu',
-    desc: 'Kurikulum pondok, DIKNAS, dan tahfidz berjalan seimbang.',
-    icon: <GraduationCap size={20} />,
-  },
-  {
-    title: 'Lingkungan Tertib',
-    desc: 'Suasana belajar, ibadah, dan asrama dibina secara terarah.',
-    icon: <Trees size={20} />,
-  },
-  {
-    title: 'Pembinaan Menyeluruh',
-    desc: 'Ilmu, akhlak, kemandirian, dan life skill tumbuh bersama.',
-    icon: <HeartHandshake size={20} />,
-  },
-];
 
 const focusAreas = [
   {
@@ -541,15 +519,10 @@ export default function LandingPage() {
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url('${slideImage}')` }}
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,250,252,0.74)_0%,rgba(248,250,252,0.5)_18%,rgba(248,250,252,0.18)_34%,rgba(255,255,255,0.02)_52%,rgba(255,255,255,0)_72%)] sm:bg-[linear-gradient(94deg,rgba(248,250,252,0.68)_0%,rgba(248,250,252,0.42)_20%,rgba(248,250,252,0.14)_38%,rgba(255,255,255,0)_62%)]" />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,204,21,0.08)_0%,rgba(250,204,21,0.03)_34%,rgba(250,204,21,0.16)_100%)]" />
-                  <div className="pointer-events-none absolute right-[-8%] top-[13%] hidden h-72 w-72 rounded-full border border-white/45 bg-white/8 backdrop-blur-[2px] lg:block" />
-                  <div className="pointer-events-none absolute right-[12%] top-[24%] hidden h-28 w-28 rounded-full border border-sky-200/70 bg-sky-100/12 lg:block" />
-                  <div className="pointer-events-none absolute bottom-[18%] right-[9%] hidden h-px w-48 bg-gradient-to-r from-transparent via-white/85 to-transparent lg:block" />
-                  <div className="pointer-events-none absolute bottom-[18%] right-[9%] hidden h-48 w-px bg-gradient-to-b from-white/10 via-white/70 to-transparent lg:block" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,250,252,0.88)_0%,rgba(248,250,252,0.62)_30%,rgba(248,250,252,0.22)_55%,rgba(255,255,255,0)_80%)]" />
 
                   <div className="container relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-8 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-20">
-                    <div className="grid items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+                    <div className="max-w-3xl">
                       <motion.div
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -580,36 +553,6 @@ export default function LandingPage() {
                             >
                               Buka Program
                             </Link>
-                          </div>
-                          <div className="mt-6 flex flex-wrap gap-2.5 sm:mt-8 sm:gap-3">
-                            {learningPillars.slice(0, 2).map((pillar) => (
-                              <span
-                                key={pillar.title}
-                                className="inline-flex items-center gap-2 rounded-full border border-sky-100/90 bg-white/88 px-3 py-2 text-[11px] font-semibold text-slate-700 shadow-sm shadow-sky-100/60 sm:px-4 sm:text-xs"
-                              >
-                                <span className="text-sky-400">{pillar.icon}</span>
-                                {pillar.title}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, y: 28 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.16 }}
-                        className="hidden lg:flex lg:justify-end"
-                      >
-                        <div className="mt-16 flex max-w-[240px] flex-col gap-3">
-                          <div className="rounded-[1.6rem] border border-white/50 bg-white/72 p-4 shadow-[0_22px_60px_-36px_rgba(59,130,246,0.3)] backdrop-blur-sm">
-                            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-600">Tahfidz</p>
-                            <p className="mt-2 text-2xl font-black text-slate-900">20 Juz</p>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">Target hafalan bertahap dengan murajaah yang dijaga rutin.</p>
-                          </div>
-                          <div className="ml-auto rounded-[1.4rem] border border-white/45 bg-slate-950/78 px-4 py-3 text-white shadow-[0_22px_60px_-36px_rgba(250,204,21,0.55)] backdrop-blur-sm">
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-200/90">PSB</p>
-                            <p className="mt-2 text-sm font-semibold">SMP - SMK</p>
                           </div>
                         </div>
                       </motion.div>
