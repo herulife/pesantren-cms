@@ -54,7 +54,7 @@ func (r *Repository) ListCategories(kind string) ([]Category, error) {
 		q += ` WHERE kind=?`
 		args = append(args, kind)
 	}
-	q += ` ORDER BY kind, name`
+	q += ` ORDER BY c.kind, c.name`
 	rows, err := r.db.Query(q, args...)
 	if err != nil {
 		return nil, err
