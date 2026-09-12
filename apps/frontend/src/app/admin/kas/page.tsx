@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { getKasCategories, createKasCategory, getKasTransactions, createKasTransaction, deleteKasTransaction, getKasSummary, KasCategory, KasTransaction, KasSummary } from "@/lib/api";
+import { getKasCategories, createKasCategory, updateKasCategory, getKasTransactions, createKasTransaction, deleteKasTransaction, getKasSummary, KasCategory, KasTransaction, KasSummary } from "@/lib/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 
 function fmtRp(n: number) { return "Rp " + (n || 0).toLocaleString("id-ID"); }
 
@@ -15,6 +15,7 @@ export default function KasAdminPage() {
   const [kind, setKind] = useState("all");
   const [form, setForm] = useState({ date: new Date().toISOString().split("T")[0], kind: "masuk", category_id: "", amount: "", method: "manual", notes: "" });
   const [catName, setCatName] = useState("");
+  const [editingCat, setEditingCat] = useState<{ id: number; name: string } | null>(null);
   const [catKind, setCatKind] = useState("masuk");
   const [delId, setDelId] = useState<number | null>(null);
   const { showToast } = useToast();
@@ -103,13 +104,22 @@ export default function KasAdminPage() {
           </form>
           <div className="bg-white border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-slate-50 text-left"><th className="p-3">Nama</th><th className="p-3">Jenis</th></tr></thead>
-              <tbody>{cats.map((c) => <tr key={c.id} className="border-t"><td className="p-3 font-bold">{c.name}</td><td className="p-3">{c.kind}</td></tr>)}</tbody>
+<thead><tr className="bg-slate-50 text-left"><th className="p-3">Kode</th><th className="p-3">Nama</th><th className="p-3">Jenis</th><th className="p-3">Dibuat Oleh</th><th className="p-3">Aksi</th></tr></thead>
+              <tbody>{cats.map((c) => <tr key={c.id} className="border-t"><td className="p-3 font-mono">{c.code || "-"}</td>
+                <td className="p-3 font-bold">{editingCat?.id === c.id ? <input value={editingCat.name} onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })} className="border rounded-xl px-2 py-1 text-sm" /> : c.name}</td>
+                <td className="p-3">{c.kind}</td><td className="p-3">{c.creator || "-"}</td>
+                <td className="p-3 flex gap-2">
+                  {editingCat?.id === c.id ? (
+                    <button onClick={async () => { const r = await updateKasCategory(c.id, { name: editingCat.name, kind: c.kind }); if (r.success) { showToast("success", "Diubah."); setEditingCat(null); load(); } else showToast("error", r.message || "Gagal."); }} className="text-emerald-600 text-sm font-bold">Simpan</button>
+                  ) : (
+                    <button onClick={() => setEditingCat({ id: c.id, name: c.name })} className="text-sky-600"><Pencil size={16} /></button>
+                  )}
+                </td></tr>)}</tbody>
             </table>
           </div>
         </>
       )}
-      <ConfirmDialog open={delId !== null} onClose={() => setDelId(null)} onConfirm={async () => { if (delId) { const r = await deleteKasTransaction(delId); if (r.success) { showToast("success", "Dihapus."); load(); } } setDelId(null); }} title="Hapus transaksi?" message="Data yang dihapus tidak bisa dikembalikan." />
+      <ConfirmDialog isOpen={delId !== null} onClose={() => setDelId(null)} onConfirm={async () => { if (delId) { const r = await deleteKasTransaction(delId); if (r.success) { showToast("success", "Dihapus."); load(); } } setDelId(null); }} title="Hapus transaksi?" message="Data yang dihapus tidak bisa dikembalikan." />
     </div>
   );
 }

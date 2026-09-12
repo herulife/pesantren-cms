@@ -173,8 +173,11 @@ func createTables() {
 
 	CREATE TABLE IF NOT EXISTS kas_categories (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
 		name TEXT NOT NULL,
 		kind TEXT NOT NULL DEFAULT 'masuk',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		updated_by INTEGER NOT NULL DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		UNIQUE(name, kind)
 	);
@@ -698,6 +701,9 @@ func createTables() {
 	addColumnIfNotExists("videos", "series_slug", "TEXT DEFAULT ''")
 	addColumnIfNotExists("iuran_bills", "name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("kas_transactions", "code", "TEXT DEFAULT ''")
+	addColumnIfNotExists("kas_categories", "updated_by", "TEXT DEFAULT ''" if "updated_by"=="code" else "INTEGER DEFAULT 0")
+	addColumnIfNotExists("kas_categories", "created_by", "TEXT DEFAULT ''" if "created_by"=="code" else "INTEGER DEFAULT 0")
+	addColumnIfNotExists("kas_categories", "code", "TEXT DEFAULT ''" if "code"=="code" else "INTEGER DEFAULT 0")
 	addColumnIfNotExists("videos", "event_date", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "is_featured", "BOOLEAN DEFAULT 0")
 	addColumnIfNotExists("facilities", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")

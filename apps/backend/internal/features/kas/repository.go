@@ -8,8 +8,11 @@ import (
 
 type Category struct {
 	ID        int       `json:"id"`
+	Code      string    `json:"code"`
 	Name      string    `json:"name"`
 	Kind      string    `json:"kind"`
+	Creator   string    `json:"creator,omitempty"`
+	Updater   string    `json:"updater,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -45,7 +48,7 @@ type Repository struct{ db *sql.DB }
 func NewRepository(db *sql.DB) *Repository { return &Repository{db: db} }
 
 func (r *Repository) ListCategories(kind string) ([]Category, error) {
-	q := `SELECT id, name, kind, created_at FROM kas_categories`
+	q := `SELECT c.id, c.code, c.name, c.kind, COALESCE(u1.name,''), COALESCE(u2.name,''), c.created_at FROM kas_categories c LEFT JOIN users u1 ON u1.id=c.created_by LEFT JOIN users u2 ON u2.id=c.updated_by`
 	args := []interface{}{}
 	if kind == "masuk" || kind == "keluar" {
 		q += ` WHERE kind=?`
@@ -60,7 +63,7 @@ func (r *Repository) ListCategories(kind string) ([]Category, error) {
 	out := []Category{}
 	for rows.Next() {
 		var c Category
-		if err := rows.Scan(&c.ID, &c.Name, &c.Kind, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Code, &c.Name, &c.Kind, &c.Creator, &c.Updater, &c.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -68,12 +71,34 @@ func (r *Repository) ListCategories(kind string) ([]Category, error) {
 	return out, rows.Err()
 }
 
-func (r *Repository) CreateCategory(name, kind string) (int64, error) {
-	res, err := r.db.Exec(`INSERT INTO kas_categories (name, kind) VALUES (?, ?)`, strings.TrimSpace(name), kind)
+func (r *Repository) CreateCategory(name, kind string, byID int) (int64, error) {
+	res, err := r.db.Exec(`INSERT INTO kas_categories (name, kind, created_by, updated_by) VALUES (?, ?, ?, ?)`, strings.TrimSpace(name), kind, byID, byID)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	id, _ := res.LastInsertId()
+	code := padCat(id)
+	_, _ = r.db.Exec(`UPDATE kas_categories SET code=? WHERE id=?`, code, id)
+	return id, nil
+}
+
+func padCat(id int64) string {
+	n := ""
+	for v := id; v > 0; v /= 10 {
+		n = string(rune('0'+v%10)) + n
+	}
+	if n == "" {
+		n = "0"
+	}
+	for len(n) < 3 {
+		n = "0" + n
+	}
+	return n
+}
+
+func (r *Repository) UpdateCategory(id int, name, kind string, byID int) error {
+	_, err := r.db.Exec(`UPDATE kas_categories SET name=?, kind=?, updated_by=? WHERE id=?`, strings.TrimSpace(name), kind, byID, id)
+	return err
 }
 
 func (r *Repository) DeleteCategory(id int) error {

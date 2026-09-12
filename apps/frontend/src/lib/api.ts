@@ -3053,7 +3053,11 @@ export async function deleteAcademicYear(id: number) {
   return parseResponse(res);
 }
 
-export interface KasCategory { id: number; name: string; kind: string; created_at: string; }
+export interface KasCategory { id: number; code: string; name: string; kind: string; creator?: string; updater?: string; created_at: string; }
+export async function updateKasCategory(id: number, data: { name: string; kind: string }) {
+  const res = await fetch(`${API_BASE_URL}/kas/categories/${id}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
 export interface KasTransaction { id: number; code: string; date: string; kind: string; category_id: number; category?: string; amount: number; method: string; notes: string; created_by: number; creator?: string; created_at: string; }
 export interface KasSummary { income: number; expense: number; balance: number; count_in: number; count_out: number; spp_income: number; iuran_income: number; donasi_income: number; kas_income: number; }
 

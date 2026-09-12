@@ -35,6 +35,7 @@ func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/categories", h.ListCategories)
 	r.Post("/categories", h.CreateCategory)
+	r.Put("/categories/{id}", h.UpdateCategory)
 	r.Delete("/categories/{id}", h.DeleteCategory)
 	r.Get("/transactions", h.ListTransactions)
 	r.Post("/transactions", h.CreateTransaction)
@@ -69,12 +70,33 @@ func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 422, false, "Validasi gagal", map[string][]string{"kind": {"Jenis harus masuk/keluar"}})
 		return
 	}
-	id, err := h.repo.CreateCategory(req.Name, req.Kind)
+	id, err := h.repo.CreateCategory(req.Name, req.Kind, currentUserID(r))
 	if err != nil {
 		writeJSON(w, 500, false, "Gagal menyimpan kategori", nil)
 		return
 	}
 	writeJSON(w, 201, true, "Kategori berhasil ditambahkan", map[string]interface{}{"id": id})
+}
+
+func (h *Handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var req struct {
+		Name string `json:"name"`
+		Kind string `json:"kind"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, 400, false, "Permintaan tidak valid", nil)
+		return
+	}
+	if len(req.Name) < 2 {
+		writeJSON(w, 422, false, "Validasi gagal", map[string][]string{"name": {"Nama kategori 2-100 karakter"}})
+		return
+	}
+	if err := h.repo.UpdateCategory(id, req.Name, req.Kind, currentUserID(r)); err != nil {
+		writeJSON(w, 500, false, "Gagal mengubah kategori", nil)
+		return
+	}
+	writeJSON(w, 200, true, "Kategori berhasil diubah", nil)
 }
 
 func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
