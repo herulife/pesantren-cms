@@ -4,66 +4,67 @@ import { Shield, AlertTriangle, Copy, Check, Search, Lock, Database, Zap, Eye } 
 import Link from 'next/link';
 import React, { useState } from 'react';
 
-const report = `# AUDIT MENYELURUH — https://almaparung.com — 2026-09-11
-Metode: 4 deep-dive paralel (security, database, frontend/UI, backend quality), READ-ONLY, tanpa destructive test. Menggantikan laporan lama di halaman ini.
+const report = `# AUDIT UI/UX — https://almaparung.com — 2026-09-12
+Metode: skill Vercel web-design-guidelines (100+ aturan: a11y, fokus, form, animasi, tipografi, gambar, perf, navigasi, sentuh, dark-mode, i18n, hidrasi) + skill lokal ux-heuristics, wcag-accessibility, mobile-responsive-ux, frontend-design + full-stack-audit. 3 audit paralel (publik, admin, komponen), read-only. Scope: 124 file TSX. Total ±270 temuan: MAYOR/HIGH ±110, MEDIUM ±95, LOW ±65.
 
-## 1. Executive Summary — CRITICAL 5 / HIGH 19 / MEDIUM 29 / LOW 17
-- Satu paparan data aktif (donatur publik), situs nyaris tak terindeks (tanpa H1/metadata per halaman), 2 bug live (SPP summary 500, update hantu), backup DB tidak konsisten.
-- Yang sudah kuat: SQLi aman, upload aman, XSS berita aman, bcrypt, rate-limit, auth cookie, RBAC backend, unit test SPP 4/4.
-- Verdict: JANGAN abaikan P0. Risk: CRITICAL.
+## 1. Ringkasan per area
+- Publik (14 file): FAIL semua kecuali news/[slug] (PASS dgn catatan). Pola: tanpa skip-link, link/tombol tanpa focus-visible, SectionIntro selalu h2 (news & galeri tanpa h1), kontras slate-400/emerald/amber gagal AA.
+- Admin (19 file): FAIL semua. Pola: search/select/input tanpa <label>, tombol ikon tanpa aria-label, submit tanpa loading/disabled, tabel tanpa overflow-x, Rp/tanggal hardcoded bukan Intl.
+- Komponen (10 file): FAIL semua. Toast/ConfirmDialog/modal tanpa role=dialog/aria-modal/Escape; layout tanpa skip-link/theme-color; globals tanpa :focus-visible global.
 
-## 2. CRITICAL (5)
-- C1: Donor PII publik — GET /api/donations tanpa auth kembalikan nama+HP+bukti (main.go rute publik vs handler /list yang benar). Fix: hapus rute publik, sisakan /donations/campaigns.
-- C2: H1 kosong di HTML awal /, /galeri, /news, /login (client-only render; H1 baru muncul setelah JS+API). Fix: Server Components + H1 statis fallback.
-- C3: Tanpa per-page metadata — title/OG/canonical identik di semua rute (layout.tsx:4; canonical '/' global = risiko de-index). Fix: generateMetadata per route.
-- C4: Form biodata portal tanpa <label> + tanpa focus-ring (biodata/page.tsx:459-478; htmlFor hanya 9 untuk 15+ field). Fix: label terasosiasi + focus style.
-- C5: Halaman audit internal publik (/audit, /audit-donasi, /audit-spp, HTTP 200, robots index:true). RISIKO DITERIMA PEMILIK (disengaja). Saran: pastikan tak ada kredensial di laporan.
+## 2. Pola sistemik (perbaiki sekali, sembuh banyak)
+- S1: Tambah skip-link + id="main" di layout; style :focus-visible global di globals.css.
+- S2: Semua tombol ikon (Trash2/Pencil/X/RotateCcw/Search) wajib aria-label; ikon dekoratif aria-hidden="true".
+- S3: Semua search/select/input wajib <label htmlFor+id> (ganti placeholder-only).
+- S4: Semua submit async wajib disabled+spinner (isSaving) cegah double-submit.
+- S5: Semua <table> admin bungkus overflow-x-auto (mobile).
+- S6: PublicSectionIntro tambah prop level agar tiap halaman punya h1.
+- S7: Rp/tanggal via Intl.NumberFormat('id-ID') / Intl.DateTimeFormat (ganti MONTHS_ID & toLocaleString manual + split).
+- S8: Modal (ConfirmDialog dkk) tambah role=dialog aria-modal, Escape, overscroll contain.
+- S9: Kontras: slate-400 label, emerald-600/amber-500 badge/teks → naikkan ke -700/sky-700.
 
-## 3. HIGH (19)
-- H1: User biasa bisa tulis FAQ & Agenda (RequireRole hilang; main.go) — deface via registrasi terbuka. Fix: RequireRole tim_media/superadmin.
-- H2: CSRF — cookie tanpa token anti-CSRF (SameSite Lax; X-CSRF-Token diizinkan tapi tak divalidasi). Fix: SameSite Strict + double-submit.
-- H3: SPP summary 500 saat periode kosong — TERBUKTI live (SUM CASE tanpa COALESCE; tabel kosong). Fix: COALESCE(...,0).
-- H4: SPP UpdateBill sukses palsu untuk id hantu (tanpa RowsAffected). Fix: cek -> 404.
-- H5: SPP tx Commit gagal -> rollback dilewati (return tanpa assign). Fix: err = tx.Commit().
-- H6: Exams abaikan error (studentID bisa 0 masuk grades). Fix: cek semua error.
-- H7: Paginasi payments in-memory salah (offset>limit dilewati -> bocor semua data). Fix: LIMIT/OFFSET di SQL.
-- H8: adminID selalu 0 di payments & SPP (assertion map vs jwt.MapClaims) — audit trail rusak. Fix: auth.CurrentUserID.
-- H9: WAL 4MB belum checkpoint + backup .db tanpa WAL (kehilangan 26 jam, rawan corrupt). Fix: wal_checkpoint(TRUNCATE) + .backup API.
-- H10: 6 berita kategori yatim (categories kosong; filter selalu kosong). Fix: seed/NULL-kan + validasi.
-- H11: Hapus santri/subject laten FK (spp_bills, grades, exams). Fix: bersihkan/cegah terpusat.
-- H12: CTA primer gagal kontras AA (sky-500 ~3:1). Fix: sky-700 atau teks gelap.
-- H13: Kosakata lunas ganda (success vs paid). Fix: satu enum + helper badge.
-- H14: Tombol ikon tanpa aria-label (X modal, aksi baris SppBills). Fix: aria-label.
-- H15: Gambar konten alt="" + unoptimized + img mentah (LCP lambat, SEO image nol). Fix: alt terisi, hapus unoptimized, sizes+priority hero.
-- H16: Homepage full-client + bundle berat (framer-motion, swiper, jspdf/xlsx di rute publik). Fix: Server Components + dynamic import + pisah chunk admin.
-- H17: 3 tabel academics tanpa overflow-x (mobile overflow). Fix: bungkus overflow-x-auto.
-- H18: Login Google mock mati tapi UI ada (notice kuning permanen). Fix: env + sembunyikan bila kosong.
-- H19: JWT secret lemah/prediktabel (kata+tahun). Fix: rotasi 32+ byte acak.
+## 3. Temuan publik (contoh kunci, file:line)
+- app/page.tsx:528 autoplay 6,5 dtk tanpa pause; :564 h1 di tiap slide (3 h1); :553,598,645 motion tanpa reduced-motion; :571,577,699,705 CTA tanpa focus-visible; :634 label slate-400 ~2,8:1; :1066 thumbnail div tanpa role/alt.
+- app/kontak/page.tsx:215,230,246,261 label tanpa htmlFor; :315 iframe tanpa title; :47 error hanya toast; :215 label slate-400.
+- app/galeri/page.tsx:293 X tanpa aria-label; :289 lightbox tanpa dialog/Escape; :291 overlay div onClick; :125 search tanpa label; :94 tanpa h1; :247 info hover-only.
+- app/donations/[slug]/page.tsx:300,567 progress tanpa role; :131 h3 sebelum h1; :294,561 label slate-400.
+- app/news/page.tsx:47 tanpa h1; :60 search tanpa label.
+- components/PublicLayout.tsx:466 tanpa skip-link; :302,346 menu akun tanpa aria-expanded; :183,499 teks 9-11px ~4:1.
+- components/NewsCard.tsx:40 badge amber ~2,1:1; :59 "..." bukan "…".
+- components/PublicSectionIntro.tsx:37 selalu h2 (akar missing-h1).
+- Positif: Toast aria-live polite; progressbar+aria-label di donations list benar; empty state ada; iframe footer ada title.
 
-## 4. MEDIUM (27)
-- Auth tanpa revocasi (logout hanya hapus cookie, token hidup 24 jam); payments tanpa batas atas nominal; PSB self-attested amount (klaim Rp1 lolos antrean — andalkan verifikasi admin).
-- Race check-then-act DeleteBill/UpdateBill; ListBills tanpa pagination; double-submit tanpa disable; paid_at bebas string; cancel hapus seluruh jejak cicilan.
-- time.Parse diabaikan (zero-time); rows.Err() hilang (SPP list); donations json.Marshal/Unmarshal tanpa cek error.
-- 4 envelope respons berbeda; validasi timpang antar fitur; GetBill tanpa route; raport skor dummy 3.0; 16 paket tanpa test; GenerateBills tanpa tx; settings UpdateMany tanpa defer rollback.
-- Teks kecil slate-400; radius/tipografi tanpa token; wording empty-state beda; progress donations/[slug] tanpa aria; tab admin tanpa semantik tablist; rute add-vs-form ganda; scanner attendance tanpa menu; FK pragma fragility; activity log ikut terhapus; index hilang (santri.user_id, news.author, spp santri_id, dsb); vacuum tak jalan.
+## 4. Temuan admin (contoh kunci, file:line)
+- payments/page.tsx:362,403 ikon tanpa aria-label; :287,296 search/select tanpa label; :488 submit tanpa loading; :198 tab tanpa overflow-x; :127,130 Rp/tanggal hardcoded.
+- payments/SppBills.tsx:401,405,408 aksi title saja; :441 X x3; :264,326,335 label/search tanpa label; :508,553 submit tanpa loading; :380 progress tanpa role.
+- payments/IuranBills.tsx:415,419,422; :455; :279,340; :528,573; :393 (pola sama).
+- payments/Kasir.tsx:62,89,90 tanpa label; :66 selected tanpa aria-pressed.
+- admin/school/page.tsx:68,88,108,131 tanpa label; :73,92,125 tabel tanpa overflow-x; :78,98 Trash2 tanpa aria-label.
+- admin/kas/page.tsx:74-80,67,101 7 input tanpa label; :84,106 tabel; :91,115 aksi tanpa aria-label.
+- admin/teachers/report/page.tsx:135,142,143,154,168,236; :97,119,163 tabel; :57,63 submit.
+- portal/biodata/page.tsx:459-478 6 input orangtua tanpa label.
+- Positif: hapus/batal selalu ConfirmDialog; badge ada teks (tak warna saja); export PDF/Excel konsisten.
 
-## 5. LOW (17)
-- Validator role tanpa whitelist; VerifyDonation adminID:=1; error leak kecil raport; upload terbuka semua user (kuota 5MBx30/jam); middleware hanya cek cookie; HSTS backend absen (wajib di reverse-proxy); generated_by=0; ownership root:root data/*.db*; label login tanpa htmlFor; dead code errors-flatten SPP; due_date masa lalu boleh; SPP-payments ledger tak terhubung; Create 200 vs 201; logger timpang; dead code; GetByUserID mati; bahasa campur ID/EN.
+## 5. Temuan komponen (file:line)
+- Toast.tsx:61 close tanpa aria-label; :56 ikon tanpa aria-hidden; :60 pesan tanpa break-words.
+- ConfirmDialog.tsx:44 tanpa role/aria-modal/Escape; :45 backdrop div onClick; :57 close tanpa aria-label.
+- Sidebar.tsx:91 close tanpa aria-label; :107 aktif tanpa aria-current; :122 nav tanpa aria-label.
+- GallerySelectionModal.tsx:74 close; :125 div onClick harus button; :134 img tanpa dimensi/lazy.
+- layout.tsx:79 tanpa skip-link; :4 tanpa theme-color.
+- globals.css:11 tanpa color-scheme & :focus-visible global; :75 transition:all.
 
-## 6. Kekuatan (terbukti aman)
-- SQLi aman (semua placeholder); upload anti path-traversal/executable; XSS berita di-sanitize; tanpa command injection; secrets tak ter-commit; mass-assignment role aman; IDOR sesi/dormpet aman; bcrypt PIN/password; rate-limit login/upload; webhook Telegram terverifikasi; Rupiah/tanggal id-ID konsisten; toast aksesibel; tanpa N+1; halaman 404/500 baik; test SPP 4/4.
+## 6. Skill yang dipakai
+- Baru: web-design-guidelines (Vercel vercel-labs/agent-skills, 31rb star) — .opencode/skills/web-design-guidelines/ (SKILL.md + guidelines.md 100+ aturan, diambil 2026-09-12).
+- Lokal: ux-heuristics (Nielsen), wcag-accessibility, mobile-responsive-ux, frontend-design, visual-design-system, react-ux-patterns, full-stack-audit, pesantren-ops.
+- Kandidat dinilai: flitzrrr/frontend-design-skills (website-audit, 20 skill), hueyexe/frontend-agent-skills (9 skill + checklist), addyosmani/web-quality-skills (150+ aturan Lighthouse), vercel react-best-practices. Pemenang untuk audit: Vercel web-design-guidelines (aturan paling konkret + format file:line).
 
-## 7. Rekomendasi
-P0 (sekarang): tutup GET /donations publik; COALESCE summary; RowsAffected UpdateBill; H1 SSR + metadata per halaman; RequireRole FAQ/Agenda.
-P1 (penting): token CSRF + SameSite Strict; rollback-commit fix; paginasi SQL payments+SPP; adminID dari JWT; checkpoint+backup benar; seed/NULL kategori; kontras CTA; aria-label; alt+optimasi gambar; tablist semantik; progress aria; index DB; Enum status tunggal.
-P2 (perbaikan): envelope respons tunggal; test 16 paket; token radius/tipografi; dead code/routes; vacuum terjadwal; rotasi JWT + expiry pendek; sembunyikan Google mock.
+## 7. Roadmap
+P0: S1 skip-link+focus global; S2 aria-label tombol ikon; S3 label form; S6 h1 per halaman.
+P1: S4 loading submit; S5 overflow-x tabel; S8 dialog; S9 kontras; progressbar+lightbox+iframe title.
+P2: S7 Intl; typo …/curly quotes; tabular-nums; aria-pressed tab; debounce search; URL-sync tab.
 
-## 8. Final Risk Rating — CRITICAL
-- 5 Critical (1 paparan data aktif + situs tak terindeks + form tak aksesibel). 19 High. Perbaiki P0 dulu, lalu P1 berurutan. Audit berikutnya setelah P0 hijau.
-- Jejak: 4 agen audit paralel, read-only, bukti file:line + curl/DB di tiap temuan. Tanpa ubah kode (kecuali halaman ini).
-
-Trace: apps/frontend/src + apps/backend (main.go, */handler.go, */repository.go, db.go) + SQLite live (SELECT/PRAGMA) + curl https. Lihat /audit-donasi & /audit-spp untuk laporan modul.
-`;
+## 8. Verdict — PERLU PERBAIKAN MENYELURUH (mayor ±110)
+Fungsionalitas dan keamanan tak tersentuh audit ini (lihat /audit-donasi & /audit-spp). Sampel 12 temuan sudah divalidasi manual file:line. Perbaikan disarankan per pola S1-S9, bukan per file.`;
 
 export default function AuditPage() {
   const [copied, setCopied] = useState(false);
@@ -86,16 +87,16 @@ export default function AuditPage() {
   return (
     <PublicLayout>
       <section className="relative overflow-hidden border-b border-slate-200 bg-slate-950 py-12 text-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-sky-950 to-slate-950" />
         <div className="relative mx-auto max-w-6xl px-4">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-rose-200">
-            <Shield size={14} /> Audit Menyeluruh
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-sky-200">
+            <Shield size={14} /> Audit UI/UX
           </p>
-          <h1 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">AUDIT SELURUH SISTEM</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Security + database + frontend + backend. 4 audit paralel, read-only, bukti file:line. 11 bab — CRITICAL.</p>
+          <h1 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">AUDIT UI/UX MENYELURUH</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Skill Vercel web-design-guidelines (100+ aturan) + skill lokal UX. 3 audit paralel, read-only, bukti file:line. 124 file TSX — PERLU PERBAIKAN.</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-900">P0: 5 fix sekarang</span>
-            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-white">Risk: CRITICAL</span>
+            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-900">P0: skip-link, aria-label, label form, h1</span>
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-white">Mayor ±110</span>
             <button onClick={handleCopy} className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-xs font-black text-white hover:bg-emerald-600">
               {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Tersalin!' : 'Copy Audit'}
             </button>
@@ -107,20 +108,20 @@ export default function AuditPage() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="grid gap-4 md:grid-cols-4">
             <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-rose-700"><AlertTriangle size={14} /> Critical 5</p>
-              <p className="mt-1 text-xs text-rose-700">PII publik, SEO, form, audit</p>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-rose-700"><AlertTriangle size={14} /> Mayor ±110</p>
+              <p className="mt-1 text-xs text-rose-700">Label, aria, fokus, h1, kontras</p>
             </div>
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-700"><Shield size={14} /> High 19</p>
-              <p className="mt-1 text-xs text-amber-700">Auth, bug live, kontras</p>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-700"><Shield size={14} /> Medium ±95</p>
+              <p className="mt-1 text-xs text-amber-700">Loading, dialog, Intl, motion</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Search size={14} /> Medium 29</p>
-              <p className="mt-1 text-xs text-slate-600">Race, validasi, a11y</p>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Search size={14} /> Low ±65</p>
+              <p className="mt-1 text-xs text-slate-600">Tipografi, copy, URL state</p>
             </div>
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-700"><Eye size={14} /> Low 17</p>
-              <p className="mt-1 text-xs text-emerald-700">Hardening, rapian</p>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-700"><Eye size={14} /> Lolos</p>
+              <p className="mt-1 text-xs text-emerald-700">Toast live, empty state, konfirmasi hapus</p>
             </div>
           </div>
 
@@ -149,16 +150,16 @@ export default function AuditPage() {
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Lock size={14} /> Security</p>
-              <p className="mt-2 text-xs leading-6 text-slate-600">Tutup donatur publik + RequireRole FAQ/Agenda + token CSRF. SQLi/upload/sandi aman terbukti.</p>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Lock size={14} /> Skill Baru</p>
+              <p className="mt-2 text-xs leading-6 text-slate-600">web-design-guidelines dari Vercel (31rb star): 100+ aturan + format file:line. Tersimpan di .opencode/skills.</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Database size={14} /> Database</p>
-              <p className="mt-2 text-xs leading-6 text-slate-600">Checkpoint WAL + backup .backup API. Tanpa yatim FK. Tambah index + vacuum terjadwal.</p>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Database size={14} /> Pola Sistemik</p>
+              <p className="mt-2 text-xs leading-6 text-slate-600">9 pola S1-S9: perbaiki sekali di komponen bersama, sembuh di puluhan halaman.</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Zap size={14} /> Frontend</p>
-              <p className="mt-2 text-xs leading-6 text-slate-600">H1 SSR + metadata per halaman dulu, lalu kontras, aria, gambar, dan bundle.</p>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700"><Zap size={14} /> Roadmap</p>
+              <p className="mt-2 text-xs leading-6 text-slate-600">P0 akses dasar, P1 dialog/loading/kontras, P2 Intl & copy. Fungsionalitas tak tersentuh.</p>
             </div>
           </div>
         </div>
