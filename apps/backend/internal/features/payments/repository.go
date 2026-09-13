@@ -355,3 +355,63 @@ func (r *Repository) GetOrCreateReceipt(santriID int, period string, byID, owner
 	}
 	return &ReceiptDetail{Receipt: rec, Items: items}, nil
 }
+
+type MyBill struct {
+	BillType     string `json:"bill_type"`
+	BillID       int    `json:"bill_id"`
+	SantriID     int    `json:"santri_id"`
+	SantriName   string `json:"santri_name"`
+	Period       string `json:"period"`
+	Name         string `json:"name"`
+	Amount       int    `json:"amount"`
+	Paid         int    `json:"paid"`
+	Remain       int    `json:"remain"`
+	Status       string `json:"status"`
+	DueDate      string `json:"due_date"`
+	PaymentProof string `json:"payment_proof,omitempty"`
+}
+
+func (r *Repository) MyBills(uid int) ([]MyBill, error) {
+	q := `SELECT 'SPP', b.id, b.santri_id, s.name, b.period, '', b.amount, b.paid_amount, b.amount-b.paid_amount, b.status, b.due_date, b.payment_proof
+		FROM spp_bills b JOIN santri s ON s.id = b.santri_id WHERE s.user_id = ? AND b.status != 'paid'
+		UNION ALL
+		SELECT 'IURAN', b.id, b.santri_id, s.name, b.period, b.name, b.amount, b.paid_amount, b.amount-b.paid_amount, b.status, b.due_date, b.payment_proof
+		FROM iuran_bills b JOIN santri s ON s.id = b.santri_id WHERE s.user_id = ? AND b.status != 'paid'
+		ORDER BY period, bill_type`
+	rows, err := r.db.Query(q, uid, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []MyBill{}
+	for rows.Next() {
+		var b MyBill
+		if err := rows.Scan(&b.BillType, &b.BillID, &b.SantriID, &b.SantriName, &b.Period, &b.Name, &b.Amount, &b.Paid, &b.Remain, &b.Status, &b.DueDate, &b.PaymentProof); err != nil {
+			return nil, err
+		}
+		out = append(out, b)
+	}
+	return out, rows.Err()
+}
+
+func (r *Repository) MyLedger(uid int, limit int) ([]PayTx, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	rows, err := r.db.Query(`SELECT t.id, t.code, t.date, t.santri_id, s.nis, s.name, t.bill_type, t.bill_id, t.description, t.amount, t.method, COALESCE(u.name,'')
+		FROM payment_transactions t JOIN santri s ON s.id=t.santri_id LEFT JOIN users u ON u.id=t.created_by
+		WHERE s.user_id = ? ORDER BY t.date DESC, t.id DESC LIMIT ?`, uid, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PayTx{}
+	for rows.Next() {
+		var t PayTx
+		if err := rows.Scan(&t.ID, &t.Code, &t.Date, &t.SantriID, &t.SantriNIS, &t.SantriName, &t.BillType, &t.BillID, &t.Description, &t.Amount, &t.Method, &t.Petugas); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}

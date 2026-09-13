@@ -171,6 +171,49 @@ func (h *Handler) GetMyReceipt(w http.ResponseWriter, r *http.Request) {
 	h.receiptByOwner(w, r, uid)
 }
 
+func (h *Handler) myUID(w http.ResponseWriter, r *http.Request) (int, bool) {
+	uid, ok := auth.CurrentUserID(r.Context())
+	if !ok {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
+		return 0, false
+	}
+	return uid, true
+}
+
+func (h *Handler) GetMyBills(w http.ResponseWriter, r *http.Request) {
+	uid, ok := h.myUID(w, r)
+	if !ok {
+		return
+	}
+	list, err := h.repo.MyBills(uid)
+	if err != nil {
+		logger.Error(r.Context(), "payments my-bills failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat tagihan", nil)
+		return
+	}
+	if list == nil {
+		list = []MyBill{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Tagihan berhasil dimuat", list)
+}
+
+func (h *Handler) GetMyLedger(w http.ResponseWriter, r *http.Request) {
+	uid, ok := h.myUID(w, r)
+	if !ok {
+		return
+	}
+	list, err := h.repo.MyLedger(uid, 50)
+	if err != nil {
+		logger.Error(r.Context(), "payments my-ledger failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat riwayat", nil)
+		return
+	}
+	if list == nil {
+		list = []PayTx{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Riwayat berhasil dimuat", list)
+}
+
 func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	logger.Info(r.Context(), "payments list users started", logger.Field{"operation": "payments_list_users"})
 	users, err := h.repo.GetUsers()
@@ -330,5 +373,7 @@ type IRepository interface {
 	}, error)
 	ListPayTx(from, to, search string, limit, offset int) ([]PayTx, error)
 	UnpaidBills(santriID int) ([]UnpaidBill, error)
+	MyBills(uid int) ([]MyBill, error)
+	MyLedger(uid int, limit int) ([]PayTx, error)
 	GetOrCreateReceipt(santriID int, period string, byID, ownerUID int) (*ReceiptDetail, error)
 }

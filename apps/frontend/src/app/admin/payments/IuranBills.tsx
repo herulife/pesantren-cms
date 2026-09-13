@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   getIuranBills, getIuranSummary, getIuranSantri, generateIuranBills,
-  createIuranBill, updateIuranBill, payIuranBill, cancelIuranBill, deleteIuranBill, deleteIuranByPeriod, deleteIuranBySantri,
+  createIuranBill, updateIuranBill, payIuranBill, cancelIuranBill, deleteIuranBill, deleteIuranByPeriod, deleteIuranBySantri, verifyIuranBill,
   IuranBill, IuranSummary, IuranSantri,
 } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -27,12 +27,14 @@ function formatPeriod(period: string) {
 function statusBadge(status: string) {
   if (status === 'paid') return 'bg-emerald-100 text-emerald-700';
   if (status === 'partial') return 'bg-amber-100 text-amber-700';
+  if (status === 'pending') return 'bg-sky-100 text-sky-700';
   return 'bg-rose-100 text-rose-700';
 }
 
 function statusLabel(status: string) {
   if (status === 'paid') return 'Lunas';
   if (status === 'partial') return 'Sebagian';
+  if (status === 'pending') return 'Menunggu Verifikasi';
   return 'Belum Bayar';
 }
 
@@ -59,6 +61,22 @@ export default function IuranBills() {
   const [billForm, setBillForm] = useState({ santri_id: '', name: '', amount: '', due_date: '', notes: '' });
 
   const [payBill, setPayBill] = useState<IuranBill | null>(null);
+
+  const doVerify = async (id: number, approve: boolean) => {
+    let note = '';
+    if (!approve) {
+      const p = window.prompt('Alasan penolakan (opsional):');
+      if (p === null) return;
+      note = p;
+    }
+    const res = await verifyIuranBill(id, approve, note);
+    if (res.success) {
+      showToast('success', res.message || (approve ? 'Pembayaran diterima.' : 'Pembayaran ditolak.'));
+      fetchData(period, nameFilter);
+    } else {
+      showToast('error', res.message || 'Gagal memverifikasi.');
+    }
+  };
   const [payForm, setPayForm] = useState({ amount: '', method: 'manual', paid_at: new Date().toISOString().split('T')[0], notes: '' });
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -354,6 +372,7 @@ export default function IuranBills() {
             <option value="all">Semua Status</option>
             <option value="unpaid">Belum Bayar</option>
             <option value="partial">Sebagian</option>
+            <option value="pending">Menunggu Verifikasi</option>
             <option value="paid">Lunas</option>
           </select>
         </div>
@@ -406,7 +425,22 @@ export default function IuranBills() {
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex justify-end gap-1">
-                          {b.status !== 'paid' && (
+                          {b.status === 'pending' && (
+                            <>
+                              {b.payment_proof && (
+                                <a href={b.payment_proof} target="_blank" rel="noreferrer" title="Lihat bukti" className="px-3 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-black uppercase hover:bg-slate-200 transition-all">
+                                  Bukti
+                                </a>
+                              )}
+                              <button onClick={() => doVerify(b.id, true)} title="Terima pembayaran" className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase hover:bg-emerald-700 transition-all">
+                                Terima
+                              </button>
+                              <button onClick={() => doVerify(b.id, false)} title="Tolak pembayaran" className="px-3 py-2 bg-white border border-rose-200 text-rose-600 rounded-xl text-xs font-black uppercase hover:bg-rose-50 transition-all">
+                                Tolak
+                              </button>
+                            </>
+                          )}
+                          {b.status !== 'paid' && b.status !== 'pending' && (
                             <button onClick={() => openPay(b)} title="Bayar" className="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-black uppercase hover:bg-sky-700 transition-all">
                               Bayar
                             </button>

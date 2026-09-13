@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getSppBills, generateSppBills, deleteSppByPeriod, deleteSppBySantri, getSppSantri, SppBill, SppSantri } from '@/lib/api';
+import { getSppBills, generateSppBills, deleteSppByPeriod, deleteSppBySantri, verifySppBill, getSppSantri, SppBill, SppSantri } from '@/lib/api';
 import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
@@ -41,6 +41,19 @@ export default function BsTagihanSpp() {
       due_date: form.due || undefined,
       class: form.class || undefined,
     });
+    setOk(r.success);
+    setMsg(r.message || '');
+    if (r.success) load(period);
+  };
+
+  const doVerify = async (id: number, approve: boolean) => {
+    let note = '';
+    if (!approve) {
+      const p = window.prompt('Alasan penolakan (opsional):');
+      if (p === null) return;
+      note = p;
+    }
+    const r = await verifySppBill(id, approve, note);
     setOk(r.success);
     setMsg(r.message || '');
     if (r.success) load(period);
@@ -109,15 +122,24 @@ export default function BsTagihanSpp() {
       <div className="card">
         <div className="card-body table-responsive p-0">
           <table className="table table-bordered table-striped table-sm text-sm mb-0">
-            <thead><tr><th>No Induk</th><th>Nama</th><th>Kelas</th><th>Tagihan</th><th>Dibayar</th><th>Sisa</th><th>Status</th></tr></thead>
+            <thead><tr><th>No Induk</th><th>Nama</th><th>Kelas</th><th>Tagihan</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Verifikasi</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td>{r.santri_nis}</td><td className="fw-bold">{r.santri_name}</td><td>{r.santri_class}</td>
                   <td>{fmtRp(r.amount)}</td><td>{fmtRp(r.paid_amount)}</td><td>{fmtRp(r.amount - r.paid_amount)}</td><td>{r.status}</td>
+                  <td>
+                    {r.status === 'pending' ? (
+                      <span className="d-flex gap-1">
+                        {r.payment_proof && <a href={r.payment_proof} target="_blank" rel="noreferrer" className="btn btn-xs btn-info">Bukti</a>}
+                        <button className="btn btn-xs btn-success" onClick={() => doVerify(r.id, true)}>Terima</button>
+                        <button className="btn btn-xs btn-danger" onClick={() => doVerify(r.id, false)}>Tolak</button>
+                      </span>
+                    ) : '-'}
+                  </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={7} className="text-center text-muted p-3">Tidak ada data. Pilih periode lalu Tampilkan.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={8} className="text-center text-muted p-3">Tidak ada data. Pilih periode lalu Tampilkan.</td></tr>}
             </tbody>
           </table>
         </div>

@@ -1066,6 +1066,8 @@ export interface SppBill {
 	paid_method: string;
 	paid_at?: string;
 	notes: string;
+	payment_proof?: string;
+	pending_amount?: number;
 	created_at: string;
 	updated_at: string;
 }
@@ -1085,6 +1087,8 @@ export interface IuranBill {
 	paid_method: string;
 	paid_at?: string;
 	notes: string;
+	payment_proof?: string;
+	pending_amount?: number;
 	created_at: string;
 	updated_at: string;
 }
@@ -3013,6 +3017,70 @@ export async function getReceipt(santri_id: number, period: string): Promise<Rec
 
 export async function getMyReceipt(santri_id: number, period: string): Promise<ReceiptData | null> {
 	return fetchReceipt(`${API_BASE_URL}/my-receipt?santri_id=${santri_id}&period=${encodeURIComponent(period)}`);
+}
+
+export interface MyBill {
+	bill_type: string; bill_id: number; santri_id: number; santri_name: string;
+	period: string; name: string; amount: number; paid: number; remain: number;
+	status: string; due_date: string; payment_proof?: string;
+}
+
+export async function getMyBills(): Promise<MyBill[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/my-bills`, { headers: getAuthHeaders(), cache: 'no-store' });
+		const result = await parseResponse(res);
+		return (result.data || []) as MyBill[];
+	} catch (e) {
+		console.error('[Bills] my-bills:', e);
+		return [];
+	}
+}
+
+export async function getMyLedger(): Promise<PayTx[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/my-ledger`, { headers: getAuthHeaders(), cache: 'no-store' });
+		const result = await parseResponse(res);
+		return (result.data || []) as PayTx[];
+	} catch (e) {
+		console.error('[Bills] my-ledger:', e);
+		return [];
+	}
+}
+
+export async function submitSppProof(id: number, data: { amount: number; method?: string; paid_at?: string; proof_url: string }) {
+	const res = await fetch(`${API_BASE_URL}/my-bills/spp/${id}/proof`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function submitIuranProof(id: number, data: { amount: number; method?: string; paid_at?: string; proof_url: string }) {
+	const res = await fetch(`${API_BASE_URL}/my-bills/iuran/${id}/proof`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function verifySppBill(id: number, approve: boolean, note = '') {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}/verify`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ approve, note })
+	});
+	return parseResponse(res);
+}
+
+export async function verifyIuranBill(id: number, approve: boolean, note = '') {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}/verify`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ approve, note })
+	});
+	return parseResponse(res);
 }
 
 export async function getMySantri(): Promise<Santri[]> {

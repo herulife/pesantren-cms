@@ -91,6 +91,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/bills/{id}/cancel", h.Cancel)
 	r.Delete("/bills/{id}", h.Delete)
 	r.Delete("/bills/by-period", h.DeleteByPeriod)
+	r.Post("/bills/{id}/verify", h.Verify)
 	r.Delete("/bills/by-santri", h.DeleteBySantri)
 	r.Get("/combined-report", h.CombinedReport)
 	return r
@@ -443,6 +444,79 @@ func (h *Handler) CombinedReport(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Laporan gabungan berhasil dimuat", rows)
 }
 
+
+func (h *Handler) SubmitProof(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "ID tagihan tidak valid", nil)
+		return
+	}
+	uid, ok := auth.CurrentUserID(r.Context())
+	if !ok {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
+		return
+	}
+	var req struct {
+		Amount  int    `json:"amount"`
+		Method  string `json:"method"`
+		PaidAt  string `json:"paid_at"`
+		Proof   string `json:"proof_url"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
+		return
+	}
+	if req.Proof == "" {
+		writeValidationError(w, map[string][]string{"proof_url": {"Bukti transfer wajib diunggah"}})
+		return
+	}
+	if err := h.repo.SubmitProof(id, uid, req.Amount, strings.TrimSpace(req.Method), strings.TrimSpace(req.PaidAt), req.Proof); err != nil {
+		if err == sql.ErrNoRows {
+			sendJSONResponse(w, http.StatusNotFound, false, "Tagihan tidak ditemukan", nil)
+			return
+		}
+		if err == errBillOverpay || err == errProofConflict {
+			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
+			return
+		}
+		logger.Error(r.Context(), "spp proof failed", logger.Field{"operation": "spp_proof", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Bukti pembayaran terkirim, menunggu verifikasi bendahara", nil)
+}
+
+func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "ID tagihan tidak valid", nil)
+		return
+	}
+	var req struct {
+		Approve bool   `json:"approve"`
+		Note    string `json:"note"`
+	}
+	_ = validators.DecodeJSON(w, r, &req)
+	if err := h.repo.VerifyBill(id, req.Approve, strings.TrimSpace(req.Note), adminID(r)); err != nil {
+		if err == sql.ErrNoRows {
+			sendJSONResponse(w, http.StatusNotFound, false, "Tidak ada pengajuan menunggu verifikasi", nil)
+			return
+		}
+		if err == errBillOverpay {
+			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
+			return
+		}
+		logger.Error(r.Context(), "spp verify failed", logger.Field{"operation": "spp_verify", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	if req.Approve {
+		sendJSONResponse(w, http.StatusOK, true, "Pembayaran disetujui dan dicatat", nil)
+	} else {
+		sendJSONResponse(w, http.StatusOK, true, "Pembayaran ditolak, tagihan dikembalikan", nil)
+	}
+}
+
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -478,6 +552,8 @@ type IRepository interface {
 	DeleteBill(id int) error
 	DeleteByPeriod(period string) (int64, error)
 	DeleteBySantri(santriID int, period string) (int64, error)
+	SubmitProof(billID, uid, amount int, method, paidAt, proof string) error
+	VerifyBill(billID int, approve bool, note string, byID int) error
 	CombinedReport(periodStart, periodEnd, class string, santriID int) ([]CombinedRow, error)
 	GenerateBills(period, periodEnd string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
 	PayBill(id, amount int, method, paidAt, notes string, byID int) error

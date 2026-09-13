@@ -24,11 +24,13 @@ type SppBill struct {
 	Period      string    `json:"period"`
 	Amount      int       `json:"amount"`
 	PaidAmount  int       `json:"paid_amount"`
-	Status      string    `json:"status"` // unpaid, partial, paid
+	Status      string    `json:"status"` // unpaid, partial, paid, pending
 	DueDate     string    `json:"due_date"`
 	PaidMethod  string    `json:"paid_method"`
 	PaidAt      string    `json:"paid_at,omitempty"`
 	Notes       string    `json:"notes"`
+	PaymentProof string   `json:"payment_proof,omitempty"`
+	PendingAmount int     `json:"pending_amount,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -65,7 +67,7 @@ func scanBill(rows *sql.Rows) (SppBill, error) {
 	var createdAt, updatedAt string
 	err := rows.Scan(&b.ID, &b.SantriID, &b.SantriName, &b.SantriNIS, &b.SantriClass,
 		&b.Period, &b.Amount, &b.PaidAmount, &b.Status, &b.DueDate,
-		&b.PaidMethod, &paidAt, &b.Notes, &createdAt, &updatedAt)
+		&b.PaidMethod, &paidAt, &b.Notes, &b.PaymentProof, &b.PendingAmount, &createdAt, &updatedAt)
 	if err != nil {
 		return b, err
 	}
@@ -80,7 +82,7 @@ func scanBill(rows *sql.Rows) (SppBill, error) {
 const billSelect = `
 	SELECT b.id, b.santri_id, s.name, s.nis, s.class,
 	       b.period, b.amount, b.paid_amount, b.status, b.due_date,
-	       b.paid_method, b.paid_at, b.notes, b.created_at, b.updated_at
+	       b.paid_method, b.paid_at, b.notes, b.payment_proof, b.pending_amount, b.created_at, b.updated_at
 	FROM spp_bills b
 	JOIN santri s ON s.id = b.santri_id
 `
@@ -413,6 +415,57 @@ func (r *Repository) KwitansiInfoByBill(billID int) (*KwitansiInfo, error) {
 		return nil, err
 	}
 	return &info, nil
+}
+
+var errProofConflict = errors.New("tagihan sedang menunggu verifikasi")
+
+func (r *Repository) SubmitProof(billID, uid, amount int, method, paidAt, proof string) error {
+	if paidAt == "" {
+		paidAt = time.Now().Format("2006-01-02 15:04:05")
+	}
+	var santriID, total, paid int
+	var status string
+	var owner int
+	err := r.db.QueryRow(`SELECT b.santri_id, b.amount, b.paid_amount, b.status, COALESCE(s.user_id, 0)
+		FROM spp_bills b JOIN santri s ON s.id = b.santri_id WHERE b.id = ?`, billID).Scan(&santriID, &total, &paid, &status, &owner)
+	if err != nil {
+		return err
+	}
+	if owner != uid {
+		return sql.ErrNoRows
+	}
+	if status == "paid" || status == "pending" {
+		return errProofConflict
+	}
+	if amount <= 0 || paid+amount > total {
+		return errBillOverpay
+	}
+	if method == "" {
+		method = "Transfer"
+	}
+	_, err = r.db.Exec(`UPDATE spp_bills SET status = 'pending', paid_method = ?, paid_at = ?, payment_proof = ?, pending_amount = ?, notes = CASE WHEN ? != '' THEN ? ELSE notes END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		method, paidAt, proof, amount, "", "", billID)
+	return err
+}
+
+func (r *Repository) VerifyBill(billID int, approve bool, note string, byID int) error {
+	var amount int
+	var method, paidAt string
+	err := r.db.QueryRow(`SELECT pending_amount, paid_method, paid_at FROM spp_bills WHERE id = ? AND status = 'pending'`, billID).Scan(&amount, &method, &paidAt)
+	if err != nil {
+		return err
+	}
+	if !approve {
+		_, err = r.db.Exec(`UPDATE spp_bills SET status = CASE WHEN paid_amount > 0 THEN 'partial' ELSE 'unpaid' END, payment_proof = '', pending_amount = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, billID)
+		return err
+	}
+	if amount <= 0 {
+		return errBillOverpay
+	}
+	if note != "" {
+		note = "Verifikasi: " + note
+	}
+	return r.PayBill(billID, amount, method, paidAt, note, byID)
 }
 
 func (r *Repository) CancelBill(id int) error {
