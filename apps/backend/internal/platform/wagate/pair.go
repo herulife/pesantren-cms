@@ -24,7 +24,7 @@ const QRTTL = 50 * time.Second
 func (m *Manager) handleEvent(evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Connected:
-		log.Printf("[WAGATE] terhubung (pushname=%s)", v.PushName)
+		log.Printf("[WAGATE] terhubung")
 		m.refreshIdentity()
 	case *events.Disconnected:
 		log.Printf("[WAGATE] terputus")
