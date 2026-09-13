@@ -342,24 +342,7 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	}
 	aid := adminID(r)
 	logger.RecordActivity(&aid, "PAY_SPP", fmt.Sprintf("Pembayaran SPP ID %d sebesar Rp %d", id, req.Amount), r.RemoteAddr, r.UserAgent())
-
-	if h.repo.WAKwitansiEnabled() {
-		aid2 := aid
-		go func(billID int) {
-			info, err := h.repo.KwitansiInfoByBill(billID)
-			if err != nil || info == nil {
-				return
-			}
-			phone := whatsapp.NormalizePhone(info.Phone)
-			if phone == "" {
-				return
-			}
-			msg := whatsapp.FormatKwitansi(info.SantriName, info.ReceiptNo, info.Period, info.Total)
-			if err := whatsapp.SendMessage(phone, msg); err == nil {
-				logger.RecordActivity(&aid2, "SEND_WA_KWITANSI", "WA kwitansi "+info.ReceiptNo+" ke "+phone, r.RemoteAddr, r.UserAgent())
-			}
-		}(id)
-	}
+	h.notifyKwitansiWA(id, r, aid)
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran SPP berhasil dicatat", nil)
 }
 
@@ -445,6 +428,26 @@ func (h *Handler) CombinedReport(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func (h *Handler) notifyKwitansiWA(billID int, r *http.Request, aid int) {
+	if !h.repo.WAKwitansiEnabled() {
+		return
+	}
+	go func(id int) {
+		info, err := h.repo.KwitansiInfoByBill(id)
+		if err != nil || info == nil {
+			return
+		}
+		phone := whatsapp.NormalizePhone(info.Phone)
+		if phone == "" {
+			return
+		}
+		msg := whatsapp.FormatKwitansi(info.SantriName, info.ReceiptNo, info.Period, info.Total)
+		if err := whatsapp.SendMessage(phone, msg); err == nil {
+			logger.RecordActivity(&aid, "SEND_WA_KWITANSI", "WA kwitansi "+info.ReceiptNo+" ke "+phone, r.RemoteAddr, r.UserAgent())
+		}
+	}(billID)
+}
+
 func (h *Handler) SubmitProof(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -511,6 +514,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Approve {
+		h.notifyKwitansiWA(id, r, adminID(r))
 		sendJSONResponse(w, http.StatusOK, true, "Pembayaran disetujui dan dicatat", nil)
 	} else {
 		sendJSONResponse(w, http.StatusOK, true, "Pembayaran ditolak, tagihan dikembalikan", nil)
