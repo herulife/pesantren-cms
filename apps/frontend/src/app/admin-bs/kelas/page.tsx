@@ -1,74 +1,244 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { getClasses, createClass, deleteClass, SchoolClass } from '@/lib/api';
-import { BsTitle, BsAlert } from '../ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { getClasses, createClass, updateClass, deleteClass, getAcademicYears, SchoolClass, AcademicYear } from '@/lib/api';
+import { exportToExcel } from '@/lib/export';
+import { PageHeader, Pagination, EmptyState, ConfirmModal, ActionMenu, Toast, useToastState } from '../ui';
+
+const PER_PAGE = 8;
+
+type FormState = { name: string; jenjang: string; wali_name: string; academic_year: string };
+
+const emptyForm: FormState = { name: '', jenjang: '', wali_name: '', academic_year: '' };
 
 export default function BsKelas() {
   const [rows, setRows] = useState<SchoolClass[]>([]);
-  const [name, setName] = useState('');
-  const [jenjang, setJenjang] = useState('');
-  const [msg, setMsg] = useState('');
-  const [ok, setOk] = useState(true);
+  const [years, setYears] = useState<AcademicYear[]>([]);
+  const [yearFilter, setYearFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<SchoolClass | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [formErr, setFormErr] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [delTarget, setDelTarget] = useState<SchoolClass | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast, show } = useToastState();
 
-  const load = async () => setRows(await getClasses());
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
-  }, []);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const r = await createClass({ name, jenjang });
-    setOk(r.success);
-    setMsg(r.message || '');
-    if (r.success) {
-      setName('');
-      setJenjang('');
-      load();
+  const load = async () => {
+    const [c, y] = await Promise.all([getClasses(), getAcademicYears()]);
+    setRows(c);
+    setYears(y);
+    if (!yearFilter) {
+      const active = y.find((x) => x.is_active);
+      if (active) setYearFilter(active.name);
     }
   };
 
-  const hapus = async (id: number) => {
-    if (!confirm('Hapus kelas ini?')) return;
-    const r = await deleteClass(id);
-    setOk(r.success);
-    setMsg(r.message || '');
-    if (r.success) load();
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = appliedSearch.toLowerCase();
+    return rows.filter(
+      (r) =>
+        (!yearFilter || (r.academic_year || '') === yearFilter) &&
+        (!q || r.name.toLowerCase().includes(q) || (r.jenjang || '').toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q))
+    );
+  }, [rows, yearFilter, appliedSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+  const from = filtered.length === 0 ? 0 : (safePage - 1) * PER_PAGE + 1;
+  const to = Math.min(safePage * PER_PAGE, filtered.length);
+
+  const openAdd = () => {
+    setEditing(null);
+    setForm({ ...emptyForm, academic_year: yearFilter });
+    setFormErr('');
+    setModalOpen(true);
+  };
+
+  const openEdit = (r: SchoolClass) => {
+    setEditing(r);
+    setForm({ name: r.name, jenjang: r.jenjang || '', wali_name: r.wali_name || '', academic_year: r.academic_year || '' });
+    setFormErr('');
+    setModalOpen(true);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) {
+      setFormErr('Nama kelas wajib diisi.');
+      return;
+    }
+    setSaving(true);
+    const r = editing
+      ? await updateClass(editing.id, { ...form, is_active: editing.is_active })
+      : await createClass(form);
+    setSaving(false);
+    if (r.success) {
+      show(true, editing ? 'Kelas berhasil diubah.' : 'Kelas berhasil ditambahkan.');
+      setModalOpen(false);
+      setPage(1);
+      load();
+    } else {
+      setFormErr(r.message || 'Gagal menyimpan.');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!delTarget) return;
+    setDeleting(true);
+    const r = await deleteClass(delTarget.id);
+    setDeleting(false);
+    if (r.success) {
+      show(true, 'Kelas berhasil dihapus.');
+      setDelTarget(null);
+      load();
+    } else {
+      show(false, r.message || 'Gagal menghapus.');
+    }
+  };
+
+  const exportExcel = () => {
+    exportToExcel(
+      'Data Kelas',
+      ['#', 'Kode', 'Kelas', 'Jenjang', 'Wali Kelas', 'Ajaran', 'Status'],
+      filtered.map((r, i) => [i + 1, r.code || '-', r.name, r.jenjang || '-', r.wali_name || '-', r.academic_year || '-', r.is_active ? 'Aktif' : 'Nonaktif']),
+      'data_kelas'
+    );
   };
 
   return (
     <div>
-      <BsTitle>Data Kelas</BsTitle>
-      <BsAlert msg={msg} ok={ok} />
-      <div className="card card-primary">
-        <div className="card-header"><h3 className="card-title">Tambah Kelas</h3></div>
-        <form onSubmit={submit}>
-          <div className="card-body row g-2">
-            <div className="col-md-4"><input className="form-control" placeholder="Nama kelas (cth: VII-A)" value={name} onChange={(e) => setName(e.target.value)} required /></div>
-            <div className="col-md-4"><input className="form-control" placeholder="Jenjang (SMP/SMK)" value={jenjang} onChange={(e) => setJenjang(e.target.value)} /></div>
-            <div className="col-md-4"><button className="btn btn-primary btn-sm">Simpan</button></div>
+      <PageHeader
+        title="Data Kelas"
+        breadcrumb="Data Master / Kelas"
+        actions={
+          <>
+            <button type="button" className="alma-btn alma-btn-success" onClick={exportExcel}>Export Excel</button>
+            <button type="button" className="alma-btn alma-btn-primary" onClick={openAdd}>+ Tambah Kelas</button>
+          </>
+        }
+      />
+
+      <div className="alma-card mb-3">
+        <div className="alma-card-bd alma-filter">
+          <div className="alma-field">
+            <label htmlFor="kelas-year">Tahun Ajaran</label>
+            <select id="kelas-year" className="alma-select" value={yearFilter} onChange={(e) => { setYearFilter(e.target.value); setPage(1); }}>
+              <option value="">Semua</option>
+              {years.map((y) => <option key={y.id} value={y.name}>{y.name}</option>)}
+            </select>
           </div>
-        </form>
-      </div>
-      <div className="card">
-        <div className="card-body table-responsive p-0">
-          <table className="table table-bordered table-striped table-sm text-sm mb-0">
-            <thead><tr><th>#</th><th>Nama</th><th>Jenjang</th><th>Status</th><th>Aksi</th></tr></thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={r.id}>
-                  <td>{i + 1}</td><td className="fw-bold">{r.name}</td><td>{r.jenjang || '-'}</td>
-                  <td>{r.is_active ? 'Aktif' : 'Nonaktif'}</td>
-                  <td><button className="btn btn-xs btn-danger" onClick={() => hapus(r.id)}>Hapus</button></td>
-                </tr>
-              ))}
-              {rows.length === 0 && <tr><td colSpan={5} className="text-center text-muted p-3">Belum ada data.</td></tr>}
-            </tbody>
-          </table>
+          <div className="alma-field" style={{ flex: 1, minWidth: 200 }}>
+            <label htmlFor="kelas-search">Pencarian</label>
+            <input
+              id="kelas-search"
+              className="alma-input"
+              placeholder="Cari kelas / jurusan…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { setAppliedSearch(search); setPage(1); } }}
+            />
+          </div>
+          <div className="d-flex gap-2">
+            <button type="button" className="alma-btn alma-btn-secondary" onClick={() => { setSearch(''); setAppliedSearch(''); setYearFilter(''); setPage(1); }}>Reset</button>
+            <button type="button" className="alma-btn alma-btn-success" onClick={() => { setAppliedSearch(search); setPage(1); }}>Cari</button>
+          </div>
         </div>
       </div>
+
+      <div className="alma-table-wrap">
+        <table className="alma-table">
+          <thead>
+            <tr><th>#</th><th>Kode</th><th>Kelas</th><th>Jenjang</th><th>Wali Kelas</th><th>Ajaran</th><th>Aksi</th></tr>
+          </thead>
+          <tbody>
+            {pageRows.map((r, i) => (
+              <tr key={r.id}>
+                <td className="alma-num">{from + i}</td>
+                <td><span className="alma-code">{r.code || '-'}</span></td>
+                <td><strong>{r.name}</strong></td>
+                <td>{r.jenjang || '-'}</td>
+                <td>{r.wali_name ? (<><span className="fw-semibold">{r.wali_name}</span><br /><small className="text-muted">Wali Kelas</small></>) : '-'}</td>
+                <td>{r.academic_year || '-'}</td>
+                <td>
+                  <ActionMenu label={`Aksi ${r.name}`}>
+                    <button type="button" onClick={() => openEdit(r)}>Edit Kelas</button>
+                    <Link href="/admin-bs/siswa">Lihat Siswa</Link>
+                    <button type="button" onClick={() => openEdit(r)}>Kelola Wali Kelas</button>
+                    <button type="button" className="danger" onClick={() => setDelTarget(r)}>Hapus</button>
+                  </ActionMenu>
+                </td>
+              </tr>
+            ))}
+            {pageRows.length === 0 && (
+              <tr><td colSpan={7}>
+                <EmptyState
+                  title="Belum ada data kelas"
+                  desc="Belum ada kelas yang terdaftar pada tahun ajaran ini."
+                  action={<button type="button" className="alma-btn alma-btn-primary" onClick={openAdd}>+ Tambah Kelas</button>}
+                />
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <Pagination page={safePage} totalPages={totalPages} total={filtered.length} from={from} to={to} onPage={setPage} />
+
+      {modalOpen && (
+        <div className="alma-modal-backdrop" onClick={() => setModalOpen(false)} role="presentation">
+          <div className="alma-modal" role="dialog" aria-modal="true" aria-label={editing ? 'Edit Kelas' : 'Tambah Kelas'} onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={submit}>
+              <div className="alma-modal-hd">{editing ? 'Edit Kelas' : 'Tambah Kelas'}</div>
+              <div className="alma-modal-bd d-flex flex-column gap-3">
+                <div className="alma-field">
+                  <label htmlFor="kelas-name">Nama Kelas</label>
+                  <input id="kelas-name" className="alma-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="cth: VII-A" autoFocus />
+                </div>
+                <div className="alma-field">
+                  <label htmlFor="kelas-jenjang">Jenjang / Jurusan</label>
+                  <input id="kelas-jenjang" className="alma-input" value={form.jenjang} onChange={(e) => setForm({ ...form, jenjang: e.target.value })} placeholder="cth: SMP" />
+                </div>
+                <div className="alma-field">
+                  <label htmlFor="kelas-wali">Wali Kelas</label>
+                  <input id="kelas-wali" className="alma-input" value={form.wali_name} onChange={(e) => setForm({ ...form, wali_name: e.target.value })} placeholder="Nama wali kelas" />
+                </div>
+                <div className="alma-field">
+                  <label htmlFor="kelas-year-form">Tahun Ajaran</label>
+                  <select id="kelas-year-form" className="alma-select" value={form.academic_year} onChange={(e) => setForm({ ...form, academic_year: e.target.value })}>
+                    <option value="">- Pilih -</option>
+                    {years.map((y) => <option key={y.id} value={y.name}>{y.name}</option>)}
+                  </select>
+                </div>
+                {formErr && <p className="alma-err" role="alert">{formErr}</p>}
+              </div>
+              <div className="alma-modal-ft">
+                <button type="button" className="alma-btn alma-btn-secondary" onClick={() => setModalOpen(false)}>Batal</button>
+                <button type="submit" className="alma-btn alma-btn-primary" disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={delTarget !== null}
+        title="Hapus Kelas?"
+        message={`Hapus kelas "${delTarget?.name}"? Data yang dihapus tidak bisa dikembalikan.`}
+        onClose={() => setDelTarget(null)}
+        onConfirm={confirmDelete}
+        busy={deleting}
+      />
+      <Toast toast={toast} />
     </div>
   );
 }

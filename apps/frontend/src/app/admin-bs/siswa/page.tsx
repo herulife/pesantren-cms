@@ -1,51 +1,82 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { getSantriList, Santri } from '@/lib/api';
-import { BsTitle } from '../ui';
+import { PageHeader, Pagination, EmptyState } from '../ui';
+
+const PER_PAGE = 10;
 
 export default function BsSiswa() {
   const [rows, setRows] = useState<Santri[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [applied, setApplied] = useState('');
+  const [page, setPage] = useState(1);
 
-  const load = async () => {
-    const r = await getSantriList({ search: search || undefined, limit: 100 });
+  const load = async (q: string, p: number) => {
+    const r = await getSantriList({ search: q || undefined, limit: PER_PAGE, offset: (p - 1) * PER_PAGE });
     setRows(r.items);
     setTotal(r.total);
   };
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    load('', 1);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const go = (q: string, p: number) => {
+    setApplied(q);
+    setPage(p);
+    load(q, p);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const from = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
+  const to = Math.min(page * PER_PAGE, total);
+  const filtered = useMemo(() => rows, [rows]);
 
   return (
     <div>
-      <BsTitle>Data Siswa ({total})</BsTitle>
-      <div className="card">
-        <div className="card-header">
-          <div className="card-tools d-flex gap-2">
-            <input className="form-control form-control-sm" placeholder="Pencarian NIS/nama" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') load(); }} />
-            <button className="btn btn-sm btn-secondary" onClick={() => { setSearch(''); }}>Reset</button>
-            <button className="btn btn-sm btn-primary" onClick={load}>Tampilkan</button>
+      <PageHeader title="Data Siswa" breadcrumb="Data Master / Siswa" />
+      <div className="alma-card mb-3">
+        <div className="alma-card-bd alma-filter">
+          <div className="alma-field" style={{ flex: 1, minWidth: 200 }}>
+            <label htmlFor="siswa-search">Pencarian</label>
+            <input
+              id="siswa-search"
+              className="alma-input"
+              placeholder="Cari NIS / nama…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') go(search, 1); }}
+            />
+          </div>
+          <div className="d-flex gap-2">
+            <button type="button" className="alma-btn alma-btn-secondary" onClick={() => { setSearch(''); go('', 1); }}>Reset</button>
+            <button type="button" className="alma-btn alma-btn-primary" onClick={() => go(search, 1)}>Cari</button>
           </div>
         </div>
-        <div className="card-body table-responsive p-0">
-          <table className="table table-bordered table-striped table-sm text-sm mb-0">
-            <thead><tr><th>No Induk</th><th>Nama</th><th>L/P</th><th>Kelas</th><th>Angkatan</th><th>Status</th><th>Wali</th></tr></thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.nis}</td><td className="fw-bold">{r.name}</td><td>{r.gender}</td>
-                  <td>{r.class || '-'}</td><td>{r.angkatan || '-'}</td><td>{r.status}</td><td>{r.parent_name || '-'}</td>
-                </tr>
-              ))}
-              {rows.length === 0 && <tr><td colSpan={7} className="text-center text-muted p-3">Belum ada data.</td></tr>}
-            </tbody>
-          </table>
-        </div>
       </div>
+      <div className="alma-table-wrap">
+        <table className="alma-table">
+          <thead><tr><th>No Induk</th><th>Nama</th><th>L/P</th><th>Kelas</th><th>Angkatan</th><th>Status</th><th>Wali</th></tr></thead>
+          <tbody>
+            {filtered.map((r) => (
+              <tr key={r.id}>
+                <td><span className="alma-code">{r.nis}</span></td><td><strong>{r.name}</strong></td><td>{r.gender}</td>
+                <td>{r.class || '-'}</td><td>{r.angkatan || '-'}</td>
+                <td><span className={`alma-badge ${r.status === 'aktif' ? 'alma-badge-green' : 'alma-badge-gray'}`}>{r.status}</span></td>
+                <td>{r.parent_name || '-'}</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr><td colSpan={7}>
+                <EmptyState title="Belum ada data siswa" desc="Coba ubah kata kunci pencarian." />
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <Pagination page={page} totalPages={totalPages} total={total} from={from} to={to} onPage={(p) => go(applied, p)} />
     </div>
   );
 }

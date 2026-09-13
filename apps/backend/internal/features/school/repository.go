@@ -8,8 +8,11 @@ import (
 
 type Class struct {
 	ID        int       `json:"id"`
+	Code      string    `json:"code"`
 	Name      string    `json:"name"`
 	Jenjang   string    `json:"jenjang"`
+	WaliName  string    `json:"wali_name"`
+	Year      string    `json:"academic_year"`
 	IsActive  int       `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -30,7 +33,7 @@ type Repository struct{ db *sql.DB }
 func NewRepository(db *sql.DB) *Repository { return &Repository{db: db} }
 
 func (r *Repository) ListClasses(activeOnly bool) ([]Class, error) {
-	q := `SELECT id, name, jenjang, is_active, created_at, updated_at FROM classes`
+	q := `SELECT id, code, name, jenjang, wali_name, academic_year, is_active, created_at, updated_at FROM classes`
 	if activeOnly {
 		q += ` WHERE is_active=1`
 	}
@@ -43,7 +46,7 @@ func (r *Repository) ListClasses(activeOnly bool) ([]Class, error) {
 	out := []Class{}
 	for rows.Next() {
 		var c Class
-		if err := rows.Scan(&c.ID, &c.Name, &c.Jenjang, &c.IsActive, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Code, &c.Name, &c.Jenjang, &c.WaliName, &c.Year, &c.IsActive, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -51,16 +54,33 @@ func (r *Repository) ListClasses(activeOnly bool) ([]Class, error) {
 	return out, rows.Err()
 }
 
-func (r *Repository) CreateClass(name, jenjang string) (int64, error) {
-	res, err := r.db.Exec(`INSERT INTO classes (name, jenjang) VALUES (?, ?)`, strings.TrimSpace(name), strings.TrimSpace(jenjang))
+func (r *Repository) CreateClass(name, jenjang, wali, year string) (int64, error) {
+	res, err := r.db.Exec(`INSERT INTO classes (name, jenjang, wali_name, academic_year) VALUES (?, ?, ?, ?)`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), strings.TrimSpace(year))
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	id, _ := res.LastInsertId()
+	code := padClass(id)
+	_, _ = r.db.Exec(`UPDATE classes SET code=? WHERE id=?`, code, id)
+	return id, nil
 }
 
-func (r *Repository) UpdateClass(id int, name, jenjang string, active int) error {
-	_, err := r.db.Exec(`UPDATE classes SET name=?, jenjang=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, strings.TrimSpace(name), strings.TrimSpace(jenjang), active, id)
+func padClass(id int64) string {
+	n := ""
+	for v := id; v > 0; v /= 10 {
+		n = string(rune('0'+v%10)) + n
+	}
+	if n == "" {
+		n = "0"
+	}
+	for len(n) < 3 {
+		n = "0" + n
+	}
+	return n
+}
+
+func (r *Repository) UpdateClass(id int, name, jenjang, wali, year string, active int) error {
+	_, err := r.db.Exec(`UPDATE classes SET name=?, jenjang=?, wali_name=?, academic_year=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), strings.TrimSpace(year), active, id)
 	return err
 }
 
