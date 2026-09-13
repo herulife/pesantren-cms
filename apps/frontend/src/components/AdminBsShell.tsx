@@ -169,14 +169,18 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
                         <i className={`bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`} />
                       </button>
                     </li>
-                    {isOpen && items.map((it) => (
-                      <li className="nav-item" key={it.href}>
-                        <Link href={it.href} className={`nav-link${pathname === it.href ? ' active' : ''}`}>
-                          <i className={`nav-icon bi ${it.icon}`} />
-                          <p>{it.label}</p>
-                        </Link>
-                      </li>
-                    ))}
+                    <div className={`bs-group-items${isOpen ? ' open' : ''}`}>
+                      <ul className="bs-group-inner nav flex-column">
+                      {items.map((it) => (
+                        <li className="nav-item" key={it.href}>
+                          <Link href={it.href} className={`nav-link${pathname === it.href ? ' active' : ''}`}>
+                            <i className={`nav-icon bi ${it.icon}`} />
+                            <p>{it.label}</p>
+                          </Link>
+                        </li>
+                      ))}
+                      </ul>
+                    </div>
                   </React.Fragment>
                 );
               })}

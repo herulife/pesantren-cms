@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getSantriList, Santri } from '@/lib/api';
-import { PageHeader, Pagination, EmptyState } from '../ui';
+import { getSantriList, bulkCreateSantri, Santri } from '@/lib/api';
+import { PageHeader, Pagination, EmptyState, ImportModal, Toast, useToastState } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 const PER_PAGE = 10;
 
@@ -12,6 +13,9 @@ export default function BsSiswa() {
   const [search, setSearch] = useState('');
   const [applied, setApplied] = useState('');
   const [page, setPage] = useState(1);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const { toast, show } = useToastState();
 
   const load = async (q: string, p: number) => {
     const r = await getSantriList({ search: q || undefined, limit: PER_PAGE, offset: (p - 1) * PER_PAGE });
@@ -30,6 +34,45 @@ export default function BsSiswa() {
     load(q, p);
   };
 
+  const exportAll = async () => {
+    const r = await getSantriList({ search: applied || undefined, limit: 2000 });
+    exportToExcel(
+      'Data Siswa',
+      ['No Induk', 'Nama', 'L/P', 'Kelas', 'Angkatan', 'Status', 'Wali'],
+      r.items.map((x) => [x.nis, x.name, x.gender, x.class || '-', x.angkatan || '-', x.status, x.parent_name || '-']),
+      'data_siswa'
+    );
+  };
+
+  const doImport = async (list: Record<string, string>[]) => {
+    setImporting(true);
+    const items = list
+      .filter((x) => (x.nis || x['no induk'] || '') && (x.nama || x.name || ''))
+      .map((x) => ({
+        nis: x.nis || x['no induk'] || '',
+        name: x.nama || x.name || '',
+        gender: x['l/p'] || x.gender || '',
+        class: x.kelas || x.class || '',
+        angkatan: x.angkatan || '',
+        status: x.status || 'aktif',
+        parent_name: x.wali || x.parent_name || '',
+        parent_phone: x.hp || x.parent_phone || '',
+        address: x.alamat || x.address || '',
+      }));
+    if (items.length === 0) {
+      show(false, 'Tidak ada baris valid (wajib nis + nama).');
+      setImporting(false);
+      return;
+    }
+    const r = await bulkCreateSantri(items);
+    setImporting(false);
+    show(r.ok, r.message || (r.ok ? `${r.inserted ?? items.length} santri diimport.` : 'Gagal import.'));
+    if (r.ok) {
+      setImportOpen(false);
+      go(applied, 1);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const from = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
   const to = Math.min(page * PER_PAGE, total);
@@ -37,7 +80,16 @@ export default function BsSiswa() {
 
   return (
     <div>
-      <PageHeader title="Data Siswa" breadcrumb="Data Master / Siswa" />
+      <PageHeader
+        title="Data Siswa"
+        breadcrumb="Data Master / Siswa"
+        actions={
+          <>
+            <button type="button" className="alma-btn alma-btn-success" onClick={exportAll}>Export Excel</button>
+            <button type="button" className="alma-btn alma-btn-primary" onClick={() => setImportOpen(true)}>Import Massal</button>
+          </>
+        }
+      />
       <div className="alma-card mb-3">
         <div className="alma-card-bd alma-filter">
           <div className="alma-field" style={{ flex: 1, minWidth: 200 }}>
@@ -78,6 +130,17 @@ export default function BsSiswa() {
         </table>
       </div>
       <Pagination page={page} totalPages={totalPages} total={total} from={from} to={to} onPage={(p) => go(applied, p)} />
+      <ImportModal
+        open={importOpen}
+        title="Import Massal Santri"
+        templateName="template_santri.csv"
+        templateHeaders={['nis', 'nama', 'l/p', 'kelas', 'angkatan', 'status', 'wali', 'hp', 'alamat']}
+        sampleRow={['001', 'Abdullah', 'L', 'VII-A', '2024', 'aktif', 'Ahmad', '0812', 'Parung']}
+        onClose={() => setImportOpen(false)}
+        onImport={doImport}
+        busy={importing}
+      />
+      <Toast toast={toast} />
     </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getDonations, getDonors, getCampaigns, createDonation, verifyDonation, Donation, Donor, Campaign } from '@/lib/api';
-import { fmtRp, BsTitle, BsAlert } from '../ui';
+import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 const TYPES = ['Infak', 'Sedekah', 'Wakaf', 'Zakat'];
 
@@ -55,7 +56,13 @@ export default function BsDonasi() {
 
   return (
     <div>
-      <BsTitle>Transaksi Donasi</BsTitle>
+      <PageHeader
+        title="Transaksi Donasi"
+        breadcrumb="Transaksi / Donasi"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel('Transaksi Donasi', ['Tanggal', 'Donatur', 'Jenis', 'Besar', 'Keterangan', 'Status'], rows.slice(0, 500).map((r) => [(r.donation_date || r.created_at || '').slice(0, 10), r.donor_name, r.type || '-', r.amount, r.notes || r.message || '-', r.status]), 'transaksi_donasi')}>Export Excel</button>
+        }
+      />
       <BsAlert msg={msg} ok={ok} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">Tambah Donasi</h3></div>

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { getClasses, createClass, updateClass, deleteClass, getAcademicYears, SchoolClass, AcademicYear } from '@/lib/api';
 import { exportToExcel } from '@/lib/export';
-import { PageHeader, Pagination, EmptyState, ConfirmModal, ActionMenu, Toast, useToastState } from '../ui';
+import { PageHeader, Pagination, EmptyState, ConfirmModal, ActionMenu, ImportModal, Toast, useToastState } from '../ui';
 
 const PER_PAGE = 8;
 
@@ -25,6 +25,8 @@ export default function BsKelas() {
   const [formErr, setFormErr] = useState('');
   const [saving, setSaving] = useState(false);
   const [delTarget, setDelTarget] = useState<SchoolClass | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const { toast, show } = useToastState();
 
@@ -107,6 +109,32 @@ export default function BsKelas() {
     }
   };
 
+  const doImport = async (list: Record<string, string>[]) => {
+    const items = list.filter((x) => (x.nama || x.name || ''));
+    if (items.length === 0) {
+      show(false, 'Tidak ada baris valid (wajib nama).');
+      return;
+    }
+    setImporting(true);
+    let okCount = 0;
+    for (const x of items) {
+      const r = await createClass({
+        name: x.nama || x.name || '',
+        jenjang: x.jenjang || '',
+        wali_name: x.wali || '',
+        academic_year: x.tahun || x.ajarn || '',
+      });
+      if (r.success) okCount++;
+    }
+    setImporting(false);
+    show(okCount === items.length, `${okCount} dari ${items.length} kelas diimport.`);
+    if (okCount > 0) {
+      setImportOpen(false);
+      setPage(1);
+      load();
+    }
+  };
+
   const exportExcel = () => {
     exportToExcel(
       'Data Kelas',
@@ -124,6 +152,7 @@ export default function BsKelas() {
         actions={
           <>
             <button type="button" className="alma-btn alma-btn-success" onClick={exportExcel}>Export Excel</button>
+            <button type="button" className="alma-btn alma-btn-secondary" onClick={() => setImportOpen(true)}>Import Massal</button>
             <button type="button" className="alma-btn alma-btn-primary" onClick={openAdd}>+ Tambah Kelas</button>
           </>
         }
@@ -237,6 +266,16 @@ export default function BsKelas() {
         onClose={() => setDelTarget(null)}
         onConfirm={confirmDelete}
         busy={deleting}
+      />
+      <ImportModal
+        open={importOpen}
+        title="Import Massal Kelas"
+        templateName="template_kelas.csv"
+        templateHeaders={['nama', 'jenjang', 'wali', 'tahun']}
+        sampleRow={['VII-A', 'SMP', 'Ahmad Fauzi', '2025/2026']}
+        onClose={() => setImportOpen(false)}
+        onImport={doImport}
+        busy={importing}
       />
       <Toast toast={toast} />
     </div>

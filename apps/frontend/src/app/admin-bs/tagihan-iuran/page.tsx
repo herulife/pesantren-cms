@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getIuranBills, generateIuranBills, deleteIuranByPeriod, deleteIuranBySantri, getIuranSantri, IuranBill, IuranSantri } from '@/lib/api';
-import { fmtRp, BsTitle, BsAlert } from '../ui';
+import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 function nowPeriod() {
   const d = new Date();
@@ -79,7 +80,13 @@ export default function BsTagihanIuran() {
 
   return (
     <div>
-      <BsTitle>Generate Iuran</BsTitle>
+      <PageHeader
+        title="Generate Iuran"
+        breadcrumb="Transaksi / Iuran"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel(`Tagihan Iuran ${period}`, ['No Induk', 'Nama', 'Iuran', 'Tagihan', 'Dibayar', 'Sisa', 'Status'], rows.map((r) => [r.santri_nis, r.santri_name, r.name, r.amount, r.paid_amount, r.amount - r.paid_amount, r.status]), `tagihan_iuran_${period}`)}>Export Excel</button>
+        }
+      />
       <BsAlert msg={msg} ok={ok} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">Generate Tagihan</h3></div>

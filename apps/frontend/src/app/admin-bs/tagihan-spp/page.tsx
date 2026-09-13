@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getSppBills, generateSppBills, deleteSppByPeriod, deleteSppBySantri, getSppSantri, SppBill, SppSantri } from '@/lib/api';
-import { fmtRp, BsTitle, BsAlert } from '../ui';
+import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 function nowPeriod() {
   const d = new Date();
@@ -64,7 +65,13 @@ export default function BsTagihanSpp() {
 
   return (
     <div>
-      <BsTitle>Generate SPP</BsTitle>
+      <PageHeader
+        title="Generate SPP"
+        breadcrumb="Transaksi / SPP"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel(`Tagihan SPP ${period}`, ['No Induk', 'Nama', 'Kelas', 'Tagihan', 'Dibayar', 'Sisa', 'Status'], rows.map((r) => [r.santri_nis, r.santri_name, r.santri_class, r.amount, r.paid_amount, r.amount - r.paid_amount, r.status]), `tagihan_spp_${period}`)}>Export Excel</button>
+        }
+      />
       <BsAlert msg={msg} ok={ok} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">Generate Tagihan</h3></div>

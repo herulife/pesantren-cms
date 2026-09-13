@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getCombinedReport, CombinedRow } from '@/lib/api';
-import { fmtRp, BsTitle } from '../ui';
+import { fmtRp, BsTitle, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 function nowPeriod() {
   const d = new Date();
@@ -30,7 +31,13 @@ export default function BsLapTagihan() {
 
   return (
     <div>
-      <BsTitle>Lap. Tagihan Siswa</BsTitle>
+      <PageHeader
+        title="Lap. Tagihan Siswa"
+        breadcrumb="Reporting / Tagihan"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel('Lap Tagihan', ['No Induk', 'Nama', 'Kelas', 'Tagihan SPP', 'Tagihan Iuran', 'Total', 'Dibayar', 'Sisa', 'Status'], rows.map((r) => [r.nis, r.name, r.class, r.spp_billed, r.iuran_billed, r.billed, r.collected, r.outstanding, statusLabel(r.status)]), 'lap_tagihan')}>Export Excel</button>
+        }
+      />
       <div className="card">
         <div className="card-body row g-2">
           <div className="col-md-2"><input type="month" className="form-control" value={start} onChange={(e) => setStart(e.target.value)} /></div>

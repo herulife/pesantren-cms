@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getKasSummary, KasSummary } from '@/lib/api';
-import { fmtRp, BsTitle } from '../ui';
+import { fmtRp, BsTitle, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 export default function BsLapLabaRugi() {
   const [s, setS] = useState<KasSummary | null>(null);
@@ -20,7 +21,13 @@ export default function BsLapLabaRugi() {
 
   return (
     <div>
-      <BsTitle>Lap. Laba / Rugi</BsTitle>
+      <PageHeader
+        title="Lap. Laba / Rugi"
+        breadcrumb="Reporting / Laba Rugi"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel('Laba Rugi', ['Uraian', 'Nominal'], [['Pemasukan SPP', s?.spp_income || 0], ['Pemasukan Iuran', s?.iuran_income || 0], ['Donasi', s?.donasi_income || 0], ['Kas Masuk Lain', s?.kas_income || 0], ['Total Pemasukan', s?.income || 0], ['Total Pengeluaran', s?.expense || 0], ['Laba/Rugi Bersih', s?.balance || 0]], 'laba_rugi')}>Export Excel</button>
+        }
+      />
       <div className="card">
         <div className="card-body table-responsive p-0">
           <table className="table table-bordered table-sm text-sm mb-0">

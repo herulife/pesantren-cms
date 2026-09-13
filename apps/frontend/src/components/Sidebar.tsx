@@ -148,7 +148,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 </p>
                 <ChevronDown size={14} className={`text-sky-200/40 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
               </button>
-              {isOpen && shown.map((item) => {
+              <div className={`sb-group-items${isOpen ? ' open' : ''}`}>
+                <div className="sb-group-inner">
+              {shown.map((item) => {
                 const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
                 return (
               <div key={item.href} className={`flex items-center gap-2 rounded-lg transition-colors ${
@@ -181,6 +183,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               </div>
                 );
               })}
+                </div>
+              </div>
             </div>
           );
         })}

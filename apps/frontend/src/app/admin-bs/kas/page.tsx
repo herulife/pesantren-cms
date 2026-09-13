@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getKasTransactions, createKasTransaction, deleteKasTransaction, getKasCategories, KasTransaction, KasCategory } from '@/lib/api';
-import { fmtRp, BsTitle, BsAlert } from '../ui';
+import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 export default function BsKas() {
   const [rows, setRows] = useState<KasTransaction[]>([]);
@@ -56,7 +57,13 @@ export default function BsKas() {
 
   return (
     <div>
-      <BsTitle>Kas Masuk / Keluar</BsTitle>
+      <PageHeader
+        title="Kas Masuk / Keluar"
+        breadcrumb="Transaksi / Kas"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel('Transaksi Kas', ['Kode', 'Tanggal', 'Kategori', 'Jenis', 'Keterangan', 'Nominal', 'Oleh'], rows.map((r) => [r.code || '-', r.date, r.category || '-', r.kind, r.notes || '-', r.amount, r.creator || '-']), 'transaksi_kas')}>Export Excel</button>
+        }
+      />
       <BsAlert msg={msg} ok={ok} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">Tambah Transaksi</h3></div>

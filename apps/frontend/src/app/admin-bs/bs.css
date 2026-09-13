@@ -162,3 +162,8 @@ body.admin-bs .badge { font-size: 12px; font-weight: 600; }
 body.admin-bs .bs-group-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; background: none; border: 0; padding: 0; cursor: pointer; color: rgba(255,255,255,.45); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1rem; }
 body.admin-bs .bs-group-toggle:hover { color: rgba(255,255,255,.8); }
 body.admin-bs .bs-group-toggle i { font-size: 0.7rem; }
+
+/* Akordeon sidebar glass — animasi buka/tutup halus */
+.bs-group-items, .sb-group-items { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.28s ease, opacity 0.22s ease; }
+.bs-group-items.open, .sb-group-items.open { grid-template-rows: 1fr; opacity: 1; }
+.bs-group-items > .bs-group-inner, .sb-group-items > .sb-group-inner { overflow: hidden; min-height: 0; }

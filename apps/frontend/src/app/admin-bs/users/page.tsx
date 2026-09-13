@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getUsers, createUser, updateUserRole, resetUserPassword, deleteUser } from '@/lib/api';
-import { BsTitle, BsAlert } from '../ui';
+import { BsTitle, BsAlert, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 type U = { id: number; name: string; email: string; role: string; created_at: string; last_login_at?: string | null };
 const ROLES = ['superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user'];
@@ -57,7 +58,13 @@ export default function BsUsers() {
 
   return (
     <div>
-      <BsTitle>Manajemen User</BsTitle>
+      <PageHeader
+        title="Manajemen User"
+        breadcrumb="Tools / User"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel('Data User', ['Nama', 'Email', 'Role', 'Login Terakhir'], rows.map((r) => [r.name, r.email, r.role, (r.last_login_at || '').slice(0, 16).replace('T', ' ') || '-']), 'data_user')}>Export Excel</button>
+        }
+      />
       <BsAlert msg={msg} ok={ok} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">Tambah User</h3></div>

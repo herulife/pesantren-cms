@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getEmployees, createEmployee, deleteEmployee, Employee } from '@/lib/api';
-import { BsTitle, BsAlert } from '../ui';
+import { BsTitle, BsAlert, PageHeader, ImportModal, Toast, useToastState } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 export default function BsPegawai() {
   const [rows, setRows] = useState<Employee[]>([]);
@@ -10,6 +11,9 @@ export default function BsPegawai() {
   const [form, setForm] = useState({ code: '', name: '', gender: 'Laki-laki', phone: '', email: '', kind: 'Guru' });
   const [msg, setMsg] = useState('');
   const [ok, setOk] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const { toast, show } = useToastState();
 
   const load = async () => {
     setRows(await getEmployees(search || undefined));
@@ -31,6 +35,42 @@ export default function BsPegawai() {
     }
   };
 
+  const exportAll = () => {
+    exportToExcel(
+      'Data Pegawai',
+      ['ID', 'Nama', 'L/P', 'Telp', 'Email', 'Jenis'],
+      rows.map((r) => [r.code, r.name, r.gender || '-', r.phone || '-', r.email || '-', r.kind]),
+      'data_pegawai'
+    );
+  };
+
+  const doImport = async (list: Record<string, string>[]) => {
+    const items = list.filter((x) => (x.kode || x.id || '') && (x.nama || x.name || ''));
+    if (items.length === 0) {
+      show(false, 'Tidak ada baris valid (wajib kode + nama).');
+      return;
+    }
+    setImporting(true);
+    let okCount = 0;
+    for (const x of items) {
+      const r = await createEmployee({
+        code: x.kode || x.id || '',
+        name: x.nama || x.name || '',
+        gender: x['l/p'] || x.gender || 'Laki-laki',
+        phone: x.telp || x.phone || '',
+        email: x.email || '',
+        kind: x.jenis || x.kind || 'Guru',
+      });
+      if (r.success) okCount++;
+    }
+    setImporting(false);
+    show(okCount === items.length, `${okCount} dari ${items.length} pegawai diimport.`);
+    if (okCount > 0) {
+      setImportOpen(false);
+      load();
+    }
+  };
+
   const hapus = async (code: string) => {
     if (!confirm(`Hapus pegawai ${code}?`)) return;
     const r = await deleteEmployee(code);
@@ -41,7 +81,16 @@ export default function BsPegawai() {
 
   return (
     <div>
-      <BsTitle>Data Pegawai</BsTitle>
+      <PageHeader
+        title="Data Pegawai"
+        breadcrumb="Data Master / Pegawai"
+        actions={
+          <>
+            <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={exportAll}>Export Excel</button>
+            <button type="button" className="alma-btn alma-btn-primary alma-btn-sm" onClick={() => setImportOpen(true)}>Import Massal</button>
+          </>
+        }
+      />
       <BsAlert msg={msg} ok={ok} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">Tambah Pegawai</h3></div>
@@ -91,6 +140,17 @@ export default function BsPegawai() {
           </table>
         </div>
       </div>
+      <ImportModal
+        open={importOpen}
+        title="Import Massal Pegawai"
+        templateName="template_pegawai.csv"
+        templateHeaders={['kode', 'nama', 'l/p', 'telp', 'email', 'jenis']}
+        sampleRow={['19980430004', 'Khusnul Kholik', 'Laki-laki', '0812', 'a@b.c', 'Guru']}
+        onClose={() => setImportOpen(false)}
+        onImport={doImport}
+        busy={importing}
+      />
+      <Toast toast={toast} />
     </div>
   );
 }

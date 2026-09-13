@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getPayTransactions, PayTx } from '@/lib/api';
-import { fmtRp, BsTitle } from '../ui';
+import { fmtRp, BsTitle, PageHeader } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 function today() { return new Date().toISOString().split('T')[0]; }
 function firstOfMonth() { return today().slice(0, 8) + '01'; }
@@ -23,7 +24,13 @@ export default function BsLapTransaksi() {
 
   return (
     <div>
-      <BsTitle>Lap. Transaksi</BsTitle>
+      <PageHeader
+        title="Lap. Transaksi"
+        breadcrumb="Reporting / Transaksi"
+        actions={
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel('Lap Transaksi', ['Tanggal', 'Jam', 'No Induk', 'Nama', 'Keterangan', 'Jml Bayar', 'Jenis', 'Petugas', 'Kode'], rows.map((r) => { const parts = (r.date || '').split(' '); return [parts[0] || '', parts[1] || '-', r.santri_nis || '-', r.santri_name || '-', r.description, r.amount, r.method, r.petugas || '-', r.code]; }), 'lap_transaksi')}>Export Excel</button>
+        }
+      />
       <div className="card">
         <div className="card-body row g-2">
           <div className="col-md-2"><input type="date" className="form-control" value={from} onChange={(e) => setFrom(e.target.value)} /></div>

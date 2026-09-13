@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getDonors, createDonor, updateDonor, deleteDonor, Donor } from '@/lib/api';
-import { BsTitle, BsAlert } from '../ui';
+import { BsTitle, BsAlert, PageHeader, ImportModal, Toast, useToastState } from '../ui';
+import { exportToExcel } from '@/lib/export';
 
 export default function BsDonatur() {
   const [rows, setRows] = useState<Donor[]>([]);
@@ -11,6 +12,9 @@ export default function BsDonatur() {
   const [editing, setEditing] = useState<Donor | null>(null);
   const [msg, setMsg] = useState('');
   const [ok, setOk] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const { toast, show } = useToastState();
 
   const load = async (q: string) => setRows(await getDonors(q));
 
@@ -33,6 +37,40 @@ export default function BsDonatur() {
     }
   };
 
+  const exportAll = () => {
+    exportToExcel(
+      'Data Donatur',
+      ['ID', 'Nama', 'Alamat', 'No HP', 'Terdaftar'],
+      rows.map((r) => [r.id, r.name, r.address || '-', r.phone || '-', (r.created_at || '').slice(0, 10)]),
+      'data_donatur'
+    );
+  };
+
+  const doImport = async (list: Record<string, string>[]) => {
+    const items = list.filter((x) => (x.nama || x.name || ''));
+    if (items.length === 0) {
+      show(false, 'Tidak ada baris valid (wajib nama).');
+      return;
+    }
+    setImporting(true);
+    let okCount = 0;
+    for (const x of items) {
+      const r = await createDonor({
+        name: x.nama || x.name || '',
+        address: x.alamat || x.address || '',
+        phone: x.hp || x['no hp'] || x.phone || '',
+        notes: x.keterangan || x.notes || '',
+      });
+      if (r.success) okCount++;
+    }
+    setImporting(false);
+    show(okCount === items.length, `${okCount} dari ${items.length} donatur diimport.`);
+    if (okCount > 0) {
+      setImportOpen(false);
+      load(search);
+    }
+  };
+
   const hapus = async (id: number) => {
     if (!confirm('Hapus donatur ini?')) return;
     const r = await deleteDonor(id);
@@ -43,7 +81,16 @@ export default function BsDonatur() {
 
   return (
     <div>
-      <BsTitle>Data Donatur</BsTitle>
+      <PageHeader
+        title="Data Donatur"
+        breadcrumb="Transaksi / Donatur"
+        actions={
+          <>
+            <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={exportAll}>Export Excel</button>
+            <button type="button" className="alma-btn alma-btn-primary alma-btn-sm" onClick={() => setImportOpen(true)}>Import Massal</button>
+          </>
+        }
+      />
       <BsAlert msg={msg} ok={ok} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">{editing ? 'Ubah Donatur' : 'Tambah Donatur'}</h3></div>
@@ -86,6 +133,17 @@ export default function BsDonatur() {
           </table>
         </div>
       </div>
+      <ImportModal
+        open={importOpen}
+        title="Import Massal Donatur"
+        templateName="template_donatur.csv"
+        templateHeaders={['nama', 'alamat', 'hp', 'keterangan']}
+        sampleRow={['Hamba Allah', 'Parung', '0812', '-']}
+        onClose={() => setImportOpen(false)}
+        onImport={doImport}
+        busy={importing}
+      />
+      <Toast toast={toast} />
     </div>
   );
 }
