@@ -432,6 +432,7 @@ async function fetchJsonWithFallback<T>(
 
 export interface News {
   id: number;
+  is_pinned?: number;
   title: string;
   slug: string;
   content: string;
@@ -1539,6 +1540,15 @@ export async function deleteNews(id: number) {
 	const res = await fetch(`${API_BASE_URL}/news/${id}`, { 
 		method: 'DELETE',
 		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function togglePinNews(id: number, pinned: boolean) {
+	const res = await fetch(`${API_BASE_URL}/news/${id}/pin`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ pinned })
 	});
 	return parseResponse(res);
 }

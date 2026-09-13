@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { deleteNews, restoreNews, forceDeleteNews, getNewsPaginated, News, resolveDisplayImageUrl } from '@/lib/api';
+import { deleteNews, restoreNews, forceDeleteNews, getNewsPaginated, togglePinNews, News, resolveDisplayImageUrl } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { Plus, Search, Trash2, Pencil, RotateCcw, Calendar, User, Tag, Eye, EyeOff, MoreVertical, ExternalLink, ChevronLeft, ChevronRight, Newspaper, X } from 'lucide-react';
+import { Plus, Search, Trash2, Pencil, RotateCcw, Calendar, User, Tag, Eye, EyeOff, MoreVertical, ExternalLink, ChevronLeft, ChevronRight, Newspaper, X, Pin, PinOff } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewsAdminPage() {
@@ -33,6 +33,20 @@ export default function NewsAdminPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   
   const { showToast } = useToast();
+
+  const doPin = async (item: News) => {
+    try {
+      const res = await togglePinNews(item.id, !item.is_pinned);
+      if (res.success) {
+        showToast('success', item.is_pinned ? 'Sematan dilepas.' : 'Berita disematkan paling atas.');
+        fetchNews();
+      } else {
+        showToast('error', res.message || 'Gagal mengubah sematan.');
+      }
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Gagal mengubah sematan.');
+    }
+  };
 
   const fetchNews = useCallback(async () => {
     setIsLoading(true);
@@ -339,6 +353,11 @@ export default function NewsAdminPage() {
                                         <EyeOff size={12}/> {item.status.toUpperCase()}
                                      </span>
                                    )}
+                                   {item.is_pinned ? (
+                                     <span className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+                                        <Pin size={12}/> DISEMATKAN
+                                     </span>
+                                   ) : null}
                                 </div>
                              </td>
                              <td className="pr-10 pl-6 py-6 text-right">
@@ -352,6 +371,7 @@ export default function NewsAdminPage() {
                                        <>
                                          <Link href={`/news/${item.slug}`} target="_blank" className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Lihat di Web"><ExternalLink size={20} /></Link>
                                          <Link href={`/admin/news/edit/${item.id}`} className="p-3 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors" title="Ubah Konten"><Pencil size={20} /></Link>
+                                         <button onClick={() => doPin(item)} className={`p-3 rounded-lg transition-colors ${item.is_pinned ? 'text-amber-600 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`} title={item.is_pinned ? 'Lepas sematan' : 'Sematkan paling atas'}>{item.is_pinned ? <PinOff size={20} /> : <Pin size={20} />}</button>
                                          <button onClick={() => { setSelectedId(item.id); setIsDeleteOpen(true); }} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Masukan Sampah"><Trash2 size={20} /></button>
                                        </>
                                    )}
