@@ -1,8 +1,10 @@
 package santri
 
 import (
+	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -40,6 +42,8 @@ type IRepository interface {
 	Delete(id int) error
 	BulkDelete(ids []int) (int, error)
 	SetClassBulk(items map[int]string) (int, error)
+	LinkUser(santriID, userID int) error
+	FindByUserID(userID int) ([]Santri, error)
 }
 
 type Handler struct {
@@ -67,12 +71,14 @@ func NewHandler(repo IRepository) *Handler {
 
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
+	r.Get("/my-santri", h.GetMySantri)
 	r.Get("/", h.GetAll)
 	r.Get("/{id}", h.GetByID)
 	r.Post("/", h.Create)
 	r.Post("/bulk", h.BulkCreate)
 	r.Post("/set-class", h.SetClass)
 	r.Put("/{id}", h.Update)
+	r.Put("/{id}/link-user", h.LinkUser)
 	r.Delete("/{id}", h.Delete)
 	r.Delete("/bulk", h.BulkDelete)
 	return r
@@ -242,6 +248,49 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sendJSONResponse(w, http.StatusOK, true, "Santri berhasil diperbarui", s)
+}
+
+func (h *Handler) LinkUser(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var req struct {
+		UserID int `json:"user_id"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid: "+err.Error(), nil)
+		return
+	}
+	if req.UserID <= 0 {
+		sendValidationError(w, map[string]string{"user_id": "Akun wali wajib dipilih"})
+		return
+	}
+	if err := h.repo.LinkUser(id, req.UserID); err != nil {
+		if err == sql.ErrNoRows {
+			sendJSONResponse(w, http.StatusNotFound, false, "Akun user tidak ditemukan", nil)
+			return
+		}
+		logger.Error(r.Context(), "santri link-user failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menghubungkan akun wali", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Akun wali berhasil dihubungkan", nil)
+}
+
+func (h *Handler) GetMySantri(w http.ResponseWriter, r *http.Request) {
+	uid, ok := auth.CurrentUserID(r.Context())
+	if !ok {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
+		return
+	}
+	list, err := h.repo.FindByUserID(uid)
+	if err != nil {
+		logger.Error(r.Context(), "santri my-santri failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat data santri", nil)
+		return
+	}
+	if list == nil {
+		list = []Santri{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Data santri berhasil dimuat", list)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

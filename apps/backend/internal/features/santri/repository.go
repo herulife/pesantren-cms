@@ -149,6 +149,43 @@ func (r *Repository) Delete(id int) error {
 	return err
 }
 
+func (r *Repository) LinkUser(santriID, userID int) error {
+	var exists int
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, userID).Scan(&exists); err != nil {
+		return err
+	}
+	if exists == 0 {
+		return sql.ErrNoRows
+	}
+	_, err := r.db.Exec(`UPDATE santri SET user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, userID, santriID)
+	return err
+}
+
+func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
+	rows, err := r.db.Query(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, photo_url, user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Santri{}
+	for rows.Next() {
+		var x Santri
+		var userID sql.NullInt64
+		var createdAt, updatedAt string
+		if err := rows.Scan(&x.ID, &x.NIS, &x.Name, &x.Nickname, &x.Gender, &x.BirthPlace, &x.BirthDate, &x.Address, &x.Class, &x.Angkatan, &x.Status, &x.ParentName, &x.ParentPhone, &x.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		if userID.Valid {
+			v := int(userID.Int64)
+			x.UserID = &v
+		}
+		x.CreatedAt = createdAt
+		x.UpdatedAt = updatedAt
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
 func (r *Repository) SetClassBulk(items map[int]string) (int, error) {
 	if len(items) == 0 {
 		return 0, nil
