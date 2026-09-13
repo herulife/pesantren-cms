@@ -8,6 +8,8 @@ import {
   getSantriList,
   deleteSantri,
   bulkDeleteSantri,
+  getUsers,
+  linkSantriUser,
   Santri,
 } from '@/lib/api';
 import { exportToPDF, exportToExcel } from '@/lib/export';
@@ -22,7 +24,9 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  UserPlus,
   Users,
+  X,
 } from 'lucide-react';
 
 const statusOptions = [
@@ -49,6 +53,10 @@ export default function KesantrianPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState<null | { mode: 'single' | 'bulk'; id?: number }>(null);
+  const [linkTarget, setLinkTarget] = useState<Santri | null>(null);
+  const [userOptions, setUserOptions] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
+  const [linkUserId, setLinkUserId] = useState('');
+  const [linking, setLinking] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async (opts?: { search?: string; class?: string; status?: string; offset?: number }) => {
@@ -158,6 +166,36 @@ export default function KesantrianPage() {
   };
 
   const exportData = (format: 'pdf' | 'excel') => {
+  const openLinkModal = async (s: Santri) => {
+    setLinkTarget(s);
+    setLinkUserId(s.user_id ? String(s.user_id) : '');
+    try {
+      const users = await getUsers('');
+      setUserOptions(users.filter((u) => u.role === 'user'));
+    } catch {
+      showToast('error', 'Gagal memuat daftar akun.');
+    }
+  };
+
+  const submitLink = async () => {
+    if (!linkTarget || !linkUserId) return;
+    setLinking(true);
+    try {
+      const res = await linkSantriUser(linkTarget.id, Number(linkUserId));
+      if (res.success) {
+        showToast('success', 'Akun wali berhasil dihubungkan.');
+        setLinkTarget(null);
+        load({ offset });
+      } else {
+        showToast('error', res.message || 'Gagal menghubungkan akun.');
+      }
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Terjadi kesalahan.');
+    } finally {
+      setLinking(false);
+    }
+  };
+
     const columns = ['NIS', 'Nama', 'Panggilan', 'Kelamin', 'Kelas', 'Angkatan', 'Status', 'Nama Wali', 'No. HP Wali'];
     const rows = items.map((s) => [
       s.nis,
@@ -366,6 +404,13 @@ export default function KesantrianPage() {
                         >
                           <Trash2 size={16} />
                         </button>
+                        <button
+                          onClick={() => openLinkModal(s)}
+                          className="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-50"
+                          title={s.user_id ? 'Akun wali terhubung — klik untuk ganti' : 'Hubungkan akun wali'}
+                        >
+                          <UserPlus size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -374,6 +419,53 @@ export default function KesantrianPage() {
             </tbody>
           </table>
         </div>
+
+        {linkTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setLinkTarget(null)}>
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-900">Hubungkan Akun Wali</h3>
+                <button onClick={() => setLinkTarget(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Tutup">
+                  <X size={18} />
+                </button>
+              </div>
+              <p className="mb-1 text-sm text-slate-600">
+                Santri: <span className="font-bold text-slate-900">{linkTarget.name}</span> <span className="font-mono text-xs text-slate-400">({linkTarget.nis})</span>
+              </p>
+              {linkTarget.user_id ? (
+                <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                  Saat ini terhubung ke user ID {linkTarget.user_id}. Memilih akun lain akan menggantikannya.
+                </p>
+              ) : (
+                <p className="mb-3 text-xs text-slate-500">Pilih akun portal (role user) milik wali santri ini.</p>
+              )}
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="link-user-select">
+                Akun wali
+              </label>
+              <select
+                id="link-user-select"
+                value={linkUserId}
+                onChange={(e) => setLinkUserId(e.target.value)}
+                className="mb-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500"
+              >
+                <option value="">-- Pilih akun --</option>
+                {userOptions.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setLinkTarget(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                  Batal
+                </button>
+                <button onClick={submitLink} disabled={!linkUserId || linking} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
+                  {linking ? 'Menyimpan…' : 'Hubungkan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Pagination */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row">

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getSantriList, bulkCreateSantri, Santri } from '@/lib/api';
+import { getSantriList, bulkCreateSantri, getUsers, linkSantriUser, Santri } from '@/lib/api';
 import { PageHeader, Pagination, EmptyState, ImportModal, Toast, useToastState } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
@@ -13,6 +13,10 @@ export default function BsSiswa() {
   const [search, setSearch] = useState('');
   const [applied, setApplied] = useState('');
   const [page, setPage] = useState(1);
+  const [linkTarget, setLinkTarget] = useState<Santri | null>(null);
+  const [userOptions, setUserOptions] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
+  const [linkUserId, setLinkUserId] = useState('');
+  const [linking, setLinking] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const { toast, show } = useToastState();
@@ -73,6 +77,29 @@ export default function BsSiswa() {
     }
   };
 
+  const openLinkModal = async (x: Santri) => {
+    setLinkTarget(x);
+    setLinkUserId(x.user_id ? String(x.user_id) : '');
+    try {
+      const users = await getUsers('');
+      setUserOptions(users.filter((u) => u.role === 'user'));
+    } catch {
+      show(false, 'Gagal memuat daftar akun.');
+    }
+  };
+
+  const submitLink = async () => {
+    if (!linkTarget || !linkUserId) return;
+    setLinking(true);
+    const r = await linkSantriUser(linkTarget.id, Number(linkUserId));
+    setLinking(false);
+    show(!!r.success, r.message || (r.success ? 'Akun wali terhubung.' : 'Gagal menghubungkan.'));
+    if (r.success) {
+      setLinkTarget(null);
+      go(applied, page);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const from = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
   const to = Math.min(page * PER_PAGE, total);
@@ -111,7 +138,7 @@ export default function BsSiswa() {
       </div>
       <div className="alma-table-wrap">
         <table className="alma-table">
-          <thead><tr><th>No Induk</th><th>Nama</th><th>L/P</th><th>Kelas</th><th>Angkatan</th><th>Status</th><th>Wali</th></tr></thead>
+          <thead><tr><th>No Induk</th><th>Nama</th><th>L/P</th><th>Kelas</th><th>Angkatan</th><th>Status</th><th>Wali</th><th>Akun</th></tr></thead>
           <tbody>
             {filtered.map((r) => (
               <tr key={r.id}>
@@ -119,10 +146,21 @@ export default function BsSiswa() {
                 <td>{r.class || '-'}</td><td>{r.angkatan || '-'}</td>
                 <td><span className={`alma-badge ${r.status === 'aktif' ? 'alma-badge-green' : 'alma-badge-gray'}`}>{r.status}</span></td>
                 <td>{r.parent_name || '-'}</td>
+                <td>
+                  <button
+                    type="button"
+                    onClick={() => openLinkModal(r)}
+                    className={`alma-badge ${r.user_id ? 'alma-badge-green' : 'alma-badge-gray'}`}
+                    title={r.user_id ? 'Terhubung — klik untuk ganti' : 'Hubungkan akun wali'}
+                    style={{ border: 0, cursor: 'pointer' }}
+                  >
+                    {r.user_id ? 'Terhubung' : 'Hubungkan'}
+                  </button>
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={7}>
+              <tr><td colSpan={8}>
                 <EmptyState title="Belum ada data siswa" desc="Coba ubah kata kunci pencarian." />
               </td></tr>
             )}
@@ -140,6 +178,36 @@ export default function BsSiswa() {
         onImport={doImport}
         busy={importing}
       />
+      {linkTarget && (
+        <div className="alma-modal-backdrop" onClick={() => setLinkTarget(null)} role="presentation">
+          <div className="alma-modal" role="dialog" aria-modal="true" aria-label="Hubungkan akun wali" onClick={(e) => e.stopPropagation()}>
+            <div className="alma-modal-hd">Hubungkan Akun Wali</div>
+            <div className="alma-modal-bd d-flex flex-column gap-3">
+              <p className="mb-0 small">Santri: <strong>{linkTarget.name}</strong> <span className="text-muted">({linkTarget.nis})</span></p>
+              {linkTarget.user_id ? (
+                <p className="alma-badge alma-badge-green align-self-start">Terhubung (user ID {linkTarget.user_id}) — memilih akun lain akan mengganti.</p>
+              ) : (
+                <p className="mb-0 small text-muted">Pilih akun portal milik wali santri ini.</p>
+              )}
+              <div className="alma-field">
+                <label htmlFor="bs-link-user">Akun wali</label>
+                <select id="bs-link-user" className="alma-select" value={linkUserId} onChange={(e) => setLinkUserId(e.target.value)}>
+                  <option value="">-- Pilih akun --</option>
+                  {userOptions.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="alma-modal-ft">
+              <button type="button" className="alma-btn alma-btn-secondary" onClick={() => setLinkTarget(null)}>Batal</button>
+              <button type="button" className="alma-btn alma-btn-primary" onClick={submitLink} disabled={!linkUserId || linking}>
+                {linking ? 'Menyimpan…' : 'Hubungkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Toast toast={toast} />
     </div>
   );

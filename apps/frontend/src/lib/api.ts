@@ -2970,6 +2970,29 @@ export async function setSantriClass(items: { id: number; class: string }[]): Pr
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menyimpan kelas' }; }
 }
 
+export async function linkSantriUser(id: number, user_id: number) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}/link-user`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ user_id })
+	});
+	return parseResponse(res);
+}
+
+export async function getMySantri(): Promise<Santri[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/my-santri`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as Santri[];
+	} catch (e) {
+		console.error('[Santri] my-santri:', e);
+		return [];
+	}
+}
+
 export async function getSantri(id: number): Promise<Santri | null> {
 	try {
 		const r = await lmsFetch<Santri>(`/santri/${id}`);
