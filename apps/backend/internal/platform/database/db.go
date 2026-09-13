@@ -728,7 +728,7 @@ func createTables() {
 	addColumnIfNotExists("spp_bills", "pending_amount", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("iuran_bills", "payment_proof", "TEXT DEFAULT ''")
 	addColumnIfNotExists("iuran_bills", "pending_amount", "INTEGER DEFAULT 0")
-	addColumnIfNotExists("receipts", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
+	addColumnIfNotExists("receipts", "updated_at", "DATETIME")
 	addColumnIfNotExists("classes", "code", "TEXT DEFAULT ''")
 	addColumnIfNotExists("classes", "wali_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("classes", "academic_year", "TEXT DEFAULT ''")
