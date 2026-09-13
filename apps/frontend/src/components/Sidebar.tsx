@@ -74,6 +74,15 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     menuItems.filter((item) => item.category === cat),
   ]);
 
+  const groupOfPath = (path: string) => {
+    for (const [cat, items] of groups) {
+      if (items.some((item) => (item.href === '/admin' ? path === item.href : path.startsWith(item.href)))) {
+        return cat;
+      }
+    }
+    return null;
+  };
+
   const [openCats, setOpenCats] = React.useState<Record<string, boolean>>(() => {
     try {
       const raw = window.localStorage.getItem('sidebar-cats');
@@ -81,8 +90,16 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     } catch {
       // abaikan
     }
-    return {};
+    const active = groupOfPath(window.location.pathname);
+    return active ? { [active]: true } : {};
   });
+
+  React.useEffect(() => {
+    const active = groupOfPath(pathname);
+    if (active) {
+      setOpenCats((prev) => (prev[active] ? prev : { ...prev, [active]: true }));
+    }
+  }, [pathname]);
 
   const toggleCat = (cat: string) => {
     setOpenCats((prev) => {
@@ -134,14 +151,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         {groups.map(([cat, items]) => {
           const shown = items.filter((item) => visibleItems.includes(item));
           if (shown.length === 0) return null;
-          const isOpen = openCats[cat] ?? true;
+          const isOpen = openCats[cat] ?? false;
           return (
             <div key={cat}>
               <button
                 type="button"
                 onClick={() => toggleCat(cat)}
                 aria-expanded={isOpen}
-                className="flex w-full items-center justify-between px-3 pt-3 pb-1 text-left"
+                className="flex w-full cursor-pointer items-center justify-between px-3 pt-3 pb-1 text-left"
               >
                 <p className="text-[9.5px] font-bold uppercase tracking-widest text-sky-200/40">
                   {cat}

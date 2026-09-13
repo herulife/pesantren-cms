@@ -87,6 +87,13 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const groupOfPath = (path: string) => {
+    for (const g of MENU) {
+      if (g.items.some((it) => path === it.href)) return g.heading;
+    }
+    return null;
+  };
+
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     try {
       const raw = window.localStorage.getItem('adminbs-groups');
@@ -94,8 +101,17 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
     } catch {
       // abaikan
     }
-    return {};
+    const active = groupOfPath(window.location.pathname);
+    return active ? { [active]: true } : {};
   });
+
+  useEffect(() => {
+    const active = groupOfPath(pathname);
+    if (active) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- buka grup aktif saat pindah halaman
+      setOpenGroups((prev) => (prev[active] ? prev : { ...prev, [active]: true }));
+    }
+  }, [pathname]);
 
   const toggleGroup = (heading: string) => {
     setOpenGroups((prev) => {
@@ -155,7 +171,7 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
                 const items = g.items.filter((it) => can(it.roles));
                 if (items.length === 0) return null;
                 const hasActive = items.some((it) => pathname === it.href);
-                const isOpen = openGroups[g.heading] ?? true;
+                const isOpen = openGroups[g.heading] ?? false;
                 return (
                   <React.Fragment key={g.heading}>
                     <li className="nav-header">
