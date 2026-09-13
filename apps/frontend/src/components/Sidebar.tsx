@@ -84,13 +84,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   };
 
   const [openCats, setOpenCats] = React.useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
     try {
       const raw = window.localStorage.getItem('sidebar-cats');
       if (raw) return JSON.parse(raw) as Record<string, boolean>;
     } catch {
       // abaikan
     }
-    const active = groupOfPath(window.location.pathname);
+    const active = typeof window === 'undefined' ? null : groupOfPath(window.location.pathname);
     return active ? { [active]: true } : {};
   });
 
