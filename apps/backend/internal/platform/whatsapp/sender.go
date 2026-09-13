@@ -1,15 +1,11 @@
 package whatsapp
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"os"
 	"strings"
-	"time"
+
+	"almaparung-api/internal/platform/wagate"
 )
 
 type Message struct {
@@ -17,103 +13,25 @@ type Message struct {
 	Message string `json:"message"` // isi pesan
 }
 
-// SendMessage mengirim pesan WA via Fonnte API
+// SendMessage mengirim pesan WA via gateway mandiri (whatsmeow).
 func SendMessage(target string, message string) error {
-	apiKey := os.Getenv("FONNTE_API_KEY")
-	apiURL := os.Getenv("FONNTE_API_URL")
-	if !IsConfigured(apiKey, apiURL) {
-		log.Println("[WA] FONNTE_API_KEY atau FONNTE_API_URL belum diset di .env")
-		return fmt.Errorf("WhatsApp gateway not configured")
+	if strings.TrimSpace(message) == "" {
+		return fmt.Errorf("pesan kosong")
 	}
-
-	payload, _ := json.Marshal(map[string]string{
-		"target":  target,
-		"message": message,
-	})
-
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payload))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	resp, err := client.Do(req)
-	if err != nil {
+	if err := wagate.SendText(target, message); err != nil {
 		log.Printf("[WA] Gagal kirim ke %s: %v", target, err)
 		return err
 	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	bodyText := strings.TrimSpace(string(bodyBytes))
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		log.Printf("[WA] Gateway menolak pesan ke %s (status: %d, body: %s)", target, resp.StatusCode, bodyText)
-		return fmt.Errorf("WhatsApp gateway error: HTTP %d", resp.StatusCode)
-	}
-
-	if bodyText != "" {
-		var payload map[string]interface{}
-		if err := json.Unmarshal(bodyBytes, &payload); err == nil {
-			if ok, exists := payload["status"]; exists {
-				if statusBool, isBool := ok.(bool); isBool && !statusBool {
-					msg := extractGatewayMessage(payload)
-					log.Printf("[WA] Gateway membalas gagal ke %s: %s", target, msg)
-					return fmt.Errorf("WhatsApp gateway rejected message: %s", msg)
-				}
-			}
-
-			if ok, exists := payload["success"]; exists {
-				if successBool, isBool := ok.(bool); isBool && !successBool {
-					msg := extractGatewayMessage(payload)
-					log.Printf("[WA] Gateway membalas gagal ke %s: %s", target, msg)
-					return fmt.Errorf("WhatsApp gateway rejected message: %s", msg)
-				}
-			}
-		}
-	}
-
-	log.Printf("[WA] Pesan diterima gateway untuk %s (status: %d, body: %s)", target, resp.StatusCode, bodyText)
+	log.Printf("[WA] Terkirim ke %s", target)
 	return nil
 }
 
-func extractGatewayMessage(payload map[string]interface{}) string {
-	for _, key := range []string{"message", "detail", "reason"} {
-		if value, ok := payload[key]; ok {
-			if msg, ok := value.(string); ok && strings.TrimSpace(msg) != "" {
-				return msg
-			}
-		}
-	}
-	return "unknown gateway error"
-}
-
+// IsConfigured melaporkan status koneksi gateway mandiri.
+// Parameter apiKey/apiURL dipertahankan agar 3 call-site lama tak berubah.
 func IsConfigured(apiKey, apiURL string) bool {
-	apiKey = strings.TrimSpace(apiKey)
-	apiURL = strings.TrimSpace(apiURL)
-
-	if apiKey == "" || apiURL == "" {
-		return false
-	}
-
-	placeholders := []string{
-		"your_fonnte_api_key_here",
-		"changeme",
-		"your_api_key_here",
-	}
-
-	lowerKey := strings.ToLower(apiKey)
-	for _, placeholder := range placeholders {
-		if lowerKey == placeholder {
-			return false
-		}
-	}
-
-	return true
+	_ = apiKey
+	_ = apiURL
+	return wagate.GetManager().StatusNow().Connected
 }
 
 // Template pesan

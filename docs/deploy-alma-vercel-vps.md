@@ -84,8 +84,7 @@ COOKIE_SECURE=true
 DEV_MODE=false
 ENVIRONMENT=production
 GOOGLE_CLIENT_ID=isi_jika_pakai_google_login
-FONNTE_API_URL=https://api.fonnte.com/send
-FONNTE_API_KEY=isi_jika_pakai
+# Gateway WA mandiri (whatsmeow) — tanpa pihak ketiga; pairing via admin panel.
 GEMINI_API_KEY=opsional
 ```
 

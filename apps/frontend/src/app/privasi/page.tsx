@@ -29,7 +29,7 @@ const sections: Array<{ title: string; body: string[] }> = [
     body: [
       'YouTube (video yang diputar di website), Google Maps (peta lokasi), Unsplash (sebagian foto).',
       'Cloudflare (pengaman & penyalur website), Google Analytics (statistik kunjungan, hanya jalan kalau Anda menekan Setuju pada banner cookie).',
-      'Fonnte/WhatsApp (pengiriman notifikasi ke nomor yang Anda berikan).',
+      'Gateway WhatsApp milik pondok (pengiriman notifikasi ke nomor yang Anda berikan, tanpa pihak ketiga).',
     ],
   },
   {

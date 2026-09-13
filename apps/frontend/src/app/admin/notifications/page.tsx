@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { getNotificationStatus, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs, type ActivityLog } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { 
@@ -190,13 +191,13 @@ export default function NotificationsPage() {
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${
                   status.configured ? 'text-sky-600' : 'text-rose-600'
                 }`}>
-                  {status.configured ? 'Terhubung (Fonnte API)' : 'Belum Konfigurasi'}
+                  {status.configured ? 'Terhubung (Gateway Sendiri)' : 'Belum Konfigurasi'}
                 </p>
               </div>
             </div>
             {!status.configured && (
               <p className="text-xs text-rose-500 leading-relaxed bg-white/50 p-3 rounded-xl border border-rose-100">
-                Lengkapi <code className="bg-rose-100 px-1 rounded">FONNTE_API_KEY</code> di file .env untuk mengaktifkan fitur ini.
+                Buka <Link href="/admin/settings" className="font-bold underline">Pengaturan → Notifikasi WA</Link> lalu tautkan nomor HP pondok (Scan QR / Kode 8 digit) untuk mengaktifkan fitur ini.
               </p>
             )}
             {status.configured && (

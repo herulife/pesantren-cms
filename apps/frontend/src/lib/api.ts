@@ -2271,6 +2271,67 @@ export async function sendWhatsApp(target: string, message: string) {
 	return parseResponse(res);
 }
 
+export interface WAGatewayStatus {
+	connected: boolean;
+	phone?: string;
+	pushname?: string;
+}
+
+export async function getWAGatewayStatus(): Promise<WAGatewayStatus> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa/status`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || { connected: false }) as WAGatewayStatus;
+	} catch (e) {
+		console.error('[API] Fetch WA status error:', e);
+		return { connected: false };
+	}
+}
+
+export async function getWAQRBlob(): Promise<{ ok: boolean; url?: string; message?: string }> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa/qr`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		if (!res.ok) {
+			let message = 'Gagal memuat QR.';
+			try {
+				const j = await res.json();
+				message = j.message || message;
+			} catch {
+				// abaikan
+			}
+			return { ok: false, message };
+		}
+		const blob = await res.blob();
+		return { ok: true, url: URL.createObjectURL(blob) };
+	} catch (e) {
+		console.error('[API] Fetch WA QR error:', e);
+		return { ok: false, message: 'Gagal memuat QR.' };
+	}
+}
+
+export async function requestWAPairCode(phone: string) {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa/pair-code`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ phone })
+	});
+	return parseResponse(res);
+}
+
+export async function disconnectWAGateway() {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa/disconnect`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function broadcastTagihan() {
 	const res = await fetch(`${API_BASE_URL}/notifications/broadcast-tagihan`, {
 		method: 'POST',

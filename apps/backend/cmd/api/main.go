@@ -34,6 +34,7 @@ import (
 	"almaparung-api/internal/features/wallet"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/wagate"
 	appmiddleware "almaparung-api/internal/platform/middleware"
 	"fmt"
 	"net/http"
@@ -57,6 +58,9 @@ func main() {
 
 	// 1. Initialize Database
 	database.Connect(getEnv("DB_PATH", "./alma.db"))
+
+	// 1b. WhatsApp gateway mandiri (auto-connect bila sesi tersimpan ada)
+	go wagate.GetManager().Start(context.Background())
 
 	// 2. Setup Router
 	r := chi.NewRouter()

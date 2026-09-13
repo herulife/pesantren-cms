@@ -3,6 +3,7 @@ package notifications
 import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/wagate"
 	"almaparung-api/internal/platform/telegram"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
@@ -27,12 +28,79 @@ func NewHandler(repo Repository) *Handler {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/status", h.GetStatus)
+	r.Get("/wa/status", h.GetWAStatus)
+	r.Get("/wa/qr", h.GetWAQR)
+	r.Post("/wa/pair-code", h.PostWAPairCode)
+	r.Post("/wa/disconnect", h.PostWADisconnect)
 	r.Post("/send-wa", h.SendWhatsApp)
 	r.Post("/send-telegram", h.SendTelegram)
 	r.Post("/broadcast-tagihan", h.BroadcastTagihan)
 	r.Post("/broadcast-nilai", h.BroadcastNilai)
 	r.Post("/broadcast-psb", h.BroadcastPSB)
 	return r
+}
+
+// GetWAStatus mengembalikan status koneksi gateway WA mandiri.
+func (h *Handler) GetWAStatus(w http.ResponseWriter, r *http.Request) {
+	st := wagate.GetManager().StatusNow()
+	writeJSONResponse(w, http.StatusOK, true, "Status gateway WA berhasil dimuat", map[string]interface{}{
+		"connected": st.Connected,
+		"phone":     st.Phone,
+		"pushname":  st.PushName,
+	})
+}
+
+// GetWAQR mengembalikan PNG QR pairing (atau 409 bila sudah terhubung/gagal).
+func (h *Handler) GetWAQR(w http.ResponseWriter, r *http.Request) {
+	png, ttl, err := wagate.GetManager().RequestQR(r.Context())
+	if err != nil {
+		if err.Error() == "sudah terhubung" {
+			writeJSONResponse(w, http.StatusConflict, false, "WhatsApp sudah terhubung", nil)
+			return
+		}
+		// 429 agar UI melakukan retry otomatis
+		code := http.StatusTooManyRequests
+		if ttl == 0 {
+			code = http.StatusServiceUnavailable
+		}
+		writeJSONResponse(w, code, false, err.Error(), nil)
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(png)
+}
+
+// PostWAPairCode meminta kode taut 8 digit untuk nomor HP.
+// Body: { "phone": "62812xxxxxxx" }
+func (h *Handler) PostWAPairCode(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Phone string `json:"phone"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil || req.Phone == "" {
+		writeJSONError(w, http.StatusBadRequest, "Nomor HP wajib diisi")
+		return
+	}
+	code, err := wagate.GetManager().RequestPairCode(r.Context(), req.Phone)
+	if err != nil {
+		if err.Error() == "sudah terhubung" {
+			writeJSONResponse(w, http.StatusConflict, false, "WhatsApp sudah terhubung", nil)
+			return
+		}
+		writeJSONError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Masukkan kode berikut di HP (Perangkat Tertaut > Tautkan dengan nomor telepon)", map[string]interface{}{
+		"pair_code": code,
+		"phone":     req.Phone,
+	})
+}
+
+// PostWADisconnect memutus socket (sesi tersimpan, auto-connect saat boot).
+func (h *Handler) PostWADisconnect(w http.ResponseWriter, r *http.Request) {
+	wagate.GetManager().Disconnect()
+	writeJSONResponse(w, http.StatusOK, true, "Koneksi WhatsApp diputus", nil)
 }
 
 func getAdminID(r *http.Request) int {
@@ -59,13 +127,13 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
 	logger.Info(r.Context(), "notification status started", logger.Field{"operation": "notifications_status"})
-	waAPIKey := os.Getenv("FONNTE_API_KEY")
-	waAPIURL := os.Getenv("FONNTE_API_URL")
-	waConfigured := whatsapp.IsConfigured(waAPIKey, waAPIURL)
+	waStatus := wagate.GetManager().StatusNow()
+	waConfigured := waStatus.Connected
 	telegramConfigured := telegram.IsConfigured(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	writeJSONResponse(w, http.StatusOK, true, "Status WhatsApp berhasil dimuat", map[string]interface{}{
 		"configured":          waConfigured,
 		"whatsapp_configured": waConfigured,
+		"whatsapp_phone":      waStatus.Phone,
 		"telegram_configured": telegramConfigured,
 	})
 	logger.Info(r.Context(), "notification status completed", logger.Field{
@@ -237,7 +305,7 @@ func (h *Handler) handleTelegramCommand(command string) string {
 	case "/start", "/help":
 		return "Perintah tersedia:\n/status\n/tagihan\n/nilai\n/psb\n/help"
 	case "/status":
-		waConfigured := whatsapp.IsConfigured(os.Getenv("FONNTE_API_KEY"), os.Getenv("FONNTE_API_URL"))
+		waConfigured := wagate.GetManager().StatusNow().Connected
 		return fmt.Sprintf("Status sistem:\nWhatsApp: %s\nTelegram: aktif", boolLabel(waConfigured))
 	case "/tagihan":
 		targets, err := h.repo.GetPendingTagihan()

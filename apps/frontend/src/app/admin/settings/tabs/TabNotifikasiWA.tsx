@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getSettings, updateSetting, sendWhatsApp } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Save, RefreshCw, MessageCircle, Settings2, Info } from 'lucide-react';
+import WAGatewayCard from '@/components/WAGatewayCard';
 
 export default function TabNotifikasiWA() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -76,6 +77,7 @@ export default function TabNotifikasiWA() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+       <WAGatewayCard />
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100">
              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight font-outfit">WA Kwitansi Otomatis</h2>
