@@ -253,6 +253,7 @@ func main() {
 				r.Put("/{id}", newsHandler.Update)
 				r.Delete("/{id}", newsHandler.Delete)
 				r.Put("/{id}/restore", newsHandler.Restore)
+				r.Put("/{id}/pin", newsHandler.SetPinned)
 				r.Delete("/{id}/force", newsHandler.ForceDelete)
 				r.Post("/generate", newsHandler.GenerateArticle) // AI Generation
 			})

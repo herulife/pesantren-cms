@@ -385,6 +385,7 @@ func createTables() {
 		category_id INTEGER,
 		image_url TEXT,
 		status TEXT DEFAULT 'draft',
+		is_pinned INTEGER NOT NULL DEFAULT 0,
 		author_id INTEGER,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -711,6 +712,7 @@ func createTables() {
 	}
 
 	addColumnIfNotExists("users", "whatsapp", "TEXT DEFAULT ''")
+	addColumnIfNotExists("news", "is_pinned", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("users", "last_login_at", "DATETIME")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("gallery", "album_name", "TEXT DEFAULT ''")
