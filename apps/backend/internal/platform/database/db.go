@@ -209,6 +209,7 @@ func createTables() {
 		santri_id INTEGER NOT NULL,
 		bill_type TEXT NOT NULL DEFAULT 'SPP',
 		bill_id INTEGER NOT NULL DEFAULT 0,
+		bill_period TEXT NOT NULL DEFAULT '',
 		description TEXT NOT NULL DEFAULT '',
 		amount INTEGER NOT NULL,
 		method TEXT NOT NULL DEFAULT 'Tunai',
@@ -729,6 +730,7 @@ func createTables() {
 	addColumnIfNotExists("iuran_bills", "payment_proof", "TEXT DEFAULT ''")
 	addColumnIfNotExists("iuran_bills", "pending_amount", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("receipts", "updated_at", "DATETIME")
+	addColumnIfNotExists("payment_transactions", "bill_period", "TEXT DEFAULT ''")
 	addColumnIfNotExists("classes", "code", "TEXT DEFAULT ''")
 	addColumnIfNotExists("classes", "wali_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("classes", "academic_year", "TEXT DEFAULT ''")

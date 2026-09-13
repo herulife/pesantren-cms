@@ -386,10 +386,10 @@ func (r *Repository) PayBill(id, amount int, method, paidAt, notes string, byID 
 	if err != nil {
 		return err
 	}
-	if err := insertLedger(tx, "SPP", id, santriID, amount, method, paidAt, "SPP "+monthYearID(period), byID); err != nil {
+	if err := insertLedger(tx, "SPP", id, santriID, amount, method, paidAt, "SPP "+monthYearID(period), period, byID); err != nil {
 		return err
 	}
-	if err := upsertRekap(tx, santriID, paidAt, amount, method, byID, "Rekap pembayaran "+monthYearID(period)); err != nil {
+	if err := upsertRekap(tx, santriID, period, amount, method, byID, "Rekap pembayaran "+monthYearID(period)); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -604,9 +604,9 @@ func normPayMethod(m string) string {
 	}
 }
 
-func insertLedger(tx *sql.Tx, billType string, billID, santriID, amount int, method, paidAt, desc string, byID int) error {
-	res, err := tx.Exec(`INSERT INTO payment_transactions (date, santri_id, bill_type, bill_id, description, amount, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		paidAt, santriID, billType, billID, desc, amount, normPayMethod(method), byID)
+func insertLedger(tx *sql.Tx, billType string, billID, santriID, amount int, method, paidAt, desc, billPeriod string, byID int) error {
+	res, err := tx.Exec(`INSERT INTO payment_transactions (date, santri_id, bill_type, bill_id, bill_period, description, amount, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		paidAt, santriID, billType, billID, billPeriod, desc, amount, normPayMethod(method), byID)
 	if err != nil {
 		return err
 	}
@@ -630,8 +630,8 @@ func padLedger(id int64) string {
 	return n
 }
 
-func upsertRekap(tx *sql.Tx, santriID int, paidAt string, amount int, method string, byID int, label string) error {
-	month := paidAt
+func upsertRekap(tx *sql.Tx, santriID int, billPeriod string, amount int, method string, byID int, label string) error {
+	month := billPeriod
 	if len(month) >= 7 {
 		month = month[:7]
 	} else {

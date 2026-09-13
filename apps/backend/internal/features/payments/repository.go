@@ -280,7 +280,7 @@ func (r *Repository) GetOrCreateReceipt(santriID int, period string, byID, owner
 
 	rows, err := tx.Query(`SELECT t.id, t.code, t.date, t.santri_id, s.nis, s.name, t.bill_type, t.bill_id, t.description, t.amount, t.method, COALESCE(u.name,'')
 		FROM payment_transactions t JOIN santri s ON s.id=t.santri_id LEFT JOIN users u ON u.id=t.created_by
-		WHERE t.santri_id = ? AND substr(t.date,1,7) = ? ORDER BY t.date, t.id`, santriID, month)
+		WHERE t.santri_id = ? AND (t.bill_period = ? OR (t.bill_period = '' AND substr(t.date,1,7) = ?)) ORDER BY t.date, t.id`, santriID, month, month)
 	if err != nil {
 		return nil, err
 	}
