@@ -185,6 +185,22 @@ func createTables() {
 		UNIQUE(name, kind)
 	);
 
+	CREATE TABLE IF NOT EXISTS receipts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		receipt_no TEXT NOT NULL DEFAULT '',
+		santri_id INTEGER NOT NULL,
+		period TEXT NOT NULL,
+		description TEXT NOT NULL DEFAULT '',
+		total INTEGER NOT NULL DEFAULT 0,
+		method TEXT NOT NULL DEFAULT '',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (santri_id) REFERENCES santri(id),
+		UNIQUE(santri_id, period)
+	);
+
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_no ON receipts(receipt_no);
+
 	CREATE TABLE IF NOT EXISTS payment_transactions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		code TEXT NOT NULL DEFAULT '',

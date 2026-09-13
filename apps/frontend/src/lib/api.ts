@@ -2979,6 +2979,42 @@ export async function linkSantriUser(id: number, user_id: number) {
 	return parseResponse(res);
 }
 
+export interface ReceiptItem {
+	id: number; code: string; date: string; santri_id: number;
+	santri_nis?: string; santri_name?: string; bill_type: string; bill_id: number;
+	description: string; amount: number; method: string; petugas?: string;
+}
+
+export interface ReceiptData {
+	receipt: {
+		id: number; receipt_no: string; santri_id: number;
+		santri_nis?: string; santri_name?: string; santri_class?: string; parent_name?: string;
+		period: string; description: string; total: number; method: string;
+		petugas?: string; created_by?: number; created_at?: string;
+	};
+	items: ReceiptItem[];
+}
+
+async function fetchReceipt(url: string): Promise<ReceiptData | null> {
+	try {
+		const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
+		const result = await parseResponse(res);
+		if (!result.success) return null;
+		return result.data as ReceiptData;
+	} catch (e) {
+		console.error('[Receipt]:', e);
+		return null;
+	}
+}
+
+export async function getReceipt(santri_id: number, period: string): Promise<ReceiptData | null> {
+	return fetchReceipt(`${API_BASE_URL}/payments/receipt?santri_id=${santri_id}&period=${encodeURIComponent(period)}`);
+}
+
+export async function getMyReceipt(santri_id: number, period: string): Promise<ReceiptData | null> {
+	return fetchReceipt(`${API_BASE_URL}/my-receipt?santri_id=${santri_id}&period=${encodeURIComponent(period)}`);
+}
+
 export async function getMySantri(): Promise<Santri[]> {
 	try {
 		const res = await fetch(`${API_BASE_URL}/my-santri`, {

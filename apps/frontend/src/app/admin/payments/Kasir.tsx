@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, SppSantri, UnpaidBill } from "@/lib/api";
+import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, getReceipt, SppSantri, UnpaidBill, ReceiptData } from "@/lib/api";
+import KwitansiModal from "@/components/KwitansiModal";
+import { Receipt } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { Search } from "lucide-react";
 
@@ -12,6 +14,8 @@ export default function Kasir() {
   const [selected, setSelected] = useState<SppSantri | null>(null);
   const [bills, setBills] = useState<UnpaidBill[]>([]);
   const [paying, setPaying] = useState<UnpaidBill | null>(null);
+  const [kwitansi, setKwitansi] = useState<ReceiptData | null>(null);
+  const [kwLoading, setKwLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("Tunai");
   const [saving, setSaving] = useState(false);
@@ -41,11 +45,18 @@ export default function Kasir() {
     const res = paying.bill_type === "SPP"
       ? await paySppBill(paying.bill_id, { amount: nominal, method })
       : await payIuranBill(paying.bill_id, { amount: nominal, method });
+    const paidBill = paying;
     setSaving(false);
     if (res.success) {
       showToast("success", "Pembayaran tersimpan.");
       setPaying(null); setAmount("");
-      if (selected) setBills(await getUnpaidBills(selected.id));
+      if (selected) {
+        setBills(await getUnpaidBills(selected.id));
+        setKwLoading(true);
+        const kw = await getReceipt(selected.id, (paidBill?.period || "").slice(0, 7));
+        setKwLoading(false);
+        if (kw) setKwitansi(kw);
+      }
     } else {
       showToast("error", res.message || "Gagal menyimpan.");
     }
@@ -72,7 +83,26 @@ export default function Kasir() {
         </div>
       </div>
       <div className="bg-white border rounded-xl p-4">
-        <h3 className="font-black mb-1">Rincian Tagihan {selected ? `- ${selected.name}` : ""}</h3>
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="font-black">Rincian Tagihan {selected ? `- ${selected.name}` : ""}</h3>
+          {selected && (
+            <button
+              onClick={async () => {
+                const now = new Date();
+                const per = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+                setKwLoading(true);
+                const kw = await getReceipt(selected.id, per);
+                setKwLoading(false);
+                if (kw) setKwitansi(kw);
+                else showToast("error", "Belum ada pembayaran bulan ini.");
+              }}
+              disabled={kwLoading}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <Receipt size={14} /> {kwLoading ? "Memuat…" : "Kwitansi Bulan Ini"}
+            </button>
+          )}
+        </div>
         {!selected && <p className="text-sm text-slate-400">Silakan pilih siswa terlebih dahulu.</p>}
         {selected && bills.length === 0 && <p className="text-sm text-emerald-600 font-bold">Tidak ada tagihan belum lunas. Lunas semua.</p>}
         {bills.map((b) => (
@@ -96,6 +126,9 @@ export default function Kasir() {
           </form>
         )}
       </div>
+      {kwitansi && (
+        <KwitansiModal data={kwitansi} onClose={() => setKwitansi(null)} />
+      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, SppSantri, UnpaidBill } from '@/lib/api';
-import { fmtRp, BsTitle, BsAlert } from '../ui';
+import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, getReceipt, SppSantri, UnpaidBill, ReceiptData } from '@/lib/api';
+import KwitansiModal from '@/components/KwitansiModal';
+import { fmtRp, BsTitle, BsAlert, Toast, useToastState } from '../ui';
 
 export default function BsPembayaran() {
   const [santris, setSantris] = useState<SppSantri[]>([]);
@@ -12,6 +13,8 @@ export default function BsPembayaran() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Tunai');
   const [paying, setPaying] = useState<UnpaidBill | null>(null);
+  const [kwitansi, setKwitansi] = useState<ReceiptData | null>(null);
+  const [kwLoading, setKwLoading] = useState(false);
   const [msg, setMsg] = useState('');
   const [ok, setOk] = useState(true);
 
@@ -34,6 +37,7 @@ export default function BsPembayaran() {
       setMsg(`Nominal 1 s/d ${fmtRp(paying.remain)}.`);
       return;
     }
+    const paidBill = paying;
     const r = paying.bill_type === 'SPP'
       ? await paySppBill(paying.bill_id, { amount: nominal, method })
       : await payIuranBill(paying.bill_id, { amount: nominal, method });
@@ -43,6 +47,10 @@ export default function BsPembayaran() {
       setPaying(null);
       setAmount('');
       setBills(await getUnpaidBills(selected.id));
+      setKwLoading(true);
+      const kw = await getReceipt(selected.id, (paidBill?.period || '').slice(0, 7));
+      setKwLoading(false);
+      if (kw) setKwitansi(kw);
     }
   };
 
@@ -72,7 +80,30 @@ export default function BsPembayaran() {
         </div>
         <div className="col-md-8">
           <div className="card card-primary">
-            <div className="card-header"><h3 className="card-title">Rincian Tagihan {selected ? `- ${selected.name}` : ''}</h3></div>
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <h3 className="card-title">Rincian Tagihan {selected ? `- ${selected.name}` : ''}</h3>
+              {selected && (
+                <button
+                  type="button"
+                  disabled={kwLoading}
+                  onClick={async () => {
+                    const now = new Date();
+                    const per = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    setKwLoading(true);
+                    const kw = await getReceipt(selected.id, per);
+                    setKwLoading(false);
+                    if (kw) setKwitansi(kw);
+                    else {
+                      setOk(false);
+                      setMsg('Belum ada pembayaran bulan ini.');
+                    }
+                  }}
+                  className="btn btn-sm btn-success"
+                >
+                  {kwLoading ? 'Memuat…' : 'Kwitansi Bulan Ini'}
+                </button>
+              )}
+            </div>
             <div className="card-body table-responsive p-0">
               <table className="table table-bordered table-striped table-sm text-sm mb-0">
                 <thead><tr><th>Tagihan</th><th>Periode</th><th>Sisa</th><th>Aksi</th></tr></thead>
@@ -110,6 +141,7 @@ export default function BsPembayaran() {
             </div>
           )}
         </div>
+      {kwitansi && <KwitansiModal data={kwitansi} onClose={() => setKwitansi(null)} />}
       </div>
     </div>
   );

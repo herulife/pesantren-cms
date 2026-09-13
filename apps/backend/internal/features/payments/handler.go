@@ -4,6 +4,7 @@ import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -83,6 +84,7 @@ func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/all", h.GetAll)
 	r.Get("/transactions", h.GetTransactions)
+	r.Get("/receipt", h.GetReceipt)
 	r.Get("/unpaid", h.GetUnpaid)
 	r.Get("/users", h.GetAllUsers)
 	r.Post("/", h.Create)
@@ -129,6 +131,44 @@ func (h *Handler) GetUnpaid(w http.ResponseWriter, r *http.Request) {
 		list = []UnpaidBill{}
 	}
 	sendJSONResponse(w, http.StatusOK, true, "Tagihan belum lunas berhasil dimuat", list)
+}
+
+func (h *Handler) receiptByOwner(w http.ResponseWriter, r *http.Request, ownerUID int) {
+	q := r.URL.Query()
+	santriID, _ := strconv.Atoi(q.Get("santri_id"))
+	period := strings.TrimSpace(q.Get("period"))
+	if santriID <= 0 || len(period) < 7 {
+		sendJSONResponse(w, http.StatusBadRequest, false, "santri_id dan period (YYYY-MM) wajib diisi", nil)
+		return
+	}
+	byID := 0
+	if uid, ok := auth.CurrentUserID(r.Context()); ok {
+		byID = uid
+	}
+	detail, err := h.repo.GetOrCreateReceipt(santriID, period[:7], byID, ownerUID)
+	if err != nil {
+		if err == ErrNoReceiptData || err == sql.ErrNoRows {
+			sendJSONResponse(w, http.StatusNotFound, false, "Belum ada pembayaran pada periode ini", nil)
+			return
+		}
+		logger.Error(r.Context(), "payments receipt failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat kwitansi", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Kwitansi berhasil dimuat", detail)
+}
+
+func (h *Handler) GetReceipt(w http.ResponseWriter, r *http.Request) {
+	h.receiptByOwner(w, r, 0)
+}
+
+func (h *Handler) GetMyReceipt(w http.ResponseWriter, r *http.Request) {
+	uid, ok := auth.CurrentUserID(r.Context())
+	if !ok {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
+		return
+	}
+	h.receiptByOwner(w, r, uid)
 }
 
 func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -290,4 +330,5 @@ type IRepository interface {
 	}, error)
 	ListPayTx(from, to, search string, limit, offset int) ([]PayTx, error)
 	UnpaidBills(santriID int) ([]UnpaidBill, error)
+	GetOrCreateReceipt(santriID int, period string, byID, ownerUID int) (*ReceiptDetail, error)
 }

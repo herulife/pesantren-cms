@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getPayTransactions, PayTx } from '@/lib/api';
-import { fmtRp, BsTitle, PageHeader } from '../ui';
+import { getPayTransactions, getReceipt, PayTx, ReceiptData } from '@/lib/api';
+import KwitansiModal from '@/components/KwitansiModal';
+import { fmtRp, BsTitle, PageHeader, Toast, useToastState } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
 function today() { return new Date().toISOString().split('T')[0]; }
@@ -10,6 +11,8 @@ function firstOfMonth() { return today().slice(0, 8) + '01'; }
 
 export default function BsLapTransaksi() {
   const [rows, setRows] = useState<PayTx[]>([]);
+  const [kwitansi, setKwitansi] = useState<ReceiptData | null>(null);
+  const { toast, show } = useToastState();
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(today());
 
@@ -42,7 +45,7 @@ export default function BsLapTransaksi() {
       <div className="card">
         <div className="card-body table-responsive p-0">
           <table className="table table-bordered table-striped table-sm text-sm mb-0">
-            <thead><tr><th>Tanggal</th><th>Jam</th><th>No. Induk</th><th>Nama</th><th>Keterangan</th><th>Jml Bayar</th><th>Jenis</th><th>Petugas</th><th>Kode Transaksi</th></tr></thead>
+            <thead><tr><th>Tanggal</th><th>Jam</th><th>No. Induk</th><th>Nama</th><th>Keterangan</th><th>Jml Bayar</th><th>Jenis</th><th>Petugas</th><th>Kode Transaksi</th><th>Kwitansi</th></tr></thead>
             <tbody>
               {rows.map((r) => {
                 const [d, t] = (r.date || '').split(' ');
@@ -50,15 +53,17 @@ export default function BsLapTransaksi() {
                   <tr key={r.id}>
                     <td>{d}</td><td>{t || '-'}</td><td>{r.santri_nis}</td><td className="fw-bold">{r.santri_name}</td>
                     <td>{r.description}</td><td className="fw-bold">{fmtRp(r.amount)}</td><td>{r.method}</td>
-                    <td>{r.petugas || '-'}</td><td>{r.code}</td>
+                    <td>{r.petugas || '-'}</td><td>{r.code}</td><td><button title="Kwitansi rekap bulan ini" onClick={async () => { const kw = await getReceipt(r.santri_id, (r.date || '').slice(0, 7)); if (kw) setKwitansi(kw); else show(false, 'Belum ada data kwitansi.'); }} className="btn btn-xs btn-info">Kwitansi</button></td>
                   </tr>
                 );
               })}
-              {rows.length === 0 && <tr><td colSpan={9} className="text-center text-muted p-3">Belum ada data.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={10} className="text-center text-muted p-3">Belum ada data.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
+      {kwitansi && <KwitansiModal data={kwitansi} onClose={() => setKwitansi(null)} />}
+      <Toast toast={toast} />
     </div>
   );
 }

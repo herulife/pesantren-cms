@@ -2,6 +2,9 @@ package payments
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -217,4 +220,138 @@ func (r *Repository) UnpaidBills(santriID int) ([]UnpaidBill, error) {
 		out = append(out, b)
 	}
 	return out, rows.Err()
+}
+
+type Receipt struct {
+	ID          int    `json:"id"`
+	ReceiptNo   string `json:"receipt_no"`
+	SantriID    int    `json:"santri_id"`
+	SantriNIS   string `json:"santri_nis,omitempty"`
+	SantriName  string `json:"santri_name,omitempty"`
+	SantriClass string `json:"santri_class,omitempty"`
+	ParentName  string `json:"parent_name,omitempty"`
+	Period      string `json:"period"`
+	Description string `json:"description"`
+	Total       int    `json:"total"`
+	Method      string `json:"method"`
+	Petugas     string `json:"petugas,omitempty"`
+	CreatedBy   int    `json:"created_by,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+}
+
+type ReceiptDetail struct {
+	Receipt Receipt `json:"receipt"`
+	Items   []PayTx `json:"items"`
+}
+
+var ErrNoReceiptData = errors.New("belum ada pembayaran pada periode ini")
+
+func (r *Repository) GetOrCreateReceipt(santriID int, period string, byID, ownerUID int) (*ReceiptDetail, error) {
+	if len(period) < 7 {
+		return nil, ErrNoReceiptData
+	}
+	month := period[:7]
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	var santriIDCheck int
+	var nis, name, class, parent string
+	err = tx.QueryRow(`SELECT id, nis, name, class, parent_name FROM santri WHERE id = ?`, santriID).Scan(&santriIDCheck, &nis, &name, &class, &parent)
+	if err != nil {
+		return nil, err
+	}
+	if ownerUID > 0 {
+		var owner int
+		err = tx.QueryRow(`SELECT COALESCE(user_id, 0) FROM santri WHERE id = ?`, santriID).Scan(&owner)
+		if err != nil {
+			return nil, err
+		}
+		if owner != ownerUID {
+			return nil, sql.ErrNoRows
+		}
+	}
+
+	rows, err := tx.Query(`SELECT t.id, t.code, t.date, t.santri_id, s.nis, s.name, t.bill_type, t.bill_id, t.description, t.amount, t.method, COALESCE(u.name,'')
+		FROM payment_transactions t JOIN santri s ON s.id=t.santri_id LEFT JOIN users u ON u.id=t.created_by
+		WHERE t.santri_id = ? AND substr(t.date,1,7) = ? ORDER BY t.date, t.id`, santriID, month)
+	if err != nil {
+		return nil, err
+	}
+	items := []PayTx{}
+	var total int
+	var methods []string
+	seenMethod := map[string]bool{}
+	var petugas string
+	for rows.Next() {
+		var t PayTx
+		if err := rows.Scan(&t.ID, &t.Code, &t.Date, &t.SantriID, &t.SantriNIS, &t.SantriName, &t.BillType, &t.BillID, &t.Description, &t.Amount, &t.Method, &t.Petugas); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		items = append(items, t)
+		total += t.Amount
+		if !seenMethod[t.Method] {
+			seenMethod[t.Method] = true
+			methods = append(methods, t.Method)
+		}
+		if petugas == "" {
+			petugas = t.Petugas
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		_ = tx.Rollback()
+		return nil, ErrNoReceiptData
+	}
+
+	var rec Receipt
+	err = tx.QueryRow(`SELECT id, receipt_no, santri_id, period, description, total, method, created_by, created_at FROM receipts WHERE santri_id = ? AND period = ?`, santriID, month).Scan(
+	&rec.ID, &rec.ReceiptNo, &rec.SantriID, &rec.Period, &rec.Description, &rec.Total, &rec.Method, &rec.CreatedBy, &rec.CreatedAt)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if err == sql.ErrNoRows {
+		year := month[:4]
+		var seq int
+		err = tx.QueryRow(`SELECT COALESCE(MAX(CAST(substr(receipt_no, 10) AS INTEGER)), 0) + 1 FROM receipts WHERE substr(receipt_no, 5, 4) = ?`, year).Scan(&seq)
+		if err != nil {
+			return nil, err
+		}
+		no := fmt.Sprintf("KWI-%s/%06d", year, seq)
+		desc := fmt.Sprintf("Rekap pembayaran %s periode %s", name, month)
+		res, err := tx.Exec(`INSERT INTO receipts (receipt_no, santri_id, period, description, total, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			no, santriID, month, desc, total, strings.Join(methods, "+"), byID)
+		if err != nil {
+			if strings.Contains(err.Error(), "UNIQUE") {
+				_ = tx.Rollback()
+				return r.GetOrCreateReceipt(santriID, period, byID, ownerUID)
+			}
+			return nil, err
+		}
+		id, _ := res.LastInsertId()
+		err = tx.QueryRow(`SELECT id, receipt_no, santri_id, period, description, total, method, created_by, created_at FROM receipts WHERE id = ?`, id).Scan(
+		&rec.ID, &rec.ReceiptNo, &rec.SantriID, &rec.Period, &rec.Description, &rec.Total, &rec.Method, &rec.CreatedBy, &rec.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+	}
+	rec.SantriNIS = nis
+	rec.SantriName = name
+	rec.SantriClass = class
+	rec.ParentName = parent
+	rec.Petugas = petugas
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return &ReceiptDetail{Receipt: rec, Items: items}, nil
 }
