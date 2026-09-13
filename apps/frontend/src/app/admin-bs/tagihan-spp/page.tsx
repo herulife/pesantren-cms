@@ -69,7 +69,7 @@ export default function BsTagihanSpp() {
         title="Generate SPP"
         breadcrumb="Transaksi / SPP"
         actions={
-          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel(`Tagihan SPP ${period}`, ['No Induk', 'Nama', 'Kelas', 'Tagihan', 'Dibayar', 'Sisa', 'Status'], rows.map((r) => [r.santri_nis, r.santri_name, r.santri_class, r.amount, r.paid_amount, r.amount - r.paid_amount, r.status]), `tagihan_spp_${period}`)}>Export Excel</button>
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel(`Tagihan SPP ${period}`, ['No Induk', 'Nama', 'Kelas', 'Tagihan', 'Dibayar', 'Sisa', 'Status'], rows.map((r) => [r.santri_nis || '-', r.santri_name || '-', r.santri_class || '-', r.amount, r.paid_amount, r.amount - r.paid_amount, r.status]), `tagihan_spp_${period}`)}>Export Excel</button>
         }
       />
       <BsAlert msg={msg} ok={ok} />

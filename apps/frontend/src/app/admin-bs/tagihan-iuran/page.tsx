@@ -84,7 +84,7 @@ export default function BsTagihanIuran() {
         title="Generate Iuran"
         breadcrumb="Transaksi / Iuran"
         actions={
-          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel(`Tagihan Iuran ${period}`, ['No Induk', 'Nama', 'Iuran', 'Tagihan', 'Dibayar', 'Sisa', 'Status'], rows.map((r) => [r.santri_nis, r.santri_name, r.name, r.amount, r.paid_amount, r.amount - r.paid_amount, r.status]), `tagihan_iuran_${period}`)}>Export Excel</button>
+          <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel(`Tagihan Iuran ${period}`, ['No Induk', 'Nama', 'Iuran', 'Tagihan', 'Dibayar', 'Sisa', 'Status'], rows.map((r) => [r.santri_nis || '-', r.santri_name || '-', r.name, r.amount, r.paid_amount, r.amount - r.paid_amount, r.status]), `tagihan_iuran_${period}`)}>Export Excel</button>
         }
       />
       <BsAlert msg={msg} ok={ok} />
