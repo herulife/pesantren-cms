@@ -87,6 +87,27 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = window.localStorage.getItem('adminbs-groups');
+      if (raw) return JSON.parse(raw) as Record<string, boolean>;
+    } catch {
+      // abaikan
+    }
+    return {};
+  });
+
+  const toggleGroup = (heading: string) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [heading]: !(prev[heading] ?? true) };
+      try {
+        window.localStorage.setItem('adminbs-groups', JSON.stringify(next));
+      } catch {
+        // abaikan
+      }
+      return next;
+    });
+  };
 
   const can = (roles?: string[]) => {
     if (!roles || roles.length === 0) return true;
@@ -133,10 +154,22 @@ export default function AdminBsShell({ children }: { children: React.ReactNode }
               {MENU.map((g) => {
                 const items = g.items.filter((it) => can(it.roles));
                 if (items.length === 0) return null;
+                const hasActive = items.some((it) => pathname === it.href);
+                const isOpen = openGroups[g.heading] ?? true;
                 return (
                   <React.Fragment key={g.heading}>
-                    <li className="nav-header">{g.heading.toUpperCase()}</li>
-                    {items.map((it) => (
+                    <li className="nav-header">
+                      <button
+                        type="button"
+                        className="bs-group-toggle"
+                        aria-expanded={isOpen}
+                        onClick={() => toggleGroup(g.heading)}
+                      >
+                        <span>{g.heading.toUpperCase()}</span>
+                        <i className={`bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`} />
+                      </button>
+                    </li>
+                    {isOpen && items.map((it) => (
                       <li className="nav-item" key={it.href}>
                         <Link href={it.href} className={`nav-link${pathname === it.href ? ' active' : ''}`}>
                           <i className={`nav-icon bi ${it.icon}`} />

@@ -157,3 +157,8 @@ body.admin-bs .form-control, body.admin-bs .form-select { font-size: 14px; borde
 body.admin-bs .form-control:focus, body.admin-bs .form-select:focus { border-color: var(--almaa-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
 body.admin-bs .form-label { font-size: 12px; font-weight: 600; }
 body.admin-bs .badge { font-size: 12px; font-weight: 600; }
+
+/* Accordion grup sidebar */
+body.admin-bs .bs-group-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; background: none; border: 0; padding: 0; cursor: pointer; color: rgba(255,255,255,.45); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1rem; }
+body.admin-bs .bs-group-toggle:hover { color: rgba(255,255,255,.8); }
+body.admin-bs .bs-group-toggle i { font-size: 0.7rem; }

@@ -20,8 +20,9 @@ export default function BsSiswa() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- muat awal saat mount
     load('', 1);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const go = (q: string, p: number) => {
     setApplied(q);
