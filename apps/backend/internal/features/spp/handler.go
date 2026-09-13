@@ -3,6 +3,7 @@ package spp
 import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
 	"database/sql"
 	"encoding/json"
@@ -340,6 +341,24 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	}
 	aid := adminID(r)
 	logger.RecordActivity(&aid, "PAY_SPP", fmt.Sprintf("Pembayaran SPP ID %d sebesar Rp %d", id, req.Amount), r.RemoteAddr, r.UserAgent())
+
+	if h.repo.WAKwitansiEnabled() {
+		aid2 := aid
+		go func(billID int) {
+			info, err := h.repo.KwitansiInfoByBill(billID)
+			if err != nil || info == nil {
+				return
+			}
+			phone := whatsapp.NormalizePhone(info.Phone)
+			if phone == "" {
+				return
+			}
+			msg := whatsapp.FormatKwitansi(info.SantriName, info.ReceiptNo, info.Period, info.Total)
+			if err := whatsapp.SendMessage(phone, msg); err == nil {
+				logger.RecordActivity(&aid2, "SEND_WA_KWITANSI", "WA kwitansi "+info.ReceiptNo+" ke "+phone, r.RemoteAddr, r.UserAgent())
+			}
+		}(id)
+	}
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran SPP berhasil dicatat", nil)
 }
 
@@ -463,6 +482,8 @@ type IRepository interface {
 	GenerateBills(period, periodEnd string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
 	PayBill(id, amount int, method, paidAt, notes string, byID int) error
 	CancelBill(id int) error
+	WAKwitansiEnabled() bool
+	KwitansiInfoByBill(billID int) (*KwitansiInfo, error)
 	Summary(period string) (*SppSummary, error)
 	Report(periodStart, periodEnd, class string, santriID int) ([]SppReportRow, error)
 	ListActiveSantri() ([]SppSantri, error)

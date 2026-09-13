@@ -195,3 +195,33 @@ func formatRupiah(amount int) string {
 	return result
 }
 
+// NormalizePhone: 08xx / +62xx / spasi-strip -> 628xx
+func NormalizePhone(raw string) string {
+	digits := ""
+	for _, ch := range raw {
+		if ch >= '0' && ch <= '9' {
+			digits += string(ch)
+		}
+	}
+	if strings.HasPrefix(digits, "62") {
+		return digits
+	}
+	if strings.HasPrefix(digits, "0") {
+		return "62" + digits[1:]
+	}
+	return digits
+}
+
+// FormatKwitansi: notifikasi kwitansi rekap bulanan ke wali
+func FormatKwitansi(namaSantri, receiptNo, periode string, total int) string {
+	return fmt.Sprintf(
+		"Assalamu'alaikum Wr. Wb.\n\n"+
+			"Yth. Wali Santri *%s*,\n"+
+			"Alhamdulillah, pembayaran periode *%s* telah kami terima dengan rincian:\n\n"+
+			"No. Kwitansi: *%s*\n"+
+			"Total: *Rp %s*\n\n"+
+			"Kwitansi rekap dapat dilihat/diunduh di portal orang tua.\n\n"+
+			"Jazakumullahu khairan.\n"+
+			"_Bendahara Al-Maa_",
+		namaSantri, periode, receiptNo, formatRupiah(total))
+}

@@ -1,18 +1,21 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { getSettings, updateSetting } from '@/lib/api';
+import { getSettings, updateSetting, sendWhatsApp } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Save, RefreshCw, MessageCircle, Settings2, Info } from 'lucide-react';
 
 export default function TabNotifikasiWA() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [testPhone, setTestPhone] = useState('');
+  const [testing, setTesting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { showToast } = useToast();
 
   const KEYS = [
     'wa_discipline_violation_template',
-    'wa_discipline_summary_template'
+    'wa_discipline_summary_template',
+    'wa_kwitansi_enabled'
   ];
 
   const fetchData = async () => {
@@ -51,8 +54,57 @@ export default function TabNotifikasiWA() {
 
   if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-sky-600" /></div>;
 
+  const sendTestKwitansi = async () => {
+    if (!testPhone.trim()) {
+      showToast('error', 'Isi nomor WA tujuan dulu.');
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await sendWhatsApp(
+        testPhone.trim(),
+        "Assalamu'alaikum Wr. Wb.\n\nYth. Wali Santri *Contoh*,\nAlhamdulillah, pembayaran periode *2026-09* telah kami terima dengan rincian:\n\nNo. Kwitansi: *KWI-2026/000001*\nTotal: *Rp 150.000*\n\nKwitansi rekap dapat dilihat/diunduh di portal orang tua.\n\nJazakumullahu khairan.\n_Bendahara Al-Maa_"
+      );
+      if (res.success) showToast('success', 'Pesan uji terkirim.');
+      else showToast('error', res.message || 'Gagal mengirim.');
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Gagal mengirim.');
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-8 border-b border-slate-100">
+             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight font-outfit">WA Kwitansi Otomatis</h2>
+             <p className="text-sm text-slate-500 font-medium">Kirim notifikasi kwitansi ke HP wali setiap pembayaran SPP/Iuran tercatat.</p>
+          </div>
+          <div className="p-8 space-y-4">
+             <label className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={(formValues['wa_kwitansi_enabled'] || '') === '1'}
+                  onChange={(e) => handleChange('wa_kwitansi_enabled', e.target.checked ? '1' : '0')}
+                  className="h-5 w-5 rounded border-slate-300 text-emerald-600"
+                />
+                Aktifkan kirim WA kwitansi otomatis
+             </label>
+             <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="Nomor WA uji (cth: 0812xxxx)"
+                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500"
+                />
+                <button onClick={sendTestKwitansi} disabled={testing} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
+                  {testing ? 'Mengirim…' : 'Coba Kirim'}
+                </button>
+             </div>
+          </div>
+       </section>
+
        
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">

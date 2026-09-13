@@ -387,7 +387,32 @@ func (r *Repository) PayBill(id, amount int, method, paidAt, notes string, byID 
 	if err := insertLedger(tx, "SPP", id, santriID, amount, method, paidAt, "SPP "+monthYearID(period), byID); err != nil {
 		return err
 	}
+	if err := upsertRekap(tx, santriID, paidAt, amount, method, byID, "Rekap pembayaran "+monthYearID(period)); err != nil {
+		return err
+	}
 	return tx.Commit()
+}
+
+func (r *Repository) WAKwitansiEnabled() bool {
+	return waKwitansiEnabled(r.db)
+}
+
+func (r *Repository) KwitansiInfoByBill(billID int) (*KwitansiInfo, error) {
+	var info KwitansiInfo
+	var period string
+	err := r.db.QueryRow(`SELECT s.parent_phone, s.name, b.period FROM spp_bills b JOIN santri s ON s.id = b.santri_id WHERE b.id = ?`, billID).Scan(&info.Phone, &info.SantriName, &period)
+	if err != nil {
+		return nil, err
+	}
+	if len(period) >= 7 {
+		period = period[:7]
+	}
+	info.Period = period
+	err = r.db.QueryRow(`SELECT receipt_no, total FROM receipts WHERE santri_id = (SELECT santri_id FROM spp_bills WHERE id = ?) AND period = ?`, billID, period).Scan(&info.ReceiptNo, &info.Total)
+	if err != nil {
+		return nil, err
+	}
+	return &info, nil
 }
 
 func (r *Repository) CancelBill(id int) error {
@@ -550,4 +575,49 @@ func padLedger(id int64) string {
 		n = "0" + n
 	}
 	return n
+}
+
+func upsertRekap(tx *sql.Tx, santriID int, paidAt string, amount int, method string, byID int, label string) error {
+	month := paidAt
+	if len(month) >= 7 {
+		month = month[:7]
+	} else {
+		return nil
+	}
+	var rid int64
+	var rno string
+	err := tx.QueryRow(`SELECT id, receipt_no FROM receipts WHERE santri_id = ? AND period = ?`, santriID, month).Scan(&rid, &rno)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if err == sql.ErrNoRows {
+		year := month[:4]
+		var seq int
+		if err := tx.QueryRow(`SELECT COALESCE(MAX(CAST(substr(receipt_no, 10) AS INTEGER)), 0) + 1 FROM receipts WHERE substr(receipt_no, 5, 4) = ?`, year).Scan(&seq); err != nil {
+			return err
+		}
+		rno = fmt.Sprintf("KWI-%s/%06d", year, seq)
+		_, err = tx.Exec(`INSERT INTO receipts (receipt_no, santri_id, period, description, total, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			rno, santriID, month, label, amount, method, byID)
+		return err
+	}
+	_, err = tx.Exec(`UPDATE receipts SET total = total + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, amount, rid)
+	return err
+}
+
+type KwitansiInfo struct {
+	Phone      string `json:"phone"`
+	SantriName string `json:"santri_name"`
+	ReceiptNo  string `json:"receipt_no"`
+	Total      int    `json:"total"`
+	Period     string `json:"period"`
+}
+
+func waKwitansiEnabled(db *sql.DB) bool {
+	var v string
+	if err := db.QueryRow(`SELECT value FROM settings WHERE key = 'wa_kwitansi_enabled'`).Scan(&v); err != nil {
+		return false
+	}
+	v = strings.ToLower(strings.TrimSpace(v))
+	return v == "1" || v == "true" || v == "aktif" || v == "ya" || v == "on"
 }
