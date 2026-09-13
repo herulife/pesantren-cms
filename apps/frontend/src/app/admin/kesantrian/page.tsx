@@ -165,7 +165,6 @@ export default function KesantrianPage() {
     load();
   };
 
-  const exportData = (format: 'pdf' | 'excel') => {
   const openLinkModal = async (s: Santri) => {
     setLinkTarget(s);
     setLinkUserId(s.user_id ? String(s.user_id) : '');
@@ -196,6 +195,7 @@ export default function KesantrianPage() {
     }
   };
 
+  const exportData = (format: 'pdf' | 'excel') => {
     const columns = ['NIS', 'Nama', 'Panggilan', 'Kelamin', 'Kelas', 'Angkatan', 'Status', 'Nama Wali', 'No. HP Wali'];
     const rows = items.map((s) => [
       s.nis,
