@@ -280,6 +280,7 @@ html, body {
 }
 
 /* Akordeon sidebar glass — animasi buka/tutup halus */
-.sb-group-items { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.28s ease, opacity 0.22s ease; }
+.sb-group-items { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; }
 .sb-group-items.open { grid-template-rows: 1fr; opacity: 1; }
+.sb-group-items button { cursor: pointer; }
 .sb-group-items > .sb-group-inner { overflow: hidden; min-height: 0; }
