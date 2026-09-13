@@ -61,14 +61,18 @@ func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) 
 		}
 		return png, QRTTL - time.Since(at), nil
 	}
+	// Pairing butuh state bersih: putuskan socket lama bila ada agar
+	// GetQRChannel tidak ditolak ("must be called before connecting").
+	if client.IsConnected() {
+		client.Disconnect()
+		time.Sleep(time.Second)
+	}
 	qrChan, err := client.GetQRChannel(ctx)
 	if err != nil {
 		return nil, 0, fmt.Errorf("gagal memulai pairing QR: %w", err)
 	}
-	if !client.IsConnected() {
-		if err := client.Connect(); err != nil {
-			return nil, 0, fmt.Errorf("gagal connect: %w", err)
-		}
+	if err := client.Connect(); err != nil {
+		return nil, 0, fmt.Errorf("gagal connect: %w", err)
 	}
 	select {
 	case item := <-qrChan:
@@ -117,13 +121,16 @@ func (m *Manager) RequestPairCode(ctx context.Context, phone string) (string, er
 	if len(digits) < 9 {
 		return "", fmt.Errorf("nomor tidak valid")
 	}
-	if !client.IsConnected() {
-		if err := client.Connect(); err != nil {
-			return "", fmt.Errorf("gagal connect: %w", err)
-		}
-		// Tunggu socket siap sebelum meminta kode (lihat catatan PairPhone).
-		time.Sleep(2 * time.Second)
+	// State bersih seperti alur QR.
+	if client.IsConnected() {
+		client.Disconnect()
+		time.Sleep(time.Second)
 	}
+	if err := client.Connect(); err != nil {
+		return "", fmt.Errorf("gagal connect: %w", err)
+	}
+	// Tunggu socket siap sebelum meminta kode (lihat catatan PairPhone).
+	time.Sleep(2 * time.Second)
 	code, err := client.PairPhone(ctx, digits, true, whatsmeow.PairClientChrome, PairDisplayName)
 	if err != nil {
 		return "", fmt.Errorf("gagal meminta kode pairing: %w", err)
