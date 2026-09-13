@@ -205,7 +205,7 @@ func (r *Repository) UnpaidBills(santriID int) ([]UnpaidBill, error) {
 	q := `SELECT 'SPP', id, period, '', amount, paid_amount, amount-paid_amount, due_date FROM spp_bills WHERE santri_id=? AND status!='paid'
 		UNION ALL
 		SELECT 'IURAN', id, period, name, amount, paid_amount, amount-paid_amount, due_date FROM iuran_bills WHERE santri_id=? AND status!='paid'
-		ORDER BY period, bill_type`
+		ORDER BY 3, 1`
 	rows, err := r.db.Query(q, santriID, santriID)
 	if err != nil {
 		return nil, err
@@ -377,7 +377,7 @@ func (r *Repository) MyBills(uid int) ([]MyBill, error) {
 		UNION ALL
 		SELECT 'IURAN', b.id, b.santri_id, s.name, b.period, b.name, b.amount, b.paid_amount, b.amount-b.paid_amount, b.status, b.due_date, b.payment_proof
 		FROM iuran_bills b JOIN santri s ON s.id = b.santri_id WHERE s.user_id = ? AND b.status != 'paid'
-		ORDER BY period, bill_type`
+		ORDER BY 5, 1`
 	rows, err := r.db.Query(q, uid, uid)
 	if err != nil {
 		return nil, err
