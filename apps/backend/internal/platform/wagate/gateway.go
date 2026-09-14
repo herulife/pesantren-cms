@@ -61,6 +61,7 @@ type Manager struct {
 	lastQRExp   time.Time
 	lastQRErr   string
 	lastResetAt time.Time
+	pairCancel  context.CancelFunc
 	pairCode    string
 	pairCodeAt  time.Time
 	pairPhone   string
@@ -115,6 +116,30 @@ func (m *Manager) resetSessionGuarded() bool {
 	m.lastResetAt = time.Now()
 	m.mu.Unlock()
 	return true
+}
+
+// startPairCtx memulai masa pairing baru: batalkan yang lama, buat
+// context 3 menit yang hidup terlepas dari request HTTP. Context HANYA
+// dibatalkan saat pairing selesai/gagal/baru atau logout eksplisit —
+// TIDAK PERNAH saat HTTP response terkirim (itu yang dulu membunuh socket).
+func (m *Manager) startPairCtx() context.Context {
+	m.endPairCtx()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	m.mu.Lock()
+	m.pairCancel = cancel
+	m.mu.Unlock()
+	return ctx
+}
+
+// endPairCtx membatalkan masa pairing berjalan (jika ada).
+func (m *Manager) endPairCtx() {
+	m.mu.Lock()
+	cancel := m.pairCancel
+	m.pairCancel = nil
+	m.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
 }
 
 // resetSession membuang seluruh state pairing lama agar percobaan

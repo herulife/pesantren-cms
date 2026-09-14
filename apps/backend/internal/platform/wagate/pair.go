@@ -45,10 +45,9 @@ func (m *Manager) RequestQR(reqCtx context.Context) ([]byte, time.Duration, erro
 	if st := m.StatusNow(); st.Connected {
 		return nil, 0, fmt.Errorf("sudah terhubung")
 	}
-	// PENTING: jangan pakai context HTTP — response selesai = context batal
-	// = socket pairing ikut mati sebelum HP sempat scan.
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
+	// PENTING: context pairing hidup terlepas dari request HTTP dan TIDAK
+	// dibatalkan saat response terkirim — pembatalan = socket mati.
+	ctx := m.startPairCtx()
 	_ = reqCtx
 	// Satu alur pairing dalam satu waktu; tolak bila sedang berjalan.
 	if !m.tryPairLock() {
@@ -127,6 +126,7 @@ func effectiveQRTTL(serverTimeout time.Duration) time.Duration {
 
 // drainQRChannel mengikuti rotasi kode sampai channel tutup/sukses.
 func (m *Manager) drainQRChannel(qrChan <-chan whatsmeow.QRChannelItem) {
+	defer m.endPairCtx()
 	for item := range qrChan {
 		if item.Event == "code" {
 			m.rememberQR(item.Code, item.Timeout)
@@ -156,8 +156,7 @@ func (m *Manager) RequestPairCode(reqCtx context.Context, phone string) (string,
 		return "", fmt.Errorf("sudah terhubung")
 	}
 	// Detached context seperti alur QR (lihat atas).
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
+	ctx := m.startPairCtx()
 	_ = reqCtx
 	if !m.tryPairLock() {
 		return "", fmt.Errorf("pairing sedang berjalan, tunggu sebentar")
@@ -218,6 +217,7 @@ func (m *Manager) Logout(ctx context.Context) error {
 
 // Disconnect hanya memutus socket (sesi tersimpan, auto-connect saat boot).
 func (m *Manager) Disconnect() {
+	m.endPairCtx()
 	m.mu.Lock()
 	client := m.client
 	m.mu.Unlock()
