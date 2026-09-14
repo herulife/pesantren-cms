@@ -72,19 +72,6 @@ func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) 
 		m.refreshIdentity()
 		return nil, 0, fmt.Errorf("sudah terhubung")
 	}
-	// QR yang masih segar dipakai ulang: tiap request baru akan
-	// membunuh QR sebelumnya, jadi jangan reset bila belum kedaluwarsa.
-	m.mu.Lock()
-	cached, at := m.lastQR, m.lastQRAt
-	m.mu.Unlock()
-	if cached != "" && time.Since(at) < QRTTL {
-		png, err := qrcode.Encode(cached, qrcode.Medium, 280)
-		if err != nil {
-			return nil, 0, err
-		}
-		log.Printf("[WAGATE] serve QR cache (umur %ds)", int(time.Since(at).Seconds()))
-		return png, QRTTL - time.Since(at), nil
-	}
 	qrChan, err := client.GetQRChannel(ctx)
 	if err != nil {
 		return nil, 0, fmt.Errorf("gagal memulai pairing QR: %w", err)
