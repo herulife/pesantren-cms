@@ -46,3 +46,7 @@ data/uploads/
 
 # live data (jangan commit)
 data/
+
+# Backup archives (contain secrets/db)
+backups/*.tar.gz
+backups/*.db
