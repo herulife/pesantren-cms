@@ -2,6 +2,7 @@ package payments
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
 	"database/sql"
@@ -276,13 +277,15 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log activity
-	adminID := 0
-	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
-		if id, ok := claims["id"].(float64); ok {
-			adminID = int(id)
-		}
-	}
+	adminID, _ := auth.GetAuthenticatedUserID(r.Context())
 	logger.RecordActivity(&adminID, "CREATE_PAYMENT", fmt.Sprintf("Mencatat pembayaran Rp %d untuk User ID %d", p.Amount, p.UserID), r.RemoteAddr, r.UserAgent())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: adminID, ActorRole: actorRole,
+		Action: "CREATE_PAYMENT", Entity: "payment", EntityID: strconv.Itoa(p.UserID),
+		After: map[string]interface{}{"amount": p.Amount},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	logger.Info(r.Context(), "payments create completed", logger.Field{"operation": "payments_create", "user_id": p.UserID, "amount": p.Amount})
 
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil dicatat", nil)
@@ -317,13 +320,14 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
-	adminID := 0
-	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
-	}
+	adminID, _ := auth.GetAuthenticatedUserID(r.Context())
 	logger.RecordActivity(&adminID, "UPDATE_PAYMENT", fmt.Sprintf("Memperbarui pembayaran ID %d", id), r.RemoteAddr, r.UserAgent())
+	actorRole2, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: adminID, ActorRole: actorRole2,
+		Action: "UPDATE_PAYMENT", Entity: "payment", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	logger.Info(r.Context(), "payments update completed", logger.Field{"operation": "payments_update", "payment_id": id})
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil diperbarui", nil)
 }
@@ -345,13 +349,14 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log activity
-	adminID := 0
-	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
-	}
+	adminID, _ := auth.GetAuthenticatedUserID(r.Context())
 	logger.RecordActivity(&adminID, "DELETE_PAYMENT", fmt.Sprintf("Menghapus catatan pembayaran ID %d", id), r.RemoteAddr, r.UserAgent())
+	actorRole3, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: adminID, ActorRole: actorRole3,
+		Action: "DELETE_PAYMENT", Entity: "payment", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	logger.Info(r.Context(), "payments delete completed", logger.Field{"operation": "payments_delete", "payment_id": id})
 
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil dihapus", nil)

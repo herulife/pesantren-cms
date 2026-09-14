@@ -1,6 +1,7 @@
 package payments
 
 import (
+	"almaparung-api/internal/platform/finance"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -322,12 +323,10 @@ func (r *Repository) GetOrCreateReceipt(santriID int, period string, byID, owner
 	}
 	if err == sql.ErrNoRows {
 		year := month[:4]
-		var seq int
-		err = tx.QueryRow(`SELECT COALESCE(MAX(CAST(substr(receipt_no, 10) AS INTEGER)), 0) + 1 FROM receipts WHERE substr(receipt_no, 5, 4) = ?`, year).Scan(&seq)
+		no, err := finance.NextReceiptNo(tx, year)
 		if err != nil {
 			return nil, err
 		}
-		no := fmt.Sprintf("KWI-%s/%06d", year, seq)
 		desc := fmt.Sprintf("Rekap pembayaran %s periode %s", name, month)
 		res, err := tx.Exec(`INSERT INTO receipts (receipt_no, santri_id, period, description, total, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 			no, santriID, month, desc, total, strings.Join(methods, "+"), byID)

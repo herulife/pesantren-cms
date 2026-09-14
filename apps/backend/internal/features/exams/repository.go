@@ -186,9 +186,10 @@ func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) err
 
 	isCorrect := (selectedAnswer == correctKey)
 
-	// SQLite specific: need unique index for ON CONFLICT
-	// For simplicity in this env, we use DELETE then INSERT
-	_, _ = r.db.Exec("DELETE FROM exam_answers WHERE session_id = ? AND question_id = ?", sessionID, questionID)
+	// Hapus jawaban lama (UNIQUE(session_id, question_id) mencegah ganda).
+	if _, err := r.db.Exec("DELETE FROM exam_answers WHERE session_id = ? AND question_id = ?", sessionID, questionID); err != nil {
+		return err
+	}
 
 	_, err = r.db.Exec("INSERT INTO exam_answers (session_id, question_id, selected_answer, is_correct) VALUES (?, ?, ?, ?)",
 		sessionID, questionID, selectedAnswer, isCorrect)

@@ -974,6 +974,10 @@ func runMigrations() {
 		name: "grades_cbt_unique",
 		sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_grades_unique ON grades(student_id, subject_id, semester, academic_year);`,
 	},
+	{
+		name: "exam_answers_unique",
+		sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_answers_unique ON exam_answers(session_id, question_id);`,
+	},
 	}
 
 	for _, migration := range migrations {
