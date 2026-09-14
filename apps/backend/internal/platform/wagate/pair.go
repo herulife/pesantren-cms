@@ -45,9 +45,25 @@ func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) 
 	if st := m.StatusNow(); st.Connected {
 		return nil, 0, fmt.Errorf("sudah terhubung")
 	}
-	// State bersih total: sesi lama yang gagal adalah penyebab umum
-	// HP menolak penautan ("tidak dapat menautkan").
-	m.resetSession()
+	// Satu alur pairing dalam satu waktu; tolak bila sedang berjalan.
+	if !m.tryPairLock() {
+		return nil, 0, fmt.Errorf("pairing sedang berjalan, tunggu sebentar")
+	}
+	defer m.unlockPair()
+	// QR segar dipakai ulang; reset sesi hanya bila kedaluwarsa agar
+	// QR yang sedang discan tidak mati di tengah jalan.
+	m.mu.Lock()
+	cached, at := m.lastQR, m.lastQRAt
+	m.mu.Unlock()
+	if cached != "" && time.Since(at) < QRTTL {
+		png, err := qrcode.Encode(cached, qrcode.Medium, 280)
+		if err != nil {
+			return nil, 0, err
+		}
+		log.Printf("[WAGATE] serve QR cache (umur %ds)", int(time.Since(at).Seconds()))
+		return png, QRTTL - time.Since(at), nil
+	}
+	m.resetSessionGuarded()
 	client, err := m.ensureClient(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -106,6 +122,10 @@ func (m *Manager) RequestPairCode(ctx context.Context, phone string) (string, er
 	if st := m.StatusNow(); st.Connected {
 		return "", fmt.Errorf("sudah terhubung")
 	}
+	if !m.tryPairLock() {
+		return "", fmt.Errorf("pairing sedang berjalan, tunggu sebentar")
+	}
+	defer m.unlockPair()
 	digits := ""
 	for _, ch := range phone {
 		if ch >= '0' && ch <= '9' {
@@ -119,8 +139,8 @@ func (m *Manager) RequestPairCode(ctx context.Context, phone string) (string, er
 	if len(digits) < 9 {
 		return "", fmt.Errorf("nomor tidak valid")
 	}
-	// State bersih total seperti alur QR.
-	m.resetSession()
+	// State bersih total seperti alur QR (dibatasi agar tak spam reset).
+	m.resetSessionGuarded()
 	client, err := m.ensureClient(ctx)
 	if err != nil {
 		return "", err

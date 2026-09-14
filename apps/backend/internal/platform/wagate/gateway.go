@@ -47,6 +47,7 @@ func sessionPath() string {
 // Manager mengelola satu koneksi WhatsApp multi-device.
 type Manager struct {
 	mu        sync.Mutex
+	pairMu    sync.Mutex
 	dbPath    string
 	container *sqlstore.Container
 	client    *whatsmeow.Client
@@ -58,6 +59,7 @@ type Manager struct {
 	lastQR      string
 	lastQRAt    time.Time
 	lastQRErr   string
+	lastResetAt time.Time
 	pairCode    string
 	pairCodeAt  time.Time
 	pairPhone   string
@@ -87,6 +89,31 @@ func (m *Manager) setStatus(connected bool, phone, pushName string) {
 	m.connected = connected
 	m.phone = phone
 	m.pushName = pushName
+}
+
+// tryPairLock mengunci alur pairing; gagal bila ada pairing berjalan.
+func (m *Manager) tryPairLock() bool {
+	return m.pairMu.TryLock()
+}
+
+func (m *Manager) unlockPair() {
+	m.pairMu.Unlock()
+}
+
+// resetSessionGuarded: reset hanya bila terakhir >45 dtk lalu (anti-spam klik).
+// Mengembalikan true bila reset benar-benar dilakukan.
+func (m *Manager) resetSessionGuarded() bool {
+	m.mu.Lock()
+	since := time.Since(m.lastResetAt)
+	m.mu.Unlock()
+	if since < 45*time.Second {
+		return false
+	}
+	m.resetSession()
+	m.mu.Lock()
+	m.lastResetAt = time.Now()
+	m.mu.Unlock()
+	return true
 }
 
 // resetSession membuang seluruh state pairing lama agar percobaan

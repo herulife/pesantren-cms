@@ -157,7 +157,7 @@ export default function BsNotifikasi() {
                       )}
                     </div>
                     <div className="mt-2">
-                      <button className="btn btn-sm btn-success" disabled={qrLoading} onClick={() => void loadQR()}>
+                      <button className="btn btn-sm btn-success" disabled={qrLoading || (qrUrl !== '' && qrLeft > 10)} title={qrUrl !== '' && qrLeft > 10 ? `Tunggu ${qrLeft}d, QR masih berlaku` : undefined} onClick={() => void loadQR()}>
                         {qrLoading ? 'Memuat…' : qrUrl ? `QR Baru (${qrLeft}d)` : 'Muat QR'}
                       </button>
                     </div>

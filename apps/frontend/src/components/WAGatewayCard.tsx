@@ -201,7 +201,8 @@ export default function WAGatewayCard() {
                   </div>
                   <button
                     onClick={() => void loadQR()}
-                    disabled={qrLoading}
+                    disabled={qrLoading || (qrUrl !== '' && qrLeft > 10)}
+                    title={qrUrl !== '' && qrLeft > 10 ? `Tunggu ${qrLeft}d, QR masih berlaku` : undefined}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                   >
                     <RefreshCw size={15} className={qrLoading ? 'animate-spin' : ''} />

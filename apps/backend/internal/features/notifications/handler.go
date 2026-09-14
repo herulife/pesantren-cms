@@ -58,9 +58,10 @@ func (h *Handler) GetWAQR(w http.ResponseWriter, r *http.Request) {
 			writeJSONResponse(w, http.StatusConflict, false, "WhatsApp sudah terhubung", nil)
 			return
 		}
-		// 429 agar UI melakukan retry otomatis
+		// 429 agar UI menunggu (pairing berjalan / throttling), bukan retry brutal.
+		// 503 hanya untuk kegagalan tak terduga.
 		code := http.StatusTooManyRequests
-		if ttl == 0 {
+		if ttl == 0 && err.Error() != "pairing sedang berjalan, tunggu sebentar" {
 			code = http.StatusServiceUnavailable
 		}
 		writeJSONResponse(w, code, false, err.Error(), nil)
