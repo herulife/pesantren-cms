@@ -67,10 +67,18 @@ export default function BsNotifikasi() {
   const qrLeft = Math.max(0, Math.ceil((qrExpAt - qrNow) / 1000));
 
   useEffect(() => {
+    if (status?.connected) {
+      if (qrUrl) {
+        URL.revokeObjectURL(qrUrl);
+        setQrUrl('');
+      }
+      return;
+    }
     if (qrUrl && qrExpAt > 0 && qrNow >= qrExpAt) {
       void loadQR();
     }
-  }, [qrNow, qrUrl, qrExpAt, loadQR]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrNow, qrUrl, qrExpAt, status?.connected]);
 
   const askPairCode = async () => {
     if (!pairPhone.trim()) {
