@@ -2,12 +2,12 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  getMySantri, getMyBills, getMyLedger, getMyReceipt,
+  getMySantri, getMyBills, getMyLedger,
   submitSppProof, submitIuranProof, uploadImage,
-  Santri, MyBill, PayTx, ReceiptData, SettingsMap,
+  Santri, MyBill, PayTx, SettingsMap,
 } from '@/lib/api';
 import { getPublicSettingsMap } from '@/lib/api';
-import KwitansiModal, { formatPeriode } from '@/components/KwitansiModal';
+import KwitansiModal, { KwitansiTx, formatPeriode } from '@/components/KwitansiModal';
 import { useToast } from '@/components/Toast';
 
 function rp(n: number) {
@@ -26,7 +26,7 @@ export default function PortalPaymentSppPage() {
   const [method, setMethod] = useState('Transfer');
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [kwitansi, setKwitansi] = useState<ReceiptData | null>(null);
+  const [kwitansi, setKwitansi] = useState<KwitansiTx | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,10 +92,16 @@ export default function PortalPaymentSppPage() {
     }
   };
 
-  const openKwitansi = async (santriId: number, period: string) => {
-    const kw = await getMyReceipt(santriId, period.slice(0, 7));
-    if (kw) setKwitansi(kw);
-    else showToast('error', 'Belum ada kwitansi periode ini.');
+  const openKwitansiTx = (t: PayTx) => {
+    setKwitansi({
+      code: t.code,
+      date: t.date,
+      santri_nis: t.santri_nis,
+      santri_name: t.santri_name,
+      description: t.description,
+      amount: t.amount,
+      method: t.method,
+    });
   };
 
   const bankInfo = [settings.psb_payment_bank_name, settings.psb_payment_account_number, settings.psb_payment_account_name].filter(Boolean).join(' • ');
@@ -156,7 +162,11 @@ export default function PortalPaymentSppPage() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => openKwitansi(b.santri_id, b.period)}
+                      onClick={() => {
+                        const tx = ledger.find((t) => t.bill_id === b.bill_id && t.bill_type === b.bill_type);
+                        if (tx) openKwitansiTx(tx);
+                        else showToast('error', 'Belum ada pembayaran tercatat.');
+                      }}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
                     >
                       Kwitansi
@@ -206,7 +216,7 @@ export default function PortalPaymentSppPage() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-black text-emerald-700">{rp(t.amount)}</p>
                   <button
-                    onClick={() => openKwitansi(t.santri_id, (t.date || '').slice(0, 7))}
+                    onClick={() => openKwitansiTx(t)}
                     className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
                   >
                     Kwitansi
