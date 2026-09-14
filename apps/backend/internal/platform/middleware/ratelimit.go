@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strings"
 	"fmt"
 	"net"
 	"net/http"
@@ -93,10 +94,24 @@ func (rl *RateLimiter) filterRecentRequests(requests []time.Time, now time.Time)
 	return filtered
 }
 
+// clientIP: di balik nginx (RemoteAddr loopback) pakai entri TERAKHIR
+// X-Forwarded-For (= IP asli menurut nginx, append-only) atau X-Real-IP.
+// Koneksi langsung yang memalsukan header TETAP dibaca dari RemoteAddr.
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil && host != "" {
-		return host
+	if err != nil || host == "" {
+		host = r.RemoteAddr
 	}
-	return r.RemoteAddr
+	if host == "127.0.0.1" || host == "::1" {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			if last := strings.TrimSpace(parts[len(parts)-1]); last != "" {
+				return last
+			}
+		}
+		if xr := strings.TrimSpace(r.Header.Get("X-Real-IP")); xr != "" {
+			return xr
+		}
+	}
+	return host
 }

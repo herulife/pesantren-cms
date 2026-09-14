@@ -23,7 +23,7 @@ services:
       APP_URL: https://almaparung.com
       API_PORT: "8080"
       ALLOWED_ORIGINS: https://almaparung.com,https://www.almaparung.com
-      DB_PATH: /data/alma.db
+      DB_PATH: /data/alma-parung.db
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECURE: "true"
       DEV_MODE: "false"

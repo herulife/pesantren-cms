@@ -13,4 +13,5 @@ COPY apps/backend/public.key ./public.key
 COPY apps/backend/. ./
 RUN mkdir -p ./public/uploads /data
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1:8080/api/ready || exit 1
 CMD ["./almaparung-api"]

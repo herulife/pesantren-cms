@@ -40,6 +40,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"strings"
 	"time"
 
@@ -186,6 +188,17 @@ func main() {
 		// Public Routes
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("OK"))
+		})
+
+		// Readiness: liveness OK belum berarti DB bisa diakses.
+		r.Get("/ready", func(w http.ResponseWriter, r *http.Request) {
+			var one int
+			if err := database.DB.QueryRow("SELECT 1").Scan(&one); err != nil {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				w.Write([]byte("NOT READY"))
+				return
+			}
+			w.Write([]byte("READY"))
 		})
 
 		// Public Auth
@@ -455,9 +468,26 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error(context.Background(), "api server stopped unexpectedly", logger.Field{"error": err.Error()})
-		os.Exit(1)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error(context.Background(), "api server stopped unexpectedly", logger.Field{"error": err.Error()})
+			os.Exit(1)
+		}
+	}()
+
+	// PHASE 22: graceful shutdown — berhenti terima request, selesaikan
+	// transaksi aktif, tutup DB, hentikan antrean WA dengan aman.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logger.Info(context.Background(), "api server shutting down gracefully", nil)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error(context.Background(), "api server shutdown error", logger.Field{"error": err.Error()})
+	}
+	if database.DB != nil {
+		_ = database.DB.Close()
 	}
 }
 
