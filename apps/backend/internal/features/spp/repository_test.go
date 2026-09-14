@@ -25,6 +25,36 @@ func newSppTestDB(t *testing.T) *sql.DB {
 		status TEXT DEFAULT 'aktif'
 	);
 
+	CREATE TABLE payment_transactions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT DEFAULT '',
+		date TEXT DEFAULT '',
+		santri_id INTEGER,
+		bill_type TEXT,
+		bill_id INTEGER,
+		bill_period TEXT DEFAULT '',
+		description TEXT DEFAULT '',
+		amount INTEGER,
+		method TEXT DEFAULT '',
+		created_by INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		idempotency_key TEXT
+	);
+
+	CREATE TABLE receipts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		receipt_no TEXT,
+		santri_id INTEGER,
+		period TEXT,
+		description TEXT,
+		total INTEGER,
+		method TEXT,
+		created_by INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME,
+		idempotency_key TEXT
+	);
+
 	CREATE TABLE spp_bills (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		santri_id INTEGER NOT NULL,
@@ -36,6 +66,8 @@ func newSppTestDB(t *testing.T) *sql.DB {
 		paid_method TEXT DEFAULT '',
 		paid_at DATETIME,
 		notes TEXT DEFAULT '',
+		payment_proof TEXT DEFAULT '',
+		pending_amount INTEGER DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (santri_id) REFERENCES santri(id),
@@ -165,7 +197,7 @@ func TestReportPerSantri(t *testing.T) {
 	if _, _, err := repo.GenerateBills("2026-09", "", 100000, "", "", nil); err != nil {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
-	if _, _, err := repo.GenerateBills("2026-10", 100000, ""); err != nil {
+	if _, _, err := repo.GenerateBills("2026-10", "", 100000, "", "", nil); err != nil {
 		t.Fatalf("GenerateBills returned error: %v", err)
 	}
 	bills, _ := repo.ListBills("2026-09", "", 0)

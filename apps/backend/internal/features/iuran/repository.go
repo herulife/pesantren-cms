@@ -1,6 +1,7 @@
 package iuran
 
 import (
+	"almaparung-api/internal/platform/finance"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,24 +17,24 @@ var (
 )
 
 type IuranBill struct {
-	ID          int       `json:"id"`
-	SantriID    int       `json:"santri_id"`
-	SantriName  string    `json:"santri_name,omitempty"`
-	SantriNIS   string    `json:"santri_nis,omitempty"`
-	SantriClass string    `json:"santri_class,omitempty"`
-	Name        string    `json:"name"`
-	Period      string    `json:"period"`
-	Amount      int       `json:"amount"`
-	PaidAmount  int       `json:"paid_amount"`
-	Status      string    `json:"status"` // unpaid, partial, paid, pending
-	DueDate     string    `json:"due_date"`
-	PaidMethod  string    `json:"paid_method"`
-	PaidAt      string    `json:"paid_at,omitempty"`
-	Notes       string    `json:"notes"`
-	PaymentProof string   `json:"payment_proof,omitempty"`
-	PendingAmount int     `json:"pending_amount,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID            int       `json:"id"`
+	SantriID      int       `json:"santri_id"`
+	SantriName    string    `json:"santri_name,omitempty"`
+	SantriNIS     string    `json:"santri_nis,omitempty"`
+	SantriClass   string    `json:"santri_class,omitempty"`
+	Name          string    `json:"name"`
+	Period        string    `json:"period"`
+	Amount        int       `json:"amount"`
+	PaidAmount    int       `json:"paid_amount"`
+	Status        string    `json:"status"` // unpaid, partial, paid, pending
+	DueDate       string    `json:"due_date"`
+	PaidMethod    string    `json:"paid_method"`
+	PaidAt        string    `json:"paid_at,omitempty"`
+	Notes         string    `json:"notes"`
+	PaymentProof  string    `json:"payment_proof,omitempty"`
+	PendingAmount int       `json:"pending_amount,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type IuranSantri struct {
@@ -44,14 +45,14 @@ type IuranSantri struct {
 }
 
 type IuranSummary struct {
-	Period      string `json:"period"`
-	Billed      int    `json:"billed"`
-	Collected   int    `json:"collected"`
-	Outstanding int    `json:"outstanding"`
-	CountTotal  int    `json:"count_total"`
-	CountPaid   int    `json:"count_paid"`
-	CountPartial int   `json:"count_partial"`
-	CountUnpaid int    `json:"count_unpaid"`
+	Period       string `json:"period"`
+	Billed       int    `json:"billed"`
+	Collected    int    `json:"collected"`
+	Outstanding  int    `json:"outstanding"`
+	CountTotal   int    `json:"count_total"`
+	CountPaid    int    `json:"count_paid"`
+	CountPartial int    `json:"count_partial"`
+	CountUnpaid  int    `json:"count_unpaid"`
 }
 
 type Repository struct {
@@ -176,21 +177,21 @@ func (r *Repository) GenerateBills(name, period string, amount int, dueDate, cla
 		}
 	} else {
 		rows, err := r.db.Query(`SELECT id FROM santri WHERE status = 'aktif' ORDER BY id`)
-	if err != nil {
-		return 0, 0, err
-	}
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			rows.Close()
+		if err != nil {
 			return 0, 0, err
 		}
-		ids = append(ids, id)
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return 0, 0, err
-	}
+		for rows.Next() {
+			var id int
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return 0, 0, err
+			}
+			ids = append(ids, id)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return 0, 0, err
+		}
 	}
 
 	for _, id := range ids {
@@ -266,55 +267,92 @@ func (r *Repository) DeleteByPeriod(name, period string) (int64, error) {
 }
 
 func (r *Repository) PayBill(id, amount int, method, paidAt, notes string, byID int) error {
+	return finance.RetryOnBusy(func() error {
+		return r.payBillTx(id, amount, method, paidAt, notes, byID, "")
+	}, 10)
+}
+
+// PayBillWithKey varian idempoten: retry dengan key sama TIDAK menulis ulang.
+func (r *Repository) PayBillWithKey(id, amount int, method, paidAt, notes string, byID int, idemKey string) error {
+	return finance.RetryOnBusy(func() error {
+		return r.payBillTx(id, amount, method, paidAt, notes, byID, idemKey)
+	}, 10)
+}
+
+func (r *Repository) payBillTx(id, amount int, method, paidAt, notes string, byID int, idemKey string) error {
+	if amount <= 0 {
+		return errBillOverpay
+	}
 	if paidAt == "" {
 		paidAt = time.Now().Format("2006-01-02 15:04:05")
 	}
 	if method == "" {
 		method = "manual"
 	}
-	tx, err := r.db.Begin()
+	tx, err := finance.BeginTx(r.db)
 	if err != nil {
 		return err
 	}
+	committed := false
 	defer func() {
-		if err != nil {
+		if !committed {
 			_ = tx.Rollback()
 		}
 	}()
 
-	var total, paid, santriID int
-	var iname, period string
-	err = tx.QueryRow(`SELECT amount, paid_amount, santri_id, name, period FROM iuran_bills WHERE id = ?`, id).Scan(&total, &paid, &santriID, &iname, &period)
-	if err != nil {
-		return err
+	if idemKey != "" {
+		found, err := finance.FindLedgerByKey(tx, idemKey)
+		if err != nil {
+			return err
+		}
+		if found {
+			_ = tx.Rollback()
+			committed = true
+			return finance.ErrIdempotentReplay
+		}
 	}
-	if paid >= total {
-		_ = tx.Rollback()
-		return errBillAlreadyPaid
-	}
-	if paid+amount > total {
-		_ = tx.Rollback()
-		return errBillOverpay
-	}
-	newPaid := paid + amount
-	status := "partial"
-	if newPaid == total {
-		status = "paid"
-	}
-	_, err = tx.Exec(
-		`UPDATE iuran_bills SET paid_amount = ?, status = ?, paid_method = ?, paid_at = ?, notes = CASE WHEN ? != '' THEN ? ELSE notes END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-		newPaid, status, method, paidAt, notes, notes, id,
+
+	res, err := tx.Exec(
+		`UPDATE iuran_bills SET paid_amount = paid_amount + ?, status = CASE WHEN paid_amount + ? >= amount THEN 'paid' ELSE 'partial' END,
+		 paid_method = ?, paid_at = ?, notes = CASE WHEN ? != '' THEN ? ELSE notes END, updated_at = CURRENT_TIMESTAMP
+		 WHERE id = ? AND status IN ('unpaid', 'partial', 'pending') AND paid_amount + ? <= amount`,
+		amount, amount, method, paidAt, notes, notes, id, amount,
 	)
 	if err != nil {
 		return err
 	}
-	if err := insertLedger(tx, "IURAN", id, santriID, amount, method, paidAt, iname, period, byID); err != nil {
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		var total, paid int
+		qerr := tx.QueryRow(`SELECT amount, paid_amount FROM iuran_bills WHERE id = ?`, id).Scan(&total, &paid)
+		if qerr != nil {
+			return qerr
+		}
+		if paid >= total {
+			return errBillAlreadyPaid
+		}
+		return errBillOverpay
+	}
+
+	var santriID int
+	var iname, period string
+	if err := tx.QueryRow(`SELECT santri_id, name, period FROM iuran_bills WHERE id = ?`, id).Scan(&santriID, &iname, &period); err != nil {
+		return err
+	}
+	if err := insertLedger(tx, "IURAN", id, santriID, amount, method, paidAt, iname, period, byID, idemKey); err != nil {
+		if IsDuplicateError(err) {
+			return finance.ErrIdempotentReplay
+		}
 		return err
 	}
 	if err := upsertRekap(tx, santriID, period, amount, method, byID, "Rekap pembayaran "+iname); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	committed = true
+	return nil
 }
 
 func (r *Repository) WAKwitansiEnabled() bool {
@@ -342,13 +380,29 @@ func (r *Repository) KwitansiInfoByBill(billID int) (*KwitansiInfo, error) {
 var errProofConflict = errors.New("tagihan sedang menunggu verifikasi")
 
 func (r *Repository) SubmitProof(billID, uid, amount int, method, paidAt, proof string) error {
+	return finance.RetryOnBusy(func() error {
+		return r.SubmitProofOnce(billID, uid, amount, method, paidAt, proof)
+	}, 10)
+}
+
+func (r *Repository) SubmitProofOnce(billID, uid, amount int, method, paidAt, proof string) error {
 	if paidAt == "" {
 		paidAt = time.Now().Format("2006-01-02 15:04:05")
 	}
+	tx, err := finance.BeginTx(r.db)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
 	var total, paid int
 	var status string
 	var owner int
-	err := r.db.QueryRow(`SELECT b.amount, b.paid_amount, b.status, COALESCE(s.user_id, 0)
+	err = tx.QueryRow(`SELECT b.amount, b.paid_amount, b.status, COALESCE(s.user_id, 0)
 		FROM iuran_bills b JOIN santri s ON s.id = b.santri_id WHERE b.id = ?`, billID).Scan(&total, &paid, &status, &owner)
 	if err != nil {
 		return err
@@ -365,21 +419,61 @@ func (r *Repository) SubmitProof(billID, uid, amount int, method, paidAt, proof 
 	if method == "" {
 		method = "Transfer"
 	}
-	_, err = r.db.Exec(`UPDATE iuran_bills SET status = 'pending', paid_method = ?, paid_at = ?, payment_proof = ?, pending_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+	res, err := tx.Exec(`UPDATE iuran_bills SET status = 'pending', paid_method = ?, paid_at = ?, payment_proof = ?, pending_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status NOT IN ('paid', 'pending')`,
 		method, paidAt, proof, amount, billID)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return errProofConflict
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	committed = true
+	return nil
 }
 
 func (r *Repository) VerifyBill(billID int, approve bool, note string, byID int) error {
+	return finance.RetryOnBusy(func() error {
+		return r.verifyBillTx(billID, approve, note, byID, "")
+	}, 10)
+}
+
+// VerifyBillWithKey varian idempoten untuk approve (retry aman).
+func (r *Repository) VerifyBillWithKey(billID int, approve bool, note string, byID int, idemKey string) error {
+	return finance.RetryOnBusy(func() error {
+		return r.verifyBillTx(billID, approve, note, byID, idemKey)
+	}, 10)
+}
+
+func (r *Repository) verifyBillTx(billID int, approve bool, note string, byID int, idemKey string) error {
+	tx, err := finance.BeginTx(r.db)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
 	var amount int
 	var method, paidAt string
-	err := r.db.QueryRow(`SELECT pending_amount, paid_method, paid_at FROM iuran_bills WHERE id = ? AND status = 'pending'`, billID).Scan(&amount, &method, &paidAt)
+	err = tx.QueryRow(`SELECT pending_amount, paid_method, paid_at FROM iuran_bills WHERE id = ? AND status = 'pending'`, billID).Scan(&amount, &method, &paidAt)
 	if err != nil {
 		return err
 	}
 	if !approve {
-		_, err = r.db.Exec(`UPDATE iuran_bills SET status = CASE WHEN paid_amount > 0 THEN 'partial' ELSE 'unpaid' END, payment_proof = '', pending_amount = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, billID)
-		return err
+		_, err = tx.Exec(`UPDATE iuran_bills SET status = CASE WHEN paid_amount > 0 THEN 'partial' ELSE 'unpaid' END, payment_proof = '', pending_amount = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'pending'`, billID)
+		if err != nil {
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		committed = true
+		return nil
 	}
 	if amount <= 0 {
 		return errBillOverpay
@@ -387,12 +481,56 @@ func (r *Repository) VerifyBill(billID int, approve bool, note string, byID int)
 	if note != "" {
 		note = "Verifikasi: " + note
 	}
-	return r.PayBill(billID, amount, method, paidAt, note, byID)
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	committed = true
+	return r.payBillTx(billID, amount, method, paidAt, note, byID, idemKey)
 }
 
 func (r *Repository) CancelBill(id int) error {
-	res, err := r.db.Exec(
-		`UPDATE iuran_bills SET paid_amount = 0, status = 'unpaid', paid_method = '', paid_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status != 'unpaid'`,
+	return finance.RetryOnBusy(func() error {
+		return r.CancelBillOnce(id)
+	}, 10)
+}
+
+func (r *Repository) CancelBillOnce(id int) error {
+	tx, err := finance.BeginTx(r.db)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+	var santriID, paid int
+	var period, method string
+	err = tx.QueryRow(`SELECT santri_id, paid_amount, period, COALESCE(paid_method,'') FROM iuran_bills WHERE id = ? AND status != 'unpaid'`, id).Scan(&santriID, &paid, &period, &method)
+	if err != nil {
+		return err
+	}
+	if paid > 0 {
+		revKey := fmt.Sprintf("reversal-IURAN-%d-%d", id, paid)
+		found, err := finance.FindLedgerByKey(tx, revKey)
+		if err != nil {
+			return err
+		}
+		if !found {
+			if _, err := tx.Exec(`INSERT INTO payment_transactions (date, santri_id, bill_type, bill_id, bill_period, description, amount, method, created_by, idempotency_key) VALUES (CURRENT_TIMESTAMP, ?, 'IURAN', ?, ?, ?, ?, ?, ?, ?)`,
+				santriID, id, period, "REVERSAL IURAN "+period, -paid, normPayMethod(method), 0, revKey); err != nil {
+				return err
+			}
+			month := period
+			if len(month) >= 7 {
+				month = month[:7]
+			}
+			_, _ = tx.Exec(`UPDATE receipts SET total = total - ?, updated_at = CURRENT_TIMESTAMP WHERE santri_id = ? AND period = ?`, paid, santriID, month)
+		}
+	}
+	res, err := tx.Exec(
+		`UPDATE iuran_bills SET paid_amount = 0, status = 'unpaid', paid_method = '', paid_at = NULL, payment_proof = '', pending_amount = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status != 'unpaid'`,
 		id,
 	)
 	if err != nil {
@@ -401,6 +539,10 @@ func (r *Repository) CancelBill(id int) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return sql.ErrNoRows
 	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	committed = true
 	return nil
 }
 
@@ -427,15 +569,15 @@ func (r *Repository) Summary(period, name string) (*IuranSummary, error) {
 }
 
 type IuranReportRow struct {
-	SantriID  int    `json:"santri_id"`
-	NIS       string `json:"nis"`
-	Name      string `json:"name"`
-	Class     string `json:"class"`
-	Billed    int    `json:"billed"`
-	Collected int    `json:"collected"`
-	Outstanding int  `json:"outstanding"`
-	CountBills int   `json:"count_bills"`
-	Status    string `json:"status"`
+	SantriID    int    `json:"santri_id"`
+	NIS         string `json:"nis"`
+	Name        string `json:"name"`
+	Class       string `json:"class"`
+	Billed      int    `json:"billed"`
+	Collected   int    `json:"collected"`
+	Outstanding int    `json:"outstanding"`
+	CountBills  int    `json:"count_bills"`
+	Status      string `json:"status"`
 }
 
 func (r *Repository) Report(periodStart, periodEnd, class string, santriID int) ([]IuranReportRow, error) {
@@ -531,9 +673,9 @@ func normPayMethod(m string) string {
 	}
 }
 
-func insertLedger(tx *sql.Tx, billType string, billID, santriID, amount int, method, paidAt, desc, billPeriod string, byID int) error {
-	res, err := tx.Exec(`INSERT INTO payment_transactions (date, santri_id, bill_type, bill_id, bill_period, description, amount, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		paidAt, santriID, billType, billID, billPeriod, desc, amount, normPayMethod(method), byID)
+func insertLedger(tx *sql.Tx, billType string, billID, santriID, amount int, method, paidAt, desc, billPeriod string, byID int, idemKey string) error {
+	res, err := tx.Exec(`INSERT INTO payment_transactions (date, santri_id, bill_type, bill_id, bill_period, description, amount, method, created_by, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		paidAt, santriID, billType, billID, billPeriod, desc, amount, normPayMethod(method), byID, sql.NullString{String: idemKey, Valid: idemKey != ""})
 	if err != nil {
 		return err
 	}
@@ -572,11 +714,10 @@ func upsertRekap(tx *sql.Tx, santriID int, billPeriod string, amount int, method
 	}
 	if err == sql.ErrNoRows {
 		year := month[:4]
-		var seq int
-		if err := tx.QueryRow(`SELECT COALESCE(MAX(CAST(substr(receipt_no, 10) AS INTEGER)), 0) + 1 FROM receipts WHERE substr(receipt_no, 5, 4) = ?`, year).Scan(&seq); err != nil {
+		rno, err := finance.NextReceiptNo(tx, year)
+		if err != nil {
 			return err
 		}
-		rno = fmt.Sprintf("KWI-%s/%06d", year, seq)
 		_, err = tx.Exec(`INSERT INTO receipts (receipt_no, santri_id, period, description, total, method, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 			rno, santriID, month, label, amount, method, byID)
 		return err

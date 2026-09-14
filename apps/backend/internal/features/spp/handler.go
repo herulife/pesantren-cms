@@ -2,6 +2,7 @@ package spp
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/finance"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
@@ -67,10 +68,9 @@ func writeValidationError(w http.ResponseWriter, errs map[string][]string) {
 }
 
 func adminID(r *http.Request) int {
-	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
-		if id, ok := claims["id"].(float64); ok {
-			return int(id)
-		}
+	// PHASE 6: pakai helper auth tunggal (assertion lama ke map selalu gagal -> 0).
+	if id, ok := auth.GetAuthenticatedUserID(r.Context()); ok {
+		return id
 	}
 	return 0
 }
@@ -328,7 +328,19 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		writeValidationError(w, map[string][]string{"amount": {"Jumlah bayar harus lebih dari 0"}})
 		return
 	}
-	if err := h.repo.PayBill(id, req.Amount, strings.TrimSpace(req.Method), strings.TrimSpace(req.PaidAt), req.Notes, adminID(r)); err != nil {
+	payKey := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	payDup := false
+	var payErr error
+	if payKey != "" {
+		payErr = h.repo.PayBillWithKey(id, req.Amount, strings.TrimSpace(req.Method), strings.TrimSpace(req.PaidAt), req.Notes, adminID(r), payKey)
+		if payErr == finance.ErrIdempotentReplay {
+			payErr = nil
+			payDup = true
+		}
+	} else {
+		payErr = h.repo.PayBill(id, req.Amount, strings.TrimSpace(req.Method), strings.TrimSpace(req.PaidAt), req.Notes, adminID(r))
+	}
+	if err := payErr; err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			sendJSONResponse(w, http.StatusNotFound, false, "Tagihan tidak ditemukan", nil)
 			return
@@ -344,7 +356,7 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	aid := adminID(r)
 	logger.RecordActivity(&aid, "PAY_SPP", fmt.Sprintf("Pembayaran SPP ID %d sebesar Rp %d", id, req.Amount), r.RemoteAddr, r.UserAgent())
 	h.notifyKwitansiWA(id, r, aid)
-	sendJSONResponse(w, http.StatusOK, true, "Pembayaran SPP berhasil dicatat", nil)
+	sendJSONResponse(w, http.StatusOK, true, "Pembayaran SPP berhasil dicatat", map[string]interface{}{"duplicate": payDup})
 }
 
 func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
@@ -505,7 +517,20 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		Note    string `json:"note"`
 	}
 	_ = validators.DecodeJSON(w, r, &req)
-	if err := h.repo.VerifyBill(id, req.Approve, strings.TrimSpace(req.Note), adminID(r)); err != nil {
+	verifyKey := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	verifyDup := false
+	var verifyErr error
+	if verifyKey != "" {
+		verifyErr = h.repo.VerifyBillWithKey(id, req.Approve, strings.TrimSpace(req.Note), adminID(r), verifyKey)
+		if verifyErr == finance.ErrIdempotentReplay {
+			verifyErr = nil
+			verifyDup = true
+		}
+	} else {
+		verifyErr = h.repo.VerifyBill(id, req.Approve, strings.TrimSpace(req.Note), adminID(r))
+	}
+	_ = verifyDup
+	if err := verifyErr; err != nil {
 		if err == sql.ErrNoRows {
 			sendJSONResponse(w, http.StatusNotFound, false, "Tidak ada pengajuan menunggu verifikasi", nil)
 			return
@@ -563,9 +588,11 @@ type IRepository interface {
 	DeleteBySantri(santriID int, period string) (int64, error)
 	SubmitProof(billID, uid, amount int, method, paidAt, proof string) error
 	VerifyBill(billID int, approve bool, note string, byID int) error
+	VerifyBillWithKey(billID int, approve bool, note string, byID int, key string) error
 	CombinedReport(periodStart, periodEnd, class string, santriID int) ([]CombinedRow, error)
 	GenerateBills(period, periodEnd string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
 	PayBill(id, amount int, method, paidAt, notes string, byID int) error
+	PayBillWithKey(id, amount int, method, paidAt, notes string, byID int, key string) error
 	CancelBill(id int) error
 	WAKwitansiEnabled() bool
 	KwitansiInfoByBill(billID int) (*KwitansiInfo, error)

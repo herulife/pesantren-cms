@@ -29,6 +29,9 @@ func Connect(dbPath string) {
 		dbPath = absPath
 	}
 
+	if !strings.Contains(dbPath, "?") {
+		dbPath += "?_txlock=immediate"
+	}
 	DB, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
