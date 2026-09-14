@@ -714,6 +714,7 @@ func createTables() {
 	addColumnIfNotExists("users", "whatsapp", "TEXT DEFAULT ''")
 	addColumnIfNotExists("news", "is_pinned", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("users", "last_login_at", "DATETIME")
+	addColumnIfNotExists("users", "token_version", "INTEGER NOT NULL DEFAULT 0")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("gallery", "album_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "album_slug", "TEXT DEFAULT ''")

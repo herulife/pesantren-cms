@@ -32,6 +32,7 @@ type User struct {
 	PasswordHash string     `json:"-"`
 	Name         string     `json:"name"`
 	Role         string     `json:"role"`
+	TokenVersion int        `json:"-"`
 	CreatedAt    time.Time  `json:"created_at"`
 	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
 }
@@ -69,6 +70,44 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 
 func (r *Repository) CheckPassword(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+
+// FindByID mengambil user by ID beserta token_version (untuk validasi sesi).
+func (r *Repository) FindByID(id int) (*User, error) {
+	var u User
+	var createdAt string
+	var lastLoginAt sql.NullString
+	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, COALESCE(token_version,0), created_at, last_login_at FROM users WHERE id = ?", id).
+		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &u.TokenVersion, &createdAt, &lastLoginAt)
+	if err == sql.ErrNoRows {
+		return nil, errors.New("user not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	u.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+	if lastLoginAt.Valid && lastLoginAt.String != "" {
+		if parsed, parseErr := time.Parse("2006-01-02 15:04:05", lastLoginAt.String); parseErr == nil {
+			u.LastLoginAt = &parsed
+		}
+	}
+	return &u, nil
+}
+
+// GetTokenVersion mengambil versi sesi user (0 bila kolom belum ada/error).
+func (r *Repository) GetTokenVersion(id int) int {
+	var tv int
+	if err := r.db.QueryRow("SELECT COALESCE(token_version,0) FROM users WHERE id = ?", id).Scan(&tv); err != nil {
+		return 0
+	}
+	return tv
+}
+
+// BumpTokenVersion menaikkan versi sesi sehingga SEMUA token lama user
+// tersebut invalid (dipakai saat logout, reset password, ganti role).
+func (r *Repository) BumpTokenVersion(id int) error {
+	_, err := r.db.Exec("UPDATE users SET token_version = COALESCE(token_version,0) + 1 WHERE id = ?", id)
+	return err
 }
 
 func (r *Repository) UpdatePassword(id int, newPassword string) error {
@@ -186,7 +225,8 @@ func (r *Repository) DeleteUser(id int) error {
 		{query: "DELETE FROM tahfidz_progress WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM payments WHERE user_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM registrations WHERE user_id = ?", args: []interface{}{id}},
-		{query: "DELETE FROM activity_logs WHERE user_id = ?", args: []interface{}{id}},
+		// PHASE 2/7: audit history TIDAK dihapus saat user dihapus (retensi forensik).
+		{query: "UPDATE activity_logs SET user_id = NULL WHERE user_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM kesantrian_aspek WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM raports WHERE student_id = ?", args: []interface{}{id}},
 	}

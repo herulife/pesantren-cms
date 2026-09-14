@@ -58,6 +58,8 @@ func main() {
 
 	// 1. Initialize Database
 	database.Connect(getEnv("DB_PATH", "./alma.db"))
+	// PHASE 2: validasi sesi revocable (user exists + role + token_version).
+	auth.ConfigureSessionValidation(database.DB)
 
 	// 1b. WhatsApp gateway mandiri (auto-connect bila sesi tersimpan ada)
 	go wagate.GetManager().Start(context.Background())

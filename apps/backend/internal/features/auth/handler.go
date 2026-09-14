@@ -38,6 +38,19 @@ func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
 
+func (h *Handler) issueToken(user *User) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":            user.ID,
+		"email":         user.Email,
+		"role":          user.Role,
+		"token_version": h.repo.GetTokenVersion(user.ID),
+		"iat":           time.Now().Unix(),
+		"jti":           uuid.New().String(),
+		"exp":           time.Now().Add(time.Hour * 24).Unix(),
+	})
+	return token.SignedString(GetJWTSecret())
+}
+
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	correlationID := r.Header.Get("X-Correlation-ID")
 	if correlationID == "" {
@@ -89,15 +102,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		user.LastLoginAt = &now
 	}
 
-	// Create JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"role":  user.Role,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
-	})
-
-	tokenString, err := token.SignedString(GetJWTSecret())
+	// Create JWT (revocable session)
+	tokenString, err := h.issueToken(user)
 	if err != nil {
 		logger.Error(r.Context(), "failed generating jwt token", logger.Field{
 			"correlation_id": correlationID,
@@ -273,15 +279,8 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		user.LastLoginAt = &now
 	}
 
-	// Create local JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"role":  user.Role,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
-	})
-
-	tokenString, err := token.SignedString(GetJWTSecret())
+	// Create local JWT (revocable session)
+	tokenString, err := h.issueToken(user)
 	if err != nil {
 		logger.Error(r.Context(), "failed generating jwt token for google login", logger.Field{
 			"correlation_id": correlationID,
@@ -303,6 +302,19 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	// PHASE 2: logout mengakhiri sesi server-side (revokasi token).
+	if raw := extractToken(r); raw != "" {
+		if token, err := jwt.Parse(raw, func(token *jwt.Token) (interface{}, error) {
+			return GetJWTSecret(), nil
+		}); err == nil {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if id, ok := claimInt(claims["id"]); ok && id > 0 {
+					_ = h.repo.BumpTokenVersion(id)
+					logger.RecordActivity(&id, "LOGOUT", "Logout (sesi diakhiri)", r.RemoteAddr, r.UserAgent())
+				}
+			}
+		}
+	}
 	clearAuthCookie(w)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -392,10 +404,8 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "CREATE_USER", fmt.Sprintf("Membuat user baru %s dengan role %s", newUser.Email, newUser.Role), r.RemoteAddr, r.UserAgent())
 
@@ -450,11 +460,12 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// PHASE 2: reset password mengakhiri semua sesi user tersebut.
+	_ = h.repo.BumpTokenVersion(id)
+
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "RESET_USER_PASSWORD", fmt.Sprintf("Mereset password User ID %d", id), r.RemoteAddr, r.UserAgent())
 
@@ -474,11 +485,9 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if currentID, ok := claims["id"].(float64); ok && int(currentID) == id {
-			writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Tidak diizinkan menghapus akun yang sedang dipakai", nil)
-			return
-		}
+	if me, ok := GetAuthenticatedUser(r); ok && me.ID == id {
+		writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Tidak diizinkan menghapus akun yang sedang dipakai", nil)
+		return
 	}
 
 	if err := h.repo.DeleteUser(id); err != nil {
@@ -496,10 +505,8 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Log activity
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "DELETE_USER", fmt.Sprintf("Menghapus User ID %d", id), r.RemoteAddr, r.UserAgent())
 
@@ -549,12 +556,13 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// PHASE 2: ganti role mengakhiri semua sesi user tersebut.
+	_ = h.repo.BumpTokenVersion(id)
+
 	// Log activity
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "UPDATE_ROLE", fmt.Sprintf("Mengubah role User ID %d menjadi '%s'", id, req.Role), r.RemoteAddr, r.UserAgent())
 
@@ -653,6 +661,9 @@ func clearAuthCookie(w http.ResponseWriter) {
 // IRepository ...
 type IRepository interface {
 	FindByEmail(email string) (*User, error)
+	FindByID(id int) (*User, error)
+	GetTokenVersion(id int) int
+	BumpTokenVersion(id int) error
 	CheckPassword(hashedPassword, password string) error
 	UpdatePassword(id int, newPassword string) error
 	CreateUser(user *User) error

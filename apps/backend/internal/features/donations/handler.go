@@ -2,6 +2,7 @@ package donations
 
 import (
 	"context"
+	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
@@ -224,8 +225,12 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// In a real app, we would get the admin ID from the context/session
-	adminID := 1
+	// PHASE 2: actor wajib dari authenticated context (hapus hardcoded adminID:=1).
+	adminID, ok := auth.GetAuthenticatedUserID(r.Context())
+	if !ok {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "Akses belum diizinkan", nil)
+		return
+	}
 
 	if err := h.repo.VerifyDonation(id, adminID); err != nil {
 		logger.Error(r.Context(), "donation verify failed", logger.Field{"operation": "donations_verify", "donation_id": id, "error": err.Error()})

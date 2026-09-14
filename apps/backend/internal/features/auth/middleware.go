@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"almaparung-api/internal/platform/logger"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,16 +15,24 @@ type contextKey string
 
 const UserContextKey contextKey = "user"
 
+// validRoles adalah daftar role yang diakui sistem.
+var validRoles = map[string]bool{
+	"superadmin": true, "bendahara": true, "panitia_psb": true,
+	"tim_media": true, "admin": true, "user": true,
+}
+
+func IsValidRole(role string) bool { return validRoles[role] }
+
+// sessionDB diisi via ConfigureSessionValidation (dipanggil main setelah
+// database.Connect, sehingga migrasi token_version sudah berjalan).
+var sessionDB *sql.DB
+
+// ConfigureSessionValidation mengaktifkan validasi sesi berbasis DB
+// (user exists + role cocok + token_version cocok) di AuthMiddleware.
+func ConfigureSessionValidation(db *sql.DB) { sessionDB = db }
+
 func CurrentUserID(ctx context.Context) (int, bool) {
-	claims, ok := ctx.Value(UserContextKey).(jwt.MapClaims)
-	if !ok {
-		return 0, false
-	}
-	idFloat, ok := claims["id"].(float64)
-	if !ok {
-		return 0, false
-	}
-	return int(idFloat), true
+	return GetAuthenticatedUserID(ctx)
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -71,9 +80,53 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// PHASE 2: validasi sesi ke database (revocable session).
+		if err := validateSession(claims); err != nil {
+			logger.Warn(r.Context(), "auth failed session revoked", logger.Field{
+				"correlation_id": correlationID,
+				"ip":             r.RemoteAddr,
+				"path":           r.URL.Path,
+				"reason":         err.Error(),
+			})
+			writeAPIError(w, http.StatusUnauthorized, correlationID, err.Error(), nil)
+			return
+		}
+
 		ctx := context.WithValue(r.Context(), UserContextKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// validateSession memastikan: user ada, role valid & cocok, token_version cocok.
+// Token lama tanpa claim token_version DITOLAK (wajib login ulang pasca-deploy).
+func validateSession(claims jwt.MapClaims) error {
+	if sessionDB == nil {
+		return nil // validasi DB belum dikonfigurasi (mis. unit test)
+	}
+	id, ok := claimInt(claims["id"])
+	if !ok || id <= 0 {
+		return fmt.Errorf("data sesi login tidak valid")
+	}
+	tv, ok := claimInt(claims["token_version"])
+	if !ok {
+		return fmt.Errorf("sesi kedaluwarsa, silakan login ulang")
+	}
+	claimRole, _ := claims["role"].(string)
+	if !IsValidRole(claimRole) {
+		return fmt.Errorf("role sesi tidak valid")
+	}
+	repo := &Repository{db: sessionDB}
+	user, err := repo.FindByID(id)
+	if err != nil {
+		return fmt.Errorf("akun tidak ditemukan atau sudah dihapus")
+	}
+	if user.Role != claimRole {
+		return fmt.Errorf("role berubah, silakan login ulang")
+	}
+	if user.TokenVersion != tv {
+		return fmt.Errorf("sesi sudah diakhiri, silakan login ulang")
+	}
+	return nil
 }
 
 func extractToken(r *http.Request) string {
@@ -94,22 +147,20 @@ func extractToken(r *http.Request) string {
 func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims)
+			user, ok := GetAuthenticatedUser(r)
 			if !ok {
 				writeAPIError(w, http.StatusUnauthorized, logger.CorrelationID(r), "Akses belum diizinkan", nil)
 				return
 			}
 
-			userRole, _ := claims["role"].(string)
-
 			// superadmin bypasses all role checks
-			if userRole == "superadmin" {
+			if user.Role == "superadmin" {
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			for _, role := range allowedRoles {
-				if userRole == role {
+				if user.Role == role {
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -117,14 +168,14 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 
 			logger.Warn(r.Context(), "rbac denied", logger.Field{
 				"correlation_id": logger.CorrelationID(r),
-				"role":           userRole,
+				"role":           user.Role,
 				"allowed_roles":  allowedRoles,
 				"ip":             r.RemoteAddr,
 				"path":           r.URL.Path,
 			})
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
-			fmt.Fprintf(w, `{"success":false,"message":"Akses ditolak. Role '%s' tidak memiliki izin untuk fitur ini."}`, userRole)
+			fmt.Fprintf(w, `{"success":false,"message":"Akses ditolak. Role '%s' tidak memiliki izin untuk fitur ini."}`, user.Role)
 		})
 	}
 }
