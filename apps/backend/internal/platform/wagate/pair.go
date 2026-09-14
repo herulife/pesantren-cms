@@ -41,10 +41,15 @@ func (m *Manager) handleEvent(evt interface{}) {
 
 // RequestQR memulai/mengambil kode QR terbaru sebagai PNG.
 // Mengembalikan PNG, sisa umur, dan pesan bila belum bisa.
-func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) {
+func (m *Manager) RequestQR(reqCtx context.Context) ([]byte, time.Duration, error) {
 	if st := m.StatusNow(); st.Connected {
 		return nil, 0, fmt.Errorf("sudah terhubung")
 	}
+	// PENTING: jangan pakai context HTTP — response selesai = context batal
+	// = socket pairing ikut mati sebelum HP sempat scan.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	_ = reqCtx
 	// Satu alur pairing dalam satu waktu; tolak bila sedang berjalan.
 	if !m.tryPairLock() {
 		return nil, 0, fmt.Errorf("pairing sedang berjalan, tunggu sebentar")
@@ -146,10 +151,14 @@ func (m *Manager) drainQRChannel(qrChan <-chan whatsmeow.QRChannelItem) {
 
 // RequestPairCode meminta kode taut 8 digit (format XXXX-XXXX) untuk nomor HP.
 // Nomor harus format internasional tanpa + (cth: 62812xxxxxxx).
-func (m *Manager) RequestPairCode(ctx context.Context, phone string) (string, error) {
+func (m *Manager) RequestPairCode(reqCtx context.Context, phone string) (string, error) {
 	if st := m.StatusNow(); st.Connected {
 		return "", fmt.Errorf("sudah terhubung")
 	}
+	// Detached context seperti alur QR (lihat atas).
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	_ = reqCtx
 	if !m.tryPairLock() {
 		return "", fmt.Errorf("pairing sedang berjalan, tunggu sebentar")
 	}
