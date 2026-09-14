@@ -1,8 +1,10 @@
 package psb
 
 import (
+	"errors"
 	"context"
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/validators"
 	"io"
 	"net/http"
@@ -342,6 +344,10 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 
 	reg, err := h.repo.UpdatePaymentByUserID(r.Context(), userID, proofURL, req.PaymentAmount, paymentDate)
 	if err != nil {
+		if errors.Is(err, ErrPaymentLocked) {
+			SendErrorResponse(w, http.StatusBadRequest, "Pembayaran sudah lunas, unggahan baru ditolak")
+			return
+		}
 		SendErrorResponse(w, http.StatusBadRequest, "Lengkapi biodata PSB terlebih dahulu sebelum unggah bukti pembayaran")
 		return
 	}
@@ -381,10 +387,22 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.UpdatePaymentStatus(r.Context(), id, req.PaymentStatus, req.PaymentNote); err != nil {
+		if errors.Is(err, ErrInvalidTransition) {
+			SendErrorResponse(w, http.StatusUnprocessableEntity, "Transisi status pembayaran tidak diizinkan")
+			return
+		}
 		logger.LogError("Failed to update payment status for ID %d: %v", id, err)
 		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses permintaan (Internal Server Error)")
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: actorID, ActorRole: actorRole,
+		Action: "UPDATE_PSB_PAYMENT_STATUS", Entity: "registration", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"payment_status": req.PaymentStatus},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	SendSuccessResponse(w, http.StatusOK, nil, "Status pembayaran berhasil diperbarui")
 }
@@ -439,10 +457,22 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.UpdateStatus(r.Context(), id, req.Status); err != nil {
+		if errors.Is(err, ErrInvalidTransition) {
+			SendErrorResponse(w, http.StatusUnprocessableEntity, "Transisi status tidak diizinkan")
+			return
+		}
 		logger.LogError("Failed to update status for ID %d: %v", id, err)
 		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses permintaan (Internal Server Error)")
 		return
 	}
+	actorID2, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole2, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: actorID2, ActorRole: actorRole2,
+		Action: "UPDATE_PSB_STATUS", Entity: "registration", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"status": req.Status},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	logger.LogInfo("Successfully updated registration ID %d to status: %s", id, req.Status)
 	SendSuccessResponse(w, http.StatusOK, nil, "Status updated successfully")

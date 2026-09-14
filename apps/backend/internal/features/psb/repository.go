@@ -1,6 +1,7 @@
 package psb
 
 import (
+	"errors"
 	"context"
 	"database/sql"
 	"time"
@@ -268,24 +269,78 @@ func (r *Repository) UpdateDocumentsByUserID(ctx context.Context, userID int, kk
 	return r.FindByUserID(ctx, userID)
 }
 
+var (
+	ErrPaymentLocked = errors.New("pembayaran sudah lunas, unggahan baru ditolak")
+	ErrInvalidTransition = errors.New("transisi status tidak diizinkan")
+)
+
 func (r *Repository) UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error) {
 	if _, err := r.FindByUserID(ctx, userID); err != nil {
 		return nil, err
 	}
 
-	_, err := r.db.ExecContext(ctx, `
+	res, err := r.db.ExecContext(ctx, `
 		UPDATE registrations
 		SET payment_proof_url = ?, payment_amount = ?, payment_date = ?, payment_status = 'pending', payment_note = '', updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = ?
+		WHERE user_id = ? AND COALESCE(payment_status, '') NOT IN ('paid', 'verified')
 	`, proofURL, amount, paymentDate, userID)
 	if err != nil {
 		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		cur, ferr := r.FindByUserID(ctx, userID)
+		if ferr != nil {
+			return nil, ferr
+		}
+		if cur.PaymentStatus == "paid" || cur.PaymentStatus == "verified" {
+			return nil, ErrPaymentLocked
+		}
+		return nil, ErrPaymentLocked
 	}
 
 	return r.FindByUserID(ctx, userID)
 }
 
+// psbPaymentTransitions: hanya regresi yang dilarang (paid terminal).
+var psbPaymentTransitions = map[string][]string{
+	"":         {"unpaid", "pending", "paid", "rejected"},
+	"unpaid":   {"pending", "paid", "rejected"},
+	"pending":  {"paid", "rejected", "unpaid"},
+	"rejected": {"pending", "paid", "unpaid"},
+	"paid":     {"paid"},
+	"verified": {"verified"},
+}
+
+func psbTransitionAllowed(cur, next string, table map[string][]string) bool {
+	nexts, ok := table[cur]
+	if !ok {
+		return false
+	}
+	for _, n := range nexts {
+		if n == next {
+			return true
+		}
+	}
+	return false
+}
+
+// psbStatusTransitions: accepted terminal kecuali pencabutan eksplisit.
+var psbStatusTransitions = map[string][]string{
+	"":         {"pending", "review", "accepted", "rejected"},
+	"pending":  {"pending", "review", "accepted", "rejected"},
+	"review":   {"pending", "review", "accepted", "rejected"},
+	"rejected": {"pending", "review", "accepted", "rejected"},
+	"accepted": {"accepted", "rejected"},
+}
+
 func (r *Repository) UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error {
+	var cur string
+	if err := r.db.QueryRowContext(ctx, `SELECT COALESCE(payment_status,'') FROM registrations WHERE id = ?`, id).Scan(&cur); err != nil {
+		return err
+	}
+	if !psbTransitionAllowed(cur, status, psbPaymentTransitions) {
+		return ErrInvalidTransition
+	}
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE registrations
 		SET payment_status = ?, payment_note = ?, updated_at = CURRENT_TIMESTAMP
@@ -295,6 +350,13 @@ func (r *Repository) UpdatePaymentStatus(ctx context.Context, id int, status str
 }
 
 func (r *Repository) UpdateStatus(ctx context.Context, id int, status string) error {
+	var cur string
+	if err := r.db.QueryRowContext(ctx, `SELECT COALESCE(status,'') FROM registrations WHERE id = ?`, id).Scan(&cur); err != nil {
+		return err
+	}
+	if !psbTransitionAllowed(cur, status, psbStatusTransitions) {
+		return ErrInvalidTransition
+	}
 	_, err := r.db.ExecContext(ctx, "UPDATE registrations SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", status, id)
 	return err
 }

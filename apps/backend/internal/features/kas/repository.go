@@ -1,6 +1,7 @@
 package kas
 
 import (
+	"errors"
 	"database/sql"
 	"strings"
 	"time"
@@ -16,6 +17,8 @@ type Category struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+var ErrKasDuplicate = errors.New("transaksi sudah dicatat sebelumnya")
+
 type Transaction struct {
 	ID         int       `json:"id"`
 	Code       string    `json:"code"`
@@ -27,6 +30,7 @@ type Transaction struct {
 	Method     string    `json:"method"`
 	Notes      string    `json:"notes"`
 	CreatedBy  int       `json:"created_by"`
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
 	Creator    string    `json:"creator,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
 }
@@ -107,7 +111,7 @@ func (r *Repository) DeleteCategory(id int) error {
 }
 
 func (r *Repository) ListTransactions(dateFrom, dateTo, kind string, categoryID int, limit, offset int) ([]Transaction, error) {
-	where := []string{"1=1"}
+	where := []string{"COALESCE(t.voided,0) = 0"}
 	args := []interface{}{}
 	if dateFrom != "" {
 		where = append(where, "t.date >= ?")
@@ -145,9 +149,21 @@ func (r *Repository) ListTransactions(dateFrom, dateTo, kind string, categoryID 
 }
 
 func (r *Repository) CreateTransaction(t *Transaction) (int64, error) {
-	res, err := r.db.Exec(`INSERT INTO kas_transactions (date, kind, category_id, amount, method, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		t.Date, t.Kind, t.CategoryID, t.Amount, t.Method, t.Notes, t.CreatedBy)
+	if t.IdempotencyKey != "" {
+		var existing int64
+		if err := r.db.QueryRow(`SELECT id FROM kas_transactions WHERE idempotency_key = ?`, t.IdempotencyKey).Scan(&existing); err == nil {
+			return existing, ErrKasDuplicate
+		}
+	}
+	res, err := r.db.Exec(`INSERT INTO kas_transactions (date, kind, category_id, amount, method, notes, created_by, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		t.Date, t.Kind, t.CategoryID, t.Amount, t.Method, t.Notes, t.CreatedBy, sql.NullString{String: t.IdempotencyKey, Valid: t.IdempotencyKey != ""})
 	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			var existing int64
+			if qerr := r.db.QueryRow(`SELECT id FROM kas_transactions WHERE idempotency_key = ?`, t.IdempotencyKey).Scan(&existing); qerr == nil {
+				return existing, ErrKasDuplicate
+			}
+		}
 		return 0, err
 	}
 	id, _ := res.LastInsertId()
@@ -173,13 +189,20 @@ func pad6(id int64) string {
 	return n
 }
 
-func (r *Repository) DeleteTransaction(id int) error {
-	_, err := r.db.Exec(`DELETE FROM kas_transactions WHERE id=?`, id)
-	return err
+// VoidTransaction membatalkan transaksi kas TANPA menghapus baris (retensi).
+func (r *Repository) VoidTransaction(id int, reason string, byID int) error {
+	res, err := r.db.Exec(`UPDATE kas_transactions SET voided = 1, void_reason = ?, created_by = ? WHERE id = ? AND COALESCE(voided,0) = 0`, reason, byID, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *Repository) Summary(dateFrom, dateTo string) (*Summary, error) {
-	where := []string{"1=1"}
+	where := []string{"COALESCE(voided,0) = 0"}
 	args := []interface{}{}
 	if dateFrom != "" {
 		where = append(where, "date >= ?")

@@ -201,10 +201,21 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	logger.Info(r.Context(), "donation campaign delete started", logger.Field{"operation": "donations_campaign_delete", "campaign_id": id})
 	if err := h.repo.DeleteCampaign(id); err != nil {
+		if errors.Is(err, ErrCampaignHasTransactions) {
+			sendJSONResponse(w, http.StatusConflict, false, "Program donasi memiliki transaksi dan tidak bisa dihapus. Nonaktifkan saja.", nil)
+			return
+		}
 		logger.Error(r.Context(), "donation campaign delete failed", logger.Field{"operation": "donations_campaign_delete", "campaign_id": id, "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: actorID, ActorRole: actorRole,
+		Action: "DELETE_CAMPAIGN", Entity: "donation_campaign", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	logger.Info(r.Context(), "donation campaign delete completed", logger.Field{
 		"operation":   "donations_campaign_delete",
 		"campaign_id": id,

@@ -139,8 +139,8 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 
 func (r *Repository) Update(s *Santri) error {
 	now := time.Now().Format("2006-01-02 15:04:05")
-	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, angkatan=?, status=?, parent_name=?, parent_phone=?, photo_url=?, user_id=?, updated_at=? WHERE id=?`,
-		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.PhotoURL, s.UserID, now, s.ID)
+	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, angkatan=?, status=?, parent_name=?, parent_phone=?, photo_url=?, updated_at=? WHERE id=?`,
+		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.PhotoURL, now, s.ID)
 	return err
 }
 
@@ -159,6 +159,17 @@ func (r *Repository) LinkUser(santriID, userID int) error {
 	}
 	_, err := r.db.Exec(`UPDATE santri SET user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, userID, santriID)
 	return err
+}
+
+func (r *Repository) UnlinkUser(santriID int) error {
+	res, err := r.db.Exec(`UPDATE santri SET user_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, santriID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *Repository) FindByUserID(userID int) ([]Santri, error) {

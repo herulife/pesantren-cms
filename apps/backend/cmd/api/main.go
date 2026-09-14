@@ -32,6 +32,7 @@ import (
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
 	"almaparung-api/internal/features/wallet"
+	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/wagate"
@@ -60,6 +61,7 @@ func main() {
 	database.Connect(getEnv("DB_PATH", "./alma.db"))
 	// PHASE 2: validasi sesi revocable (user exists + role + token_version).
 	auth.ConfigureSessionValidation(database.DB)
+	audit.Configure(database.DB)
 
 	// 1b. WhatsApp gateway mandiri (auto-connect bila sesi tersimpan ada)
 	go wagate.GetManager().Start(context.Background())

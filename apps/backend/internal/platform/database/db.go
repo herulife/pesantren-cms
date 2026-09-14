@@ -722,6 +722,8 @@ func createTables() {
 	addColumnIfNotExists("receipts", "idempotency_key", "TEXT")
 	addColumnIfNotExists("kas_transactions", "idempotency_key", "TEXT")
 	addColumnIfNotExists("donations", "idempotency_key", "TEXT")
+	addColumnIfNotExists("kas_transactions", "voided", "INTEGER NOT NULL DEFAULT 0")
+	addColumnIfNotExists("kas_transactions", "void_reason", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("gallery", "album_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "album_slug", "TEXT DEFAULT ''")

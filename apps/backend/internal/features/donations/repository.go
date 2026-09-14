@@ -379,7 +379,16 @@ func (r *Repository) UpdateCampaign(c *Campaign) error {
 	return err
 }
 
+var ErrCampaignHasTransactions = errors.New("program donasi memiliki transaksi, gunakan arsip/nonaktif")
+
 func (r *Repository) DeleteCampaign(id int) error {
+	var n int
+	if err := r.db.QueryRow("SELECT COUNT(*) FROM donations WHERE campaign_id = ?", id).Scan(&n); err != nil {
+		return err
+	}
+	if n > 0 {
+		return ErrCampaignHasTransactions
+	}
 	_, err := r.db.Exec("DELETE FROM donation_campaigns WHERE id = ?", id)
 	return err
 }

@@ -2,6 +2,7 @@ package santri
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
 	"database/sql"
@@ -33,6 +34,33 @@ type Santri struct {
 	UpdatedAt   string `json:"updated_at"`
 }
 
+// SantriInput adalah DTO tulis (whitelist). ID, user_id, dan timestamp TIDAK
+// bisa diubah via create/update (user_id hanya via link-user).
+type SantriInput struct {
+	NIS         string `json:"nis"`
+	Name        string `json:"name"`
+	Nickname    string `json:"nickname"`
+	Gender      string `json:"gender"`
+	BirthPlace  string `json:"birth_place"`
+	BirthDate   string `json:"birth_date"`
+	Address     string `json:"address"`
+	Class       string `json:"class"`
+	Angkatan    string `json:"angkatan"`
+	Status      string `json:"status"`
+	ParentName  string `json:"parent_name"`
+	ParentPhone string `json:"parent_phone"`
+	PhotoURL    string `json:"photo_url"`
+}
+
+func (in *SantriInput) toSantri() *Santri {
+	return &Santri{
+		NIS: in.NIS, Name: in.Name, Nickname: in.Nickname, Gender: in.Gender,
+		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
+		Class: in.Class, Angkatan: in.Angkatan, Status: in.Status,
+		ParentName: in.ParentName, ParentPhone: in.ParentPhone, PhotoURL: in.PhotoURL,
+	}
+}
+
 type IRepository interface {
 	FindAll(search, class, status string, limit, offset int) ([]Santri, int, error)
 	FindByID(id int) (*Santri, error)
@@ -43,6 +71,7 @@ type IRepository interface {
 	BulkDelete(ids []int) (int, error)
 	SetClassBulk(items map[int]string) (int, error)
 	LinkUser(santriID, userID int) error
+	UnlinkUser(santriID int) error
 	FindByUserID(userID int) ([]Santri, error)
 }
 
@@ -79,6 +108,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/set-class", h.SetClass)
 	r.Put("/{id}", h.Update)
 	r.Put("/{id}/link-user", h.LinkUser)
+	r.Put("/{id}/unlink-user", h.UnlinkUser)
 	r.Delete("/{id}", h.Delete)
 	r.Delete("/bulk", h.BulkDelete)
 	return r
@@ -171,16 +201,17 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var s Santri
-	if err := validators.DecodeJSON(w, r, &s); err != nil {
+	var in SantriInput
+	if err := validators.DecodeJSON(w, r, &in); err != nil {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid: "+err.Error(), nil)
 		return
 	}
-	if errs := validateSantri(&s); errs != nil {
+	s := in.toSantri()
+	if errs := validateSantri(s); errs != nil {
 		sendValidationError(w, errs)
 		return
 	}
-	if err := h.repo.Create(&s); err != nil {
+	if err := h.repo.Create(s); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			sendJSONResponse(w, http.StatusConflict, false, "NIS sudah terdaftar", nil)
 			return
@@ -189,12 +220,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menambah santri", nil)
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "CREATE_SANTRI", Entity: "santri", EntityID: strconv.Itoa(s.ID),
+		After: map[string]interface{}{"nis": s.NIS, "name": s.Name},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	sendJSONResponse(w, http.StatusCreated, true, "Santri berhasil ditambahkan", s)
 }
 
 func (h *Handler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Items []Santri `json:"items"`
+		Items []SantriInput `json:"items"`
 	}
 	if err := validators.DecodeJSON(w, r, &req); err != nil {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid: "+err.Error(), nil)
@@ -209,13 +248,15 @@ func (h *Handler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var firstErr error
+	items := make([]Santri, 0, len(req.Items))
 	for i := range req.Items {
-		if errs := validateSantri(&req.Items[i]); errs != nil {
+		if errs := validateSantri(req.Items[i].toSantri()); errs != nil {
 			sendJSONResponse(w, http.StatusBadRequest, false, "Data ke-"+strconv.Itoa(i+1)+" tidak valid", errs)
 			return
 		}
+		items = append(items, *req.Items[i].toSantri())
 	}
-	inserted, err := h.repo.BulkCreate(req.Items)
+	inserted, err := h.repo.BulkCreate(items)
 	if err != nil {
 		firstErr = err
 	}
@@ -228,17 +269,18 @@ func (h *Handler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	var s Santri
-	if err := validators.DecodeJSON(w, r, &s); err != nil {
+	var in SantriInput
+	if err := validators.DecodeJSON(w, r, &in); err != nil {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid: "+err.Error(), nil)
 		return
 	}
-	if errs := validateSantri(&s); errs != nil {
+	s := in.toSantri()
+	if errs := validateSantri(s); errs != nil {
 		sendValidationError(w, errs)
 		return
 	}
 	s.ID = id
-	if err := h.repo.Update(&s); err != nil {
+	if err := h.repo.Update(s); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			sendJSONResponse(w, http.StatusConflict, false, "NIS sudah terdaftar", nil)
 			return
@@ -247,6 +289,13 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memperbarui santri", nil)
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "UPDATE_SANTRI", Entity: "santri", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	sendJSONResponse(w, http.StatusOK, true, "Santri berhasil diperbarui", s)
 }
 
@@ -272,7 +321,36 @@ func (h *Handler) LinkUser(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menghubungkan akun wali", nil)
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "LINK_SANTRI_USER", Entity: "santri", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"user_id": req.UserID},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	sendJSONResponse(w, http.StatusOK, true, "Akun wali berhasil dihubungkan", nil)
+}
+
+func (h *Handler) UnlinkUser(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if err := h.repo.UnlinkUser(id); err != nil {
+		if err == sql.ErrNoRows {
+			sendJSONResponse(w, http.StatusNotFound, false, "Santri tidak ditemukan", nil)
+			return
+		}
+		logger.Error(r.Context(), "santri unlink-user failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal melepas akun wali", nil)
+		return
+	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "UNLINK_SANTRI_USER", Entity: "santri", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+	sendJSONResponse(w, http.StatusOK, true, "Akun wali berhasil dilepas", nil)
 }
 
 func (h *Handler) GetMySantri(w http.ResponseWriter, r *http.Request) {

@@ -1,10 +1,14 @@
 package kas
 
 import (
+	"database/sql"
+	"errors"
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/audit"
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"strings"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -23,10 +27,9 @@ func writeJSON(w http.ResponseWriter, status int, success bool, msg string, data
 }
 
 func currentUserID(r *http.Request) int {
-	if claims, ok := r.Context().Value(auth.UserContextKey).(map[string]interface{}); ok {
-		if id, ok := claims["id"].(float64); ok {
-			return int(id)
-		}
+	// PHASE 8: helper auth tunggal (assertion lama selalu gagal -> 0).
+	if id, ok := auth.GetAuthenticatedUserID(r.Context()); ok {
+		return id
 	}
 	return 0
 }
@@ -157,21 +160,45 @@ func (h *Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	if req.Method == "" {
 		req.Method = "manual"
 	}
-	id, err := h.repo.CreateTransaction(&Transaction{Date: req.Date, Kind: req.Kind, CategoryID: req.CategoryID, Amount: req.Amount, Method: req.Method, Notes: req.Notes, CreatedBy: currentUserID(r)})
+	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	id, err := h.repo.CreateTransaction(&Transaction{Date: req.Date, Kind: req.Kind, CategoryID: req.CategoryID, Amount: req.Amount, Method: req.Method, Notes: req.Notes, CreatedBy: currentUserID(r), IdempotencyKey: key})
 	if err != nil {
+		if errors.Is(err, ErrKasDuplicate) {
+			writeJSON(w, 200, true, "Transaksi sudah dicatat sebelumnya", map[string]interface{}{"id": id, "duplicate": true})
+			return
+		}
 		writeJSON(w, 500, false, "Gagal menyimpan transaksi", nil)
 		return
 	}
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: currentUserID(r), ActorRole: actorRole,
+		Action: "CREATE_KAS", Entity: "kas_transaction", EntityID: strconv.FormatInt(id, 10),
+		After: map[string]interface{}{"amount": req.Amount, "kind": req.Kind},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	writeJSON(w, 201, true, "Transaksi kas berhasil dicatat", map[string]interface{}{"id": id})
 }
 
 func (h *Handler) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	if err := h.repo.DeleteTransaction(id); err != nil {
-		writeJSON(w, 500, false, "Gagal menghapus transaksi", nil)
+	reason := strings.TrimSpace(r.URL.Query().Get("reason"))
+	if err := h.repo.VoidTransaction(id, reason, currentUserID(r)); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeJSON(w, 404, false, "Transaksi tidak ditemukan atau sudah dibatalkan", nil)
+			return
+		}
+		writeJSON(w, 500, false, "Gagal membatalkan transaksi", nil)
 		return
 	}
-	writeJSON(w, 200, true, "Transaksi berhasil dihapus", nil)
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: currentUserID(r), ActorRole: actorRole,
+		Action: "VOID_KAS", Entity: "kas_transaction", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"voided": true, "reason": reason},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+	writeJSON(w, 200, true, "Transaksi dibatalkan (void, riwayat dipertahankan)", nil)
 }
 
 func (h *Handler) Summary(w http.ResponseWriter, r *http.Request) {
