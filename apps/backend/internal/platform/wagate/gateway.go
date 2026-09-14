@@ -147,7 +147,11 @@ func (m *Manager) ensureClient(ctx context.Context) (*whatsmeow.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gagal memuat sesi WA: %w", err)
 	}
-	m.client = whatsmeow.NewClient(device, waLog.Stdout("WAClient", "WARN", true))
+	level := "WARN"
+	if strings.TrimSpace(os.Getenv("WA_DEBUG")) != "" {
+		level = "DEBUG"
+	}
+	m.client = whatsmeow.NewClient(device, waLog.Stdout("WAClient", level, true))
 	m.client.AddEventHandler(m.handleEvent)
 	return m.client, nil
 }
