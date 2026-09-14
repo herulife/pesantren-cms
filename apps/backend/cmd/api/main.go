@@ -201,6 +201,7 @@ func main() {
 			r.Get("/", faqHandler.List)
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
+				r.Use(auth.RequireRole("superadmin", "tim_media"))
 				r.Post("/", faqHandler.Create)
 				r.Put("/{id}", faqHandler.Update)
 				r.Delete("/{id}", faqHandler.Delete)
@@ -211,6 +212,7 @@ func main() {
 			r.Get("/", agendaHandler.List)
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
+				r.Use(auth.RequireRole("superadmin", "tim_media"))
 				r.Post("/", agendaHandler.Create)
 				r.Put("/{id}", agendaHandler.Update)
 				r.Delete("/{id}", agendaHandler.Delete)
@@ -349,6 +351,11 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
 			r.Mount("/school", schoolHandler.Routes())
+		})
+
+		// HR/pegawai: hanya superadmin + bendahara (panitia_psb over-broad).
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireRole("superadmin", "bendahara"))
 			r.Mount("/hr", hrHandler.Routes())
 		})
 

@@ -485,10 +485,6 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.GetAll)
-	r.Get("/me", h.GetMine)
-	r.Put("/me", h.SaveMine)
-	r.Put("/me/documents", h.SaveMyDocuments)
-	r.Put("/me/payment", h.SaveMyPayment)
 	r.Get("/{id}", h.GetByID)
 	r.Put("/{id}/payment-status", h.UpdatePaymentStatus)
 	r.Put("/{id}/status", h.UpdateStatus)
