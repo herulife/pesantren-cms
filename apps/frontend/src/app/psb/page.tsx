@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { getPublicSettingsMap } from '@/lib/api';
 import Link from 'next/link';
 import PublicLayout from '@/components/PublicLayout';
 import { useWebsiteBuilderPageContent } from '@/components/PublicSiteContext';
@@ -16,8 +17,85 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+
+const PSB_PAGE_KEYS = [
+  'psb_page_hero_title',
+  'psb_page_hero_subtitle',
+  'psb_page_requirements',
+  'psb_page_quota_ikhwan',
+  'psb_page_quota_akhwat',
+  'psb_page_fee',
+  'psb_page_address',
+  'psb_page_wa',
+];
+
+type PsbContent = typeof defaultPageContent.psb;
+
+// Timpa konten statis dengan pengaturan admin (kosong = pakai bawaan).
+function mergePsbContent(base: PsbContent, over: Record<string, string>): PsbContent {
+  const lines = (over['psb_page_requirements'] || '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const waves = base.schedule.waves.map((w, i) => {
+    const label = w.label.toLowerCase();
+    let text = w.date_text;
+    if (label.includes('ikhwan') && !label.includes('akhwat') && over['psb_page_quota_ikhwan']) {
+      text = over['psb_page_quota_ikhwan'];
+    } else if (label.includes('akhwat') && over['psb_page_quota_akhwat']) {
+      text = over['psb_page_quota_akhwat'];
+    } else if ((label.includes('biaya') || label.includes('formulir')) && over['psb_page_fee']) {
+      text = over['psb_page_fee'];
+    } else if (i === 0 && over['psb_page_quota_ikhwan'] && !label.includes('akhwat')) {
+      text = over['psb_page_quota_ikhwan'];
+    } else if (i === 1 && over['psb_page_quota_akhwat']) {
+      text = over['psb_page_quota_akhwat'];
+    } else if (i === 2 && over['psb_page_fee']) {
+      text = over['psb_page_fee'];
+    }
+    return { ...w, date_text: text };
+  });
+  return {
+    ...base,
+    hero: {
+      ...base.hero,
+      title: over['psb_page_hero_title'] || base.hero.title,
+      subtitle: over['psb_page_hero_subtitle'] || base.hero.subtitle,
+    },
+    requirements: {
+      ...base.requirements,
+      items: lines.length > 0 ? lines : base.requirements.items,
+    },
+    schedule: { ...base.schedule, waves },
+    location: {
+      ...base.location,
+      address_text: over['psb_page_address'] || base.location.address_text,
+    },
+    cta: {
+      ...base.cta,
+      secondary_button: {
+        ...base.cta.secondary_button,
+        url: over['psb_page_wa'] || base.cta.secondary_button.url,
+      },
+    },
+  };
+}
+
 export function PsbPageContent() {
-  const pageContent = useWebsiteBuilderPageContent('psb', defaultPageContent.psb);
+  const base = useWebsiteBuilderPageContent('psb', defaultPageContent.psb);
+  const [over, setOver] = useState<Record<string, string>>({});
+  useEffect(() => {
+    getPublicSettingsMap()
+      .then((m) => {
+        const picked: Record<string, string> = {};
+        for (const k of PSB_PAGE_KEYS) {
+          if (m[k]) picked[k] = m[k];
+        }
+        setOver(picked);
+      })
+      .catch(() => {});
+  }, []);
+  const pageContent = useMemo(() => mergePsbContent(base, over), [base, over]);
   const [mapInteractive, setMapInteractive] = useState(false);
 
   return (

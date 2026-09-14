@@ -33,6 +33,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Layanan', label: 'Fasilitas Publik', href: '/admin/facilities', roles: ['tim_media'], docRef: 'facilities' },
   { category: 'Layanan', label: 'Pesan & Inbox', href: '/admin/messages', roles: ['panitia_psb'], docRef: 'messages' },
   { category: 'Layanan', label: 'Notifikasi WA', href: '/admin/notifications', roles: ['bendahara'], docRef: 'notifications' },
+  { category: 'PSB', label: 'Pengaturan PSB', href: '/admin/psb/pengaturan', roles: ['superadmin'], docRef: 'psb' },
   { category: 'Sistem', label: 'Manajemen Pengguna', href: '/admin/users', roles: ['superadmin'], docRef: 'users' },
   { category: 'Sistem', label: 'Log Sistem', href: '/admin/logs', roles: ['superadmin'], docRef: 'logs' },
   { category: 'Sistem', label: 'Pengaturan Utama', href: '/admin/settings', roles: ['superadmin'], docRef: 'settings' },
