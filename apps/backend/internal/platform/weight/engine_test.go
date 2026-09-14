@@ -75,3 +75,28 @@ func TestWeightOver100(t *testing.T) {
 		t.Fatal("expected error for weight >100")
 	}
 }
+
+func TestPredikat100(t *testing.T) {
+	cases := []struct {
+		score float64
+		want  string
+	}{
+		{0, "Perlu Perbaikan"},
+		{25, "Perlu Perbaikan"},
+		{37.74, "Perlu Perbaikan"},
+		{37.75, "Cukup"},
+		{50, "Cukup"},
+		{62.74, "Cukup"},
+		{62.75, "Baik"},
+		{75, "Baik"},
+		{82.58, "Baik"},
+		{87.74, "Baik"},
+		{87.75, "Sangat Baik"},
+		{100, "Sangat Baik"},
+	}
+	for _, c := range cases {
+		if got := Predikat100(c.score); got != c.want {
+			t.Errorf("Predikat100(%v) = %q, want %q", c.score, got, c.want)
+		}
+	}
+}

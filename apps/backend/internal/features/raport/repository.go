@@ -1,6 +1,7 @@
 package raport
 
 import (
+	"errors"
 	"context"
 	"database/sql"
 	"fmt"
@@ -114,7 +115,7 @@ func (r *Repository) Compute(ctx context.Context, studentID int, semester, acade
 		return nil, err
 	}
 	raport.FinalScore = final
-	raport.Predikat = weight.Predikat(final)
+	raport.Predikat = weight.Predikat100(final) // C11: skala 0-100, bukan 1-4
 	raport.Status = "ready"
 
 	return raport, nil
@@ -252,8 +253,16 @@ func (r *Repository) computeKesantrian(ctx context.Context, studentID int, semes
 	return math.Round((score14/4.0)*10000) / 100, nil
 }
 
+var ErrRaportLocked = errors.New("rapor terkunci, gunakan unlock eksplisit")
+
 func (r *Repository) Upsert(ctx context.Context, s *StoredRaport) error {
 	now := time.Now().UTC()
+	// A4: lock dienforce — tolak overwrite rapor locked.
+	var cur string
+	if err := r.db.QueryRowContext(ctx, `SELECT COALESCE(status,'') FROM raports WHERE student_id = ? AND semester = ? AND academic_year = ?`,
+		s.StudentID, s.Semester, s.AcademicYear).Scan(&cur); err == nil && cur == "locked" {
+		return ErrRaportLocked
+	}
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO raports (student_id, semester, academic_year, mapel_score, project_score, kesantrian_score, final_score, predikat, status, notes, generated_by, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -269,6 +278,19 @@ func (r *Repository) Upsert(ctx context.Context, s *StoredRaport) error {
 			updated_at = excluded.updated_at
 	`, s.StudentID, s.Semester, s.AcademicYear, s.MapelScore, s.ProjectScore, s.KesantrianScore, s.FinalScore, s.Predikat, s.Status, s.Notes, s.GeneratedBy, now)
 	return err
+}
+
+// Unlock membuka rapor locked (permission di handler, audit wajib).
+func (r *Repository) Unlock(ctx context.Context, studentID int, semester, academicYear string) error {
+	res, err := r.db.ExecContext(ctx, `UPDATE raports SET status = 'ready', updated_at = CURRENT_TIMESTAMP WHERE student_id = ? AND semester = ? AND academic_year = ? AND status = 'locked'`,
+		studentID, semester, academicYear)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *Repository) GetStored(ctx context.Context, studentID int, semester, academicYear string) (*StoredRaport, error) {

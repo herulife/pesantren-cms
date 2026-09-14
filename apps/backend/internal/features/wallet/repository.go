@@ -59,6 +59,8 @@ func (r *Repository) GetOrCreateByUserID(userID int) (*Wallet, error) {
 	return &w, nil
 }
 
+var ErrPINMismatch = errors.New("PIN lama tidak cocok")
+
 func (r *Repository) SetPIN(userID int, pin string) error {
 	if _, err := r.GetOrCreateByUserID(userID); err != nil {
 		return err
@@ -81,6 +83,21 @@ func (r *Repository) SetPIN(userID int, pin string) error {
 		return errors.New("wallet not found")
 	}
 	return nil
+}
+
+// SetPINWithCheck mewajibkan PIN lama bila dompet sudah punya PIN.
+func (r *Repository) SetPINWithCheck(userID int, oldPIN, newPIN string) error {
+	var hash sql.NullString
+	if err := r.db.QueryRow("SELECT pin_hash FROM user_wallets WHERE user_id = ?", userID).Scan(&hash); err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if hash.Valid && hash.String != "" {
+		ok, err := r.VerifyPIN(userID, oldPIN)
+		if err != nil || !ok {
+			return ErrPINMismatch
+		}
+	}
+	return r.SetPIN(userID, newPIN)
 }
 
 func (r *Repository) VerifyPIN(userID int, pin string) (bool, error) {

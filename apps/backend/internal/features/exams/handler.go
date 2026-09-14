@@ -4,6 +4,7 @@ import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/validators"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -35,6 +36,14 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	// Determine if student or admin (to hide/show keys)
 	role, _ := currentUserRole(r)
 	hideAnswers := (role == "user")
+	if hideAnswers {
+		// Enrollment gate: user wajib sudah StartSession untuk ujian ini.
+		studentID, _ := currentUserID(r)
+		if studentID <= 0 || !h.repo.HasSession(studentID, examID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Mulai sesi ujian terlebih dahulu", nil)
+			return
+		}
+	}
 
 	questions, err := h.repo.GetExamQuestions(examID, hideAnswers)
 	if err != nil {
@@ -112,6 +121,10 @@ func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
 	}
 	score, err := h.repo.FinishSession(body.SessionID)
 	if err != nil {
+		if errors.Is(err, ErrSessionFinished) {
+			writeJSONResponse(w, http.StatusConflict, false, "Ujian sudah diakhiri sebelumnya", nil)
+			return
+		}
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal mengakhiri ujian", nil)
 		return
 	}
@@ -241,4 +254,5 @@ type IRepository interface {
 	SubmitAnswer(sessionID, questionID, selectedAnswer int) error
 	FinishSession(sessionID int) (float64, error)
 	IsSessionOwnedBy(sessionID, userID int) bool
+	HasSession(studentID, examID int) bool
 }

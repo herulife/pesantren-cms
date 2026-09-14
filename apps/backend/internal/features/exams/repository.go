@@ -1,6 +1,7 @@
 package exams
 
 import (
+	"errors"
 	"database/sql"
 	"encoding/json"
 	"time"
@@ -99,6 +100,15 @@ func (r *Repository) GetAvailableExams() ([]Exam, error) {
 	return exams, nil
 }
 
+// HasSession true bila student punya sesi untuk ujian ini.
+func (r *Repository) HasSession(studentID, examID int) bool {
+	var one int
+	if err := r.db.QueryRow(`SELECT 1 FROM exam_sessions WHERE student_id = ? AND exam_id = ? LIMIT 1`, studentID, examID).Scan(&one); err != nil {
+		return false
+	}
+	return true
+}
+
 func (r *Repository) GetExamQuestions(examID int, hideAnswers bool) ([]Question, error) {
 	query := `SELECT id, exam_id, question_text, options_json, correct_answer_key, points 
 	          FROM exam_questions WHERE exam_id = ?`
@@ -152,7 +162,21 @@ func (r *Repository) StartSession(studentID, examID int) (int, error) {
 	return int(id), nil
 }
 
+var (
+	ErrAnswerForbidden = errors.New("soal tidak termasuk dalam sesi ujian ini")
+	ErrSessionFinished = errors.New("sesi ujian sudah selesai")
+)
+
 func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) error {
+	// 0. Ownership: soal harus milik ujian pada sesi ini (anti lintas-ujian).
+	var ok int
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM exam_questions q JOIN exam_sessions s ON s.exam_id = q.exam_id WHERE q.id = ? AND s.id = ? AND s.status != 'finished'`,
+		questionID, sessionID).Scan(&ok); err != nil || ok == 0 {
+		if err != nil {
+			return err
+		}
+		return ErrAnswerForbidden
+	}
 	// 1. Get correct key
 	var correctKey int
 	err := r.db.QueryRow("SELECT correct_answer_key FROM exam_questions WHERE id = ?", questionID).Scan(&correctKey)
@@ -210,10 +234,13 @@ func (r *Repository) FinishSession(sessionID int) (float64, error) {
 		return 0, err
 	}
 	defer tx.Rollback()
-	_, err = tx.Exec("UPDATE exam_sessions SET status = 'finished', score = ?, finished_at = ? WHERE id = ?",
+	res, err := tx.Exec("UPDATE exam_sessions SET status = 'finished', score = ?, finished_at = ? WHERE id = ? AND status != 'finished'",
 		score, finishTime, sessionID)
 	if err != nil {
 		return 0, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return 0, ErrSessionFinished
 	}
 	// SYNC TO GRADES
 	var studentID int
@@ -223,11 +250,13 @@ func (r *Repository) FinishSession(sessionID int) (float64, error) {
 	var semester, year string
 	tx.QueryRow("SELECT subject_id, semester, academic_year FROM exams WHERE id = ?", examID).Scan(&subjectID, &semester, &year)
 
-	_, _ = tx.Exec(`
+	if _, err := tx.Exec(`
 		INSERT INTO grades (student_id, subject_id, semester, academic_year, uas_score, final_score, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(student_id, subject_id, semester, academic_year) DO UPDATE SET uas_score = excluded.uas_score, final_score = excluded.final_score
-	`, studentID, subjectID, semester, year, score, score, "Generated from CBT")
+	`, studentID, subjectID, semester, year, score, score, "Generated from CBT"); err != nil {
+		return 0, err
+	}
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}

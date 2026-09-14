@@ -970,6 +970,10 @@ func runMigrations() {
 		name: "audit_logs_entity_index",
 		sql: `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);`,
 	},
+	{
+		name: "grades_cbt_unique",
+		sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_grades_unique ON grades(student_id, subject_id, semester, academic_year);`,
+	},
 	}
 
 	for _, migration := range migrations {

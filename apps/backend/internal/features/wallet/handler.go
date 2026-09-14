@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"errors"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
@@ -149,7 +150,8 @@ func (h *Handler) SetPIN(w http.ResponseWriter, r *http.Request) {
 	})
 
 	var body struct {
-		PIN string `json:"pin"`
+		PIN    string `json:"pin"`
+		OldPIN string `json:"old_pin"`
 	}
 	if err := validators.DecodeJSON(w, r, &body); err != nil || len(body.PIN) < 4 {
 		logger.Warn(r.Context(), "wallet pin update rejected", logger.Field{
@@ -160,7 +162,11 @@ func (h *Handler) SetPIN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.SetPIN(userID, body.PIN); err != nil {
+	if err := h.repo.SetPINWithCheck(userID, body.OldPIN, body.PIN); err != nil {
+		if errors.Is(err, ErrPINMismatch) {
+			writeJSONResponse(w, http.StatusForbidden, false, "PIN lama tidak cocok", nil)
+			return
+		}
 		logger.Error(r.Context(), "wallet pin update failed", logger.Field{
 			"operation": "wallet_set_pin",
 			"user_id":   userID,
@@ -339,6 +345,7 @@ func writeJSONResponse(w http.ResponseWriter, status int, success bool, message 
 type IRepository interface {
 	GetOrCreateByUserID(userID int) (*Wallet, error)
 	SetPIN(userID int, pin string) error
+	SetPINWithCheck(userID int, oldPIN, newPIN string) error
 	VerifyPIN(userID int, pin string) (bool, error)
 	ProcessTransaction(userID int, tr *Transaction) error
 	GetHistory(userID int, limit int) ([]Transaction, error)

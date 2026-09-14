@@ -111,3 +111,22 @@ func Predikat(score float64) string {
 		return "Perlu Perbaikan"
 	}
 }
+
+// PHASE 14 (C11): Predikat100 untuk skor skala 0-100.
+//
+// Batas memakai konversi skala 4 K13 (A: 3.51-4.00, B: 2.51-3.50,
+// C: 1.51-2.50, D: <1.51) x25: 87.75 / 62.75 / 37.75.
+// SPEC_GAP: sekolah perlu mengonfirmasi ambang ini vs KKM mapel (default 75).
+// JANGAN panggil Predikat() dengan skor 0-100 (82.58 -> "Sangat Baik" salah).
+func Predikat100(score float64) string {
+	switch {
+	case score >= 87.75:
+		return "Sangat Baik"
+	case score >= 62.75:
+		return "Baik"
+	case score >= 37.75:
+		return "Cukup"
+	default:
+		return "Perlu Perbaikan"
+	}
+}
