@@ -61,6 +61,7 @@ type Manager struct {
 	lastQRExp   time.Time
 	lastQRErr   string
 	lastResetAt time.Time
+	pairActive  bool
 	pairCancel  context.CancelFunc
 	pairCode    string
 	pairCodeAt  time.Time
@@ -111,6 +112,10 @@ func (m *Manager) resetSessionGuarded() bool {
 	if since < 45*time.Second {
 		return false
 	}
+	if m.isPairActive() {
+		log.Printf("[WAGATE] reset ditunda: handshake pairing sedang aktif")
+		return false
+	}
 	m.resetSession()
 	m.mu.Lock()
 	m.lastResetAt = time.Now()
@@ -140,6 +145,13 @@ func (m *Manager) endPairCtx() {
 	if cancel != nil {
 		cancel()
 	}
+}
+
+// isPairActive true bila drain channel QR masih hidup (handshake mungkin jalan).
+func (m *Manager) isPairActive() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.pairActive
 }
 
 // resetSession membuang seluruh state pairing lama agar percobaan

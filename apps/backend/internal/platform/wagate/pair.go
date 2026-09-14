@@ -45,17 +45,9 @@ func (m *Manager) RequestQR(reqCtx context.Context) ([]byte, time.Duration, erro
 	if st := m.StatusNow(); st.Connected {
 		return nil, 0, fmt.Errorf("sudah terhubung")
 	}
-	// PENTING: context pairing hidup terlepas dari request HTTP dan TIDAK
-	// dibatalkan saat response terkirim — pembatalan = socket mati.
-	ctx := m.startPairCtx()
-	_ = reqCtx
-	// Satu alur pairing dalam satu waktu; tolak bila sedang berjalan.
-	if !m.tryPairLock() {
-		return nil, 0, fmt.Errorf("pairing sedang berjalan, tunggu sebentar")
-	}
-	defer m.unlockPair()
-	// QR segar dipakai ulang; reset sesi hanya bila kedaluwarsa agar
-	// QR yang sedang discan tidak mati di tengah jalan.
+	// PENTING: cek cache DULU tanpa menyentuh pairing ctx/lock.
+	// Polling/refresh UI tidak boleh membatalkan ctx pairing yang hidup —
+	// pembatalan = socket mati = HP gagal taut di tengah scan.
 	m.mu.Lock()
 	cached, at, exp := m.lastQR, m.lastQRAt, m.lastQRExp
 	m.mu.Unlock()
@@ -67,6 +59,26 @@ func (m *Manager) RequestQR(reqCtx context.Context) ([]byte, time.Duration, erro
 		log.Printf("[WAGATE] serve QR cache (umur %ds, sisa %ds)", int(time.Since(at).Seconds()), int(time.Until(exp).Seconds()))
 		return png, time.Until(exp), nil
 	}
+	// Satu alur pairing dalam satu waktu. Kalah lomba -> sajikan cache
+	// apa adanya (biarpun mepet) daripada error yang memicu klik brutal.
+	if !m.tryPairLock() {
+		if cached != "" {
+			png, err := qrcode.Encode(cached, qrcode.Medium, 280)
+			if err == nil {
+				log.Printf("[WAGATE] serve QR saat pairing berjalan")
+				return png, time.Until(exp), nil
+			}
+		}
+		return nil, 0, fmt.Errorf("pairing sedang berjalan, tunggu sebentar")
+	}
+	defer m.unlockPair()
+	// PENTING: context pairing hidup terlepas dari request HTTP dan TIDAK
+	// dibatalkan saat response terkirim — pembatalan = socket mati.
+	// Dibuat SETELAH lock didapat agar tidak membunuh sesi yang handshake.
+	ctx := m.startPairCtx()
+	_ = reqCtx
+	// Reset sesi hanya bila tidak ada handshake aktif; QR yang sedang
+	// discan tidak boleh mati di tengah jalan.
 	m.resetSessionGuarded()
 	client, err := m.ensureClient(ctx)
 	if err != nil {
@@ -126,7 +138,15 @@ func effectiveQRTTL(serverTimeout time.Duration) time.Duration {
 
 // drainQRChannel mengikuti rotasi kode sampai channel tutup/sukses.
 func (m *Manager) drainQRChannel(qrChan <-chan whatsmeow.QRChannelItem) {
-	defer m.endPairCtx()
+	m.mu.Lock()
+	m.pairActive = true
+	m.mu.Unlock()
+	defer func() {
+		m.mu.Lock()
+		m.pairActive = false
+		m.mu.Unlock()
+		m.endPairCtx()
+	}()
 	for item := range qrChan {
 		if item.Event == "code" {
 			m.rememberQR(item.Code, item.Timeout)

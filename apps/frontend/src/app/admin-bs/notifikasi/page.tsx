@@ -53,6 +53,16 @@ export default function BsNotifikasi() {
       setQrUrl(r.url);
       const ttlMs = r.ttl && r.ttl > 0 ? Math.min(r.ttl, 90) * 1000 : 20000;
       setQrExpAt(Date.now() + ttlMs);
+    } else if ((r.message || '').includes('berjalan')) {
+      // Pairing lain sedang mengambil QR baru: tunggu diam-diam lalu coba sekali lagi.
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const retry = await getWAQRBlob();
+      if (retry.ok && retry.url) {
+        if (qrUrl) URL.revokeObjectURL(qrUrl);
+        setQrUrl(retry.url);
+        const ttlMs = retry.ttl && retry.ttl > 0 ? Math.min(retry.ttl, 90) * 1000 : 20000;
+        setQrExpAt(Date.now() + ttlMs);
+      }
     } else {
       showToast('error', r.message || 'Gagal memuat QR.');
     }
