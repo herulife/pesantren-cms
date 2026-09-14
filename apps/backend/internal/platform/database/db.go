@@ -715,6 +715,10 @@ func createTables() {
 	addColumnIfNotExists("news", "is_pinned", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("users", "last_login_at", "DATETIME")
 	addColumnIfNotExists("users", "token_version", "INTEGER NOT NULL DEFAULT 0")
+	addColumnIfNotExists("payment_transactions", "idempotency_key", "TEXT")
+	addColumnIfNotExists("receipts", "idempotency_key", "TEXT")
+	addColumnIfNotExists("kas_transactions", "idempotency_key", "TEXT")
+	addColumnIfNotExists("donations", "idempotency_key", "TEXT")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("gallery", "album_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "album_slug", "TEXT DEFAULT ''")
@@ -882,6 +886,58 @@ func runMigrations() {
 		{
 			name: "school_classes_backfill",
 			sql:  `INSERT OR IGNORE INTO classes (name) SELECT DISTINCT TRIM(class) FROM santri WHERE TRIM(COALESCE(class,''))<>'';`,
+		},
+		{
+			name: "spp_bills_santri_status_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_spp_bills_santri_status ON spp_bills(santri_id, status);`,
+		},
+		{
+			name: "spp_bills_paid_at_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_spp_bills_paid_at ON spp_bills(paid_at);`,
+		},
+		{
+			name: "iuran_bills_santri_status_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_iuran_bills_santri_status ON iuran_bills(santri_id, status);`,
+		},
+		{
+			name: "iuran_bills_paid_at_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_iuran_bills_paid_at ON iuran_bills(paid_at);`,
+		},
+		{
+			name: "paytx_bill_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_paytx_bill ON payment_transactions(bill_type, bill_id);`,
+		},
+		{
+			name: "paytx_bill_period_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_paytx_bill_period ON payment_transactions(bill_period);`,
+		},
+		{
+			name: "kas_tx_category_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_kas_tx_category ON kas_transactions(category_id);`,
+		},
+		{
+			name: "santri_user_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_santri_user ON santri(user_id);`,
+		},
+		{
+			name: "receipts_no_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_no_unique ON receipts(receipt_no);`,
+		},
+		{
+			name: "paytx_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_paytx_idem_unique ON payment_transactions(idempotency_key);`,
+		},
+		{
+			name: "receipts_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_idem_unique ON receipts(idempotency_key);`,
+		},
+		{
+			name: "kas_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_kas_idem_unique ON kas_transactions(idempotency_key);`,
+		},
+		{
+			name: "donations_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_idem_unique ON donations(idempotency_key);`,
 		},
 	}
 
