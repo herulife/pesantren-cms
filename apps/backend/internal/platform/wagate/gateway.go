@@ -58,6 +58,7 @@ type Manager struct {
 
 	lastQR      string
 	lastQRAt    time.Time
+	lastQRExp   time.Time
 	lastQRErr   string
 	lastResetAt time.Time
 	pairCode    string
@@ -137,6 +138,7 @@ func (m *Manager) resetSession() {
 		_ = os.Remove(m.dbPath + suffix)
 	}
 	m.lastQR, m.lastQRErr = "", ""
+	m.lastQRExp = time.Time{}
 	m.pairCode = ""
 	log.Printf("[WAGATE] state pairing direset, siap percobaan bersih")
 }

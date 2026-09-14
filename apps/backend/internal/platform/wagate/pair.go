@@ -53,15 +53,15 @@ func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) 
 	// QR segar dipakai ulang; reset sesi hanya bila kedaluwarsa agar
 	// QR yang sedang discan tidak mati di tengah jalan.
 	m.mu.Lock()
-	cached, at := m.lastQR, m.lastQRAt
+	cached, at, exp := m.lastQR, m.lastQRAt, m.lastQRExp
 	m.mu.Unlock()
-	if cached != "" && time.Since(at) < QRTTL {
+	if cached != "" && time.Now().Before(exp.Add(-3*time.Second)) {
 		png, err := qrcode.Encode(cached, qrcode.Medium, 280)
 		if err != nil {
 			return nil, 0, err
 		}
-		log.Printf("[WAGATE] serve QR cache (umur %ds)", int(time.Since(at).Seconds()))
-		return png, QRTTL - time.Since(at), nil
+		log.Printf("[WAGATE] serve QR cache (umur %ds, sisa %ds)", int(time.Since(at).Seconds()), int(time.Until(exp).Seconds()))
+		return png, time.Until(exp), nil
 	}
 	m.resetSessionGuarded()
 	client, err := m.ensureClient(ctx)
@@ -79,27 +79,68 @@ func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) 
 	if err := client.Connect(); err != nil {
 		return nil, 0, fmt.Errorf("gagal connect: %w", err)
 	}
+	// Tunggu kode pertama, lalu serahkan channel ke goroutine drain agar
+	// rotasi kode server selalu diikuti (QR basi = gagal taut).
 	select {
 	case item := <-qrChan:
-		if item.Event == "code" {
-			m.mu.Lock()
-			m.lastQR, m.lastQRAt, m.lastQRErr = item.Code, time.Now(), ""
-			m.mu.Unlock()
-			png, err := qrcode.Encode(item.Code, qrcode.Medium, 280)
-			if err != nil {
-				return nil, 0, err
+		if item.Event != "code" {
+			log.Printf("[WAGATE] QR channel event: %s", item.Event)
+			if item.Error != nil {
+				return nil, 0, fmt.Errorf("pairing QR gagal: %w", item.Error)
 			}
-			return png, item.Timeout, nil
+			return nil, 0, fmt.Errorf("pairing QR gagal: %s", item.Event)
 		}
-		log.Printf("[WAGATE] QR channel event: %s", item.Event)
-		if item.Error != nil {
-			return nil, 0, fmt.Errorf("pairing QR gagal: %w", item.Error)
+		m.rememberQR(item.Code, item.Timeout)
+		go m.drainQRChannel(qrChan)
+		png, err := qrcode.Encode(item.Code, qrcode.Medium, 280)
+		if err != nil {
+			return nil, 0, err
 		}
-		return nil, 0, fmt.Errorf("pairing QR gagal: %s", item.Event)
+		return png, effectiveQRTTL(item.Timeout), nil
 	case <-time.After(25 * time.Second):
 		return nil, 0, fmt.Errorf("batas waktu menunggu QR habis, coba lagi")
 	case <-ctx.Done():
 		return nil, 0, ctx.Err()
+	}
+}
+
+// rememberQR menyimpan kode terbaru beserta masa berlakunya.
+func (m *Manager) rememberQR(code string, timeout time.Duration) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.lastQR, m.lastQRAt, m.lastQRErr = code, time.Now(), ""
+	m.lastQRExp = time.Now().Add(effectiveQRTTL(timeout))
+}
+
+// effectiveQRTTL membatasi umur cache mengikuti rotasi server.
+func effectiveQRTTL(serverTimeout time.Duration) time.Duration {
+	if serverTimeout > 0 && serverTimeout < QRTTL {
+		return serverTimeout
+	}
+	return QRTTL
+}
+
+// drainQRChannel mengikuti rotasi kode sampai channel tutup/sukses.
+func (m *Manager) drainQRChannel(qrChan <-chan whatsmeow.QRChannelItem) {
+	for item := range qrChan {
+		if item.Event == "code" {
+			m.rememberQR(item.Code, item.Timeout)
+			log.Printf("[WAGATE] rotasi QR diikuti")
+			continue
+		}
+		log.Printf("[WAGATE] QR channel event: %s", item.Event)
+		if item.Event == "success" {
+			m.mu.Lock()
+			m.lastQR, m.lastQRErr = "", ""
+			m.mu.Unlock()
+			return
+		}
+		if item.Error != nil {
+			m.mu.Lock()
+			m.lastQRErr = item.Error.Error()
+			m.mu.Unlock()
+			return
+		}
 	}
 }
 

@@ -2301,7 +2301,7 @@ export async function getWAGatewayStatus(): Promise<WAGatewayStatus> {
 	}
 }
 
-export async function getWAQRBlob(): Promise<{ ok: boolean; url?: string; message?: string }> {
+export async function getWAQRBlob(): Promise<{ ok: boolean; url?: string; message?: string; ttl?: number }> {
 	try {
 		const res = await fetch(`${API_BASE_URL}/notifications/wa/qr`, {
 			headers: getAuthHeaders(),
@@ -2318,7 +2318,8 @@ export async function getWAQRBlob(): Promise<{ ok: boolean; url?: string; messag
 			return { ok: false, message };
 		}
 		const blob = await res.blob();
-		return { ok: true, url: URL.createObjectURL(blob) };
+		const ttl = Number(res.headers.get('X-QR-TTL')) || 0;
+		return { ok: true, url: URL.createObjectURL(blob), ttl };
 	} catch (e) {
 		console.error('[API] Fetch WA QR error:', e);
 		return { ok: false, message: 'Gagal memuat QR.' };

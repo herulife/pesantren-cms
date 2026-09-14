@@ -76,7 +76,8 @@ export default function WAGatewayCard() {
     if (r.ok && r.url) {
       if (qrUrl) URL.revokeObjectURL(qrUrl);
       setQrUrl(r.url);
-      setQrExpAt(Date.now() + 50000);
+      const ttlMs = r.ttl && r.ttl > 0 ? Math.min(r.ttl, 90) * 1000 : 20000;
+      setQrExpAt(Date.now() + ttlMs);
     } else {
       showToast('error', r.message || 'Gagal memuat QR.');
     }

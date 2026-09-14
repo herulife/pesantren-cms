@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -69,6 +70,7 @@ func (h *Handler) GetWAQR(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-QR-TTL", strconv.Itoa(int(ttl.Seconds())))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(png)
 }
