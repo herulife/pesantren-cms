@@ -65,7 +65,7 @@ export default function PortalPaymentSppPage() {
     }
     setSaving(true);
     try {
-      const up = await uploadImage(file);
+      const up = await uploadImage(file, 'proof');
       const proofUrl: string = up.url || up?.data?.url || '';
       if (!proofUrl) {
         showToast('error', 'Upload bukti gagal.');

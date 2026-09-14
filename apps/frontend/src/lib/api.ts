@@ -1949,9 +1949,12 @@ export async function generateArticleAI(topic: string, withImage: boolean = true
 	return parseResponse(res);
 }
 
-export async function uploadImage(file: File) {
+export async function uploadImage(file: File, kind?: string) {
 	const formData = new FormData();
 	formData.append('image', file);
+	if (kind) {
+		formData.append('kind', kind);
+	}
 
 	// Pakai rawFetch (tanpa timeout 30 detik apiFetch): upload foto HP
 	// yang besar lewat koneksi lambat sering terputus di tengah jalan.

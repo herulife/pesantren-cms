@@ -351,7 +351,11 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 			sendJSONResponse(w, http.StatusNotFound, false, "Tagihan tidak ditemukan", nil)
 			return
 		}
-		if err == errBillAlreadyPaid || err == errBillOverpay {
+		if err == errBillAlreadyPaid {
+			sendJSONResponse(w, http.StatusConflict, false, "Tagihan sudah lunas", map[string]interface{}{"code": "PAYMENT_ALREADY_PAID"})
+			return
+		}
+		if err == errBillOverpay {
 			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
 			return
 		}
@@ -479,7 +483,11 @@ func (h *Handler) SubmitProof(w http.ResponseWriter, r *http.Request) {
 			sendJSONResponse(w, http.StatusNotFound, false, "Tagihan tidak ditemukan", nil)
 			return
 		}
-		if err == errBillOverpay || err == errProofConflict {
+		if err == errProofConflict {
+			sendJSONResponse(w, http.StatusConflict, false, "Tagihan sedang menunggu verifikasi", map[string]interface{}{"code": "PROOF_PENDING"})
+			return
+		}
+		if err == errBillOverpay {
 			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
 			return
 		}

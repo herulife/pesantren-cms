@@ -240,7 +240,7 @@ export default function PortalPaymentPage() {
     try {
       let nextProofUrl = proofUrl;
       if (selectedProofFile) {
-        const uploadResult = await uploadImage(selectedProofFile);
+        const uploadResult = await uploadImage(selectedProofFile, 'proof');
         nextProofUrl = uploadResult?.url || uploadResult?.data?.url || '';
         if (!nextProofUrl) {
           throw new Error('URL bukti pembayaran tidak ditemukan setelah upload.');
