@@ -42,6 +42,12 @@ func (m *Manager) handleEvent(evt interface{}) {
 // RequestQR memulai/mengambil kode QR terbaru sebagai PNG.
 // Mengembalikan PNG, sisa umur, dan pesan bila belum bisa.
 func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) {
+	if st := m.StatusNow(); st.Connected {
+		return nil, 0, fmt.Errorf("sudah terhubung")
+	}
+	// State bersih total: sesi lama yang gagal adalah penyebab umum
+	// HP menolak penautan ("tidak dapat menautkan").
+	m.resetSession()
 	client, err := m.ensureClient(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -49,23 +55,6 @@ func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) 
 	if client.IsLoggedIn() {
 		m.refreshIdentity()
 		return nil, 0, fmt.Errorf("sudah terhubung")
-	}
-	// Pakai cache bila masih segar.
-	m.mu.Lock()
-	cached, at := m.lastQR, m.lastQRAt
-	m.mu.Unlock()
-	if cached != "" && time.Since(at) < QRTTL {
-		png, err := qrcode.Encode(cached, qrcode.Medium, 280)
-		if err != nil {
-			return nil, 0, err
-		}
-		return png, QRTTL - time.Since(at), nil
-	}
-	// Pairing butuh state bersih: putuskan socket lama bila ada agar
-	// GetQRChannel tidak ditolak ("must be called before connecting").
-	if client.IsConnected() {
-		client.Disconnect()
-		time.Sleep(time.Second)
 	}
 	qrChan, err := client.GetQRChannel(ctx)
 	if err != nil {
@@ -100,12 +89,7 @@ func (m *Manager) RequestQR(ctx context.Context) ([]byte, time.Duration, error) 
 // RequestPairCode meminta kode taut 8 digit (format XXXX-XXXX) untuk nomor HP.
 // Nomor harus format internasional tanpa + (cth: 62812xxxxxxx).
 func (m *Manager) RequestPairCode(ctx context.Context, phone string) (string, error) {
-	client, err := m.ensureClient(ctx)
-	if err != nil {
-		return "", err
-	}
-	if client.IsLoggedIn() {
-		m.refreshIdentity()
+	if st := m.StatusNow(); st.Connected {
 		return "", fmt.Errorf("sudah terhubung")
 	}
 	digits := ""
@@ -121,10 +105,15 @@ func (m *Manager) RequestPairCode(ctx context.Context, phone string) (string, er
 	if len(digits) < 9 {
 		return "", fmt.Errorf("nomor tidak valid")
 	}
-	// State bersih seperti alur QR.
-	if client.IsConnected() {
-		client.Disconnect()
-		time.Sleep(time.Second)
+	// State bersih total seperti alur QR.
+	m.resetSession()
+	client, err := m.ensureClient(ctx)
+	if err != nil {
+		return "", err
+	}
+	if client.IsLoggedIn() {
+		m.refreshIdentity()
+		return "", fmt.Errorf("sudah terhubung")
 	}
 	if err := client.Connect(); err != nil {
 		return "", fmt.Errorf("gagal connect: %w", err)

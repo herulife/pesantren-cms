@@ -84,6 +84,31 @@ func (m *Manager) setStatus(connected bool, phone, pushName string) {
 	m.pushName = pushName
 }
 
+// resetSession membuang seluruh state pairing lama agar percobaan
+// berikutnya mulai dari kunci/device yang benar-benar baru.
+// TIDAK PERNAH dipanggil saat sudah terhubung.
+func (m *Manager) resetSession() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.connected {
+		return
+	}
+	if m.client != nil {
+		m.client.Disconnect()
+		m.client = nil
+	}
+	if m.container != nil {
+		_ = m.container.Close()
+		m.container = nil
+	}
+	for _, suffix := range []string{"", "-wal", "-shm", "-journal"} {
+		_ = os.Remove(m.dbPath + suffix)
+	}
+	m.lastQR, m.lastQRErr = "", ""
+	m.pairCode = ""
+	log.Printf("[WAGATE] state pairing direset, siap percobaan bersih")
+}
+
 // openStore membuka container sesi (membuat direktori bila perlu).
 func (m *Manager) openStore(ctx context.Context) error {
 	if m.container != nil {
