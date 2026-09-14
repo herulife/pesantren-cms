@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, getReceipt, SppSantri, UnpaidBill, ReceiptData } from '@/lib/api';
-import KwitansiModal from '@/components/KwitansiModal';
+import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, getPayTransactions, getPublicSettingsMap, SppSantri, UnpaidBill, PayTx, SettingsMap } from '@/lib/api';
+import KwitansiModal, { KwitansiTx } from '@/components/KwitansiModal';
 import { fmtRp, BsTitle, BsAlert, Toast, useToastState } from '../ui';
 
 export default function BsPembayaran() {
@@ -13,13 +13,15 @@ export default function BsPembayaran() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Tunai');
   const [paying, setPaying] = useState<UnpaidBill | null>(null);
-  const [kwitansi, setKwitansi] = useState<ReceiptData | null>(null);
+  const [kwitansi, setKwitansi] = useState<KwitansiTx | null>(null);
+  const [settings, setSettings] = useState<SettingsMap>({});
   const [kwLoading, setKwLoading] = useState(false);
   const [msg, setMsg] = useState('');
   const [ok, setOk] = useState(true);
 
   useEffect(() => {
     getSppSantri().then(setSantris).catch(() => {});
+    getPublicSettingsMap().then(setSettings).catch(() => {});
   }, []);
 
   const pick = async (s: SppSantri) => {
@@ -48,11 +50,22 @@ export default function BsPembayaran() {
       setAmount('');
       setBills(await getUnpaidBills(selected.id));
       setKwLoading(true);
-      const kw = await getReceipt(selected.id, (paidBill?.period || '').slice(0, 7));
+      const txs = await getPayTransactions({ search: selected.nis });
       setKwLoading(false);
-      if (kw) setKwitansi(kw);
+      const latest = txs.find((t) => t.santri_id === selected.id) || txs[0];
+      if (latest) setKwitansi(toKwitansiTx(latest));
     }
   };
+
+  const toKwitansiTx = (t: PayTx): KwitansiTx => ({
+    code: t.code,
+    date: t.date,
+    santri_nis: t.santri_nis,
+    santri_name: t.santri_name,
+    description: t.description,
+    amount: t.amount,
+    method: t.method,
+  });
 
   const list = santris.filter((s) => (s.nis + s.name).toLowerCase().includes(search.toLowerCase())).slice(0, 50);
 
@@ -87,15 +100,14 @@ export default function BsPembayaran() {
                   type="button"
                   disabled={kwLoading}
                   onClick={async () => {
-                    const now = new Date();
-                    const per = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                     setKwLoading(true);
-                    const kw = await getReceipt(selected.id, per);
+                    const txs = await getPayTransactions({ search: selected.nis });
                     setKwLoading(false);
-                    if (kw) setKwitansi(kw);
+                    const latest = txs.find((t) => t.santri_id === selected.id) || txs[0];
+                    if (latest) setKwitansi(toKwitansiTx(latest));
                     else {
                       setOk(false);
-                      setMsg('Belum ada pembayaran bulan ini.');
+                      setMsg('Belum ada pembayaran.');
                     }
                   }}
                   className="btn btn-sm btn-success"
@@ -141,7 +153,15 @@ export default function BsPembayaran() {
             </div>
           )}
         </div>
-      {kwitansi && <KwitansiModal data={kwitansi} onClose={() => setKwitansi(null)} />}
+      {kwitansi && (
+        <KwitansiModal
+          data={kwitansi}
+          schoolName={settings.school_name}
+          schoolAddress={settings.school_address}
+          schoolPhone={settings.school_phone}
+          onClose={() => setKwitansi(null)}
+        />
+      )}
       </div>
     </div>
   );

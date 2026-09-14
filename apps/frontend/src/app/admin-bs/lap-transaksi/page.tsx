@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getPayTransactions, getReceipt, PayTx, ReceiptData } from '@/lib/api';
-import KwitansiModal from '@/components/KwitansiModal';
+import { getPayTransactions, getPublicSettingsMap, PayTx, SettingsMap } from '@/lib/api';
+import KwitansiModal, { KwitansiTx } from '@/components/KwitansiModal';
 import { fmtRp, BsTitle, PageHeader, Toast, useToastState } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
@@ -11,12 +11,17 @@ function firstOfMonth() { return today().slice(0, 8) + '01'; }
 
 export default function BsLapTransaksi() {
   const [rows, setRows] = useState<PayTx[]>([]);
-  const [kwitansi, setKwitansi] = useState<ReceiptData | null>(null);
+  const [kwitansi, setKwitansi] = useState<KwitansiTx | null>(null);
+  const [settings, setSettings] = useState<SettingsMap>({});
   const { toast, show } = useToastState();
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(today());
 
-  const load = async () => setRows(await getPayTransactions({ from, to }));
+  const load = async () => {
+    const [t, st] = await Promise.all([getPayTransactions({ from, to }), getPublicSettingsMap()]);
+    setRows(t);
+    setSettings(st);
+  };
 
   useEffect(() => {
     load();
@@ -53,7 +58,7 @@ export default function BsLapTransaksi() {
                   <tr key={r.id}>
                     <td>{d}</td><td>{t || '-'}</td><td>{r.santri_nis}</td><td className="fw-bold">{r.santri_name}</td>
                     <td>{r.description}</td><td className="fw-bold">{fmtRp(r.amount)}</td><td>{r.method}</td>
-                    <td>{r.petugas || '-'}</td><td>{r.code}</td><td><button title="Kwitansi rekap bulan ini" onClick={async () => { const kw = await getReceipt(r.santri_id, (r.date || '').slice(0, 7)); if (kw) setKwitansi(kw); else show(false, 'Belum ada data kwitansi.'); }} className="btn btn-xs btn-info">Kwitansi</button></td>
+                    <td>{r.petugas || '-'}</td><td>{r.code}</td><td><button title="Cetak kwitansi" onClick={() => setKwitansi({ code: r.code, date: r.date, santri_nis: r.santri_nis, santri_name: r.santri_name, description: r.description, amount: r.amount, method: r.method })} className="btn btn-xs btn-info">Kwitansi</button></td>
                   </tr>
                 );
               })}
@@ -62,7 +67,7 @@ export default function BsLapTransaksi() {
           </table>
         </div>
       </div>
-      {kwitansi && <KwitansiModal data={kwitansi} onClose={() => setKwitansi(null)} />}
+      {kwitansi && <KwitansiModal data={kwitansi} schoolName={settings.school_name} schoolAddress={settings.school_address} schoolPhone={settings.school_phone} onClose={() => setKwitansi(null)} />}
       <Toast toast={toast} />
     </div>
   );

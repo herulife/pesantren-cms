@@ -1,7 +1,16 @@
 'use client';
 
 import React from 'react';
-import { ReceiptData } from '@/lib/api';
+
+export interface KwitansiTx {
+  code: string;
+  date: string;
+  santri_nis?: string;
+  santri_name?: string;
+  description: string;
+  amount: number;
+  method: string;
+}
 
 export function terbilang(n: number): string {
   const a = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
@@ -17,7 +26,18 @@ export function terbilang(n: number): string {
     return (t(Math.floor(x / 1000000000)) + ' miliar ' + t(x % 1000000000)).trim();
   };
   if (!n || n <= 0) return 'Nol rupiah';
-  return t(Math.floor(n)).replace(/\s+/g, ' ').trim().replace(/^./, (c) => c.toUpperCase()) + ' rupiah';
+  return t(Math.floor(n))
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ') + ' Rupiah';
+}
+
+function formatTanggalID(dateStr: string): string {
+  const d = new Date((dateStr || '').slice(0, 10) + 'T00:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export function formatPeriode(period: string): string {
@@ -28,76 +48,54 @@ export function formatPeriode(period: string): string {
   return `${months[mi] || m[2]} ${m[1]}`;
 }
 
-export default function KwitansiModal({ data, schoolName, schoolAddress, onClose }: {
-  data: ReceiptData;
+export default function KwitansiModal({ data, schoolName, schoolAddress, schoolPhone, city, petugas, onClose }: {
+  data: KwitansiTx;
   schoolName?: string;
   schoolAddress?: string;
+  schoolPhone?: string;
+  city?: string;
+  petugas?: string;
   onClose: () => void;
 }) {
-  const r = data.receipt;
-  const rp = (v: number) => 'Rp ' + (v || 0).toLocaleString('id-ID');
+  const rp = (v: number) => 'Rp. ' + (v || 0).toLocaleString('id-ID');
+  const kota = city || 'Parung';
 
   const doPrint = () => window.print();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 print:static print:bg-white print:p-0" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl print:max-h-none print:w-full print:max-w-none print:rounded-none print:shadow-none" onClick={(e) => e.stopPropagation()}>
-        <div className="kwitansi-area p-6 sm:p-8 print:p-2">
-          <div className="border-b-2 border-slate-900 pb-4 text-center">
-            <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">{schoolName || 'Pondok Pesantren Al-Maa'}</h2>
-            {schoolAddress && <p className="mt-1 text-xs text-slate-600">{schoolAddress}</p>}
-            <p className="mt-2 inline-block rounded bg-slate-900 px-4 py-1 text-sm font-black uppercase tracking-widest text-white">
-              Kwitansi Pembayaran
-            </p>
+        <div className="kwitansi-area bg-white p-6 text-slate-900 sm:p-10 print:p-2">
+          <div className="text-center">
+            <h2 className="text-xl font-bold uppercase tracking-wide">PONDOK PESANTREN {schoolName || 'ALMAA'}</h2>
+            <p className="mt-1 text-sm">{schoolAddress || 'Jl. H Mawi, Gg. Omega, Kp. Jati Waru, Rt/Rw 003/002, Desa, Waru, Kec. Parung'}</p>
+            <p className="text-sm">Telp. {schoolPhone || '-'}</p>
           </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <p className="text-slate-500">No. Kwitansi</p>
-            <p className="font-mono font-bold text-slate-900">: {r.receipt_no}</p>
-            <p className="text-slate-500">Periode</p>
-            <p className="font-bold text-slate-900">: {formatPeriode(r.period)}</p>
-            <p className="text-slate-500">NIS / Nama</p>
-            <p className="font-bold text-slate-900">: {r.santri_nis || '-'} / {r.santri_name || '-'}</p>
-            {r.santri_class && (<><p className="text-slate-500">Kelas</p><p className="font-bold text-slate-900">: {r.santri_class}</p></>)}
-            {r.parent_name && (<><p className="text-slate-500">Wali</p><p className="font-bold text-slate-900">: {r.parent_name}</p></>)}
-          </div>
-
-          <table className="mt-4 w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-y-2 border-slate-900">
-                <th className="py-2 text-left">No</th>
-                <th className="py-2 text-left">Tanggal</th>
-                <th className="py-2 text-left">Uraian</th>
-                <th className="py-2 text-right">Jumlah</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((it, i) => (
-                <tr key={it.id} className="border-b border-slate-200">
-                  <td className="py-1.5">{i + 1}</td>
-                  <td className="py-1.5">{(it.date || '').slice(0, 10)}</td>
-                  <td className="py-1.5">{it.description} <span className="text-xs text-slate-400">({it.method})</span></td>
-                  <td className="py-1.5 text-right">{rp(it.amount)}</td>
-                </tr>
-              ))}
-              <tr>
-                <td colSpan={3} className="py-2 text-right font-black uppercase">Total</td>
-                <td className="py-2 text-right font-black">{rp(r.total)}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p className="mt-2 rounded-lg bg-slate-100 px-3 py-2 text-sm italic text-slate-700">
-            Terbilang: {terbilang(r.total)}
-          </p>
-
-          <div className="mt-6 flex justify-between text-sm">
-            <div>
-              <p className="text-slate-500">Petugas</p>
-              <p className="mt-10 font-bold underline">{r.petugas || '( ........................ )'}</p>
+          <hr className="my-4 border-t-2 border-slate-900" />
+          <h3 className="text-center text-lg font-bold uppercase tracking-widest">Kwitansi</h3>
+          <div className="mx-auto mt-4 max-w-xl space-y-2 text-[15px]">
+            <div className="flex gap-2">
+              <span className="w-40 shrink-0">Nomor Transaksi</span><span>:</span><span className="font-mono font-bold">{data.code}</span>
             </div>
-            <div className="text-right">
-              <p className="text-slate-500">Parung, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-              <p className="mt-10 font-bold underline">Bendahara</p>
+            <div className="flex gap-2">
+              <span className="w-40 shrink-0">Sudah Diterima Dari</span><span>:</span>
+              <span className="font-bold">{data.santri_nis || '-'} / {data.santri_name || '-'}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="w-40 shrink-0">Uang Sebesar</span><span>:</span>
+              <span className="font-bold italic">{terbilang(data.amount)}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="w-40 shrink-0">Untuk Pembayaran</span><span>:</span>
+              <span>{data.description} <span className="text-slate-500">({data.method})</span></span>
+            </div>
+          </div>
+          <div className="mx-auto mt-6 flex max-w-xl items-start justify-between">
+            <p className="text-lg font-bold">{rp(data.amount)}</p>
+            <div className="text-center">
+              <p>{kota}, {formatTanggalID(data.date)}</p>
+              <p className="mt-1">Penerima</p>
+              <p className="mt-12 font-bold underline">{petugas || '( ................................................ )'}</p>
             </div>
           </div>
         </div>

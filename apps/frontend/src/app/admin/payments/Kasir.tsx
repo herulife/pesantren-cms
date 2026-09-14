@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, getReceipt, SppSantri, UnpaidBill, ReceiptData } from "@/lib/api";
-import KwitansiModal from "@/components/KwitansiModal";
+import { getSppSantri, getUnpaidBills, paySppBill, payIuranBill, getPayTransactions, getPublicSettingsMap, SppSantri, UnpaidBill, PayTx, SettingsMap } from "@/lib/api";
+import KwitansiModal, { KwitansiTx } from "@/components/KwitansiModal";
 import { Receipt } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { Search } from "lucide-react";
@@ -14,15 +14,18 @@ export default function Kasir() {
   const [selected, setSelected] = useState<SppSantri | null>(null);
   const [bills, setBills] = useState<UnpaidBill[]>([]);
   const [paying, setPaying] = useState<UnpaidBill | null>(null);
-  const [kwitansi, setKwitansi] = useState<ReceiptData | null>(null);
+  const [kwitansi, setKwitansi] = useState<KwitansiTx | null>(null);
   const [kwLoading, setKwLoading] = useState(false);
+  const [settings, setSettings] = useState<SettingsMap>({});
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("Tunai");
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
 
   const loadSantri = useCallback(async () => {
-    setSantris(await getSppSantri());
+    const [ss, st] = await Promise.all([getSppSantri(), getPublicSettingsMap()]);
+    setSantris(ss);
+    setSettings(st);
   }, []);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadSantri(); }, [loadSantri]);
@@ -45,7 +48,6 @@ export default function Kasir() {
     const res = paying.bill_type === "SPP"
       ? await paySppBill(paying.bill_id, { amount: nominal, method })
       : await payIuranBill(paying.bill_id, { amount: nominal, method });
-    const paidBill = paying;
     setSaving(false);
     if (res.success) {
       showToast("success", "Pembayaran tersimpan.");
@@ -53,14 +55,25 @@ export default function Kasir() {
       if (selected) {
         setBills(await getUnpaidBills(selected.id));
         setKwLoading(true);
-        const kw = await getReceipt(selected.id, (paidBill?.period || "").slice(0, 7));
+        const txs = await getPayTransactions({ search: selected.nis });
         setKwLoading(false);
-        if (kw) setKwitansi(kw);
+        const latest = txs.find((t) => t.santri_id === selected.id) || txs[0];
+        if (latest) setKwitansi(toKwitansiTx(latest));
       }
     } else {
       showToast("error", res.message || "Gagal menyimpan.");
     }
   };
+
+  const toKwitansiTx = (t: PayTx): KwitansiTx => ({
+    code: t.code,
+    date: t.date,
+    santri_nis: t.santri_nis,
+    santri_name: t.santri_name,
+    description: t.description,
+    amount: t.amount,
+    method: t.method,
+  });
 
   const list = santris.filter((s) => (s.nis + s.name).toLowerCase().includes(search.toLowerCase())).slice(0, 50);
 
@@ -88,13 +101,12 @@ export default function Kasir() {
           {selected && (
             <button
               onClick={async () => {
-                const now = new Date();
-                const per = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
                 setKwLoading(true);
-                const kw = await getReceipt(selected.id, per);
+                const txs = await getPayTransactions({ search: selected.nis });
                 setKwLoading(false);
-                if (kw) setKwitansi(kw);
-                else showToast("error", "Belum ada pembayaran bulan ini.");
+                const latest = txs.find((t) => t.santri_id === selected.id) || txs[0];
+                if (latest) setKwitansi(toKwitansiTx(latest));
+                else showToast("error", "Belum ada pembayaran.");
               }}
               disabled={kwLoading}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
@@ -127,7 +139,13 @@ export default function Kasir() {
         )}
       </div>
       {kwitansi && (
-        <KwitansiModal data={kwitansi} onClose={() => setKwitansi(null)} />
+        <KwitansiModal
+          data={kwitansi}
+          schoolName={settings.school_name}
+          schoolAddress={settings.school_address}
+          schoolPhone={settings.school_phone}
+          onClose={() => setKwitansi(null)}
+        />
       )}
     </div>
   );
