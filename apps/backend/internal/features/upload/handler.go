@@ -113,6 +113,10 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uploadDir := "./public/uploads"
+	// PHASE 4: kind=proof -> subdir privat (disajikan via ServeProof berauth).
+	if r.FormValue("kind") == "proof" {
+		uploadDir = "./public/uploads/proofs"
+	}
 	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
 		logger.Error(r.Context(), "upload failed creating directory", logger.Field{
 			"operation":      "upload_image",
@@ -128,7 +132,17 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	if format == "jpeg" {
 		ext = ".jpg"
 	}
-	newFileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	newFileName, err := randomFileName(ext)
+	if err != nil {
+		logger.Error(r.Context(), "upload failed generating filename", logger.Field{
+			"operation":      "upload_image",
+			"correlation_id": correlationID,
+			"user_id":        userID,
+			"error":          err.Error(),
+		})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Tidak dapat menyimpan file", nil)
+		return
+	}
 	filePath := filepath.Join(uploadDir, newFileName)
 
 	out, err := os.Create(filePath)
@@ -219,8 +233,9 @@ func sanitizeImage(file io.Reader) ([]byte, string, error) {
 	case "gif":
 		err = gif.Encode(&buf, img, nil)
 	case "webp":
-		// WebP murni — simpan as-is tanpa re-encode ke PNG (hemat, tetap WebP)
-		return raw, "webp", nil
+		// PHASE 4: WebP di-decode lalu re-encode PNG (normalisasi, buang chunk asing).
+		format = "png"
+		err = png.Encode(&buf, img)
 	default:
 		return nil, "", fmt.Errorf("unsupported image format: %s", format)
 	}

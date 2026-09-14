@@ -67,7 +67,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	if list == nil {
 		list = make([]Teacher, 0)
 	}
-	sendJSONResponse(w, http.StatusOK, true, "Daftar pengajar berhasil dimuat", list)
+	sendJSONResponse(w, http.StatusOK, true, "Daftar pengajar berhasil dimuat", toPublicList(list))
 }
 
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +81,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusNotFound, false, "Pengajar tidak ditemukan", nil)
 		return
 	}
-	sendJSONResponse(w, http.StatusOK, true, "Detail pengajar berhasil dimuat", t)
+	sendJSONResponse(w, http.StatusOK, true, "Detail pengajar berhasil dimuat", toPublic(*t))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

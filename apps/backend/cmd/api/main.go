@@ -429,6 +429,10 @@ func main() {
 
 	})
 
+	// PHASE 4: proofs privat via handler berauth (chi memprioritaskan node
+	// statis /uploads/proofs di atas catch-all /uploads/*).
+	r.Get("/uploads/proofs/{file}", upload.ServeProof(database.DB))
+
 	// Serve Static Files -> public/uploads
 	fileServer := http.FileServer(http.Dir("./public/uploads"))
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fileServer))

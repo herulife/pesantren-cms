@@ -2,6 +2,7 @@ package iuran
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
@@ -455,6 +456,10 @@ func (h *Handler) SubmitProof(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Proof == "" {
 		writeValidationError(w, map[string][]string{"proof_url": {"Bukti transfer wajib diunggah"}})
+		return
+	}
+	if err := upload.ValidateProofURL(req.Proof); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, err.Error(), nil)
 		return
 	}
 	if err := h.repo.SubmitProof(id, uid, req.Amount, strings.TrimSpace(req.Method), strings.TrimSpace(req.PaidAt), req.Proof); err != nil {

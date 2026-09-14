@@ -87,7 +87,7 @@ func (h *Handler) GetDonations(w http.ResponseWriter, r *http.Request) {
 		"count":       len(list),
 		"duration_ms": time.Since(startedAt).Milliseconds(),
 	})
-	sendJSONResponse(w, http.StatusOK, true, "Daftar donasi berhasil dimuat", list)
+	sendJSONResponse(w, http.StatusOK, true, "Daftar donasi berhasil dimuat", toPublicList(list))
 }
 
 func parseEndDate(raw json.RawMessage) (*time.Time, error) {
