@@ -28,7 +28,22 @@ func newFinanceTestDB(t *testing.T) *sql.DB {
 	}
 	schema := `
 	CREATE TABLE santri (id INTEGER PRIMARY KEY AUTOINCREMENT, nis TEXT, name TEXT, class TEXT, status TEXT DEFAULT 'aktif', user_id INTEGER);
-	CREATE TABLE spp_bills (id INTEGER PRIMARY KEY AUTOINCREMENT, santri_id INTEGER NOT NULL, period TEXT NOT NULL, amount INTEGER NOT NULL, paid_amount INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'unpaid', due_date TEXT DEFAULT '', paid_method TEXT DEFAULT '', paid_at DATETIME, notes TEXT DEFAULT '', payment_proof TEXT DEFAULT '', pending_amount INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(santri_id, period));
+	CREATE TABLE audit_logs (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+request_id TEXT,
+actor_id INTEGER,
+actor_role TEXT,
+action TEXT NOT NULL,
+entity_type TEXT,
+entity_id TEXT,
+before_json TEXT,
+after_json TEXT,
+ip_address TEXT,
+user_agent TEXT,
+result TEXT DEFAULT 'ok',
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE spp_bills (id INTEGER PRIMARY KEY AUTOINCREMENT, santri_id INTEGER NOT NULL, period TEXT NOT NULL, amount INTEGER NOT NULL, paid_amount INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'unpaid', due_date TEXT DEFAULT '', paid_method TEXT DEFAULT '', paid_at DATETIME, notes TEXT DEFAULT '', payment_proof TEXT DEFAULT '', pending_amount INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(santri_id, period));
 	CREATE TABLE payment_transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT DEFAULT '', date TEXT DEFAULT '', santri_id INTEGER, bill_type TEXT, bill_id INTEGER, bill_period TEXT DEFAULT '', description TEXT DEFAULT '', amount INTEGER, method TEXT DEFAULT '', created_by INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, idempotency_key TEXT);
 	CREATE TABLE receipts (id INTEGER PRIMARY KEY AUTOINCREMENT, receipt_no TEXT, santri_id INTEGER, period TEXT, description TEXT, total INTEGER, method TEXT, created_by INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME);
 	`
@@ -134,7 +149,7 @@ func TestCancelReversal(t *testing.T) {
 	if err := repo.PayBill(billID, 75000, "tunai", "", "", 1); err != nil {
 		t.Fatalf("pay: %v", err)
 	}
-	if err := repo.CancelBill(billID); err != nil {
+	if err := repo.CancelBill(billID, 1); err != nil {
 		t.Fatalf("cancel: %v", err)
 	}
 	var paid int
@@ -154,7 +169,7 @@ func TestCancelReversal(t *testing.T) {
 		t.Fatalf("expected receipt total 0 after cancel, got %d (err=%v)", total, err)
 	}
 	// Cancel kedua: sudah unpaid -> not found (bukan error ganda).
-	if err := repo.CancelBill(billID); !errors.Is(err, sql.ErrNoRows) {
+	if err := repo.CancelBill(billID, 1); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected ErrNoRows on second cancel, got %v", err)
 	}
 }

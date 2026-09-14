@@ -371,7 +371,7 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "ID tagihan tidak valid", nil)
 		return
 	}
-	if err := h.repo.CancelBill(id); err != nil {
+	if err := h.repo.CancelBill(id, adminID(r)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			sendJSONResponse(w, http.StatusNotFound, false, "Tagihan tidak ditemukan atau belum ada pembayaran", nil)
 			return
@@ -576,7 +576,7 @@ type IRepository interface {
 	GenerateBills(name, period string, amount int, dueDate, class string, santriIDs []int) (created int, skipped int, err error)
 	PayBill(id, amount int, method, paidAt, notes string, byID int) error
 	PayBillWithKey(id, amount int, method, paidAt, notes string, byID int, key string) error
-	CancelBill(id int) error
+	CancelBill(id, byID int) error
 	WAKwitansiEnabled() bool
 	KwitansiInfoByBill(billID int) (*KwitansiInfo, error)
 	Summary(period, name string) (*IuranSummary, error)

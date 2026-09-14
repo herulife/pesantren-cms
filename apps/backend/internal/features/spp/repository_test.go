@@ -55,7 +55,22 @@ func newSppTestDB(t *testing.T) *sql.DB {
 		idempotency_key TEXT
 	);
 
-	CREATE TABLE spp_bills (
+	CREATE TABLE audit_logs (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+request_id TEXT,
+actor_id INTEGER,
+actor_role TEXT,
+action TEXT NOT NULL,
+entity_type TEXT,
+entity_id TEXT,
+before_json TEXT,
+after_json TEXT,
+ip_address TEXT,
+user_agent TEXT,
+result TEXT DEFAULT 'ok',
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE spp_bills (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		santri_id INTEGER NOT NULL,
 		period TEXT NOT NULL,

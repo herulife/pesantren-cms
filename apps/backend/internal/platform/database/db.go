@@ -942,6 +942,32 @@ func runMigrations() {
 			name: "donations_idempotency_unique",
 			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_idem_unique ON donations(idempotency_key);`,
 		},
+	{
+		name: "audit_logs_table",
+		sql: `CREATE TABLE IF NOT EXISTS audit_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		request_id TEXT,
+		actor_id INTEGER,
+		actor_role TEXT,
+		action TEXT NOT NULL,
+		entity_type TEXT,
+		entity_id TEXT,
+		before_json TEXT,
+		after_json TEXT,
+		ip_address TEXT,
+		user_agent TEXT,
+		result TEXT DEFAULT 'ok',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`,
+	},
+	{
+		name: "audit_logs_actor_index",
+		sql: `CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id, created_at DESC);`,
+	},
+	{
+		name: "audit_logs_entity_index",
+		sql: `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);`,
+	},
 	}
 
 	for _, migration := range migrations {

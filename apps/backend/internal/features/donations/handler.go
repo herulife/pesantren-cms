@@ -3,6 +3,7 @@ package donations
 import (
 	"context"
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
@@ -252,6 +253,13 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 		"operation":   "donations_verify",
 		"donation_id": id,
 		"duration_ms": time.Since(startedAt).Milliseconds(),
+	})
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: adminID, ActorRole: actorRole,
+		Action: "VERIFY_DONATION", Entity: "donation", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"status": "verified"},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, "Donasi berhasil diverifikasi dan notifikasi dikirim", nil)
 }

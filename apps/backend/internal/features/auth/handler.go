@@ -1,9 +1,10 @@
 package auth
 
 import (
-	"context"
+	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -117,6 +118,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Log activity
 	logger.RecordActivity(&user.ID, "LOGIN", "Berhasil login ke sistem admin", r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: user.ID, ActorRole: user.Role,
+		Action: "LOGIN", Entity: "user", EntityID: strconv.Itoa(user.ID),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Correlation-ID", correlationID)
@@ -311,6 +317,11 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 				if id, ok := claimInt(claims["id"]); ok && id > 0 {
 					_ = h.repo.BumpTokenVersion(id)
 					logger.RecordActivity(&id, "LOGOUT", "Logout (sesi diakhiri)", r.RemoteAddr, r.UserAgent())
+					audit.Record(r.Context(), audit.Entry{
+						RequestID: logger.CorrelationID(r), ActorID: id,
+						Action: "LOGOUT", Entity: "user", EntityID: strconv.Itoa(id),
+						IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+					})
 				}
 			}
 		}
@@ -408,6 +419,12 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "CREATE_USER", fmt.Sprintf("Membuat user baru %s dengan role %s", newUser.Email, newUser.Role), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: adminID,
+		Action: "CREATE_USER", Entity: "user", EntityID: strconv.Itoa(newUser.ID),
+		After: map[string]interface{}{"email": newUser.Email, "role": newUser.Role},
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -468,6 +485,11 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "RESET_USER_PASSWORD", fmt.Sprintf("Mereset password User ID %d", id), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: adminID,
+		Action: "RESET_USER_PASSWORD", Entity: "user", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -509,6 +531,11 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "DELETE_USER", fmt.Sprintf("Menghapus User ID %d", id), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: adminID,
+		Action: "DELETE_USER", Entity: "user", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -565,6 +592,12 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "UPDATE_ROLE", fmt.Sprintf("Mengubah role User ID %d menjadi '%s'", id, req.Role), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: adminID,
+		Action: "UPDATE_ROLE", Entity: "user", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"role": req.Role},
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

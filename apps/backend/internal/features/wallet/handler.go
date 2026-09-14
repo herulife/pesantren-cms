@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
 	"encoding/json"
@@ -225,6 +226,14 @@ func (h *Handler) TopUp(w http.ResponseWriter, r *http.Request) {
 		"target_user_id": body.UserID,
 		"amount":         body.Amount,
 		"duration_ms":    time.Since(startedAt).Milliseconds(),
+	})
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "WALLET_TOPUP", Entity: "user_wallet", EntityID: strconv.FormatInt(int64(body.UserID), 10),
+		After: map[string]interface{}{"amount": body.Amount, "description": body.Description},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	writeJSONResponse(w, http.StatusOK, true, "Pengisian saldo berhasil", nil)
 }

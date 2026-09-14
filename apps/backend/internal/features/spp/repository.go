@@ -2,6 +2,7 @@ package spp
 
 import (
 	"almaparung-api/internal/platform/finance"
+	"almaparung-api/internal/platform/audit"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -380,8 +381,10 @@ func (r *Repository) payBillTx(id, amount int, method, paidAt, notes string, byI
 		}
 	}()
 
-	if idemKey != "" {
-		found, err := finance.FindLedgerByKey(tx, idemKey)
+	var beforeTotal, beforePaid int
+	var beforeStatus string
+	_ = tx.QueryRow(`SELECT amount, paid_amount, status FROM spp_bills WHERE id = ?`, id).Scan(&beforeTotal, &beforePaid, &beforeStatus)
+	if idemKey != "" {		found, err := finance.FindLedgerByKey(tx, idemKey)
 		if err != nil {
 			return err
 		}
@@ -427,6 +430,14 @@ func (r *Repository) payBillTx(id, amount int, method, paidAt, notes string, byI
 		return err
 	}
 	if err := upsertRekap(tx, santriID, period, amount, method, byID, "Rekap pembayaran "+monthYearID(period)); err != nil {
+	afterPaid := beforePaid + amount
+	afterStatus := "partial"
+	if afterPaid >= beforeTotal && beforeTotal > 0 {
+		afterStatus = "paid"
+	}
+	if err := audit.RecordMoneyTx(tx, byID, "PAY_SPP", "spp_bill", id, beforePaid, afterPaid, beforeStatus, afterStatus); err != nil {
+		return err
+	}
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -509,6 +520,9 @@ func (r *Repository) SubmitProofOnce(billID, uid, amount int, method, paidAt, pr
 	if n, _ := res.RowsAffected(); n == 0 {
 		return errProofConflict
 	}
+	if err := audit.RecordMoneyTx(tx, uid, "PROOF_SUBMIT_SPP", "spp_bill", billID, paid, paid, status, "pending"); err != nil {
+		return err
+	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -540,15 +554,22 @@ func (r *Repository) verifyBillTx(billID int, approve bool, note string, byID in
 			_ = tx.Rollback()
 		}
 	}()
-	var amount int
+	var amount, pendingPaid int
 	var method, paidAt string
-	err = tx.QueryRow(`SELECT pending_amount, paid_method, paid_at FROM spp_bills WHERE id = ? AND status = 'pending'`, billID).Scan(&amount, &method, &paidAt)
+	err = tx.QueryRow(`SELECT pending_amount, paid_method, paid_at, paid_amount FROM spp_bills WHERE id = ? AND status = 'pending'`, billID).Scan(&amount, &method, &paidAt, &pendingPaid)
 	if err != nil {
 		return err
 	}
 	if !approve {
 		_, err = tx.Exec(`UPDATE spp_bills SET status = CASE WHEN paid_amount > 0 THEN 'partial' ELSE 'unpaid' END, payment_proof = '', pending_amount = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'pending'`, billID)
 		if err != nil {
+			return err
+		}
+				afterStatus := "unpaid"
+		if pendingPaid > 0 {
+			afterStatus = "partial"
+		}
+		if err := audit.RecordMoneyTx(tx, byID, "VERIFY_REJECT_SPP", "spp_bill", billID, pendingPaid, pendingPaid, "pending", afterStatus); err != nil {
 			return err
 		}
 		if err := tx.Commit(); err != nil {
@@ -571,13 +592,13 @@ func (r *Repository) verifyBillTx(billID int, approve bool, note string, byID in
 	return r.payBillTx(billID, amount, method, paidAt, note, byID, idemKey)
 }
 
-func (r *Repository) CancelBill(id int) error {
+func (r *Repository) CancelBill(id, byID int) error {
 	return finance.RetryOnBusy(func() error {
-		return r.CancelBillOnce(id)
+		return r.CancelBillOnce(id, byID)
 	}, 10)
 }
 
-func (r *Repository) CancelBillOnce(id int) error {
+func (r *Repository) CancelBillOnce(id, byID int) error {
 	tx, err := finance.BeginTx(r.db)
 	if err != nil {
 		return err
@@ -589,8 +610,8 @@ func (r *Repository) CancelBillOnce(id int) error {
 		}
 	}()
 	var santriID, paid int
-	var period, method string
-	err = tx.QueryRow(`SELECT santri_id, paid_amount, period, COALESCE(paid_method,'') FROM spp_bills WHERE id = ? AND status != 'unpaid'`, id).Scan(&santriID, &paid, &period, &method)
+	var period, method, cancelStatus string
+	err = tx.QueryRow(`SELECT santri_id, paid_amount, period, COALESCE(paid_method,''), status FROM spp_bills WHERE id = ? AND status != 'unpaid'`, id).Scan(&santriID, &paid, &period, &method, &cancelStatus)
 	if err != nil {
 		return err
 	}
@@ -622,6 +643,9 @@ func (r *Repository) CancelBillOnce(id int) error {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return sql.ErrNoRows
+	}
+	if err := audit.RecordMoneyTx(tx, byID, "CANCEL_SPP", "spp_bill", id, paid, 0, cancelStatus, "unpaid"); err != nil {
+		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return err
