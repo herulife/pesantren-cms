@@ -36,6 +36,8 @@ export default function WAGatewayCard() {
   const [mode, setMode] = useState<'qr' | 'code'>('qr');
   const [qrUrl, setQrUrl] = useState('');
   const [qrLoading, setQrLoading] = useState(false);
+  const [qrExpAt, setQrExpAt] = useState(0);
+  const [qrNow, setQrNow] = useState(Date.now());
   const [pairPhone, setPairPhone] = useState('');
   const [pairCode, setPairCode] = useState('');
   const [pairLoading, setPairLoading] = useState(false);
@@ -67,17 +69,33 @@ export default function WAGatewayCard() {
     };
   }, [qrUrl]);
 
-  const loadQR = async () => {
+  const loadQR = useCallback(async () => {
     setQrLoading(true);
     const r = await getWAQRBlob();
     setQrLoading(false);
     if (r.ok && r.url) {
       if (qrUrl) URL.revokeObjectURL(qrUrl);
       setQrUrl(r.url);
+      setQrExpAt(Date.now() + 50000);
     } else {
       showToast('error', r.message || 'Gagal memuat QR.');
     }
-  };
+  }, [qrUrl, showToast]);
+
+  // Hitung mundur + muat ulang otomatis sesaat sebelum kedaluwarsa.
+  useEffect(() => {
+    if (!qrUrl) return;
+    const t = setInterval(() => setQrNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [qrUrl]);
+
+  const qrLeft = Math.max(0, Math.ceil((qrExpAt - qrNow) / 1000));
+
+  useEffect(() => {
+    if (qrUrl && qrExpAt > 0 && qrNow >= qrExpAt) {
+      void loadQR();
+    }
+  }, [qrNow, qrUrl, qrExpAt, loadQR]);
 
   const askPairCode = async () => {
     if (!pairPhone.trim()) {
@@ -187,7 +205,7 @@ export default function WAGatewayCard() {
                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                   >
                     <RefreshCw size={15} className={qrLoading ? 'animate-spin' : ''} />
-                    {qrLoading ? 'Memuat…' : qrUrl ? 'QR Baru' : 'Muat QR'}
+                    {qrLoading ? 'Memuat…' : qrUrl ? `QR Baru (${qrLeft}d)` : 'Muat QR'}
                   </button>
                 </div>
                 <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-600">

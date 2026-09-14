@@ -14,6 +14,8 @@ export default function BsNotifikasi() {
   const [mode, setMode] = useState<'qr' | 'code'>('qr');
   const [qrUrl, setQrUrl] = useState('');
   const [qrLoading, setQrLoading] = useState(false);
+  const [qrExpAt, setQrExpAt] = useState(0);
+  const [qrNow, setQrNow] = useState(Date.now());
   const [pairPhone, setPairPhone] = useState('');
   const [pairCode, setPairCode] = useState('');
   const [pairLoading, setPairLoading] = useState(false);
@@ -42,17 +44,32 @@ export default function BsNotifikasi() {
     };
   }, [qrUrl]);
 
-  const loadQR = async () => {
+  const loadQR = useCallback(async () => {
     setQrLoading(true);
     const r = await getWAQRBlob();
     setQrLoading(false);
     if (r.ok && r.url) {
       if (qrUrl) URL.revokeObjectURL(qrUrl);
       setQrUrl(r.url);
+      setQrExpAt(Date.now() + 50000);
     } else {
       showToast('error', r.message || 'Gagal memuat QR.');
     }
-  };
+  }, [qrUrl, showToast]);
+
+  useEffect(() => {
+    if (!qrUrl) return;
+    const t = setInterval(() => setQrNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [qrUrl]);
+
+  const qrLeft = Math.max(0, Math.ceil((qrExpAt - qrNow) / 1000));
+
+  useEffect(() => {
+    if (qrUrl && qrExpAt > 0 && qrNow >= qrExpAt) {
+      void loadQR();
+    }
+  }, [qrNow, qrUrl, qrExpAt, loadQR]);
 
   const askPairCode = async () => {
     if (!pairPhone.trim()) {
@@ -141,7 +158,7 @@ export default function BsNotifikasi() {
                     </div>
                     <div className="mt-2">
                       <button className="btn btn-sm btn-success" disabled={qrLoading} onClick={() => void loadQR()}>
-                        {qrLoading ? 'Memuat…' : qrUrl ? 'QR Baru' : 'Muat QR'}
+                        {qrLoading ? 'Memuat…' : qrUrl ? `QR Baru (${qrLeft}d)` : 'Muat QR'}
                       </button>
                     </div>
                   </div>

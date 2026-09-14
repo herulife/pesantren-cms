@@ -36,6 +36,11 @@ func sessionPath() string {
 	if p := strings.TrimSpace(os.Getenv("WA_SESSION_PATH")); p != "" {
 		return p
 	}
+	// Absolut agar tidak tergantung working directory proses
+	// (container jalan di /app/apps/backend, volume di /data).
+	if _, err := os.Stat("/data"); err == nil {
+		return "/data/wagate/wa_session.db"
+	}
 	return filepath.Join("data", "wagate", "wa_session.db")
 }
 
