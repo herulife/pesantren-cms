@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   Banknote,
   CheckCircle2,
@@ -649,10 +650,10 @@ export default function PortalPaymentPage() {
                 {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
               </button>
               <Link
-                href="/portal"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-sky-600"
+                href="/portal/documents"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
-                Kembali ke Dasbor <ArrowRight size={16} />
+                <ArrowLeft size={16} /> Kembali ke Dokumen
               </Link>
             </div>
           </div>

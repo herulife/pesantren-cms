@@ -1,73 +1,128 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, FileText, RefreshCw, ShieldCheck, UploadCloud } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Banknote,
+  CheckCircle2,
+  CreditCard,
+  Eye,
+  Landmark,
+  RefreshCw,
+  ShieldCheck,
+  UploadCloud,
+} from 'lucide-react';
 import { useToast } from '@/components/Toast';
-import { getMyPSBRegistration, saveMyPSBDocuments, uploadImage } from '@/lib/api';
+import KwitansiModal, { type KwitansiTx } from '@/components/KwitansiModal';
+import {
+  getMyPSBRegistration,
+  getMyPSBReceipt,
+  getPublicSettingsMap,
+  resolveDisplayImageUrl,
+  saveMyPSBPayment,
+  uploadImage,
+  type Registration,
+  type SettingsMap,
+} from '@/lib/api';
 
-type DocumentKey = 'kk_url' | 'ijazah_url' | 'pasfoto_url';
-type DocumentStatus = 'idle' | 'uploading' | 'success' | 'error';
+type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'rejected';
 
-export default function DocumentsPage() {
+function isFilled(value?: string | null) {
+  return Boolean(value && value.trim());
+}
+
+function normalizePaymentStatus(status?: string | null): PaymentStatus {
+  if (status === 'pending' || status === 'paid' || status === 'rejected') return status;
+  return 'unpaid';
+}
+
+function formatCurrency(value?: number | null) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
+function getTodayDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
+const paymentStatusMeta: Record<PaymentStatus, { label: string; title: string; description: string; className: string }> = {
+  unpaid: {
+    label: 'Belum Bayar',
+    title: 'Upload Bukti Pembayaran Pendaftaran',
+    description: 'Lengkapi nominal, tanggal transfer, lalu unggah bukti pembayaran agar panitia bisa melakukan verifikasi.',
+    className: 'border-slate-200 bg-slate-50 text-slate-700',
+  },
+  pending: {
+    label: 'Menunggu Verifikasi',
+    title: 'Bukti Pembayaran Sedang Dicek',
+    description: 'Bukti pembayaran sudah masuk. Panitia akan memeriksa nominal dan bukti transfer yang kamu kirim.',
+    className: 'border-amber-200 bg-amber-50 text-amber-800',
+  },
+  paid: {
+    label: 'Lunas',
+    title: 'Pembayaran Sudah Diverifikasi',
+    description: 'Pembayaran pendaftaran sudah dinyatakan lunas. Kamu bisa memantau status pendaftaran dari dashboard portal.',
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  },
+  rejected: {
+    label: 'Perlu Upload Ulang',
+    title: 'Bukti Pembayaran Perlu Diperbaiki',
+    description: 'Panitia belum bisa memverifikasi bukti pembayaran. Periksa catatan, lalu upload ulang bukti yang benar.',
+    className: 'border-rose-100 bg-rose-50 text-rose-700',
+  },
+};
+
+export default function PortalPaymentPage() {
   const { showToast } = useToast();
+  const hasShownRejectedNotice = useRef(false);
+  const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState<DocumentKey | ''>('');
-  const [isBiodataReady, setIsBiodataReady] = useState(false);
-  const [documents, setDocuments] = useState<Record<DocumentKey, string>>({
-    kk_url: '',
-    ijazah_url: '',
-    pasfoto_url: '',
-  });
-  const [documentStatus, setDocumentStatus] = useState<Record<DocumentKey, DocumentStatus>>({
-    kk_url: 'idle',
-    ijazah_url: 'idle',
-    pasfoto_url: 'idle',
-  });
-  const [documentNotes, setDocumentNotes] = useState<Record<DocumentKey, string>>({
-    kk_url: '',
-    ijazah_url: '',
-    pasfoto_url: '',
-  });
+  const [isUploading, setIsUploading] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(getTodayDate());
+  const [proofUrl, setProofUrl] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [settings, setSettings] = useState<SettingsMap>({});
+  const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
+  const [receipt, setReceipt] = useState<KwitansiTx | null>(null);
+
+  const loadReceipt = async () => {
+    try {
+      const r = await getMyPSBReceipt();
+      if (!r) {
+        showToast('error', 'Kwitansi belum tersedia.');
+        return;
+      }
+      setReceipt({
+        code: r.code,
+        date: r.paid_at,
+        santri_name: r.santri_name || registration?.full_name,
+        description: 'Biaya Pendaftaran PSB',
+        amount: r.amount,
+        method: r.method,
+      });
+    } catch {
+      showToast('error', 'Gagal memuat kwitansi.');
+    }
+  };
 
   useEffect(() => {
     const fetchRegistration = async () => {
       setIsLoading(true);
       try {
-        const data = await getMyPSBRegistration();
-        const requiredBiodataFields = [
-          data?.full_name,
-          data?.gender,
-          data?.nik,
-          data?.birth_place,
-          data?.birth_date,
-          data?.address,
-          data?.school_origin,
-          data?.program_choice,
-          data?.father_name,
-          data?.father_job,
-          data?.father_phone,
-          data?.mother_name,
-          data?.mother_job,
-          data?.mother_phone,
-        ];
-
-        setIsBiodataReady(requiredBiodataFields.every((value) => Boolean(value && String(value).trim())));
-        setDocuments({
-          kk_url: data?.kk_url || '',
-          ijazah_url: data?.ijazah_url || '',
-          pasfoto_url: data?.pasfoto_url || '',
-        });
-        setDocumentStatus({
-          kk_url: data?.kk_url ? 'success' : 'idle',
-          ijazah_url: data?.ijazah_url ? 'success' : 'idle',
-          pasfoto_url: data?.pasfoto_url ? 'success' : 'idle',
-        });
-        setDocumentNotes({
-          kk_url: data?.kk_url ? 'Dokumen sudah tersimpan di server.' : '',
-          ijazah_url: data?.ijazah_url ? 'Dokumen sudah tersimpan di server.' : '',
-          pasfoto_url: data?.pasfoto_url ? 'Dokumen sudah tersimpan di server.' : '',
-        });
+        const [data, publicSettings] = await Promise.all([getMyPSBRegistration(), getPublicSettingsMap()]);
+        const configuredAmount = Number(publicSettings.psb_payment_amount || 0);
+        setRegistration(data);
+        setSettings(publicSettings);
+        setAmount(data?.payment_amount ? String(data.payment_amount) : configuredAmount > 0 ? String(configuredAmount) : '');
+        setPaymentDate(data?.payment_date || getTodayDate());
+        setProofUrl(data?.payment_proof_url || '');
       } finally {
         setIsLoading(false);
       }
@@ -76,50 +131,167 @@ export default function DocumentsPage() {
     void fetchRegistration();
   }, []);
 
-  const handleUpload = async (type: DocumentKey, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const biodataCompleted = [
+    registration?.full_name,
+    registration?.gender,
+    registration?.nik,
+    registration?.birth_place,
+    registration?.birth_date,
+    registration?.address,
+    registration?.school_origin,
+    registration?.program_choice,
+    registration?.father_name,
+    registration?.father_job,
+    registration?.father_phone,
+    registration?.mother_name,
+    registration?.mother_job,
+    registration?.mother_phone,
+  ].every(isFilled);
+  const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
+  const canUploadPayment = biodataCompleted && documentsCompleted;
+  const paymentStatus = normalizePaymentStatus(registration?.payment_status);
+  const statusMeta = paymentStatusMeta[paymentStatus];
+  const proofDisplayUrl = resolveDisplayImageUrl(proofUrl);
+  const isLocked = paymentStatus === 'paid';
+  const isPaymentRejected = paymentStatus === 'rejected';
+  const paymentNote = registration?.payment_note?.trim() || '';
+  const hasPaymentWarning = !isLocked && (isPaymentRejected || Boolean(paymentNote));
+  const visibleStatusMeta = hasPaymentWarning
+      ? {
+          label: 'Perlu Tindakan',
+          title: 'Catatan Panitia Perlu Ditindaklanjuti',
+          description: 'Periksa catatan panitia di bawah ini, lalu upload ulang bukti transfer bila diminta.',
+        className: 'border-amber-200 bg-amber-50 text-amber-900',
+      }
+    : statusMeta;
+  const configuredBankName = settings.psb_payment_bank_name?.trim() || '';
+  const configuredAccountNumber = settings.psb_payment_account_number?.trim() || '';
+  const configuredAccountName = settings.psb_payment_account_name?.trim() || '';
+  const configuredPaymentNote = settings.psb_payment_note?.trim() || '';
+  const configuredInstructions = settings.psb_payment_instructions?.trim() || '';
+  const configuredAmount = Number(settings.psb_payment_amount || 0);
+  const hasBankInfo = Boolean(configuredBankName || configuredAccountNumber || configuredAccountName || configuredAmount > 0);
+  const parsedAmount = Number(amount);
+  const amountAndDateCompleted = Number.isFinite(parsedAmount) && parsedAmount > 0 && Boolean(paymentDate);
+  const proofReady = Boolean(selectedProofFile || proofUrl);
+  const proofSent = Boolean(proofUrl) && !selectedProofFile && (paymentStatus === 'pending' || paymentStatus === 'paid') && !hasPaymentWarning;
+  const canSubmitPayment =
+    canUploadPayment &&
+    !isLocked &&
+    amountAndDateCompleted &&
+    Boolean(selectedProofFile || (proofUrl && !hasPaymentWarning));
+  const paymentSteps = [
+    {
+      title: 'Biodata',
+      description: biodataCompleted ? 'Biodata sudah lengkap.' : 'Lengkapi biodata calon santri.',
+      completed: biodataCompleted,
+    },
+    {
+      title: 'Dokumen',
+      description: documentsCompleted ? 'Dokumen wajib sudah lengkap.' : 'Unggah dokumen wajib terlebih dahulu.',
+      completed: documentsCompleted,
+    },
+    {
+      title: 'Nominal & Tanggal',
+      description: amountAndDateCompleted ? 'Nominal dan tanggal transfer sudah diisi.' : 'Isi nominal dan tanggal transfer.',
+      completed: amountAndDateCompleted,
+    },
+    {
+      title: 'Bukti Transfer',
+      description: selectedProofFile ? 'Bukti baru sudah dipilih.' : proofUrl ? 'Bukti transfer sudah tersimpan.' : 'Pilih foto bukti transfer.',
+      completed: proofReady,
+    },
+    {
+      title: 'Kirim ke Panitia',
+      description: proofSent ? 'Bukti sedang menunggu verifikasi panitia.' : 'Klik tombol kirim setelah bukti dipilih.',
+      completed: proofSent || paymentStatus === 'paid',
+    },
+  ];
+
+  useEffect(() => {
+    if (hasPaymentWarning && paymentNote && !hasShownRejectedNotice.current) {
+      hasShownRejectedNotice.current = true;
+      showToast('error', `Catatan panitia: ${paymentNote}`);
+    }
+  }, [hasPaymentWarning, paymentNote, showToast]);
+
+  const handleProofSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!isBiodataReady) {
-      showToast('error', 'Lengkapi biodata PSB terlebih dahulu sebelum unggah dokumen.');
-      e.target.value = '';
+    setSuccessMessage('');
+    if (!canUploadPayment) {
+      showToast('error', 'Lengkapi biodata dan dokumen terlebih dahulu.');
+      event.target.value = '';
+      return;
+    }
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      showToast('error', 'Isi nominal pembayaran terlebih dahulu.');
+      event.target.value = '';
+      return;
+    }
+    if (!paymentDate) {
+      showToast('error', 'Isi tanggal pembayaran terlebih dahulu.');
+      event.target.value = '';
       return;
     }
 
-    setIsUploading(type);
-    setDocumentStatus((prev) => ({ ...prev, [type]: 'uploading' }));
-    setDocumentNotes((prev) => ({ ...prev, [type]: `Sedang mengunggah ${file.name}...` }));
-    try {
-      const uploadResult = await uploadImage(file);
-      const url = uploadResult?.url || uploadResult?.data?.url || '';
-      if (!url) {
-        throw new Error('URL dokumen tidak ditemukan setelah upload.');
-      }
-
-      const nextDocuments = { ...documents, [type]: url };
-      await saveMyPSBDocuments(nextDocuments);
-      setDocuments(nextDocuments);
-      setDocumentStatus((prev) => ({ ...prev, [type]: 'success' }));
-      setDocumentNotes((prev) => ({ ...prev, [type]: `${file.name} berhasil disimpan.` }));
-      showToast('success', 'Dokumen berhasil diunggah.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal mengunggah dokumen.';
-      setDocumentStatus((prev) => ({ ...prev, [type]: 'error' }));
-      setDocumentNotes((prev) => ({ ...prev, [type]: message }));
-      showToast('error', message);
-    } finally {
-      setIsUploading('');
-      e.target.value = '';
-    }
+    setSelectedProofFile(file);
+    showToast('info', 'Bukti transfer sudah dipilih. Klik Kirim Bukti Pembayaran untuk mengirim ke panitia.');
+    event.target.value = '';
   };
 
-  const docItems = [
-    { id: 'kk_url', title: 'Kartu Keluarga (KK)', desc: 'Scan asli berwarna, ukuran maksimal 2MB (JPG/PNG/PDF).' },
-    { id: 'ijazah_url', title: 'Ijazah / Raport Terakhir', desc: 'Scan asli ijazah, SKL, atau raport terbaru.' },
-    { id: 'pasfoto_url', title: 'Pas Foto 3x4', desc: 'Latar belakang merah, ukuran maksimal 1MB.' },
-  ] as const;
-  const uploadedCount = docItems.filter((doc) => Boolean(documents[doc.id])).length;
-  const allDocumentsUploaded = uploadedCount === docItems.length;
+  const handleSubmitPayment = async () => {
+    setSuccessMessage('');
+    if (!canUploadPayment) {
+      showToast('error', 'Lengkapi biodata dan dokumen terlebih dahulu.');
+      return;
+    }
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      showToast('error', 'Isi nominal pembayaran terlebih dahulu.');
+      return;
+    }
+    if (!paymentDate) {
+      showToast('error', 'Isi tanggal pembayaran terlebih dahulu.');
+      return;
+    }
+    if (!selectedProofFile && (!proofUrl || hasPaymentWarning)) {
+      showToast('error', 'Pilih foto bukti transfer terlebih dahulu.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      let nextProofUrl = proofUrl;
+      if (selectedProofFile) {
+        const uploadResult = await uploadImage(selectedProofFile, 'proof');
+        nextProofUrl = uploadResult?.url || uploadResult?.data?.url || '';
+        if (!nextProofUrl) {
+          throw new Error('URL bukti pembayaran tidak ditemukan setelah upload.');
+        }
+      }
+
+      const result = await saveMyPSBPayment({
+        payment_proof_url: nextProofUrl,
+        payment_amount: parsedAmount,
+        payment_date: paymentDate,
+      });
+      const nextRegistration = (result.data || null) as Registration | null;
+      setRegistration(nextRegistration);
+      setProofUrl(nextRegistration?.payment_proof_url || nextProofUrl);
+      setAmount(nextRegistration?.payment_amount ? String(nextRegistration.payment_amount) : String(parsedAmount));
+      setPaymentDate(nextRegistration?.payment_date || paymentDate);
+      setSelectedProofFile(null);
+      const message = 'Bukti pembayaran berhasil dikirim. Status pembayaran sekarang menunggu verifikasi panitia.';
+      setSuccessMessage(message);
+      showToast('success', message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.';
+      showToast('error', message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -131,159 +303,370 @@ export default function DocumentsPage() {
 
   return (
     <>
-      <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900">Unggah Dokumen</h3>
-      <p className="mb-10 max-w-xl text-sm leading-relaxed text-slate-500">
-        Unggah dokumen persyaratan PSB. Dokumen yang sudah masuk akan langsung terhubung ke akun pendaftaran kamu.
+      <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900">Bayar Pendaftaran</h3>
+      <p className="mb-10 max-w-2xl text-sm leading-relaxed text-slate-500">
+        Kirim bukti transfer biaya pendaftaran dari portal. Panitia akan memverifikasi pembayaran sebelum pendaftaran bisa dinyatakan diterima.
       </p>
 
-      <div className="mb-10 flex gap-4 rounded-3xl border border-sky-100 bg-sky-50 p-6 text-sky-800">
-        <ShieldCheck className="mt-1 shrink-0 text-sky-500" />
-        <p className="text-sm font-medium leading-relaxed">
-          Pastikan biodata sudah tersimpan sebelum mengunggah dokumen. File akan dikirim ke server dan dibaca panitia dari dashboard PSB.
-        </p>
+      <div className={`mb-8 rounded-[2rem] border p-6 shadow-sm ${visibleStatusMeta.className}`}>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl bg-white/80 p-3">
+              {paymentStatus === 'paid' ? <CheckCircle2 size={24} /> : hasPaymentWarning ? <AlertCircle size={24} /> : <CreditCard size={24} />}
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em]">{visibleStatusMeta.label}</p>
+              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight">{visibleStatusMeta.title}</h4>
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-7 opacity-80">{visibleStatusMeta.description}</p>
+              {paymentNote ? (
+                <div
+                  className={`mt-4 rounded-2xl px-4 py-4 shadow-sm ${
+                    hasPaymentWarning
+                      ? 'border border-amber-200 bg-white text-amber-950 shadow-amber-900/5'
+                      : 'border border-white/70 bg-white/80'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        hasPaymentWarning ? 'bg-amber-100 text-amber-700' : 'bg-white text-current'
+                      }`}
+                    >
+                      <AlertCircle size={18} />
+                    </div>
+                    <div>
+                      <p
+                        className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+                          hasPaymentWarning ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        Catatan Panitia
+                      </p>
+                      <p
+                        className={`mt-2 rounded-2xl px-4 py-3 text-sm font-black leading-6 ${
+                          hasPaymentWarning
+                            ? 'border border-amber-200 bg-amber-50 text-amber-950'
+                            : 'bg-slate-50 text-slate-800'
+                        }`}
+                      >
+                        {paymentNote}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-3">
+            <span className="inline-flex w-fit rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]">
+              {proofUrl ? 'Bukti sudah ada' : 'Belum ada bukti'}
+            </span>
+            {paymentStatus === 'paid' ? (
+              <button
+                type="button"
+                onClick={() => void loadReceipt()}
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-800 shadow-sm transition hover:bg-sky-50"
+              >
+                <Banknote size={14} /> Unduh Kwitansi
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      {!isBiodataReady ? (
-        <div className="mb-10 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
-          <p className="text-sm font-semibold leading-relaxed">
-            Biodata PSB kamu belum lengkap, jadi dokumen belum bisa diunggah. Lengkapi biodata dulu agar sistem bisa menyimpan dokumen ke akun pendaftaran yang benar.
-          </p>
-          <Link
-            href="/portal/biodata"
-            className="mt-4 inline-flex items-center rounded-full bg-amber-500 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-amber-400"
-          >
-            Lengkapi Biodata
-          </Link>
+      <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Checklist Pembayaran</p>
+            <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Langkah Yang Sudah Dilalui</h4>
+          </div>
+          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            {paymentSteps.filter((step) => step.completed).length}/{paymentSteps.length} selesai
+          </span>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-5">
+          {paymentSteps.map((step) => (
+            <div
+              key={step.title}
+              className={`rounded-2xl border px-4 py-4 ${
+                step.completed
+                  ? 'border-sky-100 bg-sky-50 text-sky-900'
+                  : 'border-slate-200 bg-slate-50 text-slate-500'
+              }`}
+            >
+              <div
+                className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
+                  step.completed ? 'bg-sky-600 text-white' : 'bg-white text-slate-400'
+                }`}
+              >
+                {step.completed ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              </div>
+              <p className="text-sm font-black leading-tight">{step.title}</p>
+              <p className="mt-2 text-xs font-semibold leading-5 opacity-75">{step.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {successMessage ? (
+        <div className="mb-8 rounded-[2rem] border border-sky-200 bg-sky-50 p-6 text-sky-900 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+              <CheckCircle2 size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">Upload Berhasil</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Bukti Pembayaran Terkirim</h4>
+              <p className="mt-2 text-sm font-semibold leading-7">{successMessage}</p>
+            </div>
+          </div>
         </div>
       ) : null}
 
-      <div className="space-y-6">
-        {docItems.map((doc) => {
-          const isUploaded = Boolean(documents[doc.id]);
-          const isBusy = isUploading === doc.id;
-          const status = documentStatus[doc.id];
-          const statusText =
-            status === 'uploading'
-              ? 'Sedang mengunggah'
-              : status === 'success'
-                ? 'Sudah tersimpan'
-                : status === 'error'
-                  ? 'Upload bermasalah'
-                  : 'Belum diunggah';
-          const statusClass =
-            status === 'uploading'
-              ? 'border-sky-100 bg-sky-50 text-sky-700'
-              : status === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : status === 'error'
-                  ? 'border-rose-100 bg-rose-50 text-rose-600'
-                  : 'border-slate-200 bg-slate-100 text-slate-500';
+      {hasPaymentWarning && paymentNote ? (
+        <div className="relative mb-8 overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6 text-amber-950 shadow-lg shadow-amber-900/5">
+          <div className="absolute inset-y-0 left-0 w-2 bg-amber-400" />
+          <div className="flex items-start gap-4 pl-2">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+              <AlertCircle size={28} />
+            </div>
+            <div>
+              <p className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-amber-800">
+                Peringatan Panitia
+              </p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Upload Ulang Bukti Transfer</h4>
+              <p className="mt-3 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm font-black leading-7 text-amber-950 shadow-sm">
+                Catatan panitia: {paymentNote}
+              </p>
+              <p className="mt-3 text-sm font-semibold leading-7 text-amber-800">
+                Silakan pilih foto bukti transfer yang benar pada form di bawah. Setelah upload ulang, status akan kembali menunggu verifikasi.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-          return (
-            <div
-              key={doc.id}
-              className={`flex flex-col items-start justify-between gap-6 rounded-[2rem] border p-6 md:flex-row md:items-center md:p-8 ${
-                isUploaded ? 'border-emerald-200 bg-white shadow-lg shadow-emerald-900/5' : 'border-dashed border-slate-200 bg-slate-50'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`mt-1 rounded-2xl p-3 ${isUploaded ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
-                  {isUploaded ? <CheckCircle2 size={24} /> : <FileText size={24} />}
+      {!canUploadPayment ? (
+        <div className="mb-8 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-1 shrink-0" size={20} />
+            <div>
+              <h4 className="font-bold">Selesaikan data pendaftaran dulu</h4>
+              <p className="mt-2 text-sm leading-7">
+                Pembayaran baru bisa dikirim setelah biodata dan dokumen wajib lengkap, supaya bukti transfer tersambung ke data pendaftar yang benar.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {!biodataCompleted ? (
+                  <Link href="/portal/biodata" className="rounded-full bg-amber-500 px-5 py-3 text-xs font-black uppercase tracking-widest text-white">
+                    Lengkapi Biodata
+                  </Link>
+                ) : null}
+                {!documentsCompleted ? (
+                  <Link href="/portal/documents" className="rounded-full border border-amber-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-amber-800">
+                    Unggah Dokumen
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
+              <ShieldCheck size={22} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Instruksi Transfer</p>
+              <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Pembayaran Manual</h4>
+            </div>
+          </div>
+          <div className="space-y-4 text-sm leading-7 text-slate-600">
+            <p>
+              Silakan transfer biaya pendaftaran ke rekening berikut. Setelah transfer, isi nominal dan tanggal bayar, pilih foto bukti transfer,
+              lalu klik tombol kirim.
+            </p>
+
+            {hasBankInfo ? (
+              <div className="grid gap-3">
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
+                    <Landmark size={13} /> Bank Tujuan
+                  </p>
+                  <p className="mt-2 text-lg font-black text-sky-950">{configuredBankName || '-'}</p>
                 </div>
-                <div>
-                  <h5 className="mb-1 font-bold text-slate-900">{doc.title}</h5>
-                  <p className="max-w-sm text-xs leading-relaxed text-slate-500">{doc.desc}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass}`}>
-                      {statusText}
-                    </span>
-                    {isUploaded ? (
-                      <span className="inline-flex items-center gap-1 rounded border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
-                        Dokumen sudah masuk
-                      </span>
-                    ) : null}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Nomor Rekening</p>
+                    <p className="mt-2 break-all font-mono text-xl font-black tracking-wide text-slate-900">{configuredAccountNumber || '-'}</p>
                   </div>
-                  {documentNotes[doc.id] ? (
-                    <p className={`mt-2 text-xs font-medium ${
-                      status === 'error'
-                        ? 'text-rose-600'
-                        : status === 'uploading'
-                          ? 'text-sky-600'
-                          : 'text-slate-500'
-                    }`}>
-                      {documentNotes[doc.id]}
-                    </p>
-                  ) : null}
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Atas Nama</p>
+                    <p className="mt-2 text-sm font-black leading-6 text-slate-900">{configuredAccountName || '-'}</p>
+                  </div>
                 </div>
+                {configuredAmount > 0 ? (
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                    <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                      <Banknote size={13} /> Nominal Pendaftaran
+                    </p>
+                    <p className="mt-2 text-xl font-black text-amber-950">{formatCurrency(configuredAmount)}</p>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-semibold text-amber-900">
+                Nomor rekening belum diatur oleh admin. Silakan hubungi panitia PSB sebelum transfer.
+              </p>
+            )}
+
+            {configuredPaymentNote ? (
+              <p className="rounded-2xl border border-sky-100 bg-sky-50 p-4 font-semibold text-sky-900">
+                {configuredPaymentNote}
+              </p>
+            ) : null}
+
+            {configuredInstructions ? (
+              <p className="whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 font-semibold text-slate-700">
+                {configuredInstructions}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nominal Transfer</label>
+              <input
+                type="number"
+                min="1"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                disabled={isLocked}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
+                placeholder="Contoh: 250000"
+              />
+              {!isLocked && configuredAmount > 0 && parsedAmount > 0 && parsedAmount !== configuredAmount ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-amber-800">
+                  Nominal diharapkan {formatCurrency(configuredAmount)} — pastikan sesuai bukti transfer.
+                </p>
+              ) : !isLocked && configuredAmount > 0 ? (
+                <p className="text-[11px] font-semibold leading-5 text-slate-400">
+                  {amount.trim() === ''
+                    ? `Nominal diharapkan: ${formatCurrency(configuredAmount)}. Isi sesuai yang kamu transfer.`
+                    : `Nominal diharapkan: ${formatCurrency(configuredAmount)}.`}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tanggal Transfer</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={(event) => setPaymentDate(event.target.value)}
+                disabled={isLocked}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-5">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Bukti Transfer</p>
+                <h5 className="mt-2 font-bold text-slate-900">
+                  {selectedProofFile ? 'Bukti baru siap dikirim' : proofUrl ? 'Bukti pembayaran sudah tersimpan' : 'Pilih foto bukti pembayaran'}
+                </h5>
+                <p className="mt-2 text-xs leading-6 text-slate-500">
+                  Pilih file dulu, lalu klik Kirim Bukti Pembayaran. Format: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
+                </p>
+                {selectedProofFile ? (
+                  <p className="mt-3 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-sky-700">
+                    File dipilih: {selectedProofFile.name}
+                  </p>
+                ) : null}
+                {registration?.payment_amount ? (
+                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-400">
+                    Nominal tersimpan: {formatCurrency(registration.payment_amount)}
+                  </p>
+                ) : null}
               </div>
 
-              <div className="flex w-full items-center justify-end gap-3 md:w-auto">
+              <div className="flex flex-wrap gap-3">
+                {proofDisplayUrl ? (
+                  <a
+                    href={proofDisplayUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
+                  >
+                    <Eye size={16} />
+                    Preview
+                  </a>
+                ) : null}
                 <div className="relative">
                   <input
                     type="file"
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={(e) => void handleUpload(doc.id, e)}
-                    disabled={Boolean(isUploading) || !isBiodataReady}
+                    accept=".jpg,.jpeg,.png,.gif,.webp"
+                    disabled={!canUploadPayment || isUploading || isLocked}
+                    onChange={handleProofSelect}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
                   />
                   <button
-                    className={`pointer-events-none flex items-center gap-2 rounded-xl border px-6 py-4 text-xs font-bold uppercase tracking-widest shadow-sm transition-all ${
-                      !isBiodataReady
-                        ? 'border-slate-200 bg-slate-100 text-slate-400'
-                        : 'border-slate-200 bg-white text-slate-700'
+                    type="button"
+                    className={`pointer-events-none inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-widest transition ${
+                      !canUploadPayment || isLocked
+                        ? 'bg-slate-200 text-slate-400'
+                        : hasPaymentWarning
+                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                          : 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
                     }`}
                   >
-                    {isBusy ? <RefreshCw size={18} className="animate-spin" /> : <UploadCloud size={18} />}
-                    {!isBiodataReady ? 'Lengkapi Biodata Dulu' : isBusy ? 'Mengunggah...' : isUploaded ? 'Ganti File' : 'Pilih File'}
+                    <UploadCloud size={16} />
+                    {selectedProofFile ? 'Ganti Bukti' : proofUrl ? 'Ganti Bukti' : 'Pilih Bukti'}
                   </button>
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      <div className="mt-12 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Progress Dokumen</p>
-            <h4 className="mt-2 text-lg font-bold text-slate-900">
-              {uploadedCount}/{docItems.length} dokumen sudah tersimpan
-            </h4>
-            <p className="mt-2 text-sm leading-relaxed text-slate-500">
-              Setiap file yang kamu pilih langsung tersimpan otomatis. Jika ada dokumen yang salah, cukup unggah ulang file baru pada jenis dokumen yang sama.
+          <div className="mt-6 flex flex-col gap-3 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm font-semibold leading-6 text-slate-600">
+              Setelah bukti dipilih, klik tombol kirim agar status berubah menjadi menunggu verifikasi panitia.
             </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => void handleSubmitPayment()}
+                disabled={!canSubmitPayment || isUploading}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+              >
+                {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
+              </button>
+              <Link
+                href="/portal/documents"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                <ArrowLeft size={16} /> Kembali ke Dokumen
+              </Link>
+            </div>
           </div>
-
-          <div className="flex flex-col gap-3 md:items-end">
-            <span
-              className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] ${
-                allDocumentsUploaded
-                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : 'border border-amber-100 bg-amber-50 text-amber-700'
-              }`}
-            >
-              {allDocumentsUploaded ? 'Dokumen Lengkap' : 'Masih Ada Yang Kurang'}
-            </span>
-            <Link
-              href="/portal"
-              className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-widest transition ${
-                allDocumentsUploaded
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500'
-                  : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-              }`}
-            >
-              Simpan & Lanjutkan <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-6 border-t border-slate-100 pt-4 text-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-            Kalau dokumen belum muncul di dashboard panitia, pastikan biodata sudah tersimpan lebih dulu.
-          </p>
         </div>
       </div>
+
+      {receipt ? (
+        <KwitansiModal
+          data={receipt}
+          petugas="Panitia PSB"
+          onClose={() => setReceipt(null)}
+        />
+      ) : null}
     </>
   );
 }

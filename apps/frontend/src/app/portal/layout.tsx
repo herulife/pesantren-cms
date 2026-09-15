@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard, Check } from 'lucide-react';
 import { getMyPSBRegistration, type Registration } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
@@ -38,9 +38,20 @@ type PortalNavGroup = {
   locked?: boolean;
 };
 
+const ALLOWED_WIZARD_PATHS = ['/portal/biodata', '/portal/documents', '/portal/payment'];
+
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={null}>
+      <PortalLayoutInner>{children}</PortalLayoutInner>
+    </Suspense>
+  );
+}
+
+function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { logout } = useAuth();
   const { showToast } = useToast();
   const isRaportPage = pathname.startsWith('/portal/raport');
@@ -79,7 +90,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const registrationStatus = registration?.status || 'pending';
   const hasStudentAccess = registrationStatus === 'accepted';
   const isServicePath = pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams');
-  const biodataCompleted = [
+  const paymentStatus = registration?.payment_status || 'unpaid';
+  const dataDiriCompleted = [
     registration?.full_name,
     registration?.gender,
     registration?.nik,
@@ -88,6 +100,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     registration?.address,
     registration?.school_origin,
     registration?.program_choice,
+  ].every(isFilled);
+  const dataOrangTuaCompleted = [
     registration?.father_name,
     registration?.father_job,
     registration?.father_phone,
@@ -95,8 +109,125 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     registration?.mother_job,
     registration?.mother_phone,
   ].every(isFilled);
+  const biodataCompleted = dataDiriCompleted && dataOrangTuaCompleted;
   const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
-  const paymentCompleted = registration?.payment_status === 'paid';
+  const paymentCompleted = paymentStatus === 'paid';
+  const paymentSubmitted = paymentStatus === 'pending';
+  const wizardComplete = biodataCompleted && documentsCompleted && (paymentSubmitted || paymentCompleted);
+  const wizardMode = !hasStudentAccess && !wizardComplete;
+  const showWizardShell = wizardMode && !isLoading;
+
+  let activeWizardPath = '/portal/biodata';
+  if (dataDiriCompleted) activeWizardPath = '/portal/biodata?part=2';
+  if (dataDiriCompleted && dataOrangTuaCompleted) activeWizardPath = '/portal/documents';
+  if (dataDiriCompleted && dataOrangTuaCompleted && documentsCompleted) activeWizardPath = '/portal/payment';
+
+  const isAllowedWizardPath = ALLOWED_WIZARD_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+
+  const partParam = searchParams.get('part');
+  const biodataPart = partParam === '1' ? 1 : partParam === '2' ? 2 : dataDiriCompleted ? 2 : 1;
+
+  const wizardSteps = [
+    {
+      id: 1,
+      href: '/portal/biodata?part=1',
+      label: 'Data Diri',
+      doneLabel: 'Data Diri Lengkap',
+      done: dataDiriCompleted,
+      active: pathname.startsWith('/portal/biodata') && biodataPart === 1,
+      locked: false,
+      unlockHint: '',
+    },
+    {
+      id: 2,
+      href: '/portal/biodata?part=2',
+      label: 'Data Orang Tua',
+      doneLabel: 'Orang Tua Lengkap',
+      done: dataOrangTuaCompleted,
+      active: pathname.startsWith('/portal/biodata') && biodataPart === 2,
+      locked: !dataDiriCompleted,
+      unlockHint: 'Langkah 1 (Data Diri) belum selesai — isi dulu sebelum melengkapi data orang tua.',
+    },
+    {
+      id: 3,
+      href: '/portal/documents',
+      label: 'Dokumen',
+      doneLabel: 'Dokumen Lengkap',
+      done: documentsCompleted,
+      active: pathname.startsWith('/portal/documents'),
+      locked: !biodataCompleted,
+      unlockHint: 'Langkah Biodata belum selesai — selesaikan Data Diri & Data Orang Tua dulu.',
+    },
+    {
+      id: 4,
+      href: '/portal/payment',
+      label: 'Pembayaran',
+      doneLabel: 'Pembayaran Selesai',
+      done: paymentCompleted,
+      active: pathname.startsWith('/portal/payment'),
+      locked: !(biodataCompleted && documentsCompleted),
+      unlockHint: 'Upload dokumen (langkah 3) dulu sebelum pembayaran pendaftaran.',
+    },
+  ];
+  const activeWizardIdx = Math.max(0, wizardSteps.findIndex((step) => step.active));
+  const wizardTitles = [
+    'Data Diri Calon Santri',
+    'Data Orang Tua / Wali',
+    'Unggah Dokumen Pendaftaran',
+    'Pembayaran Pendaftaran',
+  ];
+  const wizardHints = [
+    'Isikan data pribadi calon santri: nama lengkap, jenis kelamin, NIK, tempat & tanggal lahir, alamat, asal sekolah, dan program pilihan.',
+    'Lengkapi data ayah dan ibu agar panitia bisa menghubungi wali santri dengan mudah.',
+    'Unggah KK, ijazah atau raport terakhir, dan pas foto 3x4. Semua dokumen wajib lengkap sebelum pembayaran.',
+    'Transfer biaya pendaftaran, isi nominal & tanggal, lalu unggah bukti transfer untuk menyelesaikan pendaftaran.',
+  ];
+
+  useEffect(() => {
+    if (hasStudentAccess || isLoading) return;
+    if (wizardMode) {
+      if (isAllowedWizardPath) {
+        if (pathname.startsWith('/portal/documents') && !biodataCompleted) {
+          showToast(
+            'info',
+            dataDiriCompleted && !dataOrangTuaCompleted
+              ? 'Data orang tua belum lengkap. Selesaikan Langkah 1b dulu agar langkah 2 terbuka.'
+              : 'Langkah 1 (Biodata) belum selesai. Isi dulu agar langkah 2 terbuka.',
+          );
+          router.replace(dataDiriCompleted ? '/portal/biodata?part=2' : '/portal/biodata');
+        } else if (pathname.startsWith('/portal/payment') && !biodataCompleted) {
+          showToast(
+            'info',
+            dataDiriCompleted && !dataOrangTuaCompleted
+              ? 'Data orang tua belum lengkap. Selesaikan Langkah 1b dulu sebelum pembayaran pendaftaran.'
+              : 'Biodata belum lengkap. Selesaikan Langkah 1 dulu sebelum pembayaran pendaftaran.',
+          );
+          router.replace(dataDiriCompleted ? '/portal/biodata?part=2' : '/portal/biodata');
+        } else if (pathname.startsWith('/portal/payment') && biodataCompleted && !documentsCompleted) {
+          showToast('info', 'Dokumen belum terupload. Selesaikan Langkah 2 dulu sebelum pembayaran.');
+          router.replace('/portal/documents');
+        }
+      } else {
+        showToast('info', 'Selesaikan langkah pendaftaran yang sedang aktif terlebih dahulu.');
+        router.replace(activeWizardPath);
+      }
+    }
+  }, [
+    pathname,
+    hasStudentAccess,
+    isLoading,
+    wizardMode,
+    isAllowedWizardPath,
+    biodataCompleted,
+    dataDiriCompleted,
+    dataOrangTuaCompleted,
+    documentsCompleted,
+    activeWizardPath,
+    router,
+    showToast,
+  ]);
 
   const flowSteps = [
     {
@@ -132,19 +263,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       icon: <CreditCard size={14} />,
     },
   ];
-
-  useEffect(() => {
-    if (hasStudentAccess || isLoading) return;
-    if (pathname.startsWith('/portal/documents') && !biodataCompleted) {
-      showToast('info', 'Langkah 1 (Biodata) belum selesai. Isi dulu agar langkah 2 terbuka.');
-      router.replace('/portal/biodata');
-    } else if (pathname.startsWith('/portal/payment') && !(biodataCompleted && documentsCompleted)) {
-      showToast('info', biodataCompleted
-        ? 'Dokumen belum terupload. Selesaikan langkah 2 dulu sebelum pembayaran.'
-        : 'Biodata belum lengkap. Selesaikan langkah 1 & 2 dulu sebelum pembayaran.');
-      router.replace(biodataCompleted ? '/portal/documents' : '/portal/biodata');
-    }
-  }, [pathname, hasStudentAccess, isLoading, biodataCompleted, documentsCompleted, router, showToast]);
 
   const registrationItems: PortalNavItem[] = [
     {
@@ -308,6 +426,102 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           active: pathname.startsWith('/portal/help'),
         },
       ];
+
+  if (showWizardShell) {
+    return (
+      <PublicLayout hideNavbar>
+        <div className="bg-slate-50 min-h-screen py-8 lg:py-10">
+          <div className="container mx-auto max-w-4xl px-4">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+              >
+                <Home size={14} />
+                Beranda
+              </Link>
+              <div className="flex items-center gap-2">
+                <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-600">
+                  Portal Wali Santri
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 text-xs font-bold text-rose-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                >
+                  <LogOut size={14} />
+                  Keluar
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online</p>
+              <h2 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+                {wizardTitles[activeWizardIdx]}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
+                {wizardHints[activeWizardIdx]}
+              </p>
+
+              <div className="mt-6 flex items-center gap-2">
+                {wizardSteps.map((step, idx, arr) => (
+                  <React.Fragment key={`wizard-step-${step.id}`}>
+                    {step.locked ? (
+                      <button
+                        type="button"
+                        onClick={() => showToast('info', step.unlockHint)}
+                        title={step.unlockHint}
+                        className="flex flex-1 cursor-not-allowed items-center gap-2 rounded-full border border-dashed border-slate-300 bg-slate-100 px-3 py-2.5 text-xs font-black text-slate-400 transition"
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-400">
+                          <Lock size={13} />
+                        </span>
+                        <span className="hidden sm:inline">{step.label}</span>
+                        <span className="sm:hidden">{step.label.slice(0, 3)}</span>
+                      </button>
+                    ) : (
+                      <Link
+                        href={step.href}
+                        className={`flex flex-1 items-center gap-2 rounded-full px-3 py-2.5 text-xs font-black transition ${
+                          step.active
+                            ? 'bg-sky-600 text-white shadow'
+                            : step.done
+                              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300'
+                              : 'bg-slate-50 text-slate-500 border border-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black ${
+                            step.active
+                              ? 'bg-white text-sky-600'
+                              : step.done
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-white text-slate-400 border border-slate-200'
+                          }`}
+                        >
+                          {step.done ? <Check size={13} /> : idx + 1}
+                        </span>
+                        <span className="hidden sm:inline">{step.done ? step.doneLabel : step.label}</span>
+                        <span className="sm:hidden">{(step.done ? step.doneLabel : step.label).slice(0, 3)}</span>
+                      </Link>
+                    )}
+                    {idx < arr.length - 1 && (
+                      <span className={`hidden sm:block h-px flex-1 ${step.done ? 'bg-emerald-200' : 'bg-slate-200'}`} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/50 lg:p-8">
+              {children}
+            </div>
+          </div>
+        </div>
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout hideNavbar>
@@ -675,4 +889,3 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     </PublicLayout>
   );
 }
-
