@@ -530,20 +530,19 @@ export default function LandingPage() {
                         className="max-w-3xl"
                       >
                         <div className="lg:max-w-[42rem]">
-                          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-sky-100 backdrop-blur-md sm:text-[11px]">
-                            <Sparkles size={14} />
-                            Al-Maa Parung
-                          </span>
-                          <h1 className="mt-4 line-clamp-3 max-w-[19ch] text-balance text-[2.1rem] font-black leading-[0.96] tracking-[-0.05em] text-white drop-shadow-[0_4px_18px_rgba(2,6,23,0.5)] sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
+                          <p className="text-sm font-semibold text-sky-100">
+                            Al-Maa Parung — Pondok Pesantren
+                          </p>
+                          <h1 className="mt-4 line-clamp-3 max-w-[19ch] text-balance text-[2.1rem] font-bold leading-tight tracking-tight text-white sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
                             {slide.title}
                           </h1>
-                          <p className="mt-3 line-clamp-3 max-w-[32rem] text-[13px] font-medium leading-6 text-slate-200 drop-shadow-[0_2px_10px_rgba(2,6,23,0.5)] sm:mt-5 sm:text-base md:line-clamp-3 md:text-lg">
+                          <p className="mt-3 line-clamp-3 max-w-[32rem] text-[13px] font-medium leading-6 text-slate-200 sm:mt-5 sm:text-base md:line-clamp-3 md:text-lg">
                             {slide.subtitle}
                           </p>
                           <div className="mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row">
                             <Link
                               href={slide.button_url || '/psb'}
-                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full bg-sky-500 px-5 py-3 text-xs font-bold text-white shadow-[0_22px_48px_-22px_rgba(56,189,248,0.6)] transition-all hover:-translate-y-1 hover:bg-sky-400 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
+                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full bg-sky-500 px-5 py-3 text-xs font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-sky-400 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
                             >
                               {slide.button_text || 'Lihat PSB'} <ArrowRight size={16} />
                             </Link>
@@ -568,13 +567,13 @@ export default function LandingPage() {
 
         <div className="relative z-20 -mt-16 px-4 lg:-mt-12">
           <div className="container mx-auto max-w-6xl">
-            <div className="grid grid-cols-2 gap-3 rounded-[2.1rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.92)_100%)] p-4 shadow-[0_30px_70px_-35px_rgba(250,204,21,0.32)] backdrop-blur-xl md:grid-cols-4 md:gap-4 md:p-6">
+            <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4 md:gap-4 md:p-6">
               {institutionFacts.map((fact) => (
-                <div key={fact.label} className="rounded-[1.35rem] border border-slate-100/90 bg-white/95 px-4 py-4 shadow-[0_16px_36px_-30px_rgba(250,204,21,0.18)] md:rounded-[1.5rem] md:px-5">
-                  <div className="mb-3 inline-flex rounded-2xl bg-sky-50 p-2.5 text-sky-600 ring-1 ring-sky-100 md:p-3">
+                <div key={fact.label} className="rounded-xl border border-slate-100 bg-white px-4 py-4 md:px-5">
+                  <div className="mb-3 inline-flex rounded-xl bg-sky-50 p-2.5 text-sky-600 md:p-3">
                     {fact.icon}
                   </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{fact.label}</p>
+                  <p className="text-xs font-semibold text-slate-400">{fact.label}</p>
                   <p className="mt-2 text-[13px] font-bold leading-5 text-slate-800 md:text-sm">{fact.value}</p>
                 </div>
               ))}
@@ -779,7 +778,7 @@ export default function LandingPage() {
               </div>
               <Link
                 href="/program"
-                className="mt-8 inline-flex items-center gap-3 self-start rounded-full border border-sky-200 bg-white px-6 py-3 text-sm font-black text-sky-800 shadow-[0_18px_36px_-28px_rgba(250,204,21,0.18)] transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700"
+                className="mt-8 inline-flex items-center gap-3 self-start rounded-full border border-sky-200 bg-white px-6 py-3 text-sm font-bold text-sky-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700"
               >
                 Jelajahi program <ArrowRight size={16} />
               </Link>

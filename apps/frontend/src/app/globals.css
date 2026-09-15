@@ -269,6 +269,65 @@ html, body {
   resize: vertical;
 }
 
+/* ---- De-slop: normalisasi tonjolan gaya "AI-generated" ---- */
+/*
+ * 1. Label kecil all-caps + tracking lebar adalah ciri khas template AI.
+ *    Dipaksa jadi kalimat normal supaya baca-nya sewajarnya.
+ * 2. font-black (900) diturunkan ke 700 — heading tetap tegas, tak lagi teriak.
+ * 3. Ukuran label 10/11px dibesarkan sedikit ke 12/13px agar nyaman.
+ * 4. Radius 2rem+ dan bayangan sintetis (blur 20px+, negatif spread) diredam —
+ *    kartu jadi datar & jujur, tidak mengkilap palsu.
+ */
+
+.uppercase {
+  text-transform: none !important;
+}
+
+.font-black {
+  font-weight: 700 !important;
+}
+
+.tracking-widest {
+  letter-spacing: 0.04em !important;
+}
+
+[class*="tracking-[0."] {
+  letter-spacing: 0.02em !important;
+}
+
+[class*="tracking-[-0.0"] {
+  letter-spacing: -0.01em !important;
+}
+
+[class*="text-[10px]"] {
+  font-size: 12px !important;
+}
+
+[class*="text-[11px]"] {
+  font-size: 13px !important;
+}
+
+[class*="rounded-[2rem]"] {
+  border-radius: 1rem !important;
+}
+
+[class*="rounded-[2.5rem]"] {
+  border-radius: 1.1rem !important;
+}
+
+[class*="rounded-[3rem]"] {
+  border-radius: 1.2rem !important;
+}
+
+/* Bayangan sintetis: blur besar + spread negatif (drop-shadow juga). */
+[class*="shadow-[0_"]:not([class*="shadow-[0_0_0_"]) {
+  box-shadow: none !important;
+}
+
+[class*="drop-shadow-"] {
+  filter: none !important;
+}
+
 /* Hormati setelan hemat-gerak di HP/pengguna yang pusing melihat animasi */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
