@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   ArrowLeft,
@@ -79,6 +80,7 @@ const paymentStatusMeta: Record<PaymentStatus, { label: string; title: string; d
 };
 
 export default function PortalPaymentPage() {
+  const router = useRouter();
   const { showToast } = useToast();
   const hasShownRejectedNotice = useRef(false);
   const [registration, setRegistration] = useState<Registration | null>(null);
@@ -285,6 +287,9 @@ export default function PortalPaymentPage() {
       const message = 'Bukti pembayaran berhasil dikirim. Status pembayaran sekarang menunggu verifikasi panitia.';
       setSuccessMessage(message);
       showToast('success', message);
+      window.setTimeout(() => {
+        router.push('/portal');
+      }, 1600);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.';
       showToast('error', message);
@@ -649,12 +654,21 @@ export default function PortalPaymentPage() {
                 {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                 {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
               </button>
-              <Link
-                href="/portal/documents"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                <ArrowLeft size={16} /> Kembali ke Dokumen
-              </Link>
+              {paymentStatus === 'pending' || paymentStatus === 'paid' ? (
+                <Link
+                  href="/portal"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-sky-600"
+                >
+                  Pantau Status di Dasbor <ArrowRight size={16} />
+                </Link>
+              ) : (
+                <Link
+                  href="/portal/documents"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  <ArrowLeft size={16} /> Kembali ke Dokumen
+                </Link>
+              )}
             </div>
           </div>
         </div>
