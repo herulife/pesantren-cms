@@ -1,295 +1,253 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  Banknote,
-  CheckCircle2,
-  CreditCard,
-  Eye,
-  Landmark,
-  RefreshCw,
-  ShieldCheck,
-  UploadCloud,
-} from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, PencilLine, RefreshCw, Save } from 'lucide-react';
 import { useToast } from '@/components/Toast';
-import KwitansiModal, { type KwitansiTx } from '@/components/KwitansiModal';
-import {
-  getMyPSBRegistration,
-  getMyPSBReceipt,
-  getPublicSettingsMap,
-  resolveDisplayImageUrl,
-  saveMyPSBPayment,
-  uploadImage,
-  type Registration,
-  type SettingsMap,
-} from '@/lib/api';
+import { useAuth } from '@/components/AuthProvider';
+import { getMyPSBRegistration, saveMyPSBRegistration } from '@/lib/api';
 
-type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'rejected';
-
-function isFilled(value?: string | null) {
-  return Boolean(value && value.trim());
-}
-
-function normalizePaymentStatus(status?: string | null): PaymentStatus {
-  if (status === 'pending' || status === 'paid' || status === 'rejected') return status;
-  return 'unpaid';
-}
-
-function formatCurrency(value?: number | null) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
-
-function getTodayDate() {
-  return new Date().toISOString().split('T')[0];
-}
-
-const paymentStatusMeta: Record<PaymentStatus, { label: string; title: string; description: string; className: string }> = {
-  unpaid: {
-    label: 'Belum Bayar',
-    title: 'Upload Bukti Pembayaran Pendaftaran',
-    description: 'Lengkapi nominal, tanggal transfer, lalu unggah bukti pembayaran agar panitia bisa melakukan verifikasi.',
-    className: 'border-slate-200 bg-slate-50 text-slate-700',
-  },
-  pending: {
-    label: 'Menunggu Verifikasi',
-    title: 'Bukti Pembayaran Sedang Dicek',
-    description: 'Bukti pembayaran sudah masuk. Panitia akan memeriksa nominal dan bukti transfer yang kamu kirim.',
-    className: 'border-amber-200 bg-amber-50 text-amber-800',
-  },
-  paid: {
-    label: 'Lunas',
-    title: 'Pembayaran Sudah Diverifikasi',
-    description: 'Pembayaran pendaftaran sudah dinyatakan lunas. Kamu bisa memantau status pendaftaran dari dashboard portal.',
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  },
-  rejected: {
-    label: 'Perlu Upload Ulang',
-    title: 'Bukti Pembayaran Perlu Diperbaiki',
-    description: 'Panitia belum bisa memverifikasi bukti pembayaran. Periksa catatan, lalu upload ulang bukti yang benar.',
-    className: 'border-rose-100 bg-rose-50 text-rose-700',
-  },
+type BiodataForm = {
+  full_name: string;
+  nickname: string;
+  gender: string;
+  nik: string;
+  birth_place: string;
+  birth_date: string;
+  address: string;
+  school_origin: string;
+  program_choice: string;
+  father_name: string;
+  father_job: string;
+  father_phone: string;
+  mother_name: string;
+  mother_job: string;
+  mother_phone: string;
 };
 
-export default function PortalPaymentPage() {
-  const { showToast } = useToast();
-  const hasShownRejectedNotice = useRef(false);
-  const [registration, setRegistration] = useState<Registration | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [paymentDate, setPaymentDate] = useState(getTodayDate());
-  const [proofUrl, setProofUrl] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [settings, setSettings] = useState<SettingsMap>({});
-  const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
-  const [receipt, setReceipt] = useState<KwitansiTx | null>(null);
+const initialForm: BiodataForm = {
+  full_name: '',
+  nickname: '',
+  gender: '',
+  nik: '',
+  birth_place: '',
+  birth_date: '',
+  address: '',
+  school_origin: '',
+  program_choice: '',
+  father_name: '',
+  father_job: '',
+  father_phone: '',
+  mother_name: '',
+  mother_job: '',
+  mother_phone: '',
+};
 
-  const loadReceipt = async () => {
-    try {
-      const r = await getMyPSBReceipt();
-      if (!r) {
-        showToast('error', 'Kwitansi belum tersedia.');
-        return;
+const dataDiriFields: Array<keyof BiodataForm> = [
+  'full_name',
+  'gender',
+  'nik',
+  'birth_place',
+  'birth_date',
+  'address',
+  'school_origin',
+  'program_choice',
+];
+
+const dataOrangTuaFields: Array<keyof BiodataForm> = [
+  'father_name',
+  'father_job',
+  'father_phone',
+  'mother_name',
+  'mother_job',
+  'mother_phone',
+];
+
+function isFilled(value: string) {
+  return Boolean(value.trim());
+}
+
+function isDataDiriComplete(formData: BiodataForm) {
+  return dataDiriFields.every((field) => isFilled(formData[field]));
+}
+
+function isDataOrangTuaComplete(formData: BiodataForm) {
+  return dataOrangTuaFields.every((field) => isFilled(formData[field]));
+}
+
+function isBiodataComplete(formData: BiodataForm) {
+  return isDataDiriComplete(formData) && isDataOrangTuaComplete(formData);
+}
+
+function validateDataDiri(form: BiodataForm): Partial<Record<keyof BiodataForm, string>> {
+  const e: Partial<Record<keyof BiodataForm, string>> = {};
+  if (!isFilled(form.full_name)) e.full_name = 'Nama lengkap wajib diisi';
+  if (!isFilled(form.gender)) e.gender = 'Pilih jenis kelamin';
+  if (!/^[0-9]{16}$/.test(form.nik.trim())) e.nik = 'NIK harus 16 digit angka';
+  if (!isFilled(form.birth_place)) e.birth_place = 'Tempat lahir wajib diisi';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.birth_date.trim())) e.birth_date = 'Tanggal lahir wajib YYYY-MM-DD';
+  if (!isFilled(form.address)) e.address = 'Alamat wajib diisi';
+  if (!isFilled(form.school_origin)) e.school_origin = 'Asal sekolah wajib diisi';
+  if (!isFilled(form.program_choice)) e.program_choice = 'Pilih program';
+  return e;
+}
+
+function validateDataOrangTua(form: BiodataForm): Partial<Record<keyof BiodataForm, string>> {
+  const e: Partial<Record<keyof BiodataForm, string>> = {};
+  if (!isFilled(form.father_name)) e.father_name = 'Nama ayah wajib diisi';
+  if (!isFilled(form.mother_name)) e.mother_name = 'Nama ibu wajib diisi';
+  const phoneRe = /^[0-9+\-\s]{8,15}$/;
+  const clean = (v: string) => v.replace(/[\s\-]/g, '').replace(/^\+/, '');
+  if (!phoneRe.test(form.father_phone.trim()) || clean(form.father_phone).length < 8) e.father_phone = 'No HP ayah 8-15 digit';
+  if (!phoneRe.test(form.mother_phone.trim()) || clean(form.mother_phone).length < 8) e.mother_phone = 'No HP ibu 8-15 digit';
+  return e;
+}
+
+export default function BiodataPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center p-10">
+          <RefreshCw className="animate-spin text-sky-600" />
+        </div>
       }
-      setReceipt({
-        code: r.code,
-        date: r.paid_at,
-        santri_name: r.santri_name || registration?.full_name,
-        description: 'Biaya Pendaftaran PSB',
-        amount: r.amount,
-        method: r.method,
-      });
-    } catch {
-      showToast('error', 'Gagal memuat kwitansi.');
-    }
-  };
+    >
+      <BiodataPageContent />
+    </Suspense>
+  );
+}
+
+function BiodataPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const partParam = searchParams.get('part');
+  const { showToast } = useToast();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<BiodataForm>(initialForm);
+  const [isEditMode, setIsEditMode] = useState(true);
+  const [hasSavedBiodata, setHasSavedBiodata] = useState(false);
+  const [savedMessage, setSavedMessage] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<keyof BiodataForm, string>>>({});
+  const [part, setPart] = useState<1 | 2>(1);
+
+  useEffect(() => {
+    if (partParam === '2') setPart(2);
+    else if (partParam === '1') setPart(1);
+  }, [partParam]);
 
   useEffect(() => {
     const fetchRegistration = async () => {
       setIsLoading(true);
       try {
-        const [data, publicSettings] = await Promise.all([getMyPSBRegistration(), getPublicSettingsMap()]);
-        const configuredAmount = Number(publicSettings.psb_payment_amount || 0);
-        setRegistration(data);
-        setSettings(publicSettings);
-        setAmount(data?.payment_amount ? String(data.payment_amount) : configuredAmount > 0 ? String(configuredAmount) : '');
-        setPaymentDate(data?.payment_date || getTodayDate());
-        setProofUrl(data?.payment_proof_url || '');
+        const data = await getMyPSBRegistration();
+        const nextForm = {
+          full_name: data?.full_name || user?.name || '',
+          nickname: data?.nickname || '',
+          gender: data?.gender || '',
+          nik: data?.nik || '',
+          birth_place: data?.birth_place || '',
+          birth_date: data?.birth_date || '',
+          address: data?.address || '',
+          school_origin: data?.school_origin || '',
+          program_choice: data?.program_choice || '',
+          father_name: data?.father_name || data?.parent_name || '',
+          father_job: data?.father_job || '',
+          father_phone: data?.father_phone || data?.parent_phone || '',
+          mother_name: data?.mother_name || '',
+          mother_job: data?.mother_job || '',
+          mother_phone: data?.mother_phone || '',
+        };
+        const hasExistingRegistration = Boolean(data?.id);
+        const completed = isBiodataComplete(nextForm);
+        const diriDone = isDataDiriComplete(nextForm);
+
+        let initialPart: 1 | 2 = diriDone ? 2 : 1;
+        if (partParam === '2') initialPart = 2;
+        else if (partParam === '1') initialPart = 1;
+
+        setFormData(nextForm);
+        setHasSavedBiodata(hasExistingRegistration);
+        setIsEditMode(!hasExistingRegistration || !completed);
+        setPart(initialPart);
+        setSavedMessage(
+          hasExistingRegistration && completed
+            ? 'Biodata sudah tersimpan dengan baik. Form kami lipat dulu supaya kamu tidak perlu mengecek ulang semuanya terus-menerus.'
+            : '',
+        );
       } finally {
         setIsLoading(false);
       }
     };
 
     void fetchRegistration();
-  }, []);
+  }, [user?.name]);
 
-  const biodataCompleted = [
-    registration?.full_name,
-    registration?.gender,
-    registration?.nik,
-    registration?.birth_place,
-    registration?.birth_date,
-    registration?.address,
-    registration?.school_origin,
-    registration?.program_choice,
-    registration?.father_name,
-    registration?.father_job,
-    registration?.father_phone,
-    registration?.mother_name,
-    registration?.mother_job,
-    registration?.mother_phone,
-  ].every(isFilled);
-  const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
-  const canUploadPayment = biodataCompleted && documentsCompleted;
-  const paymentStatus = normalizePaymentStatus(registration?.payment_status);
-  const statusMeta = paymentStatusMeta[paymentStatus];
-  const proofDisplayUrl = resolveDisplayImageUrl(proofUrl);
-  const isLocked = paymentStatus === 'paid';
-  const isPaymentRejected = paymentStatus === 'rejected';
-  const paymentNote = registration?.payment_note?.trim() || '';
-  const hasPaymentWarning = !isLocked && (isPaymentRejected || Boolean(paymentNote));
-  const visibleStatusMeta = hasPaymentWarning
-      ? {
-          label: 'Perlu Tindakan',
-          title: 'Catatan Panitia Perlu Ditindaklanjuti',
-          description: 'Periksa catatan panitia di bawah ini, lalu upload ulang bukti transfer bila diminta.',
-        className: 'border-amber-200 bg-amber-50 text-amber-900',
-      }
-    : statusMeta;
-  const configuredBankName = settings.psb_payment_bank_name?.trim() || '';
-  const configuredAccountNumber = settings.psb_payment_account_number?.trim() || '';
-  const configuredAccountName = settings.psb_payment_account_name?.trim() || '';
-  const configuredPaymentNote = settings.psb_payment_note?.trim() || '';
-  const configuredInstructions = settings.psb_payment_instructions?.trim() || '';
-  const configuredAmount = Number(settings.psb_payment_amount || 0);
-  const hasBankInfo = Boolean(configuredBankName || configuredAccountNumber || configuredAccountName || configuredAmount > 0);
-  const parsedAmount = Number(amount);
-  const amountAndDateCompleted = Number.isFinite(parsedAmount) && parsedAmount > 0 && Boolean(paymentDate);
-  const proofReady = Boolean(selectedProofFile || proofUrl);
-  const proofSent = Boolean(proofUrl) && !selectedProofFile && (paymentStatus === 'pending' || paymentStatus === 'paid') && !hasPaymentWarning;
-  const canSubmitPayment =
-    canUploadPayment &&
-    !isLocked &&
-    amountAndDateCompleted &&
-    Boolean(selectedProofFile || (proofUrl && !hasPaymentWarning));
-  const paymentSteps = [
-    {
-      title: 'Biodata',
-      description: biodataCompleted ? 'Biodata sudah lengkap.' : 'Lengkapi biodata calon santri.',
-      completed: biodataCompleted,
-    },
-    {
-      title: 'Dokumen',
-      description: documentsCompleted ? 'Dokumen wajib sudah lengkap.' : 'Unggah dokumen wajib terlebih dahulu.',
-      completed: documentsCompleted,
-    },
-    {
-      title: 'Nominal & Tanggal',
-      description: amountAndDateCompleted ? 'Nominal dan tanggal transfer sudah diisi.' : 'Isi nominal dan tanggal transfer.',
-      completed: amountAndDateCompleted,
-    },
-    {
-      title: 'Bukti Transfer',
-      description: selectedProofFile ? 'Bukti baru sudah dipilih.' : proofUrl ? 'Bukti transfer sudah tersimpan.' : 'Pilih foto bukti transfer.',
-      completed: proofReady,
-    },
-    {
-      title: 'Kirim ke Panitia',
-      description: proofSent ? 'Bukti sedang menunggu verifikasi panitia.' : 'Klik tombol kirim setelah bukti dipilih.',
-      completed: proofSent || paymentStatus === 'paid',
-    },
-  ];
-
-  useEffect(() => {
-    if (hasPaymentWarning && paymentNote && !hasShownRejectedNotice.current) {
-      hasShownRejectedNotice.current = true;
-      showToast('error', `Catatan panitia: ${paymentNote}`);
-    }
-  }, [hasPaymentWarning, paymentNote, showToast]);
-
-  const handleProofSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setSuccessMessage('');
-    if (!canUploadPayment) {
-      showToast('error', 'Lengkapi biodata dan dokumen terlebih dahulu.');
-      event.target.value = '';
-      return;
-    }
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      showToast('error', 'Isi nominal pembayaran terlebih dahulu.');
-      event.target.value = '';
-      return;
-    }
-    if (!paymentDate) {
-      showToast('error', 'Isi tanggal pembayaran terlebih dahulu.');
-      event.target.value = '';
-      return;
-    }
-
-    setSelectedProofFile(file);
-    showToast('info', 'Bukti transfer sudah dipilih. Klik Kirim Bukti Pembayaran untuk mengirim ke panitia.');
-    event.target.value = '';
+  const handleChange = (key: keyof BiodataForm, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
-  const handleSubmitPayment = async () => {
-    setSuccessMessage('');
-    if (!canUploadPayment) {
-      showToast('error', 'Lengkapi biodata dan dokumen terlebih dahulu.');
-      return;
-    }
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      showToast('error', 'Isi nominal pembayaran terlebih dahulu.');
-      return;
-    }
-    if (!paymentDate) {
-      showToast('error', 'Isi tanggal pembayaran terlebih dahulu.');
-      return;
-    }
-    if (!selectedProofFile && (!proofUrl || hasPaymentWarning)) {
-      showToast('error', 'Pilih foto bukti transfer terlebih dahulu.');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      let nextProofUrl = proofUrl;
-      if (selectedProofFile) {
-        const uploadResult = await uploadImage(selectedProofFile, 'proof');
-        nextProofUrl = uploadResult?.url || uploadResult?.data?.url || '';
-        if (!nextProofUrl) {
-          throw new Error('URL bukti pembayaran tidak ditemukan setelah upload.');
-        }
-      }
-
-      const result = await saveMyPSBPayment({
-        payment_proof_url: nextProofUrl,
-        payment_amount: parsedAmount,
-        payment_date: paymentDate,
+  const submitPart = (targetPart: 1 | 2) => {
+    setErrors((prev) => {
+      const next = { ...prev };
+      const keys: Array<keyof BiodataForm> = targetPart === 1 ? [...dataDiriFields, 'nickname'] : dataOrangTuaFields;
+      keys.forEach((key) => {
+        delete next[key];
       });
-      const nextRegistration = (result.data || null) as Registration | null;
-      setRegistration(nextRegistration);
-      setProofUrl(nextRegistration?.payment_proof_url || nextProofUrl);
-      setAmount(nextRegistration?.payment_amount ? String(nextRegistration.payment_amount) : String(parsedAmount));
-      setPaymentDate(nextRegistration?.payment_date || paymentDate);
-      setSelectedProofFile(null);
-      const message = 'Bukti pembayaran berhasil dikirim. Status pembayaran sekarang menunggu verifikasi panitia.';
-      setSuccessMessage(message);
-      showToast('success', message);
+      return next;
+    });
+    if (targetPart === 2) {
+      router.replace('/portal/biodata?part=2', { scroll: false });
+    } else {
+      router.replace('/portal/biodata?part=1', { scroll: false });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const nativeEvent = e.nativeEvent as SubmitEvent;
+    const submitter = nativeEvent.submitter as HTMLButtonElement | null;
+    const shouldContinue = submitter?.value === 'continue';
+
+    const validation = part === 1 ? validateDataDiri(formData) : validateDataOrangTua(formData);
+    if (Object.keys(validation).length > 0) {
+      setErrors(validation);
+      showToast('error', 'Periksa kembali isian yang ditandai merah');
+      requestAnimationFrame(() => {
+        const firstInvalid = document.querySelector('[aria-invalid="true"]') as HTMLElement | null;
+        firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstInvalid?.focus({ preventScroll: true });
+      });
+      return;
+    }
+    setErrors({});
+    setIsSaving(true);
+
+    try {
+      await saveMyPSBRegistration(formData);
+      setHasSavedBiodata(true);
+      setIsEditMode(false);
+      if (shouldContinue && part === 1) {
+        showToast('success', 'Data diri berhasil disimpan. Lanjut ke data orang tua.');
+        router.replace('/portal/biodata?part=2', { scroll: false });
+        return;
+      }
+      if (shouldContinue && part === 2) {
+        showToast('success', 'Biodata berhasil disimpan. Lanjut ke unggah dokumen.');
+        router.push('/portal/documents');
+        return;
+      }
+      setSavedMessage('Biodata berhasil disimpan. Kamu bisa lanjut ke langkah berikutnya atau kembali edit kalau ada yang perlu diperbaiki.');
+      showToast('success', 'Biodata PSB berhasil disimpan.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.';
+      const message = error instanceof Error ? error.message : 'Gagal menyimpan biodata PSB.';
       showToast('error', message);
     } finally {
-      setIsUploading(false);
+      setIsSaving(false);
     }
   };
 
@@ -301,371 +259,401 @@ export default function PortalPaymentPage() {
     );
   }
 
+  const diriDoneNow = isDataDiriComplete(formData);
+  const ortuDoneNow = isDataOrangTuaComplete(formData);
+
   return (
     <>
-      <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900">Bayar Pendaftaran</h3>
-      <p className="mb-10 max-w-2xl text-sm leading-relaxed text-slate-500">
-        Kirim bukti transfer biaya pendaftaran dari portal. Panitia akan memverifikasi pembayaran sebelum pendaftaran bisa dinyatakan diterima.
-      </p>
-
-      <div className={`mb-8 rounded-[2rem] border p-6 shadow-sm ${visibleStatusMeta.className}`}>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-white/80 p-3">
-              {paymentStatus === 'paid' ? <CheckCircle2 size={24} /> : hasPaymentWarning ? <AlertCircle size={24} /> : <CreditCard size={24} />}
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em]">{visibleStatusMeta.label}</p>
-              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight">{visibleStatusMeta.title}</h4>
-              <p className="mt-2 max-w-2xl text-sm font-medium leading-7 opacity-80">{visibleStatusMeta.description}</p>
-              {paymentNote ? (
-                <div
-                  className={`mt-4 rounded-2xl px-4 py-4 shadow-sm ${
-                    hasPaymentWarning
-                      ? 'border border-amber-200 bg-white text-amber-950 shadow-amber-900/5'
-                      : 'border border-white/70 bg-white/80'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                        hasPaymentWarning ? 'bg-amber-100 text-amber-700' : 'bg-white text-current'
-                      }`}
-                    >
-                      <AlertCircle size={18} />
-                    </div>
-                    <div>
-                      <p
-                        className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                          hasPaymentWarning ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        Catatan Panitia
-                      </p>
-                      <p
-                        className={`mt-2 rounded-2xl px-4 py-3 text-sm font-black leading-6 ${
-                          hasPaymentWarning
-                            ? 'border border-amber-200 bg-amber-50 text-amber-950'
-                            : 'bg-slate-50 text-slate-800'
-                        }`}
-                      >
-                        {paymentNote}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-3">
-            <span className="inline-flex w-fit rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]">
-              {proofUrl ? 'Bukti sudah ada' : 'Belum ada bukti'}
-            </span>
-            {paymentStatus === 'paid' ? (
-              <button
-                type="button"
-                onClick={() => void loadReceipt()}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-800 shadow-sm transition hover:bg-sky-50"
-              >
-                <Banknote size={14} /> Unduh Kwitansi
-              </button>
-            ) : null}
-          </div>
+      <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h3 className="font-outfit text-2xl font-black uppercase tracking-tight text-slate-900 lg:text-3xl">
+            {part === 1 ? 'Data Diri Calon Santri' : 'Data Orang Tua / Wali'}
+          </h3>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500">
+            {part === 1
+              ? 'Isi identitas calon santri dengan benar sesuai dokumen resmi.'
+              : 'Lengkapi data ayah dan ibu agar panitia bisa menghubungi wali santri.'}
+          </p>
         </div>
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
+          Langkah 1 dari 2 {part === 1 ? '— Data Diri' : '— Data Orang Tua'}
+        </span>
       </div>
 
-      <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Checklist Pembayaran</p>
-            <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Langkah Yang Sudah Dilalui</h4>
-          </div>
-          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {paymentSteps.filter((step) => step.completed).length}/{paymentSteps.length} selesai
+      <div className="mb-8 grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => submitPart(1)}
+          className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+            part === 1
+              ? 'border-sky-200 bg-sky-50 text-sky-700'
+              : diriDoneNow
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300'
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+          }`}
+        >
+          <span
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+              part === 1
+                ? 'bg-sky-600 text-white'
+                : diriDoneNow
+                  ? 'bg-emerald-500 text-white'
+                  : 'border border-slate-200 bg-white text-slate-400'
+            }`}
+          >
+            {diriDoneNow && part !== 1 ? <CheckCircle2 size={16} /> : 1}
           </span>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-5">
-          {paymentSteps.map((step) => (
-            <div
-              key={step.title}
-              className={`rounded-2xl border px-4 py-4 ${
-                step.completed
-                  ? 'border-sky-100 bg-sky-50 text-sky-900'
-                  : 'border-slate-200 bg-slate-50 text-slate-500'
-              }`}
-            >
-              <div
-                className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
-                  step.completed ? 'bg-sky-600 text-white' : 'bg-white text-slate-400'
-                }`}
-              >
-                {step.completed ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-              </div>
-              <p className="text-sm font-black leading-tight">{step.title}</p>
-              <p className="mt-2 text-xs font-semibold leading-5 opacity-75">{step.description}</p>
-            </div>
-          ))}
-        </div>
+          <span className="min-w-0">
+            <span className="block text-xs font-black uppercase tracking-widest">Data Diri</span>
+            <span className={`block truncate text-[11px] font-medium ${diriDoneNow || part === 1 ? 'opacity-80' : 'opacity-60'}`}>
+              {diriDoneNow ? 'Selesai diisi' : 'Identitas calon santri'}
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => submitPart(2)}
+          className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+            part === 2
+              ? 'border-sky-200 bg-sky-50 text-sky-700'
+              : ortuDoneNow
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300'
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+          }`}
+        >
+          <span
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+              part === 2
+                ? 'bg-sky-600 text-white'
+                : ortuDoneNow
+                  ? 'bg-emerald-500 text-white'
+                  : 'border border-slate-200 bg-white text-slate-400'
+            }`}
+          >
+            {ortuDoneNow && part !== 2 ? <CheckCircle2 size={16} /> : 2}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xs font-black uppercase tracking-widest">Data Orang Tua</span>
+            <span className={`block truncate text-[11px] font-medium ${ortuDoneNow || part === 2 ? 'opacity-80' : 'opacity-60'}`}>
+              {ortuDoneNow ? 'Selesai diisi' : 'Data ayah & ibu'}
+            </span>
+          </span>
+        </button>
       </div>
 
-      {successMessage ? (
-        <div className="mb-8 rounded-[2rem] border border-sky-200 bg-sky-50 p-6 text-sky-900 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
-              <CheckCircle2 size={24} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">Upload Berhasil</p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Bukti Pembayaran Terkirim</h4>
-              <p className="mt-2 text-sm font-semibold leading-7">{successMessage}</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {hasPaymentWarning && paymentNote ? (
-        <div className="relative mb-8 overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6 text-amber-950 shadow-lg shadow-amber-900/5">
-          <div className="absolute inset-y-0 left-0 w-2 bg-amber-400" />
-          <div className="flex items-start gap-4 pl-2">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-              <AlertCircle size={28} />
-            </div>
-            <div>
-              <p className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-amber-800">
-                Peringatan Panitia
-              </p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Upload Ulang Bukti Transfer</h4>
-              <p className="mt-3 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm font-black leading-7 text-amber-950 shadow-sm">
-                Catatan panitia: {paymentNote}
-              </p>
-              <p className="mt-3 text-sm font-semibold leading-7 text-amber-800">
-                Silakan pilih foto bukti transfer yang benar pada form di bawah. Setelah upload ulang, status akan kembali menunggu verifikasi.
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {!canUploadPayment ? (
+      {hasSavedBiodata ? (
         <div className="mb-8 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-1 shrink-0" size={20} />
-            <div>
-              <h4 className="font-bold">Selesaikan data pendaftaran dulu</h4>
-              <p className="mt-2 text-sm leading-7">
-                Pembayaran baru bisa dikirim setelah biodata dan dokumen wajib lengkap, supaya bukti transfer tersambung ke data pendaftar yang benar.
+          <p className="text-sm font-semibold leading-relaxed">
+            Kamu sedang melengkapi biodata yang sudah tersimpan sebagian. Setelah selesai, simpan lagi agar ringkasan dan data panitia ikut diperbarui.
+          </p>
+        </div>
+      ) : null}
+
+      {!isEditMode && hasSavedBiodata && isBiodataComplete(formData) ? (
+        <div className="space-y-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+            <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="rounded-2xl bg-sky-100 p-3 text-sky-600">
+                  <CheckCircle2 size={28} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Biodata Tersimpan</p>
+                  <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+                    Form Tidak Perlu Aktif Terus
+                  </h4>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+                    {savedMessage || 'Biodata kamu sudah masuk ke database. Supaya tidak membingungkan dan tidak berubah tanpa sengaja, halaman ini sekarang tampil sebagai ringkasan dulu.'}
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-slate-500">
+                    Kalau ada data yang perlu diperbaiki, tinggal tekan <span className="font-bold text-slate-700">Edit Biodata</span>. Kalau sudah benar, lanjutkan ke langkah dokumen.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Langkah Berikutnya</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
+                Lanjut ke Unggah Dokumen
+              </h4>
+              <p className="mt-3 text-sm leading-7 text-slate-500">
+                Setelah biodata aman, tahap berikutnya adalah mengunggah KK, ijazah atau raport terakhir, dan pas foto agar panitia bisa memeriksa berkas lengkapmu.
               </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {!biodataCompleted ? (
-                  <Link href="/portal/biodata" className="rounded-full bg-amber-500 px-5 py-3 text-xs font-black uppercase tracking-widest text-white">
-                    Lengkapi Biodata
-                  </Link>
-                ) : null}
-                {!documentsCompleted ? (
-                  <Link href="/portal/documents" className="rounded-full border border-amber-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-amber-800">
-                    Unggah Dokumen
-                  </Link>
-                ) : null}
+              <div className="mt-6 flex flex-col gap-3">
+                <Link
+                  href="/portal/documents"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-500"
+                >
+                  Unggah Dokumen Sekarang <ArrowRight size={16} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsEditMode(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  <PencilLine size={16} /> Edit Biodata
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-2">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] border-sky-100 bg-sky-50 text-sky-700`}>
+                Data Calon Santri
+              </div>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {[
+                  { label: 'Nama Lengkap', value: formData.full_name || '-' },
+                  { label: 'Nama Panggilan', value: formData.nickname || '-' },
+                  { label: 'Jenis Kelamin', value: formData.gender === 'L' ? 'Laki-laki' : formData.gender === 'P' ? 'Perempuan' : '-' },
+                  { label: 'NIK', value: formData.nik || '-' },
+                  { label: 'Tempat, Tanggal Lahir', value: [formData.birth_place, formData.birth_date].filter(Boolean).join(', ') || '-' },
+                  { label: 'Asal Sekolah', value: formData.school_origin || '-' },
+                  { label: 'Program Pilihan', value: formData.program_choice || '-' },
+                  { label: 'Alamat Lengkap', value: formData.address || '-' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-700">{item.label}</p>
+                    <p className={`mt-2 text-sm font-bold leading-6 ${item.value === '-' ? 'text-slate-400' : 'text-slate-800'}`}>
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] border-sky-100 bg-sky-50 text-sky-700`}>
+                Data Orang Tua
+              </div>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {[
+                  { label: 'Nama Ayah', value: formData.father_name || '-' },
+                  { label: 'Pekerjaan Ayah', value: formData.father_job || '-' },
+                  { label: 'No. HP Ayah', value: formData.father_phone || '-' },
+                  { label: 'Nama Ibu', value: formData.mother_name || '-' },
+                  { label: 'Pekerjaan Ibu', value: formData.mother_job || '-' },
+                  { label: 'No. HP Ibu', value: formData.mother_phone || '-' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-700">{item.label}</p>
+                    <p className={`mt-2 text-sm font-bold leading-6 ${item.value === '-' ? 'text-slate-400' : 'text-slate-800'}`}>
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
-              <ShieldCheck size={22} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Instruksi Transfer</p>
-              <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Pembayaran Manual</h4>
-            </div>
-          </div>
-          <div className="space-y-4 text-sm leading-7 text-slate-600">
-            <p>
-              Silakan transfer biaya pendaftaran ke rekening berikut. Setelah transfer, isi nominal dan tanggal bayar, pilih foto bukti transfer,
-              lalu klik tombol kirim.
-            </p>
-
-            {hasBankInfo ? (
-              <div className="grid gap-3">
-                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
-                    <Landmark size={13} /> Bank Tujuan
-                  </p>
-                  <p className="mt-2 text-lg font-black text-sky-950">{configuredBankName || '-'}</p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Nomor Rekening</p>
-                    <p className="mt-2 break-all font-mono text-xl font-black tracking-wide text-slate-900">{configuredAccountNumber || '-'}</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Atas Nama</p>
-                    <p className="mt-2 text-sm font-black leading-6 text-slate-900">{configuredAccountName || '-'}</p>
-                  </div>
-                </div>
-                {configuredAmount > 0 ? (
-                  <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                    <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                      <Banknote size={13} /> Nominal Pendaftaran
-                    </p>
-                    <p className="mt-2 text-xl font-black text-amber-950">{formatCurrency(configuredAmount)}</p>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-semibold text-amber-900">
-                Nomor rekening belum diatur oleh admin. Silakan hubungi panitia PSB sebelum transfer.
-              </p>
-            )}
-
-            {configuredPaymentNote ? (
-              <p className="rounded-2xl border border-sky-100 bg-sky-50 p-4 font-semibold text-sky-900">
-                {configuredPaymentNote}
-              </p>
-            ) : null}
-
-            {configuredInstructions ? (
-              <p className="whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 font-semibold text-slate-700">
-                {configuredInstructions}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nominal Transfer</label>
-              <input
-                type="number"
-                min="1"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
-                placeholder="Contoh: 250000"
-              />
-              {!isLocked && configuredAmount > 0 && parsedAmount > 0 && parsedAmount !== configuredAmount ? (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-amber-800">
-                  Nominal diharapkan {formatCurrency(configuredAmount)} — pastikan sesuai bukti transfer.
+      {(isEditMode || !hasSavedBiodata || !isBiodataComplete(formData)) ? (
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {part === 1 ? (
+            <div className="space-y-6">
+              <div className="mb-4 flex gap-4 rounded-3xl border border-sky-100 bg-sky-50 p-6 text-sky-800">
+                <AlertCircle className="mt-1 shrink-0 text-sky-500" />
+                <p className="text-sm font-medium leading-relaxed">
+                  Nama lengkap akan otomatis mengikuti akun portal saat biodata pertama kali dibuat, tetapi tetap bisa disesuaikan di formulir ini jika perlu mengikuti dokumen resmi.
                 </p>
-              ) : !isLocked && configuredAmount > 0 ? (
-                <p className="text-[11px] font-semibold leading-5 text-slate-400">
-                  {amount.trim() === ''
-                    ? `Nominal diharapkan: ${formatCurrency(configuredAmount)}. Isi sesuai yang kamu transfer.`
-                    : `Nominal diharapkan: ${formatCurrency(configuredAmount)}.`}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tanggal Transfer</label>
-              <input
-                type="date"
-                value={paymentDate}
-                onChange={(event) => setPaymentDate(event.target.value)}
-                disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-5">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Bukti Transfer</p>
-                <h5 className="mt-2 font-bold text-slate-900">
-                  {selectedProofFile ? 'Bukti baru siap dikirim' : proofUrl ? 'Bukti pembayaran sudah tersimpan' : 'Pilih foto bukti pembayaran'}
-                </h5>
-                <p className="mt-2 text-xs leading-6 text-slate-500">
-                  Pilih file dulu, lalu klik Kirim Bukti Pembayaran. Format: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
-                </p>
-                {selectedProofFile ? (
-                  <p className="mt-3 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-sky-700">
-                    File dipilih: {selectedProofFile.name}
-                  </p>
-                ) : null}
-                {registration?.payment_amount ? (
-                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-400">
-                    Nominal tersimpan: {formatCurrency(registration.payment_amount)}
-                  </p>
-                ) : null}
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                {proofDisplayUrl ? (
-                  <a
-                    href={proofDisplayUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
-                  >
-                    <Eye size={16} />
-                    Preview
-                  </a>
-                ) : null}
-                <div className="relative">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Nama Lengkap</label>
                   <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.gif,.webp"
-                    disabled={!canUploadPayment || isUploading || isLocked}
-                    onChange={handleProofSelect}
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                    type="text"
+                    value={formData.full_name}
+                    onChange={(e) => handleChange('full_name', e.target.value)}
+                    autoComplete="name"
+                    aria-invalid={!!errors.full_name}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
                   />
-                  <button
-                    type="button"
-                    className={`pointer-events-none inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-widest transition ${
-                      !canUploadPayment || isLocked
-                        ? 'bg-slate-200 text-slate-400'
-                        : hasPaymentWarning
-                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                          : 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-                    }`}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Nama Panggilan</label>
+                  <input
+                    type="text"
+                    value={formData.nickname}
+                    onChange={(e) => handleChange('nickname', e.target.value)}
+                    aria-invalid={!!errors.nickname}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    placeholder="Contoh: Ahmad"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Jenis Kelamin</label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => handleChange('gender', e.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
                   >
-                    <UploadCloud size={16} />
-                    {selectedProofFile ? 'Ganti Bukti' : proofUrl ? 'Ganti Bukti' : 'Pilih Bukti'}
-                  </button>
+                    <option value="">Pilih jenis kelamin</option>
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">NIK <span className="text-rose-500">*</span></label>
+                  <input
+                    type="text"
+                    value={formData.nik}
+                    onChange={(e) => handleChange('nik', e.target.value)}
+                    aria-invalid={!!errors.nik}
+                    aria-describedby={errors.nik ? 'err-nik' : undefined}
+                    className={`w-full rounded-2xl border px-5 py-4 font-bold outline-none transition-all focus:ring-4 ${errors.nik ? 'border-rose-300 bg-rose-50 text-rose-900 focus:border-rose-400 focus:ring-rose-500/10' : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-sky-500 focus:ring-sky-500/10'}`}
+                    placeholder="16 digit NIK"
+                    maxLength={16}
+                    required
+                  />
+                  {errors.nik ? <p id="err-nik" className="mt-1 text-xs font-bold text-rose-600">{errors.nik}</p> : null}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Tempat Lahir</label>
+                  <input
+                    type="text"
+                    value={formData.birth_place}
+                    onChange={(e) => handleChange('birth_place', e.target.value)}
+                    aria-invalid={!!errors.birth_place}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Tanggal Lahir</label>
+                  <input
+                    type="date"
+                    value={formData.birth_date}
+                    onChange={(e) => handleChange('birth_date', e.target.value)}
+                    autoComplete="bday"
+                    aria-invalid={!!errors.birth_date}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Asal Sekolah</label>
+                  <input
+                    type="text"
+                    value={formData.school_origin}
+                    onChange={(e) => handleChange('school_origin', e.target.value)}
+                    aria-invalid={!!errors.school_origin}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Pilihan Program</label>
+                  <input
+                    type="text"
+                    value={formData.program_choice}
+                    onChange={(e) => handleChange('program_choice', e.target.value)}
+                    aria-invalid={!!errors.program_choice}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    placeholder="Contoh: Tahfidz Reguler"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Alamat Lengkap</label>
+                  <textarea
+                    rows={3}
+                    value={formData.address}
+                    onChange={(e) => handleChange('address', e.target.value)}
+                    autoComplete="street-address"
+                    aria-invalid={!!errors.address}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
+                  />
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-6">
+                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                  <h5 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">Informasi Ayah</h5>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <input type="text" value={formData.father_name} onChange={(e) => handleChange('father_name', e.target.value)}
+                    autoComplete="name"
+                    aria-invalid={!!errors.father_name} placeholder="Nama Lengkap Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                    <input type="text" value={formData.father_job} onChange={(e) => handleChange('father_job', e.target.value)}
+                    aria-invalid={!!errors.father_job} placeholder="Pekerjaan Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                    <input type="tel" value={formData.father_phone} onChange={(e) => handleChange('father_phone', e.target.value)}
+                    autoComplete="tel"
+                    aria-invalid={!!errors.father_phone} placeholder="No. HP / WhatsApp Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none md:col-span-2" required />
+                  </div>
+                </div>
 
-          <div className="mt-6 flex flex-col gap-3 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm font-semibold leading-6 text-slate-600">
-              Setelah bukti dipilih, klik tombol kirim agar status berubah menjadi menunggu verifikasi panitia.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => void handleSubmitPayment()}
-                disabled={!canSubmitPayment || isUploading}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
-              >
-                {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
-              </button>
-              <Link
-                href="/portal/documents"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                <ArrowLeft size={16} /> Kembali ke Dokumen
-              </Link>
+                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                  <h5 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">Informasi Ibu</h5>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <input type="text" value={formData.mother_name} onChange={(e) => handleChange('mother_name', e.target.value)}
+                    autoComplete="name"
+                    aria-invalid={!!errors.mother_name} placeholder="Nama Lengkap Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                    <input type="text" value={formData.mother_job} onChange={(e) => handleChange('mother_job', e.target.value)}
+                    aria-invalid={!!errors.mother_job} placeholder="Pekerjaan Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
+                    <input type="tel" value={formData.mother_phone} onChange={(e) => handleChange('mother_phone', e.target.value)}
+                    autoComplete="tel"
+                    aria-invalid={!!errors.mother_phone} placeholder="No. HP / WhatsApp Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none md:col-span-2" required />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-slate-100 pt-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              {part === 2 ? (
+                <button
+                  type="button"
+                  onClick={() => submitPart(1)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:w-auto"
+                >
+                  <ArrowLeft size={18} /> Kembali ke Data Diri
+                </button>
+              ) : (
+                <span className="hidden md:block" />
+              )}
+
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+                <button
+                  type="submit"
+                  value="save"
+                  disabled={isSaving}
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-sky-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-sky-700 transition hover:border-sky-300 hover:bg-sky-50 disabled:opacity-70 md:w-auto"
+                >
+                  {isSaving ? 'Menyimpan...' : <><Save size={18} /> Simpan</>}
+                </button>
+                <button
+                  type="submit"
+                  value="continue"
+                  disabled={isSaving}
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-sky-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/20 transition-all hover:bg-sky-700 disabled:opacity-70 md:w-auto"
+                >
+                  {isSaving
+                    ? 'Menyimpan...'
+                    : part === 1
+                      ? <>Simpan & Lanjut ke Data Orang Tua <ArrowRight size={18} /></>
+                      : <>Simpan & Lanjut ke Dokumen <ArrowRight size={18} /></>}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {receipt ? (
-        <KwitansiModal
-          data={receipt}
-          petugas="Panitia PSB"
-          onClose={() => setReceipt(null)}
-        />
+        </form>
       ) : null}
     </>
   );
