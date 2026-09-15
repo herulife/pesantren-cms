@@ -18,8 +18,28 @@ aksi manual. Tujuan: semua agentic lain selalu melihat state terbaru di GitHub.
 - Stop sementara: `pm2 stop alma-autocommit`
 - Jalankan lagi: `pm2 start alma-autocommit`
 
+## Gitpush — sinkron manual setiap selesai mengerjakan
+Selain auto-commit, ada perintah sekali-jalan untuk menuntaskan dan
+menyinkronkan pekerjaan ke GitHub dengan pesan yang rapi:
+
+```bash
+./scripts/gitpush.sh                      # pesan otomatis: sync: <daftar file>
+./scripts/gitpush.sh "pesan commit kamu"  # dengan pesan bebas
+```
+
+Perilaku `gitpush.sh`:
+1. `git add -A` semua perubahan.
+2. Commit (pesan bebas atau otomatis) + timestamp.
+3. Push ke branch aktif. Jika ditolak (remote lebih maju), otomatis
+   `git pull --rebase` lalu push lagi.
+4. Cetak hash sinkron terakhir, mis. `Sinkron: origin/<branch> = <hash>`.
+
+Gunakan perintah ini SETELAH selesai mengerjakan satu tugas agar agent lain
+langsung bisa mengambil pekerjaan dari GitHub tanpa menunggu interval auto-commit.
+
 ## Catatan untuk agent lain
 1. Jangan melakukan `git commit` manual yang berkonflik dengan auto-commit —
    cukup tulis perubahan, biarkan skrip ini yang commit & push.
 2. File DB `/ log / build / env` sengaja tidak pernah di-commit.
 3. Beberapa commit ber-prefix `auto:` adalah produk skrip ini, bukan hasil edit manual.
+4. Untuk menyelesaikan pekerjaan secara eksplisit, jalan kan `./scripts/gitpush.sh`.
