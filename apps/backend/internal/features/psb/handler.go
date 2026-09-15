@@ -104,15 +104,21 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 		}
 	}
 	if req.Gender != "" {
-		g := validators.NormalizeText(req.Gender)
-		low := validators.NormalizeText(g)
-		// allow L/P, Laki-laki, Perempuan
-		valid := map[string]bool{"l": true, "p": true, "laki-laki": true, "perempuan": true, "laki": true}
-		if !valid[low] && !valid[g] {
-			// also check case-insensitive
-			if low != "l" && low != "p" && low != "laki-laki" && low != "perempuan" {
-				errs.Add("gender", "Jenis kelamin harus L/P atau Laki-laki/Perempuan")
+		lower := strings.ToLower(validators.NormalizeText(req.Gender))
+		valid := map[string]bool{"l": true, "p": true, "laki-laki": true, "perempuan": true, "laki": true, "pria": true, "wanita": true}
+		if !valid[lower] {
+			errs.Add("gender", "Jenis kelamin harus L/P atau Laki-laki/Perempuan")
+		} else {
+			switch lower {
+			case "laki-laki", "laki", "pria":
+				req.Gender = "L"
+			case "perempuan", "wanita":
+			req.Gender = "P"
+			default:
+				req.Gender = strings.ToUpper(lower)
 			}
+		}
+	}
 		}
 	}
 	if req.BirthDate != "" && !validators.ValidateDate(req.BirthDate) {
