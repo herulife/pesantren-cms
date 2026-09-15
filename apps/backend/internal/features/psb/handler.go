@@ -119,8 +119,6 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 			}
 		}
 	}
-		}
-	}
 	if req.BirthDate != "" && !validators.ValidateDate(req.BirthDate) {
 		errs.Add("birth_date", "Tanggal lahir harus format YYYY-MM-DD")
 	}
