@@ -4,7 +4,11 @@ import (
 	"errors"
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
+
+	"almaparung-api/internal/platform/finance"
 )
 
 type Registration struct {
@@ -36,8 +40,27 @@ type Registration struct {
 	PaymentStatus   string    `json:"payment_status"`
 	PaymentNote     string    `json:"payment_note"`
 	Status          string    `json:"status"`
+	RejectionNote   string    `json:"rejection_note"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// PsbPayment adalah entri ledger terpisah untuk biaya pendaftaran PSB yang
+// sudah lunas & terverifikasi (status 'paid'). Satu baris per registrasi.
+type PsbPayment struct {
+	ID             int       `json:"id"`
+	RegistrationID int       `json:"registration_id"`
+	UserID         int       `json:"user_id"`
+	Code           string    `json:"code"`
+	Amount         int       `json:"amount"`
+	PaidAt         string    `json:"paid_at"`
+	Method         string    `json:"method"`
+	ProofURL       string    `json:"proof_url"`
+	Status         string    `json:"status"`
+	Notes          string    `json:"notes"`
+	CreatedBy      int       `json:"created_by"`
+	SantriName     string    `json:"santri_name,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type Repository struct {
@@ -77,6 +100,7 @@ const registrationSelectColumns = `
 	COALESCE(payment_status, 'unpaid'),
 	COALESCE(payment_note, ''),
 	COALESCE(status, 'pending'),
+	COALESCE(rejection_note, ''),
 	COALESCE(created_at, CURRENT_TIMESTAMP),
 	COALESCE(updated_at, COALESCE(created_at, CURRENT_TIMESTAMP))
 `
@@ -117,6 +141,7 @@ func scanRegistration(scanner interface {
 		&reg.PaymentStatus,
 		&reg.PaymentNote,
 		&reg.Status,
+		&reg.RejectionNote,
 		&createdAt,
 		&updatedAt,
 	)
@@ -282,7 +307,7 @@ func (r *Repository) UpdatePaymentByUserID(ctx context.Context, userID int, proo
 	res, err := r.db.ExecContext(ctx, `
 		UPDATE registrations
 		SET payment_proof_url = ?, payment_amount = ?, payment_date = ?, payment_status = 'pending', payment_note = '', updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = ? AND COALESCE(payment_status, '') NOT IN ('paid', 'verified')
+		WHERE user_id = ? AND COALESCE(payment_status, '') <> 'paid'
 	`, proofURL, amount, paymentDate, userID)
 	if err != nil {
 		return nil, err
@@ -292,7 +317,7 @@ func (r *Repository) UpdatePaymentByUserID(ctx context.Context, userID int, proo
 		if ferr != nil {
 			return nil, ferr
 		}
-		if cur.PaymentStatus == "paid" || cur.PaymentStatus == "verified" {
+		if cur.PaymentStatus == "paid" {
 			return nil, ErrPaymentLocked
 		}
 		return nil, ErrPaymentLocked
@@ -301,14 +326,14 @@ func (r *Repository) UpdatePaymentByUserID(ctx context.Context, userID int, proo
 	return r.FindByUserID(ctx, userID)
 }
 
-// psbPaymentTransitions: hanya regresi yang dilarang (paid terminal).
+// psbPaymentTransitions: paid terminal (lunas + tercatat di ledger). Regresi
+// diperbolehkan selama belum lunas (mis. rejected -> pending untuk upload ulang).
 var psbPaymentTransitions = map[string][]string{
 	"":         {"unpaid", "pending", "paid", "rejected"},
 	"unpaid":   {"pending", "paid", "rejected"},
 	"pending":  {"paid", "rejected", "unpaid"},
 	"rejected": {"pending", "paid", "unpaid"},
 	"paid":     {"paid"},
-	"verified": {"verified"},
 }
 
 func psbTransitionAllowed(cur, next string, table map[string][]string) bool {
@@ -333,35 +358,270 @@ var psbStatusTransitions = map[string][]string{
 	"accepted": {"accepted", "rejected"},
 }
 
-func (r *Repository) UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error {
+// UpdatePaymentStatus mengubah status pembayaran secara atomik (BEGIN IMMEDIATE
+// + conditional UPDATE). Saat transisi ke 'paid', entri ledger psb_payments
+// ditulis sekali (idempotent — re-mark tidak menduplikasi baris).
+func (r *Repository) UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error {
+	return finance.RetryOnBusy(func() error {
+		return r.updatePaymentStatusTx(ctx, id, status, note, actorID)
+	}, 10)
+}
+
+func (r *Repository) updatePaymentStatusTx(ctx context.Context, id int, status string, note string, actorID int) error {
+	tx, err := finance.BeginTx(r.db)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
 	var cur string
-	if err := r.db.QueryRowContext(ctx, `SELECT COALESCE(payment_status,'') FROM registrations WHERE id = ?`, id).Scan(&cur); err != nil {
+	var userID int
+	var amount int
+	var paidAt string
+	var proof string
+	err = tx.QueryRowContext(ctx, `
+		SELECT COALESCE(payment_status, ''), COALESCE(user_id, 0), COALESCE(payment_amount, 0),
+		       COALESCE(payment_date, ''), COALESCE(payment_proof_url, '')
+		FROM registrations WHERE id = ?`, id).Scan(&cur, &userID, &amount, &paidAt, &proof)
+	if err != nil {
 		return err
 	}
 	if !psbTransitionAllowed(cur, status, psbPaymentTransitions) {
 		return ErrInvalidTransition
 	}
-	_, err := r.db.ExecContext(ctx, `
+
+	res, err := tx.ExecContext(ctx, `
 		UPDATE registrations
 		SET payment_status = ?, payment_note = ?, updated_at = CURRENT_TIMESTAMP
-		WHERE id = ?
-	`, status, note, id)
+		WHERE id = ? AND COALESCE(payment_status, '') = ?
+	`, status, note, id, cur)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return finance.ErrConflict
+	}
+
+	if status == "paid" {
+		if err := r.recordPsbLedgerTx(ctx, tx, id, userID, amount, paidAt, proof, note, actorID); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	committed = true
+	return nil
+}
+
+// recordPsbLedgerTx menulis entri ledger psb_payments untuk registrasi yang
+// lunas. Idempotent: jika baris sudah ada, eksekusi dibiarkan sukses tanpa
+// menulis ulang (replay aman).
+func (r *Repository) recordPsbLedgerTx(ctx context.Context, tx *sql.Tx, registrationID, userID, amount int, paidAt, proof, note string, actorID int) error {
+	var exists int
+	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM psb_payments WHERE registration_id = ?`, registrationID).Scan(&exists); err == nil {
+		return nil
+	} else if err != sql.ErrNoRows {
+		return err
+	}
+
+	code, err := finance.NextReceiptNo(tx, time.Now().Format("2006"))
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO psb_payments (registration_id, user_id, code, amount, paid_at, method, proof_url, status, notes, created_by)
+		VALUES (?, ?, ?, ?, ?, 'transfer', ?, 'paid', ?, ?)
+	`, registrationID, userID, code, amount, paidAt, proof, note, actorID)
 	return err
 }
 
-func (r *Repository) UpdateStatus(ctx context.Context, id int, status string) error {
+// GetMyReceipt mengembalikan entri ledger pembayaran PSB milik user (kwitansi
+// wali). Dibiarkan error sql.ErrNoRows bila belum lunas.
+func (r *Repository) GetMyReceipt(ctx context.Context, userID int) (*PsbPayment, error) {
+	row := r.db.QueryRowContext(ctx, `
+		SELECT p.id, p.registration_id, p.user_id, p.code, p.amount, p.paid_at, p.method, p.proof_url,
+		       p.status, p.notes, p.created_by, COALESCE(reg.full_name, ''), p.created_at
+		FROM psb_payments p
+		LEFT JOIN registrations reg ON reg.id = p.registration_id
+		WHERE p.user_id = ? LIMIT 1`, userID)
+	var p PsbPayment
+	var createdAt string
+	err := row.Scan(&p.ID, &p.RegistrationID, &p.UserID, &p.Code, &p.Amount, &p.PaidAt, &p.Method,
+		&p.ProofURL, &p.Status, &p.Notes, &p.CreatedBy, &p.SantriName, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+	p.CreatedAt, _ = time.Parse(time.DateTime, createdAt)
+	return &p, nil
+}
+
+// UpdateStatus mengubah status registrasi secara atomik (conditional UPDATE
+// terhadap status saat ini sehingga dua admin tidak bisa menimpa satu sama lain).
+func (r *Repository) UpdateStatus(ctx context.Context, id int, status string, note string) error {
+	return finance.RetryOnBusy(func() error {
+		return r.updateStatusTx(ctx, id, status, note)
+	}, 10)
+}
+
+func (r *Repository) updateStatusTx(ctx context.Context, id int, status string, note string) error {
+	tx, err := finance.BeginTx(r.db)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
 	var cur string
-	if err := r.db.QueryRowContext(ctx, `SELECT COALESCE(status,'') FROM registrations WHERE id = ?`, id).Scan(&cur); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(status,'') FROM registrations WHERE id = ?`, id).Scan(&cur); err != nil {
 		return err
 	}
 	if !psbTransitionAllowed(cur, status, psbStatusTransitions) {
 		return ErrInvalidTransition
 	}
-	_, err := r.db.ExecContext(ctx, "UPDATE registrations SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", status, id)
-	return err
+
+	// rejection_note diisi hanya saat menolak; status lain membiarkannya utuh.
+	res, err := tx.ExecContext(ctx, `
+		UPDATE registrations
+		SET status = ?, updated_at = CURRENT_TIMESTAMP,
+		    rejection_note = CASE WHEN ? = 'rejected' THEN ? ELSE rejection_note END
+		WHERE id = ? AND COALESCE(status,'') = ?
+	`, status, status, note, id, cur)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return finance.ErrConflict
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	committed = true
+	return nil
 }
 
 func (r *Repository) Delete(ctx context.Context, id int) error {
 	_, err := r.db.ExecContext(ctx, "DELETE FROM registrations WHERE id = ?", id)
 	return err
+}
+
+var (
+	ErrNotAccepted     = errors.New("pendaftar harus berstatus accepted sebelum dipindahkan")
+	ErrPaymentNotLunas = errors.New("pembayaran pendaftaran belum lunas")
+	ErrAlreadySantri   = errors.New("pendaftar ini sudah menjadi santri")
+)
+
+type SantriResult struct {
+	ID   int    `json:"id"`
+	NIS  string `json:"nis"`
+	Name string `json:"name"`
+}
+
+// AcceptToSantri memindahkan pendaftar yang sudah accepted & paid menjadi
+// data santri (transaksi atomik, idempotent via UNIQUE nis + cek user_id).
+func (r *Repository) AcceptToSantri(ctx context.Context, id int) (*SantriResult, error) {
+	var result *SantriResult
+	err := finance.RetryOnBusy(func() error {
+		tx, err := finance.BeginTx(r.db)
+		if err != nil {
+			return err
+		}
+		committed := false
+		defer func() {
+			if !committed {
+				_ = tx.Rollback()
+			}
+		}()
+
+		reg, err := scanRegistration(tx.QueryRowContext(ctx, `SELECT `+registrationSelectColumns+` FROM registrations WHERE id = ?`, id))
+		if err != nil {
+			return err
+		}
+
+		if strings.ToLower(strings.TrimSpace(reg.PaymentStatus)) != "paid" {
+			return ErrPaymentNotLunas
+		}
+		if strings.ToLower(strings.TrimSpace(reg.Status)) != "accepted" {
+			return ErrNotAccepted
+		}
+		if reg.UserID > 0 {
+			var exist int
+			if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM santri WHERE user_id = ?`, reg.UserID).Scan(&exist); err != nil {
+				return err
+			}
+			if exist > 0 {
+				return ErrAlreadySantri
+			}
+		}
+
+		var maxID int
+		if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(id), 0) FROM santri`).Scan(&maxID); err != nil {
+			return err
+		}
+		year := time.Now().Format("2006")
+		parentName := firstNonEmpty(reg.ParentName, reg.FatherName, reg.MotherName)
+		parentPhone := firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone)
+		class := firstNonEmpty(reg.ProgramChoice, "Baru")
+
+		var santriID int64
+		found := false
+		for nextID := maxID + 1; nextID <= maxID+1+999 && !found; nextID++ {
+			nis := fmt.Sprintf("%s%04d", year, nextID)
+			res, err := tx.ExecContext(ctx, `
+				INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, user_id, created_at, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aktif', ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+			`, nis, reg.FullName, reg.Nickname, reg.Gender, reg.BirthPlace, reg.BirthDate,
+				reg.Address, class, year, parentName, parentPhone, nullableUserID(reg.UserID))
+			if err != nil {
+				if strings.Contains(strings.ToLower(err.Error()), "unique") {
+					continue
+				}
+				return err
+			}
+			santriID, _ = res.LastInsertId()
+			found = true
+		}
+		if !found {
+			return errors.New("gagal menghasilkan NIS unik")
+		}
+
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		committed = true
+		result = &SantriResult{ID: int(santriID), Name: reg.FullName}
+		return nil
+	}, 10)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if s := strings.TrimSpace(v); s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+func nullableUserID(uid int) interface{} {
+	if uid <= 0 {
+		return nil
+	}
+	return uid
 }

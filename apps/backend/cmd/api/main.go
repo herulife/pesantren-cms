@@ -398,6 +398,7 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("user"))
 				r.Get("/psb/me", psbHandler.GetMine)
+				r.Get("/psb/me/receipt", psbHandler.GetMyReceipt)
 				r.Put("/psb/me", psbHandler.SaveMine)
 				r.Put("/psb/me/documents", psbHandler.SaveMyDocuments)
 				r.Put("/psb/me/payment", psbHandler.SaveMyPayment)

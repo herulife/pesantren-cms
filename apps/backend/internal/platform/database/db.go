@@ -466,10 +466,30 @@ func createTables() {
 		payment_status TEXT DEFAULT 'unpaid',
 		payment_note TEXT DEFAULT '',
 		status TEXT DEFAULT 'pending',
+		rejection_note TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	);
+
+	CREATE TABLE IF NOT EXISTS psb_payments (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		registration_id INTEGER NOT NULL,
+		user_id INTEGER NOT NULL,
+		code TEXT NOT NULL UNIQUE,
+		amount INTEGER NOT NULL,
+		paid_at TEXT DEFAULT '',
+		method TEXT NOT NULL DEFAULT 'transfer',
+		proof_url TEXT DEFAULT '',
+		status TEXT NOT NULL DEFAULT 'paid',
+		notes TEXT DEFAULT '',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (registration_id) REFERENCES registrations(id)
+	);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_payments_reg ON psb_payments(registration_id);
+	CREATE INDEX IF NOT EXISTS idx_psb_payments_user ON psb_payments(user_id);
+	CREATE INDEX IF NOT EXISTS idx_psb_payments_date ON psb_payments(paid_at);
 
 	CREATE TABLE IF NOT EXISTS settings (
 		key TEXT PRIMARY KEY,
@@ -769,6 +789,7 @@ func createTables() {
 	addColumnIfNotExists("registrations", "payment_date", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "payment_status", "TEXT DEFAULT 'unpaid'")
 	addColumnIfNotExists("registrations", "payment_note", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "rejection_note", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "updated_at", "DATETIME")
 	addColumnIfNotExists("settings", "value", "TEXT")
 	addColumnIfNotExists("settings", "description", "TEXT")

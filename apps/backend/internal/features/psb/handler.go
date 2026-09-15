@@ -3,6 +3,7 @@ package psb
 import (
 	"errors"
 	"context"
+	"database/sql"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/validators"
@@ -22,8 +23,10 @@ type PSBRepository interface {
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
 	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL string) (*Registration, error)
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
-	UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error
-	UpdateStatus(ctx context.Context, id int, status string) error
+	UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error
+	UpdateStatus(ctx context.Context, id int, status string, note string) error
+	GetMyReceipt(ctx context.Context, userID int) (*PsbPayment, error)
+	AcceptToSantri(ctx context.Context, id int) (*SantriResult, error)
 	Delete(ctx context.Context, id int) error
 }
 
@@ -386,7 +389,10 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.UpdatePaymentStatus(r.Context(), id, req.PaymentStatus, req.PaymentNote); err != nil {
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+
+	if err := h.repo.UpdatePaymentStatus(r.Context(), id, req.PaymentStatus, req.PaymentNote, actorID); err != nil {
 		if errors.Is(err, ErrInvalidTransition) {
 			SendErrorResponse(w, http.StatusUnprocessableEntity, "Transisi status pembayaran tidak diizinkan")
 			return
@@ -395,8 +401,6 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses permintaan (Internal Server Error)")
 		return
 	}
-	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
-	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
 	audit.Record(r.Context(), audit.Entry{
 		ActorID: actorID, ActorRole: actorRole,
 		Action: "UPDATE_PSB_PAYMENT_STATUS", Entity: "registration", EntityID: strconv.Itoa(id),
@@ -456,7 +460,7 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := h.repo.UpdateStatus(r.Context(), id, req.Status); err != nil {
+	if err := h.repo.UpdateStatus(r.Context(), id, req.Status, req.Note); err != nil {
 		if errors.Is(err, ErrInvalidTransition) {
 			SendErrorResponse(w, http.StatusUnprocessableEntity, "Transisi status tidak diizinkan")
 			return
@@ -470,12 +474,78 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	audit.Record(r.Context(), audit.Entry{
 		ActorID: actorID2, ActorRole: actorRole2,
 		Action: "UPDATE_PSB_STATUS", Entity: "registration", EntityID: strconv.Itoa(id),
-		After: map[string]interface{}{"status": req.Status},
+		After: map[string]interface{}{"status": req.Status, "note": req.Note},
 		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 
 	logger.LogInfo("Successfully updated registration ID %d to status: %s", id, req.Status)
 	SendSuccessResponse(w, http.StatusOK, nil, "Status updated successfully")
+}
+
+// GetMyReceipt mengembalikan kwitansi biaya pendaftaran PSB milik wali yang
+// sudah lunas. Tidak ditemukan -> 404 (belum lunas / tidak ada data).
+func (h *Handler) GetMyReceipt(w http.ResponseWriter, r *http.Request) {
+	userID, ok := currentUserID(r)
+	if !ok {
+		SendErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	receipt, err := h.repo.GetMyReceipt(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			SendErrorResponse(w, http.StatusNotFound, "Kwitansi belum tersedia (pembayaran belum lunas)")
+			return
+		}
+		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memuat kwitansi")
+		return
+	}
+	SendSuccessResponse(w, http.StatusOK, receipt, "")
+}
+
+func (h *Handler) AcceptToSantri(w http.ResponseWriter, r *http.Request) {
+	logger := NewRequestLogger(r)
+	logger.LogInfo("AcceptToSantri request started")
+	defer logger.LogDuration("AcceptToSantri request completed")
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || id <= 0 {
+		logger.LogWarning("Invalid ID parameter: %s", chi.URLParam(r, "id"))
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid ID format")
+		return
+	}
+
+	santri, err := h.repo.AcceptToSantri(r.Context(), id)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrNotAccepted):
+			SendErrorResponse(w, http.StatusBadRequest, "Pendaftar harus berstatus Diterima (accepted) lebih dulu")
+			return
+		case errors.Is(err, ErrPaymentNotLunas):
+			SendErrorResponse(w, http.StatusBadRequest, "Pembayaran pendaftaran belum lunas")
+			return
+		case errors.Is(err, ErrAlreadySantri):
+			SendErrorResponse(w, http.StatusConflict, "Pendaftar ini sudah menjadi santri")
+			return
+		case errors.Is(err, sql.ErrNoRows):
+			SendErrorResponse(w, http.StatusNotFound, "Registration not found")
+			return
+		}
+		logger.LogError("Failed to move registration ID %d to santri: %v", id, err)
+		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses permintaan (Internal Server Error)")
+		return
+	}
+
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: actorID, ActorRole: actorRole,
+		Action: "ACCEPT_PSB_TO_SANTRI", Entity: "registration", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"santri_id": santri.ID, "nis": santri.NIS, "name": santri.Name},
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	logger.LogInfo("Successfully moved registration ID %d to santri (id=%d nis=%s)", id, santri.ID, santri.NIS)
+	SendSuccessResponse(w, http.StatusOK, santri, "Pendaftar berhasil dipindahkan menjadi santri")
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -518,6 +588,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/{id}", h.GetByID)
 	r.Put("/{id}/payment-status", h.UpdatePaymentStatus)
 	r.Put("/{id}/status", h.UpdateStatus)
+	r.Put("/{id}/accept-santri", h.AcceptToSantri)
 	r.Delete("/{id}", h.Delete)
 	return r
 }
@@ -534,5 +605,6 @@ type IRepository interface {
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
 	UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error
 	UpdateStatus(ctx context.Context, id int, status string) error
+	AcceptToSantri(ctx context.Context, id int) (*SantriResult, error)
 	Delete(ctx context.Context, id int) error
 }

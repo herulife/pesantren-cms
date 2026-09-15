@@ -482,6 +482,7 @@ export interface Registration {
 	payment_date?: string;
 	payment_status?: string;
 	payment_note?: string;
+	rejection_note?: string;
 	status: string;
 	created_at: string;
 	updated_at?: string;
@@ -1865,11 +1866,19 @@ export async function updateUserRole(id: number, role: string) {
 	return parseResponse(res);
 }
 
-export async function updatePSBStatus(id: number, status: string) {
+export async function updatePSBStatus(id: number, status: string, note?: string) {
 	const res = await fetch(`${API_BASE_URL}/psb/${id}/status`, {
 		method: 'PUT',
 		headers: getAuthHeaders(),
-		body: JSON.stringify({ status })
+		body: JSON.stringify({ status, note: note || '' })
+	});
+	return parseResponse(res);
+}
+
+export async function acceptPSBToSantri(id: number) {
+	const res = await fetch(`${API_BASE_URL}/psb/${id}/accept-santri`, {
+		method: 'PUT',
+		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
 }
@@ -1938,6 +1947,28 @@ export async function saveMyPSBPayment(payload: {
 		body: JSON.stringify(payload)
 	});
 	return parseResponse(res);
+}
+
+export interface PSBReceipt {
+	code: string;
+	amount: number;
+	paid_at: string;
+	method: string;
+	santri_name?: string;
+}
+
+export async function getMyPSBReceipt(): Promise<PSBReceipt | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/psb/me/receipt`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result?.data || null) as PSBReceipt | null;
+	} catch (e) {
+		console.error('[API] Fetch my PSB receipt error:', e);
+		return null;
+	}
 }
 
 export async function generateArticleAI(topic: string, withImage: boolean = true) {

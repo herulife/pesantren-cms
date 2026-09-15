@@ -328,6 +328,11 @@ export default function PortalDashboard() {
               </span>
               <h4 className="mb-2 text-2xl font-black uppercase tracking-tight">{portalState.meta.title}</h4>
               <p className="max-w-sm text-sm leading-relaxed text-white/80">{portalState.meta.description}</p>
+              {status === 'rejected' && registration?.rejection_note?.trim() ? (
+                <p className="mt-3 max-w-sm rounded-2xl border border-white/25 bg-white/15 px-4 py-3 text-xs font-bold leading-5 text-white">
+                  Catatan panitia: {registration.rejection_note.trim()}
+                </p>
+              ) : null}
             </div>
 
             <div className="mt-6 grid gap-2 sm:grid-cols-2">

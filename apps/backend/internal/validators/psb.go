@@ -4,6 +4,7 @@ import "strings"
 
 type RegistrationStatusRequest struct {
 	Status string `json:"status"`
+	Note   string `json:"note"`
 }
 
 type RegistrationPaymentStatusRequest struct {
@@ -14,10 +15,14 @@ type RegistrationPaymentStatusRequest struct {
 func ValidateRegistrationStatusRequest(req *RegistrationStatusRequest) ValidationErrors {
 	errs := ValidationErrors{}
 	req.Status = strings.ToLower(NormalizeText(req.Status))
+	req.Note = strings.TrimSpace(req.Note)
 	switch req.Status {
 	case "pending", "review", "accepted", "rejected":
 	default:
 		errs.Add("status", "Status harus salah satu dari pending, review, accepted, rejected")
+	}
+	if len(req.Note) > 1000 {
+		errs.Add("note", "Catatan maksimal 1000 karakter")
 	}
 	return errs
 }

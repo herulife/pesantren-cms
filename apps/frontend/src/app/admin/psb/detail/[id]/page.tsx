@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, Registration, resolveDisplayImageUrl } from '@/lib/api';
+import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, acceptPSBToSantri, getPublicSettingsMap, Registration, resolveDisplayImageUrl } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { 
   CheckCircle, 
@@ -28,16 +28,21 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const [paymentNote, setPaymentNote] = useState('');
+  const [rejectionNote, setRejectionNote] = useState('');
+  const [expectedAmount, setExpectedAmount] = useState(0);
+  const [isAccepting, setIsAccepting] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const fetchRegistration = async () => {
         setIsLoading(true);
-        const data = await getRegistrations();
+        const [data, publicSettings] = await Promise.all([getRegistrations(), getPublicSettingsMap()]);
         const found = data.find((r: Registration) => r.id === Number(id));
         setRegistration(found || null);
         setPaymentNote(found?.payment_note || '');
+        setRejectionNote(found?.rejection_note || '');
+        setExpectedAmount(Number(publicSettings.psb_payment_amount || 0));
         setIsLoading(false);
       };
 
@@ -55,10 +60,14 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       showToast('error', 'Tandai pembayaran pendaftaran sebagai lunas terlebih dahulu.');
       return;
     }
+    if (newStatus === 'rejected' && !rejectionNote.trim()) {
+      showToast('error', 'Isi alasan penolakan terlebih dahulu agar wali memahami alasannya.');
+      return;
+    }
 
     setIsUpdatingStatus(true);
     try {
-      const res = await updatePSBStatus(registration.id, newStatus);
+      const res = await updatePSBStatus(registration.id, newStatus, newStatus === 'rejected' ? rejectionNote : undefined);
       if (res.success) {
         showToast('success', `Status pendaftaran berhasil diubah ke ${newStatus.toUpperCase()}`);
         setRegistration({ ...registration, status: newStatus });
@@ -68,6 +77,21 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       showToast('error', 'Gagal memperbarui status.');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleAcceptToSantri = async () => {
+    if (!registration || isAccepting) return;
+    setIsAccepting(true);
+    try {
+      const res = await acceptPSBToSantri(registration.id);
+      if (res.success) {
+        showToast('success', 'Pendaftar berhasil dipindahkan menjadi santri.');
+        return;
+      }
+      showToast('error', res.message || 'Gagal memindahkan ke santri.');
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -379,6 +403,16 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
 
+            {expectedAmount > 0 && Number(registration.payment_amount) !== expectedAmount ? (
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">Perhatian: Nominal Tidak Sesuai</p>
+                <p className="mt-1 text-sm font-semibold leading-6">
+                  Biaya pendaftaran yang diatur saat ini adalah {formatCurrency(expectedAmount)}, sedangkan wali melaporkan{' '}
+                  {formatCurrency(Number(registration.payment_amount) || 0)}. Verifikasi bukti transfer dengan teliti.
+                </p>
+              </div>
+            ) : null}
+
             <fieldset className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" disabled={isUpdatingPayment}>
               <legend className="sr-only">Pilih status pembayaran pendaftaran</legend>
               {paymentOptions.map((option) => {
@@ -519,6 +553,52 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
             <p className="mt-4 text-xs font-semibold leading-6 text-slate-500">
               Pilih salah satu status. Perubahan akan tersimpan otomatis setelah pilihan diganti.
             </p>
+
+            <div className="mt-6 rounded-2xl border border-rose-100 bg-white p-5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Alasan Penolakan (wajib saat menolak, dikirim ke wali)
+              </label>
+              <textarea
+                rows={3}
+                value={rejectionNote}
+                onChange={(event) => setRejectionNote(event.target.value)}
+                placeholder="Contoh: Berkas ijazah tidak sesuai persyaratan, mohon lengkapi."
+                aria-label="Alasan penolakan pendaftaran"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-500/10"
+              />
+              {rejectionNote.trim() && registration.status !== 'rejected' ? (
+                <p className="mt-2 text-xs font-semibold text-slate-500">
+                  Alasan ini akan terkirim begitu status Ditolak dipilih.
+                </p>
+              ) : null}
+              {registration.status === 'rejected' ? (
+                <p className="mt-2 text-xs font-bold text-rose-600">
+                  Alasan terakhir terkirim: {registration.rejection_note?.trim() || 'Belum ada catatan penolakan.'}
+                </p>
+              ) : null}
+            </div>
+
+            {registration.status === 'accepted' && paymentStatus === 'paid' ? (
+              <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">Langkah Berikutnya</p>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-sky-900">
+                      Pendaftar sudah diterima dan lunas. Pindahkan ke data santri untuk mengelola SPP & iuran.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleAcceptToSantri()}
+                    disabled={isAccepting}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:opacity-60"
+                  >
+                    {isAccepting ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />}
+                    {isAccepting ? 'Memindahkan...' : 'Terima & Pindahkan ke Santri'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
          </div>
 
          <div className="mt-10 bg-white border border-slate-200 rounded-xl p-8">

@@ -15,8 +15,10 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
+import KwitansiModal, { type KwitansiTx } from '@/components/KwitansiModal';
 import {
   getMyPSBRegistration,
+  getMyPSBReceipt,
   getPublicSettingsMap,
   resolveDisplayImageUrl,
   saveMyPSBPayment,
@@ -87,6 +89,27 @@ export default function PortalPaymentPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [settings, setSettings] = useState<SettingsMap>({});
   const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
+  const [receipt, setReceipt] = useState<KwitansiTx | null>(null);
+
+  const loadReceipt = async () => {
+    try {
+      const r = await getMyPSBReceipt();
+      if (!r) {
+        showToast('error', 'Kwitansi belum tersedia.');
+        return;
+      }
+      setReceipt({
+        code: r.code,
+        date: r.paid_at,
+        santri_name: r.santri_name || registration?.full_name,
+        description: 'Biaya Pendaftaran PSB',
+        amount: r.amount,
+        method: r.method,
+      });
+    } catch {
+      showToast('error', 'Gagal memuat kwitansi.');
+    }
+  };
 
   useEffect(() => {
     const fetchRegistration = async () => {
@@ -333,9 +356,20 @@ export default function PortalPaymentPage() {
               ) : null}
             </div>
           </div>
-          <span className="inline-flex w-fit rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]">
-            {proofUrl ? 'Bukti sudah ada' : 'Belum ada bukti'}
-          </span>
+          <div className="flex flex-col items-end gap-3">
+            <span className="inline-flex w-fit rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]">
+              {proofUrl ? 'Bukti sudah ada' : 'Belum ada bukti'}
+            </span>
+            {paymentStatus === 'paid' ? (
+              <button
+                type="button"
+                onClick={() => void loadReceipt()}
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-800 shadow-sm transition hover:bg-sky-50"
+              >
+                <Banknote size={14} /> Unduh Kwitansi
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -515,6 +549,17 @@ export default function PortalPaymentPage() {
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
                 placeholder="Contoh: 250000"
               />
+              {!isLocked && configuredAmount > 0 && parsedAmount > 0 && parsedAmount !== configuredAmount ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-amber-800">
+                  Nominal diharapkan {formatCurrency(configuredAmount)} — pastikan sesuai bukti transfer.
+                </p>
+              ) : !isLocked && configuredAmount > 0 ? (
+                <p className="text-[11px] font-semibold leading-5 text-slate-400">
+                  {amount.trim() === ''
+                    ? `Nominal diharapkan: ${formatCurrency(configuredAmount)}. Isi sesuai yang kamu transfer.`
+                    : `Nominal diharapkan: ${formatCurrency(configuredAmount)}.`}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -613,6 +658,14 @@ export default function PortalPaymentPage() {
           </div>
         </div>
       </div>
+
+      {receipt ? (
+        <KwitansiModal
+          data={receipt}
+          petugas="Panitia PSB"
+          onClose={() => setReceipt(null)}
+        />
+      ) : null}
     </>
   );
 }
