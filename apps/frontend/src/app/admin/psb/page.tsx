@@ -19,9 +19,12 @@ export default function PSBAdminPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { showToast } = useToast();
+
+  const categories = Array.from(new Set(registrations.map(r => r.program_choice).filter(Boolean)));
 
   useEffect(() => {
     fetchRegistrations();
@@ -56,9 +59,10 @@ export default function PSBAdminPage() {
     exportToExcel('Laporan Pendaftaran Santri Baru', columns, rows, 'laporan_psb');
   };
 
-  const filteredRegistrations = registrations.filter(r => 
-    r.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.school_origin.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRegistrations = registrations.filter(r =>
+    (!activeCategory || r.program_choice === activeCategory) &&
+    (r.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.school_origin.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleDelete = async () => {
@@ -147,6 +151,44 @@ export default function PSBAdminPage() {
                </button>
             </div>
          </div>
+
+         <div className="overflow-x-auto">
+            <div className="flex items-center gap-2 px-8 pt-6 pb-2 overflow-x-auto scrollbar-hide">
+              <button
+                onClick={() => setActiveCategory('')}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest border transition-all ${
+                  activeCategory === ''
+                    ? 'bg-sky-600 text-white border-sky-600 shadow-lg shadow-sky-600/20'
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-sky-300 hover:text-sky-700'
+                }`}
+              >
+                Semua
+                <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeCategory === '' ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>
+                  {registrations.length}
+                </span>
+              </button>
+              {categories.map(cat => {
+                const count = registrations.filter(r => r.program_choice === cat).length;
+                const active = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(active ? '' : cat)}
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest border transition-all ${
+                      active
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-lg shadow-sky-600/20'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-sky-300 hover:text-sky-700'
+                    }`}
+                  >
+                    {cat}
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] ${active ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">

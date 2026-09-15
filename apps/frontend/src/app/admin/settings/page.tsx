@@ -10,7 +10,6 @@ import TabSosmed from './tabs/TabSosmed';
 import TabSambutan from './tabs/TabSambutan';
 import TabAIConfig from './tabs/TabAIConfig';
 import TabNotifikasiWA from './tabs/TabNotifikasiWA';
-import TabPembayaranPSB from './tabs/TabPembayaranPSB';
 import TabDonasi from './tabs/TabDonasi';
 
 export default function SettingsAdminPage() {
@@ -26,7 +25,6 @@ export default function SettingsAdminPage() {
       case 'Sambutan': return <TabSambutan />;
       case 'AI Config': return <TabAIConfig />;
       case 'Notifikasi WA': return <TabNotifikasiWA />;
-      case 'Pembayaran PSB': return <TabPembayaranPSB />;
       case 'Donasi': return <TabDonasi />;
       default: return <TabUmum />;
     }
@@ -44,7 +42,7 @@ export default function SettingsAdminPage() {
       <div className="w-full space-y-8">
          {/* Navigation Tabs */}
          <div className="bg-slate-100/70 p-2 rounded-xl flex items-center overflow-x-auto border border-slate-200 mb-8 whitespace-nowrap shadow-sm scrollbar-hide">
-            {['Umum', 'Slider Beranda', 'Kartu Info', 'Kontak', 'Sosmed', 'Sambutan', 'AI Config', 'Notifikasi WA', 'Pembayaran PSB', 'Donasi'].map((tab) => (
+            {['Umum', 'Slider Beranda', 'Kartu Info', 'Kontak', 'Sosmed', 'Sambutan', 'AI Config', 'Notifikasi WA', 'Donasi'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
