@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard, Check } from 'lucide-react';
 import { getMyPSBRegistration, type Registration } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { useToast } from '@/components/Toast';
 
 function isFilled(value?: string | null) {
   return Boolean(value && value.trim());
@@ -39,7 +40,9 @@ type PortalNavGroup = {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { logout } = useAuth();
+  const { showToast } = useToast();
   const isRaportPage = pathname.startsWith('/portal/raport');
   const isPortalDashboard = pathname === '/portal';
   const [registration, setRegistration] = useState<Registration | null>(null);
@@ -71,7 +74,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pathname]);
 
   const registrationStatus = registration?.status || 'pending';
   const hasStudentAccess = registrationStatus === 'accepted';
@@ -94,6 +97,54 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   ].every(isFilled);
   const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
   const paymentCompleted = registration?.payment_status === 'paid';
+
+  const flowSteps = [
+    {
+      href: '/portal/biodata',
+      label: 'Biodata',
+      doneLabel: 'Biodata Lengkap',
+      done: biodataCompleted,
+      active: pathname.startsWith('/portal/biodata'),
+      locked: false,
+      unlockHint: '',
+      icon: <User size={14} />,
+    },
+    {
+      href: '/portal/documents',
+      label: 'Dokumen',
+      doneLabel: 'Dokumen Sudah Terupload',
+      done: documentsCompleted,
+      active: pathname.startsWith('/portal/documents'),
+      locked: !biodataCompleted,
+      unlockHint: 'Selesaikan langkah 1 (Biodata Lengkap) dulu sebelum mengunggah dokumen.',
+      icon: <Upload size={14} />,
+    },
+    {
+      href: '/portal/payment',
+      label: 'Pembayaran',
+      doneLabel: 'Pembayaran Lunas',
+      done: paymentCompleted,
+      active: pathname.startsWith('/portal/payment'),
+      locked: !(biodataCompleted && documentsCompleted),
+      unlockHint: biodataCompleted
+        ? 'Upload dokumen (langkah 2) dulu sebelum pembayaran pendaftaran.'
+        : 'Selesaikan Biodata & Dokumen dulu sebelum pembayaran pendaftaran.',
+      icon: <CreditCard size={14} />,
+    },
+  ];
+
+  useEffect(() => {
+    if (hasStudentAccess || isLoading) return;
+    if (pathname.startsWith('/portal/documents') && !biodataCompleted) {
+      showToast('info', 'Langkah 1 (Biodata) belum selesai. Isi dulu agar langkah 2 terbuka.');
+      router.replace('/portal/biodata');
+    } else if (pathname.startsWith('/portal/payment') && !(biodataCompleted && documentsCompleted)) {
+      showToast('info', biodataCompleted
+        ? 'Dokumen belum terupload. Selesaikan langkah 2 dulu sebelum pembayaran.'
+        : 'Biodata belum lengkap. Selesaikan langkah 1 & 2 dulu sebelum pembayaran.');
+      router.replace(biodataCompleted ? '/portal/documents' : '/portal/biodata');
+    }
+  }, [pathname, hasStudentAccess, isLoading, biodataCompleted, documentsCompleted, router, showToast]);
 
   const registrationItems: PortalNavItem[] = [
     {
@@ -481,44 +532,55 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online — 3 Langkah</p>
                   <div className="mt-3 flex items-center gap-2">
-                    {[
-                      { href: '/portal/biodata', label: 'Biodata', done: biodataCompleted, icon: <User size={14} />, active: pathname.startsWith('/portal/biodata') },
-                      { href: '/portal/documents', label: 'Dokumen', done: documentsCompleted, icon: <Upload size={14} />, active: pathname.startsWith('/portal/documents') },
-                      { href: '/portal/payment', label: 'Pembayaran', done: paymentCompleted, icon: <CreditCard size={14} />, active: pathname.startsWith('/portal/payment') },
-                    ].map((step, idx, arr) => (
+                    {flowSteps.map((step, idx, arr) => (
                       <React.Fragment key={step.href}>
-                        <Link
-                          href={step.href}
-                          className={`flex flex-1 items-center gap-2 rounded-full px-3 py-2 text-xs font-black transition ${
-                            step.active
-                              ? 'bg-sky-600 text-white shadow'
-                              : step.done
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-slate-50 text-slate-500 border border-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
-                              step.active ? 'bg-white text-sky-600' : step.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200'
+                        {step.locked ? (
+                          <button
+                            type="button"
+                            onClick={() => showToast('info', step.unlockHint)}
+                            title={step.unlockHint}
+                            className="flex flex-1 cursor-not-allowed items-center gap-2 rounded-full border border-dashed border-slate-300 bg-slate-100 px-3 py-2 text-xs font-black text-slate-400 transition"
+                          >
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-400">
+                              <Lock size={12} />
+                            </span>
+                            <span className="hidden sm:inline">{step.label}</span>
+                            <span className="sm:hidden">{step.label.slice(0, 3)}</span>
+                          </button>
+                        ) : (
+                          <Link
+                            href={step.href}
+                            className={`flex flex-1 items-center gap-2 rounded-full px-3 py-2 text-xs font-black transition ${
+                              step.active
+                                ? 'bg-sky-600 text-white shadow'
+                                : step.done
+                                  ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300'
+                                  : 'bg-slate-50 text-slate-500 border border-slate-200'
                             }`}
                           >
-                            {step.done ? <Check size={12} /> : idx + 1}
-                          </span>
-                          <span className="hidden sm:inline">{step.label}</span>
-                          <span className="sm:hidden">{step.label.slice(0, 3)}</span>
-                        </Link>
+                            <span
+                              className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
+                                step.active ? 'bg-white text-sky-600' : step.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200'
+                              }`}
+                            >
+                              {step.done ? <Check size={12} /> : idx + 1}
+                            </span>
+                            <span className="hidden sm:inline">{step.done ? step.doneLabel : step.label}</span>
+                            <span className="sm:hidden">{(step.done ? step.doneLabel : step.label).slice(0, 3)}</span>
+                          </Link>
+                        )}
                         {idx < arr.length - 1 && <span className={`hidden sm:block h-px flex-1 ${step.done ? 'bg-emerald-200' : 'bg-slate-200'}`} />}
                       </React.Fragment>
                     ))}
                   </div>
                   <p className="mt-2 text-[11px] font-medium text-slate-500">
                     {biodataCompleted && documentsCompleted && paymentCompleted
-                      ? 'Semua langkah lengkap — pantau status di Dashboard.'
-                      : biodataCompleted && documentsCompleted
-                        ? 'Tinggal pembayaran untuk selesaikan pendaftaran.'
-                        : biodataCompleted
-                          ? 'Biodata selesai — lanjut unggah dokumen.'
-                          : 'Mulai dari biodata untuk lanjutkan pendaftaran.'}
+                      ? 'Semua langkah selesai, termasuk pembayaran — pantau status dari Dashboard.'
+                      : !biodataCompleted
+                        ? 'Langkah 1 (Biodata) belum selesai — isi data dulu, lalu lanjut unggah dokumen.'
+                        : !documentsCompleted
+                          ? 'Biodata selesai. Dokumen belum terupload — lanjut ke langkah 2 (Unggah Dokumen).'
+                          : 'Biodata & dokumen selesai — masuk langkah 3 (Pembayaran) untuk menyelesaikan pendaftaran.'}
                   </p>
                 </div>
               )}
