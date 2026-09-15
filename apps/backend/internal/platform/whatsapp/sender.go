@@ -72,6 +72,20 @@ func FormatPSBStatus(namaCalon string, status string) string {
 		namaCalon, statusText)
 }
 
+// FormatPSBUpdate adalah template notifikasi per transisi status pendaftaran
+// (verifikasi → tes → diterima → daftar ulang / ditolak). detail boleh kosong.
+func FormatPSBUpdate(namaCalon string, statusText string, detail string) string {
+	msg := "Assalamu'alaikum Wr. Wb.\n\n" +
+		"Kepada Yth. Wali dari *" + namaCalon + "*,\n\n" +
+		"Status pendaftaran santri baru Al-Maa: *" + statusText + "*.\n"
+	if strings.TrimSpace(detail) != "" {
+		msg += "\n" + strings.TrimSpace(detail) + ".\n"
+	}
+	msg += "\nSilakan cek detail dan langkah berikutnya di Portal Wali Santri Al-Maa.\n\n" +
+		"_Panitia PSB Al-Maa_"
+	return msg
+}
+
 func FormatNilaiRaport(namaSantri string, semester string, tahunAjaran string, nilaiAkhir float64, gradeLetter string) string {
 	return fmt.Sprintf(
 		"Assalamu'alaikum Wr. Wb.\n\n"+

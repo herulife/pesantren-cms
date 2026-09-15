@@ -483,6 +483,11 @@ export interface Registration {
 	payment_status?: string;
 	payment_note?: string;
 	rejection_note?: string;
+	test_date?: string;
+	test_location?: string;
+	test_score?: number;
+	test_note?: string;
+	re_registration_deadline?: string;
 	status: string;
 	created_at: string;
 	updated_at?: string;
@@ -1866,11 +1871,21 @@ export async function updateUserRole(id: number, role: string) {
 	return parseResponse(res);
 }
 
-export async function updatePSBStatus(id: number, status: string, note?: string) {
+export interface PSBStatusUpdatePayload {
+	status: string;
+	note?: string;
+	test_date?: string;
+	test_location?: string;
+	test_score?: number;
+	test_note?: string;
+	re_registration_deadline?: string;
+}
+
+export async function updatePSBStatus(id: number, payload: PSBStatusUpdatePayload) {
 	const res = await fetch(`${API_BASE_URL}/psb/${id}/status`, {
 		method: 'PUT',
 		headers: getAuthHeaders(),
-		body: JSON.stringify({ status, note: note || '' })
+		body: JSON.stringify({ note: '', ...payload })
 	});
 	return parseResponse(res);
 }
@@ -1898,6 +1913,22 @@ export async function deletePSBRegistration(id: number) {
 		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
+}
+
+export interface PSBPengumuman {
+	id: number;
+	no: string;
+	full_name: string;
+	status: string;
+	status_label: string;
+	program_choice: string;
+	test_date?: string;
+	rejection_note?: string;
+}
+
+export async function getPSBPengumuman(no: number | string) {
+	const res = await fetch(`${API_BASE_URL}/psb/pengumuman?no=${encodeURIComponent(no)}`);
+	return parseResponse(res) as Promise<{ success: boolean; message: string; data: PSBPengumuman | null }>;
 }
 
 export async function getMyPSBRegistration() {

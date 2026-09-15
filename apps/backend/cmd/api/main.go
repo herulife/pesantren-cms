@@ -211,6 +211,9 @@ func main() {
 		// Public Contact Message
 		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
 
+		// Public PSB Pengumuman: cek kelulusan dengan nomor pendaftaran (tanpa login).
+		r.Get("/psb/pengumuman", psbHandler.GetPengumuman)
+
 		// ── Public Access + Protected Writes ──────────────────
 		r.Route("/faqs", func(r chi.Router) {
 			r.Get("/", faqHandler.List)

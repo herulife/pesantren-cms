@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
 	"io"
 	"net/http"
@@ -24,10 +25,24 @@ type PSBRepository interface {
 	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL string) (*Registration, error)
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
 	UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error
-	UpdateStatus(ctx context.Context, id int, status string, note string) error
+	UpdateStatus(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error
 	GetMyReceipt(ctx context.Context, userID int) (*PsbPayment, error)
 	AcceptToSantri(ctx context.Context, id int) (*SantriResult, error)
+	FindByPublicNumber(ctx context.Context, id int) (*PublicPSBResult, error)
 	Delete(ctx context.Context, id int) error
+}
+
+// PublicPSBResult adalah data minimal pengumuman PSB yang boleh diakses
+// publik tanpa login, cukup dengan nomor pendaftaran (id registrasi).
+type PublicPSBResult struct {
+	ID            int    `json:"id"`
+	No            string `json:"no"`
+	FullName      string `json:"full_name"`
+	Status        string `json:"status"`
+	StatusLabel   string `json:"status_label"`
+	ProgramChoice string `json:"program_choice"`
+	TestDate      string `json:"test_date"`
+	RejectionNote string `json:"rejection_note,omitempty"`
 }
 
 type Handler struct {
@@ -408,6 +423,19 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 
+	// WA otomatis saat pembayaran dinyatakan lunas.
+	if req.PaymentStatus == "paid" {
+		if reg, err := h.repo.FindByID(r.Context(), id); err == nil {
+			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
+			if phone != "" {
+				msg := whatsapp.FormatPSBUpdate(reg.FullName, "Pembayaran pendaftaran telah terverifikasi (LUNAS)", "")
+				if err := whatsapp.SendMessage(phone, msg); err != nil {
+					logger.LogWarning("Gagal kirim WA PSB lunas ke %s: %v", phone, err)
+				}
+			}
+		}
+	}
+
 	SendSuccessResponse(w, http.StatusOK, nil, "Status pembayaran berhasil diperbarui")
 }
 
@@ -448,19 +476,26 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Status == "accepted" {
+	if req.Status == "accepted" || req.Status == "re_registration" {
 		reg, err := h.repo.FindByID(r.Context(), id)
 		if err != nil {
 			SendErrorResponse(w, http.StatusNotFound, "Registration not found")
 			return
 		}
 		if strings.ToLower(strings.TrimSpace(reg.PaymentStatus)) != "paid" {
-			SendErrorResponse(w, http.StatusBadRequest, "Pembayaran pendaftaran harus lunas sebelum santri diterima")
+			SendErrorResponse(w, http.StatusBadRequest, "Pembayaran pendaftaran harus lunas sebelum santri diterima / daftar ulang")
 			return
 		}
 	}
 
-	if err := h.repo.UpdateStatus(r.Context(), id, req.Status, req.Note); err != nil {
+	opts := &StatusUpdateOptions{
+		TestDate:      req.TestDate,
+		TestLocation:  req.TestLocation,
+		TestScore:     req.TestScore,
+		TestNote:      req.TestNote,
+		ReRegDeadline: req.ReRegistrationDeadline,
+	}
+	if err := h.repo.UpdateStatus(r.Context(), id, req.Status, req.Note, opts); err != nil {
 		if errors.Is(err, ErrInvalidTransition) {
 			SendErrorResponse(w, http.StatusUnprocessableEntity, "Transisi status tidak diizinkan")
 			return
@@ -474,9 +509,16 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	audit.Record(r.Context(), audit.Entry{
 		ActorID: actorID2, ActorRole: actorRole2,
 		Action: "UPDATE_PSB_STATUS", Entity: "registration", EntityID: strconv.Itoa(id),
-		After: map[string]interface{}{"status": req.Status, "note": req.Note},
+		After: map[string]interface{}{
+			"status": req.Status, "note": req.Note,
+			"test_date": req.TestDate, "test_location": req.TestLocation,
+			"test_score": req.TestScore, "re_registration_deadline": req.ReRegistrationDeadline,
+		},
 		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
+
+	// Notifikasi WhatsApp otomatis untuk wali. Gagal kirim tidak menggagalkan transaksi.
+	notifyPSBTransition(r, h.repo, id, req.Status, req.Note, opts)
 
 	logger.LogInfo("Successfully updated registration ID %d to status: %s", id, req.Status)
 	SendSuccessResponse(w, http.StatusOK, nil, "Status updated successfully")
@@ -582,6 +624,92 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	SendSuccessResponse(w, http.StatusOK, nil, "Registration deleted successfully")
 }
 
+// psbStatusLabel memetakan status registrasi ke label Indonesia yang ramah
+// untuk ditampilkan ke wali santri (portal & notifikasi).
+func psbStatusLabel(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "review":
+		return "Berkas sedang diverifikasi panitia"
+	case "tes":
+		return "Diundang tes seleksi"
+	case "accepted":
+		return "Diterima"
+	case "re_registration":
+		return "Masa daftar ulang"
+	case "rejected":
+		return "Belum dapat diterima"
+	default:
+		return "Sedang diproses"
+	}
+}
+
+// notifyPSBTransition mengirim notifikasi WhatsApp otomatis ke nomor wali saat
+// status pendaftaran berubah. Gagal kirim (gateway nonaktif / nomor kosong)
+// hanya dicatat di log dan TIDAK menggagalkan operasi inti.
+func notifyPSBTransition(r *http.Request, repo PSBRepository, id int, status, note string, opts *StatusUpdateOptions) {
+	reg, err := repo.FindByID(r.Context(), id)
+	if err != nil {
+		return
+	}
+	phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
+	if phone == "" {
+		return
+	}
+
+	detail := note
+	switch status {
+	case "tes":
+		parts := []string{}
+		if reg.TestDate != "" {
+			parts = append(parts, "Jadwal: "+reg.TestDate)
+		}
+		if reg.TestLocation != "" {
+			parts = append(parts, "Lokasi: "+reg.TestLocation)
+		}
+		if len(parts) > 0 {
+			detail = strings.Join(parts, " • ")
+		}
+	case "re_registration":
+		if reg.ReRegDeadline != "" {
+			detail = "Batas daftar ulang: " + reg.ReRegDeadline
+		}
+	}
+
+	msg := whatsapp.FormatPSBUpdate(reg.FullName, psbStatusLabel(status), detail)
+	if msg == "" {
+		return
+	}
+	if err := whatsapp.SendMessage(phone, msg); err != nil {
+		logger := NewRequestLogger(r)
+		logger.LogWarning("Gagal mengirim notifikasi WA PSB ke %s: %v", phone, err)
+	}
+}
+
+// GetPengumuman adalah endpoint publik untuk cek kelulusan PSB. Cukup dengan
+// nomor pendaftaran (id registrasi) tanpa login — menampilkan data minimal.
+func (h *Handler) GetPengumuman(w http.ResponseWriter, r *http.Request) {
+	raw := r.URL.Query().Get("no")
+	if raw == "" {
+		raw = r.URL.Query().Get("id")
+	}
+	id, err := strconv.Atoi(raw)
+	if err != nil || id <= 0 {
+		SendErrorResponse(w, http.StatusBadRequest, "Nomor pendaftaran tidak valid")
+		return
+	}
+
+	result, err := h.repo.FindByPublicNumber(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			SendErrorResponse(w, http.StatusNotFound, "Nomor pendaftaran tidak ditemukan")
+			return
+		}
+		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses permintaan (Internal Server Error)")
+		return
+	}
+	SendSuccessResponse(w, http.StatusOK, result, "")
+}
+
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.GetAll)
@@ -603,8 +731,10 @@ type IRepository interface {
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
 	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL string) (*Registration, error)
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
-	UpdatePaymentStatus(ctx context.Context, id int, status string, note string) error
-	UpdateStatus(ctx context.Context, id int, status string) error
+	UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error
+	UpdateStatus(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error
+	GetMyReceipt(ctx context.Context, userID int) (*PsbPayment, error)
 	AcceptToSantri(ctx context.Context, id int) (*SantriResult, error)
+	FindByPublicNumber(ctx context.Context, id int) (*PublicPSBResult, error)
 	Delete(ctx context.Context, id int) error
 }

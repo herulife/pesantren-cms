@@ -12,8 +12,11 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileText,
+  HelpCircle,
+  ListChecks,
   MapPin,
   MessageCircle,
+  Search,
   Sparkles,
 } from 'lucide-react';
 
@@ -214,6 +217,89 @@ export function PsbPageContent() {
                 </div>
                 <p className="mt-3 text-sm leading-7 text-slate-600">{pageContent.location.subtitle}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 bg-[#fbfcfa] py-16 md:py-20">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">Tahapan Pendaftaran</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Alur PSB Santri Baru</h2>
+            <p className="mt-4 text-base leading-8 text-slate-600">
+              Semua proses dipantau lewat Portal Wali Santri. Setiap perubahan status disertai pemberitahuan otomatis ke WhatsApp.
+            </p>
+          </div>
+
+          <ol className="grid gap-5 md:grid-cols-3">
+            {[
+              { step: '01', title: 'Buat Akun & Lengkapi Berkas', text: 'Registrasi akun portal, isi biodata santri & orang tua, lalu unggah KK, ijazah/raport, dan pas foto.' },
+              { step: '02', title: 'Bayar Biaya Pendaftaran', text: 'Kirim bukti transfer biaya pendaftaran melalui portal dan tunggu verifikasi panitia.' },
+              { step: '03', title: 'Review Berkas', text: 'Panitia memeriksa kelengkapan dan keabsahan biodata serta dokumen yang dikirim.' },
+              { step: '04', title: 'Tes Seleksi', text: 'Calon santri diundang mengikuti tes seleksi di jadwal dan lokasi yang diinformasikan lewat portal & WA.' },
+              { step: '05', title: 'Pengumuman', text: 'Hasil seleksi diumumkan lewat portal. Cek kelulusan dengan nomor pendaftaran di halaman Pengumuman.' },
+              { step: '06', title: 'Daftar Ulang', text: 'Wali menyelesaikan daftar ulang sebelum batas waktu agar status santri aktif terekam.' },
+            ].map((s) => (
+              <li key={s.step} className="group rounded-[1.6rem] border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+                <span className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sky-600 font-black text-white">
+                  {s.step}
+                </span>
+                <h3 className="flex items-center gap-2 text-lg font-black tracking-tight text-slate-900">
+                  <ListChecks size={18} className="text-sky-600" />
+                  {s.title}
+                </h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600">{s.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-12 grid gap-8 rounded-[2rem] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-sky-50/60 p-8 md:grid-cols-2 md:p-12">
+            <div className="flex flex-col justify-center">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">Pengumuman Kelulusan</p>
+              <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Cek hasil seleksi secara online</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                Punya nomor pendaftaran (contoh: PSB-0001)? Masukkan nomor tersebut di halaman Pengumuman untuk melihat status
+                kelulusan calon santri. Tidak perlu login, cukup nomor pendaftaran.
+              </p>
+            </div>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row md:justify-end">
+              <Link
+                href="/psb/status"
+                className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-7 py-4 text-sm font-black text-white shadow-lg shadow-sky-600/20 transition-all hover:-translate-y-0.5 hover:bg-sky-700"
+              >
+                <Search size={17} /> Cek Pengumuman
+              </Link>
+            </div>
+          </div>
+
+          <div className="mx-auto mt-16 max-w-3xl">
+            <div className="mb-8 text-center">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">Tanya Jawab</p>
+              <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">Pertanyaan yang Sering Diajukan</h2>
+            </div>
+            <div className="space-y-4">
+              {[
+                { q: 'Berapa biaya pendaftaran PSB?', a: 'Biaya pendaftaran saat ini bisa dilihat pada bagian jadwal & kuota di atas. Kirim bukti transfer melalui portal, lalu panitia akan memverifikasi.' },
+                { q: 'Bagaimana cara mengetahui jadwal tes seleksi?', a: 'Setelah berkas lolos review, status di portal berubah menjadi "Tes Seleksi". Jadwal, lokasi, dan catatan tes tampil di dashboard portal dan juga dikirim otomatis ke WhatsApp wali.' },
+                { q: 'Berapa lama proses seleksinya?', a: 'Setelah tes seleksi, hasil diumumkan melalui halaman Pengumuman dan portal. Wali akan menerima notifikasi WA begitu status diubah panitia.' },
+                { q: 'Bagaimana jika melewati batas waktu daftar ulang?', a: 'Segera hubungi panitia. Daftar ulang harus diselesaikan sebelum batas waktu yang diumumkan agar status santri aktif bisa dikonfirmasi.' },
+                { q: 'Apakah bukti transfer wajib diunggah?', a: 'Ya. Panitia hanya memverifikasi biaya pendaftaran setelah bukti transfer dikirim lewat portal agar pencatatan pembayaran rapi.' },
+              ].map((faq) => (
+                <details
+                  key={faq.q}
+                  className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm open:border-sky-200 open:bg-sky-50/40"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black tracking-tight text-slate-900">
+                    <span className="flex items-center gap-3">
+                      <HelpCircle size={18} className="shrink-0 text-sky-600" />
+                      {faq.q}
+                    </span>
+                    <span className="text-sky-600 transition-transform group-open:rotate-45">+</span>
+                  </summary>
+                  <p className="mt-4 pl-9 text-sm leading-7 text-slate-600">{faq.a}</p>
+                </details>
+              ))}
             </div>
           </div>
         </div>

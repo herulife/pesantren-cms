@@ -31,6 +31,12 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const [rejectionNote, setRejectionNote] = useState('');
   const [expectedAmount, setExpectedAmount] = useState(0);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [testDate, setTestDate] = useState('');
+  const [testLocation, setTestLocation] = useState('');
+  const [testScore, setTestScore] = useState<string>('');
+  const [testNote, setTestNote] = useState('');
+  const [reRegDeadline, setReRegDeadline] = useState('');
+  const [isSavingTest, setIsSavingTest] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -43,6 +49,11 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
         setPaymentNote(found?.payment_note || '');
         setRejectionNote(found?.rejection_note || '');
         setExpectedAmount(Number(publicSettings.psb_payment_amount || 0));
+        setTestDate(found?.test_date || '');
+        setTestLocation(found?.test_location || '');
+        setTestScore(found?.test_score != null ? String(found.test_score) : '');
+        setTestNote(found?.test_note || '');
+        setReRegDeadline(found?.re_registration_deadline || '');
         setIsLoading(false);
       };
 
@@ -56,8 +67,16 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     if (!registration) return;
 
     if (registration.status === newStatus || isUpdatingStatus) return;
-    if (newStatus === 'accepted' && registration.payment_status !== 'paid') {
+    if ((newStatus === 'accepted' || newStatus === 're_registration') && registration.payment_status !== 'paid') {
       showToast('error', 'Tandai pembayaran pendaftaran sebagai lunas terlebih dahulu.');
+      return;
+    }
+    if (newStatus === 'tes' && !testDate.trim()) {
+      showToast('error', 'Isi jadwal tes seleksi terlebih dahulu agar wali menerima info yang jelas.');
+      return;
+    }
+    if (newStatus === 're_registration' && !reRegDeadline.trim()) {
+      showToast('error', 'Isi batas waktu daftar ulang terlebih dahulu.');
       return;
     }
     if (newStatus === 'rejected' && !rejectionNote.trim()) {
@@ -67,9 +86,17 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
 
     setIsUpdatingStatus(true);
     try {
-      const res = await updatePSBStatus(registration.id, newStatus, newStatus === 'rejected' ? rejectionNote : undefined);
+      const res = await updatePSBStatus(registration.id, {
+        status: newStatus,
+        note: newStatus === 'rejected' ? rejectionNote : '',
+        test_date: testDate,
+        test_location: testLocation,
+        test_score: testScore.trim() ? Number(testScore) : undefined,
+        test_note: testNote,
+        re_registration_deadline: newStatus === 're_registration' ? reRegDeadline : undefined,
+      });
       if (res.success) {
-        showToast('success', `Status pendaftaran berhasil diubah ke ${newStatus.toUpperCase()}`);
+        showToast('success', `Status pendaftaran berhasil diubah ${registration.status.toUpperCase()} → ${newStatus.toUpperCase()}`);
         setRegistration({ ...registration, status: newStatus });
         return;
       }
@@ -77,6 +104,36 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       showToast('error', 'Gagal memperbarui status.');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleSaveTestInfo = async () => {
+    if (!registration || isSavingTest) return;
+    setIsSavingTest(true);
+    try {
+      const res = await updatePSBStatus(registration.id, {
+        status: registration.status,
+        test_date: testDate,
+        test_location: testLocation,
+        test_score: testScore.trim() ? Number(testScore) : undefined,
+        test_note: testNote,
+        re_registration_deadline: reRegDeadline,
+      });
+      if (res.success) {
+        showToast('success', 'Detail tes seleksi dan daftar ulang berhasil disimpan.');
+        setRegistration({
+          ...registration,
+          test_date: testDate,
+          test_location: testLocation,
+          test_score: testScore.trim() ? Number(testScore) : undefined,
+          test_note: testNote,
+          re_registration_deadline: reRegDeadline,
+        });
+        return;
+      }
+      showToast('error', res.message || 'Gagal menyimpan detail.');
+    } finally {
+      setIsSavingTest(false);
     }
   };
 
@@ -139,6 +196,8 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     switch (status.toLowerCase()) {
       case 'accepted': return 'bg-sky-100 text-sky-700 border-sky-200';
       case 'review': return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'tes': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+      case 're_registration': return 'bg-violet-100 text-violet-700 border-violet-200';
       case 'rejected': return 'bg-rose-100 text-rose-700 border-rose-200';
       default: return 'bg-amber-100 text-amber-700 border-amber-200';
     }
@@ -185,9 +244,13 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     ? 'Diterima'
     : registration.status === 'review'
       ? 'Direview'
-      : registration.status === 'rejected'
-        ? 'Ditolak'
-        : 'Menunggu';
+      : registration.status === 'tes'
+        ? 'Tes Seleksi'
+        : registration.status === 're_registration'
+          ? 'Daftar Ulang'
+          : registration.status === 'rejected'
+            ? 'Ditolak'
+            : 'Menunggu';
 
   const statusOptions = [
     {
@@ -195,7 +258,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       label: 'Menunggu',
       description: 'Data masuk dan belum mulai diperiksa.',
       icon: <Clock size={18} />,
-      selectedClass: 'border-amber-300 bg-amber-50 text-amber-700 shadow-[0_18px_44px_-32px_rgba(250,204,21,0.7)]',
+      selectedClass: 'border-amber-300 bg-amber-50 text-amber-700',
       radioClass: 'border-amber-500 text-amber-500',
     },
     {
@@ -203,24 +266,40 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       label: 'Review Berkas',
       description: 'Berkas sedang dicek oleh admin PSB.',
       icon: <Clock size={18} />,
-      selectedClass: 'border-sky-300 bg-sky-50 text-sky-700 shadow-[0_18px_44px_-32px_rgba(59,130,246,0.7)]',
+      selectedClass: 'border-sky-300 bg-sky-50 text-sky-700',
       radioClass: 'border-sky-500 text-sky-500',
+    },
+    {
+      value: 'tes',
+      label: 'Tes Seleksi',
+      description: 'Undang calon santri mengikuti tes seleksi.',
+      icon: <GraduationCap size={18} />,
+      selectedClass: 'border-indigo-300 bg-indigo-50 text-indigo-700',
+      radioClass: 'border-indigo-500 text-indigo-500',
+    },
+    {
+      value: 'accepted',
+      label: 'Diterima',
+      description: 'Calon santri dinyatakan lulus seleksi.',
+      icon: <CheckCircle size={18} />,
+      selectedClass: 'border-sky-300 bg-sky-50 text-sky-700',
+      radioClass: 'border-sky-500 text-sky-500',
+    },
+    {
+      value: 're_registration',
+      label: 'Daftar Ulang',
+      description: 'Undang wali melakukan daftar ulang resmi.',
+      icon: <CheckCircle size={18} />,
+      selectedClass: 'border-violet-300 bg-violet-50 text-violet-700',
+      radioClass: 'border-violet-500 text-violet-500',
     },
     {
       value: 'rejected',
       label: 'Ditolak',
       description: 'Pendaftaran belum dapat diterima.',
       icon: <XCircle size={18} />,
-      selectedClass: 'border-rose-300 bg-rose-50 text-rose-700 shadow-[0_18px_44px_-32px_rgba(244,63,94,0.7)]',
+      selectedClass: 'border-rose-300 bg-rose-50 text-rose-700',
       radioClass: 'border-rose-500 text-rose-500',
-    },
-    {
-      value: 'accepted',
-      label: 'Diterima',
-      description: 'Calon santri dinyatakan diterima.',
-      icon: <CheckCircle size={18} />,
-      selectedClass: 'border-sky-300 bg-sky-50 text-sky-700 shadow-[0_18px_44px_-32px_rgba(14,165,233,0.7)]',
-      radioClass: 'border-sky-500 text-sky-500',
     },
   ];
 
@@ -497,11 +576,15 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
 
-            <fieldset className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" disabled={isUpdatingStatus}>
+            <fieldset className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" disabled={isUpdatingStatus}>
               <legend className="sr-only">Pilih status pendaftaran santri</legend>
               {statusOptions.map((option) => {
                 const isSelected = registration.status === option.value;
-                const isOptionDisabled = isUpdatingStatus || (option.value === 'accepted' && paymentStatus !== 'paid');
+                const isOptionDisabled =
+                  isUpdatingStatus ||
+                  ((option.value === 'accepted' || option.value === 're_registration') && paymentStatus !== 'paid') ||
+                  (option.value === 'tes' && !testDate.trim()) ||
+                  (option.value === 're_registration' && !reRegDeadline.trim());
 
                 return (
                   <label
@@ -534,9 +617,19 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                         {option.label}
                       </span>
                       <span className="mt-2 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
-                      {option.value === 'accepted' && paymentStatus !== 'paid' ? (
+                      {(option.value === 'accepted' || option.value === 're_registration') && paymentStatus !== 'paid' ? (
                         <span className="mt-2 block text-[11px] font-black uppercase tracking-widest text-rose-500">
                           Lunasi pembayaran dulu
+                        </span>
+                      ) : null}
+                      {option.value === 'tes' && !testDate.trim() ? (
+                        <span className="mt-2 block text-[11px] font-black uppercase tracking-widest text-indigo-500">
+                          Isi jadwal tes dulu
+                        </span>
+                      ) : null}
+                      {option.value === 're_registration' && !reRegDeadline.trim() ? (
+                        <span className="mt-2 block text-[11px] font-black uppercase tracking-widest text-violet-500">
+                          Isi batas waktu dulu
                         </span>
                       ) : null}
                     </span>
@@ -549,6 +642,78 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                 );
               })}
             </fieldset>
+
+            <div className="mt-8 rounded-2xl border border-indigo-100 bg-white p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-700">Detail Tes Seleksi & Daftar Ulang</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                    Jadwal, lokasi, nilai, dan batas daftar ulang. Info ini tampil di portal wali & dikirim lewat WA saat status dipilih.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveTestInfo()}
+                  disabled={isSavingTest}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  {isSavingTest ? <Loader2 size={14} className="animate-spin" /> : null}
+                  Simpan Detail
+                </button>
+              </div>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Jadwal Tes</label>
+                  <input
+                    type="datetime-local"
+                    value={testDate}
+                    onChange={(event) => setTestDate(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Lokasi Tes</label>
+                  <input
+                    type="text"
+                    value={testLocation}
+                    onChange={(event) => setTestLocation(event.target.value)}
+                    placeholder="Contoh: Aula Pesantren Al-Maa"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Nilai Tes (0-100)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={testScore}
+                    onChange={(event) => setTestScore(event.target.value)}
+                    placeholder="Diisi setelah tes berjalan"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Batas Daftar Ulang</label>
+                  <input
+                    type="datetime-local"
+                    value={reRegDeadline}
+                    onChange={(event) => setReRegDeadline(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Catatan Tes</label>
+                  <textarea
+                    rows={2}
+                    value={testNote}
+                    onChange={(event) => setTestNote(event.target.value)}
+                    placeholder="Contoh: Bawa alat tulis & dokumen asli. Hubungi panitia jika berhalangan."
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
+                  />
+                </div>
+              </div>
+            </div>
 
             <p className="mt-4 text-xs font-semibold leading-6 text-slate-500">
               Pilih salah satu status. Perubahan akan tersimpan otomatis setelah pilihan diganti.
@@ -578,13 +743,13 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
               ) : null}
             </div>
 
-            {registration.status === 'accepted' && paymentStatus === 'paid' ? (
+            {registration.status === 're_registration' && paymentStatus === 'paid' ? (
               <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">Langkah Berikutnya</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">Langkah Akhir</p>
                     <p className="mt-1 text-sm font-semibold leading-6 text-sky-900">
-                      Pendaftar sudah diterima dan lunas. Pindahkan ke data santri untuk mengelola SPP & iuran.
+                      Daftar ulang selesai. Pindahkan pendaftar ke data santri untuk mengelola presensi, SPP & iuran.
                     </p>
                   </div>
                   <button

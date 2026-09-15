@@ -86,8 +86,22 @@ export default function PSBAdminPage() {
     switch (status.toLowerCase()) {
       case 'accepted': return 'bg-sky-100 text-sky-700 border-sky-200';
       case 'review': return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'tes': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+      case 're_registration': return 'bg-violet-100 text-violet-700 border-violet-200';
       case 'rejected': return 'bg-rose-100 text-rose-700 border-rose-200';
       default: return 'bg-amber-100 text-amber-700 border-amber-200';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending': return 'Menunggu';
+      case 'review': return 'Direview';
+      case 'tes': return 'Tes Seleksi';
+      case 'accepted': return 'Diterima';
+      case 're_registration': return 'Daftar Ulang';
+      case 'rejected': return 'Ditolak';
+      default: return 'Menunggu';
     }
   };
 
@@ -116,13 +130,15 @@ export default function PSBAdminPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-6 mb-10">
          {[
          { label: 'Total Pendaftar', count: registrations.length, color: 'bg-sky-500' },
-           { label: 'Menunggu', count: registrations.filter(r => r.status === 'pending').length, color: 'bg-amber-500' },
-           { label: 'Direview', count: registrations.filter(r => r.status === 'review').length, color: 'bg-sky-500' },
-           { label: 'Diterima', count: registrations.filter(r => r.status === 'accepted').length, color: 'bg-sky-500' },
-           { label: 'Ditolak', count: registrations.filter(r => r.status === 'rejected').length, color: 'bg-rose-500' },
+          { label: 'Menunggu', count: registrations.filter(r => r.status === 'pending').length, color: 'bg-amber-500' },
+          { label: 'Direview', count: registrations.filter(r => r.status === 'review').length, color: 'bg-sky-500' },
+          { label: 'Tes Seleksi', count: registrations.filter(r => r.status === 'tes').length, color: 'bg-indigo-500' },
+          { label: 'Diterima', count: registrations.filter(r => r.status === 'accepted').length, color: 'bg-sky-500' },
+          { label: 'Daftar Ulang', count: registrations.filter(r => r.status === 're_registration').length, color: 'bg-violet-500' },
+          { label: 'Ditolak', count: registrations.filter(r => r.status === 'rejected').length, color: 'bg-rose-500' },
          ].map((stat, i) => (
            <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{stat.label}</div>
@@ -225,7 +241,7 @@ export default function PSBAdminPage() {
                            </td>
                            <td className="px-8 py-6 block md:table-cell">
                               <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(reg.status)}`}>
-                                 {reg.status}
+                                 {getStatusLabel(reg.status)}
                               </span>
                            </td>
                            <td className="px-8 py-6 text-right block md:table-cell">

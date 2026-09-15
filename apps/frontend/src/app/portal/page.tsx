@@ -31,12 +31,26 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
     actionLabel: 'Lihat Dokumen',
     actionHref: '/portal/documents',
   },
+  tes: {
+    title: 'Diundang Tes Seleksi',
+    description: 'Alhamdulillah, berkas kamu lolos pemeriksaan. Perhatikan jadwal dan lokasi tes seleksi di bawah.',
+    accent: 'from-indigo-600 to-sky-600',
+    actionLabel: 'Hubungi Panitia',
+    actionHref: '#tes-info',
+  },
   accepted: {
-    title: 'Pendaftaran Diterima',
-    description: 'Selamat, berkas kamu sudah dinyatakan diterima. Ikuti arahan panitia untuk langkah berikutnya.',
+    title: 'Diterima',
+    description: 'Selamat! Kamu dinyatakan diterima. Lanjutkan ke masa daftar ulang sesuai arahan panitia.',
     accent: 'from-sky-600 to-cyan-600',
     actionLabel: 'Buka Raport',
     actionHref: '/portal/raport',
+  },
+  re_registration: {
+    title: 'Masa Daftar Ulang',
+    description: 'Saatnya melakukan daftar ulang. Selesaikan sebelum batas waktu agar status santri kamu terekam.',
+    accent: 'from-sky-700 to-indigo-600',
+    actionLabel: 'Info Daftar Ulang',
+    actionHref: '#daftar-ulang-info',
   },
   rejected: {
     title: 'Perlu Perbaikan Berkas',
@@ -189,6 +203,48 @@ export default function PortalDashboard() {
       },
     ];
 
+    if (status === 'tes') {
+      const tesInfo = [registration?.test_date && `Jadwal: ${registration.test_date}`, registration?.test_location && `Lokasi: ${registration.test_location}`]
+        .filter(Boolean)
+        .join(' • ');
+      checklist.push({
+        href: '/portal',
+        title: 'Tes Seleksi',
+        description: tesInfo || 'Perhatikan jadwal dan lokasi tes seleksi dari panitia.',
+        completed: false,
+        icon: <GraduationCap size={24} />,
+      });
+      checklist.push({
+        href: '/portal',
+        title: 'Tunggu Pengumuman',
+        description: 'Hasil tes diumumkan setelah seleksi selesai. Pantau pengumuman di halaman khusus.',
+        completed: false,
+        icon: <FileText size={24} />,
+      });
+    }
+
+    if (status === 'accepted' || status === 're_registration') {
+      const reRegDone = status === 're_registration';
+      checklist.push({
+        href: '/portal',
+        title: 'Pengumuman & Daftar Ulang',
+        description: reRegDone
+          ? 'Kamu sedang dalam masa daftar ulang. Selesaikan sebelum batas waktu.'
+          : 'Kamu dinyatakan diterima. Tunggu undangan daftar ulang dari panitia.',
+        completed: reRegDone,
+        icon: <FileText size={24} />,
+      });
+      if (reRegDone && registration?.re_registration_deadline) {
+        checklist.push({
+          href: '/portal',
+          title: 'Selesaikan Daftar Ulang',
+          description: `Batas waktu daftar ulang: ${registration.re_registration_deadline}. Hubungi panitia jika ada kendala.`,
+          completed: false,
+          icon: <BookOpen size={24} />,
+        });
+      }
+    }
+
     if (status === 'accepted') {
       checklist.push({
         href: '/portal/exams',
@@ -336,7 +392,7 @@ export default function PortalDashboard() {
             </div>
 
             <div className="mt-6 grid gap-2 sm:grid-cols-2">
-              {portalState.checklist.slice(0, 4).map((item) => {
+              {portalState.checklist.slice(0, 6).map((item) => {
                 const isAttentionPaymentStep = item.title === 'Bayar Pendaftaran' && portalState.paymentNeedsAttention;
                 return (
                   <div
@@ -411,6 +467,81 @@ export default function PortalDashboard() {
             {portalState.actionLabel}
           </Link>
         </div>
+
+        {status === 'tes' ? (
+          <div id="tes-info" className="md:col-span-3 grid gap-6 md:grid-cols-2">
+            <div className="rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-6 shadow-sm">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+                <GraduationCap size={24} />
+              </div>
+              <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900">Tes Seleksi</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Berikut jadwal dan lokasi tes seleksi kamu. Datang tepat waktu dan bawa dokumen asli untuk verifikasi panitia.
+              </p>
+              <dl className="mt-5 space-y-3">
+                <div className="rounded-2xl bg-white px-4 py-3">
+                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Tanggal</dt>
+                  <dd className="mt-1 text-sm font-black text-slate-800">{registration?.test_date ? formatDateLabel(registration.test_date) : 'Menunggu jadwal'}</dd>
+                </div>
+                <div className="rounded-2xl bg-white px-4 py-3">
+                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Lokasi</dt>
+                  <dd className="mt-1 text-sm font-black text-slate-800">{registration?.test_location || 'Menunggu info lokasi'}</dd>
+                </div>
+              </dl>
+              {registration?.test_note?.trim() ? (
+                <p className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-xs font-semibold leading-5 text-indigo-800">
+                  {registration.test_note.trim()}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Yang perlu disiapkan</p>
+              <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                {['Kartu identitas / akta kelahiran', 'Peralatan tulis', 'Dokumen asli untuk verifikasi data', 'Datang 30 menit sebelum jadwal'].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-indigo-500" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+
+        {status === 're_registration' ? (
+          <div id="daftar-ulang-info" className="md:col-span-3 grid gap-6 md:grid-cols-2">
+            <div className="rounded-[2rem] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-6 shadow-sm">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
+                <BookOpen size={24} />
+              </div>
+              <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900">Masa Daftar Ulang</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Selamat! Kamu dinyatakan diterima sebagai santri baru. Selesaikan daftar ulang sebelum batas waktu berikut.
+              </p>
+              <dl className="mt-5 space-y-3">
+                <div className="rounded-2xl bg-white px-4 py-3">
+                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">Batas Waktu</dt>
+                  <dd className="mt-1 text-sm font-black text-slate-800">
+                    {registration?.re_registration_deadline ? formatDateLabel(registration.re_registration_deadline) : 'Menunggu info panitia'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Perlu diperhatikan</p>
+              <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                {['Daftar ulang adalah proses penetapan status santri aktif', 'Jika melewati batas waktu, status bisa dibatalkan oleh panitia', 'Hubungi panitia bila ada kendala atau pertanyaan'].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <AlertCircle size={17} className="mt-0.5 shrink-0 text-sky-500" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
 
         {hasStudentAccess ? (
           <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-sky-50/40 p-5 shadow-sm md:p-6">

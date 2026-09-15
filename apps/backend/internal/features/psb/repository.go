@@ -41,6 +41,11 @@ type Registration struct {
 	PaymentNote     string    `json:"payment_note"`
 	Status          string    `json:"status"`
 	RejectionNote   string    `json:"rejection_note"`
+	TestDate        string    `json:"test_date"`
+	TestLocation    string    `json:"test_location"`
+	TestScore       int       `json:"test_score"`
+	TestNote        string    `json:"test_note"`
+	ReRegDeadline   string    `json:"re_registration_deadline"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
@@ -101,6 +106,11 @@ const registrationSelectColumns = `
 	COALESCE(payment_note, ''),
 	COALESCE(status, 'pending'),
 	COALESCE(rejection_note, ''),
+	COALESCE(test_date, ''),
+	COALESCE(test_location, ''),
+	COALESCE(test_score, 0),
+	COALESCE(test_note, ''),
+	COALESCE(re_registration_deadline, ''),
 	COALESCE(created_at, CURRENT_TIMESTAMP),
 	COALESCE(updated_at, COALESCE(created_at, CURRENT_TIMESTAMP))
 `
@@ -142,6 +152,11 @@ func scanRegistration(scanner interface {
 		&reg.PaymentNote,
 		&reg.Status,
 		&reg.RejectionNote,
+		&reg.TestDate,
+		&reg.TestLocation,
+		&reg.TestScore,
+		&reg.TestNote,
+		&reg.ReRegDeadline,
 		&createdAt,
 		&updatedAt,
 	)
@@ -204,6 +219,35 @@ func (r *Repository) FindByID(ctx context.Context, id int) (*Registration, error
 func (r *Repository) FindByUserID(ctx context.Context, userID int) (*Registration, error) {
 	row := r.db.QueryRowContext(ctx, "SELECT "+registrationSelectColumns+" FROM registrations WHERE user_id = ? LIMIT 1", userID)
 	return scanRegistration(row)
+}
+
+// FindByPublicNumber mengembalikan data minimal untuk pengumuman publik
+// (tanpa NIK/nomor HP/dokumen). Nomor pendaftaran = id registrasi.
+func (r *Repository) FindByPublicNumber(ctx context.Context, id int) (*PublicPSBResult, error) {
+	var res PublicPSBResult
+	var status string
+	var name string
+	var program string
+	var testDate string
+	var rejectionNote string
+	err := r.db.QueryRowContext(ctx, `
+		SELECT id, COALESCE(full_name, ''), COALESCE(status, 'pending'),
+		       COALESCE(program_choice, ''), COALESCE(test_date, ''), COALESCE(rejection_note, '')
+		FROM registrations WHERE id = ?`, id).Scan(&id, &name, &status, &program, &testDate, &rejectionNote)
+	if err != nil {
+		return nil, err
+	}
+	res.ID = id
+	res.No = fmt.Sprintf("PSB-%04d", id)
+	res.FullName = name
+	res.Status = status
+	res.StatusLabel = psbStatusLabel(status)
+	res.ProgramChoice = program
+	res.TestDate = testDate
+	if status == "rejected" && strings.TrimSpace(rejectionNote) != "" {
+		res.RejectionNote = rejectionNote
+	}
+	return &res, nil
 }
 
 func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error) {
@@ -349,13 +393,16 @@ func psbTransitionAllowed(cur, next string, table map[string][]string) bool {
 	return false
 }
 
-// psbStatusTransitions: accepted terminal kecuali pencabutan eksplisit.
+// psbStatusTransitions: accepted/re_registration boleh dikembalikan ke review
+// bila perlu; santri (acceptToSantri) tidak represent status registrasi lagi.
 var psbStatusTransitions = map[string][]string{
-	"":         {"pending", "review", "accepted", "rejected"},
-	"pending":  {"pending", "review", "accepted", "rejected"},
-	"review":   {"pending", "review", "accepted", "rejected"},
-	"rejected": {"pending", "review", "accepted", "rejected"},
-	"accepted": {"accepted", "rejected"},
+	"":               {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"pending":        {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"review":         {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"tes":            {"tes", "review", "accepted", "re_registration", "rejected"},
+	"rejected":       {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"accepted":       {"accepted", "re_registration", "review", "rejected"},
+	"re_registration": {"re_registration", "accepted", "rejected"},
 }
 
 // UpdatePaymentStatus mengubah status pembayaran secara atomik (BEGIN IMMEDIATE
@@ -463,15 +510,25 @@ func (r *Repository) GetMyReceipt(ctx context.Context, userID int) (*PsbPayment,
 	return &p, nil
 }
 
+// StatusUpdateOptions membawa data pelengkap saat admin mengubah status
+// registrasi: jadwal/lokasi/nilai tes, batas daftar ulang, dst.
+type StatusUpdateOptions struct {
+	TestDate          string
+	TestLocation      string
+	TestScore         *int
+	TestNote          string
+	ReRegDeadline     string
+}
+
 // UpdateStatus mengubah status registrasi secara atomik (conditional UPDATE
 // terhadap status saat ini sehingga dua admin tidak bisa menimpa satu sama lain).
-func (r *Repository) UpdateStatus(ctx context.Context, id int, status string, note string) error {
+func (r *Repository) UpdateStatus(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error {
 	return finance.RetryOnBusy(func() error {
-		return r.updateStatusTx(ctx, id, status, note)
+		return r.updateStatusTx(ctx, id, status, note, opts)
 	}, 10)
 }
 
-func (r *Repository) updateStatusTx(ctx context.Context, id int, status string, note string) error {
+func (r *Repository) updateStatusTx(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error {
 	tx, err := finance.BeginTx(r.db)
 	if err != nil {
 		return err
@@ -491,13 +548,38 @@ func (r *Repository) updateStatusTx(ctx context.Context, id int, status string, 
 		return ErrInvalidTransition
 	}
 
+	v := StatusUpdateOptions{}
+	if opts != nil {
+		v = *opts
+	}
+
+	scoreFlag := 0
+	scoreVal := 0
+	if v.TestScore != nil {
+		scoreFlag = 1
+		scoreVal = *v.TestScore
+	}
+
 	// rejection_note diisi hanya saat menolak; status lain membiarkannya utuh.
+	// Field tes & daftar ulang hanya ditimpa jika diisi (biarkan nilai lama utuh).
 	res, err := tx.ExecContext(ctx, `
 		UPDATE registrations
 		SET status = ?, updated_at = CURRENT_TIMESTAMP,
-		    rejection_note = CASE WHEN ? = 'rejected' THEN ? ELSE rejection_note END
+		    rejection_note = CASE WHEN ? = 'rejected' THEN ? ELSE rejection_note END,
+		    test_date = CASE WHEN ? <> '' THEN ? ELSE test_date END,
+		    test_location = CASE WHEN ? <> '' THEN ? ELSE test_location END,
+		    test_note = CASE WHEN ? <> '' THEN ? ELSE test_note END,
+		    re_registration_deadline = CASE WHEN ? <> '' THEN ? ELSE re_registration_deadline END,
+		    test_score = CASE WHEN ? = 1 THEN ? ELSE test_score END
 		WHERE id = ? AND COALESCE(status,'') = ?
-	`, status, status, note, id, cur)
+	`,
+		status, status, note,
+		v.TestDate, v.TestDate,
+		v.TestLocation, v.TestLocation,
+		v.TestNote, v.TestNote,
+		v.ReRegDeadline, v.ReRegDeadline,
+		scoreFlag, scoreVal,
+		id, cur)
 	if err != nil {
 		return err
 	}
@@ -518,7 +600,7 @@ func (r *Repository) Delete(ctx context.Context, id int) error {
 }
 
 var (
-	ErrNotAccepted     = errors.New("pendaftar harus berstatus accepted sebelum dipindahkan")
+	ErrNotAccepted     = errors.New("pendaftar harus berstatus diterima/daftar ulang sebelum dipindahkan")
 	ErrPaymentNotLunas = errors.New("pembayaran pendaftaran belum lunas")
 	ErrAlreadySantri   = errors.New("pendaftar ini sudah menjadi santri")
 )
@@ -553,7 +635,8 @@ func (r *Repository) AcceptToSantri(ctx context.Context, id int) (*SantriResult,
 		if strings.ToLower(strings.TrimSpace(reg.PaymentStatus)) != "paid" {
 			return ErrPaymentNotLunas
 		}
-		if strings.ToLower(strings.TrimSpace(reg.Status)) != "accepted" {
+		st := strings.ToLower(strings.TrimSpace(reg.Status))
+		if st != "accepted" && st != "re_registration" {
 			return ErrNotAccepted
 		}
 		if reg.UserID > 0 {
