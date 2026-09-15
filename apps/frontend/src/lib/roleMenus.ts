@@ -16,8 +16,6 @@ export interface RoleMenuDef {
 export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Dashboard', label: 'Dashboard Utama', href: '/admin', docRef: 'dashboard' },
   { category: 'Data Master', label: 'Data Pegawai', href: '/admin/employees', roles: ['superadmin', 'admin'], docRef: 'teachers' },
-  { category: 'Data Master', label: 'Data Santri', href: '/admin/kesantrian', roles: ['superadmin', 'panitia_psb'], docRef: 'academics' },
-  { category: 'Data Master', label: 'Data Santri (PSB)', href: '/admin/psb', roles: ['panitia_psb'], docRef: 'psb' },
   { category: 'Data Master', label: 'Staf Pengajar', href: '/admin/teachers', roles: ['tim_media'], docRef: 'teachers' },
   { category: 'Transaksi', label: 'Pembayaran SPP', href: '/admin/payments', roles: ['bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
@@ -33,6 +31,8 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Layanan', label: 'Fasilitas Publik', href: '/admin/facilities', roles: ['tim_media'], docRef: 'facilities' },
   { category: 'Layanan', label: 'Pesan & Inbox', href: '/admin/messages', roles: ['panitia_psb'], docRef: 'messages' },
   { category: 'Layanan', label: 'Notifikasi WA', href: '/admin/notifications', roles: ['bendahara'], docRef: 'notifications' },
+  { category: 'PSB', label: 'Data Santri (PSB)', href: '/admin/psb', roles: ['panitia_psb'], docRef: 'psb' },
+  { category: 'PSB', label: 'Data Santri Aktif', href: '/admin/kesantrian', roles: ['superadmin', 'panitia_psb'], docRef: 'academics' },
   { category: 'PSB', label: 'Pengaturan PSB', href: '/admin/psb/pengaturan', roles: ['superadmin'], docRef: 'psb' },
   { category: 'Sistem', label: 'Manajemen Pengguna', href: '/admin/users', roles: ['superadmin'], docRef: 'users' },
   { category: 'Sistem', label: 'Log Sistem', href: '/admin/logs', roles: ['superadmin'], docRef: 'logs' },
