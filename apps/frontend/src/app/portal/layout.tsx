@@ -118,13 +118,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       docRef: 'documents',
     },
     {
-      href: '/portal/payment-spp',
-      label: 'Bayar SPP & Iuran',
-      description: 'Lihat tagihan, kirim bukti transfer, unduh kwitansi.',
-      icon: <CreditCard size={20} />,
-      docRef: 'dashboard',
-    },
-    {
       href: '/portal/payment',
       label: 'Bayar Pendaftaran',
       description: 'Upload bukti transfer biaya pendaftaran.',
@@ -161,6 +154,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       description: 'Akses ujian online dan tes akademik.',
       icon: <QrCode size={20} />,
       docRef: 'academics',
+    },
+    {
+      href: '/portal/payment-spp',
+      label: 'Bayar SPP & Iuran',
+      description: 'Lihat tagihan, kirim bukti transfer, unduh kwitansi.',
+      icon: <CreditCard size={20} />,
+      docRef: 'dashboard',
     },
   ];
 
