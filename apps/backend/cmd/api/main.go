@@ -34,6 +34,7 @@ import (
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
 	"almaparung-api/internal/features/wallet"
+	"almaparung-api/internal/features/notes"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
@@ -182,6 +183,9 @@ func main() {
 	invoiceRepo := invoices.NewRepository(database.DB)
 	invoiceHandler := invoices.NewHandler(invoiceRepo)
 
+	noteRepo := notes.NewRepository(database.DB)
+	noteHandler := notes.NewHandler(noteRepo)
+
 	loginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	googleLoginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	registerLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
@@ -190,6 +194,7 @@ func main() {
 	// (portal butuh upload bukti), dibatasi 30/jam. Webhook Telegram 120/menit.
 	uploadLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 	webhookLimiter := appmiddleware.NewRateLimiter(120, time.Minute)
+	noteLimiter := appmiddleware.NewRateLimiter(60, time.Hour)
 	otpRequestLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
 	otpVerifyLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 
@@ -223,6 +228,13 @@ func main() {
 
 		// Public Contact Message
 		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
+
+		// Public Notes (pastebin tanpa login). GET publik; CREATE rate-limited per IP.
+		r.Route("/notes", func(r chi.Router) {
+			r.With(noteLimiter.Middleware).Post("/", noteHandler.Create)
+			r.Get("/{urlID}", noteHandler.Get)
+			r.Delete("/{urlID}", noteHandler.Delete)
+		})
 
 		// Public PSB Pengumuman: cek kelulusan dengan nomor pendaftaran (tanpa login).
 		r.Get("/psb/pengumuman", psbHandler.GetPengumuman)
