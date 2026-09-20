@@ -768,6 +768,17 @@ func createTables() {
 	CREATE INDEX IF NOT EXISTS idx_santri_class ON santri(class);
 	CREATE INDEX IF NOT EXISTS idx_santri_status ON santri(status);
 	CREATE INDEX IF NOT EXISTS idx_santri_name ON santri(name);
+
+	CREATE TABLE IF NOT EXISTS notes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		url_id TEXT NOT NULL,
+		title TEXT NOT NULL DEFAULT '',
+		content TEXT NOT NULL,
+		delete_token TEXT NOT NULL DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		expires_at DATETIME
+	);
+
 	`
 
 	_, err := DB.Exec(query)
@@ -1057,6 +1068,14 @@ func runMigrations() {
 	{
 		name: "exam_answers_unique",
 		sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_answers_unique ON exam_answers(session_id, question_id);`,
+	},
+	{
+		name: "notes_url_id_index",
+		sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_url_id ON notes(url_id);`,
+	},
+	{
+		name: "notes_expires_at_index",
+		sql:  `CREATE INDEX IF NOT EXISTS idx_notes_expires_at ON notes(expires_at);`,
 	},
 	}
 
