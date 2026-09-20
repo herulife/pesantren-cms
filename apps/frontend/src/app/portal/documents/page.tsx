@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, FileText, RefreshCw, ShieldCheck, 
 import { useToast } from '@/components/Toast';
 import { getMyPSBRegistration, saveMyPSBDocuments, uploadImage } from '@/lib/api';
 
-type DocumentKey = 'kk_url' | 'ijazah_url' | 'pasfoto_url';
+type DocumentKey = 'kk_url' | 'ijazah_url' | 'pasfoto_url' | 'yatim_doc_url' | 'sktm_doc_url';
 type DocumentStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function DocumentsPage() {
@@ -14,20 +14,27 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState<DocumentKey | ''>('');
   const [isBiodataReady, setIsBiodataReady] = useState(false);
+  const [category, setCategory] = useState('reguler');
   const [documents, setDocuments] = useState<Record<DocumentKey, string>>({
     kk_url: '',
     ijazah_url: '',
     pasfoto_url: '',
+    yatim_doc_url: '',
+    sktm_doc_url: '',
   });
   const [documentStatus, setDocumentStatus] = useState<Record<DocumentKey, DocumentStatus>>({
     kk_url: 'idle',
     ijazah_url: 'idle',
     pasfoto_url: 'idle',
+    yatim_doc_url: 'idle',
+    sktm_doc_url: 'idle',
   });
   const [documentNotes, setDocumentNotes] = useState<Record<DocumentKey, string>>({
     kk_url: '',
     ijazah_url: '',
     pasfoto_url: '',
+    yatim_doc_url: '',
+    sktm_doc_url: '',
   });
 
   useEffect(() => {
@@ -53,20 +60,27 @@ export default function DocumentsPage() {
         ];
 
         setIsBiodataReady(requiredBiodataFields.every((value) => Boolean(value && String(value).trim())));
+        setCategory(data?.category || 'reguler');
         setDocuments({
           kk_url: data?.kk_url || '',
           ijazah_url: data?.ijazah_url || '',
           pasfoto_url: data?.pasfoto_url || '',
+          yatim_doc_url: data?.yatim_doc_url || '',
+          sktm_doc_url: data?.sktm_doc_url || '',
         });
         setDocumentStatus({
           kk_url: data?.kk_url ? 'success' : 'idle',
           ijazah_url: data?.ijazah_url ? 'success' : 'idle',
           pasfoto_url: data?.pasfoto_url ? 'success' : 'idle',
+          yatim_doc_url: data?.yatim_doc_url ? 'success' : 'idle',
+          sktm_doc_url: data?.sktm_doc_url ? 'success' : 'idle',
         });
         setDocumentNotes({
           kk_url: data?.kk_url ? 'Dokumen sudah tersimpan di server.' : '',
           ijazah_url: data?.ijazah_url ? 'Dokumen sudah tersimpan di server.' : '',
           pasfoto_url: data?.pasfoto_url ? 'Dokumen sudah tersimpan di server.' : '',
+          yatim_doc_url: data?.yatim_doc_url ? 'Dokumen sudah tersimpan di server.' : '',
+          sktm_doc_url: data?.sktm_doc_url ? 'Dokumen sudah tersimpan di server.' : '',
         });
       } finally {
         setIsLoading(false);
@@ -113,11 +127,18 @@ export default function DocumentsPage() {
     }
   };
 
-  const docItems = [
+  const baseDocs: Array<{ id: DocumentKey; title: string; desc: string }> = [
     { id: 'kk_url', title: 'Kartu Keluarga (KK)', desc: 'Scan asli berwarna, ukuran maksimal 2MB (JPG/PNG/PDF).' },
     { id: 'ijazah_url', title: 'Ijazah / Raport Terakhir', desc: 'Scan asli ijazah, SKL, atau raport terbaru.' },
     { id: 'pasfoto_url', title: 'Pas Foto 3x4', desc: 'Latar belakang merah, ukuran maksimal 1MB.' },
-  ] as const;
+  ];
+  const categoryDocs: Array<{ id: DocumentKey; title: string; desc: string }> =
+    category === 'yatim'
+      ? [{ id: 'yatim_doc_url', title: 'Surat Keterangan Kematian', desc: 'Surat keterangan kematian orang tua (JPG/PNG/PDF). Wajib untuk kategori yatim.' }]
+      : category === 'dhuafa'
+        ? [{ id: 'sktm_doc_url', title: 'SKTM', desc: 'Surat Keterangan Tidak Mampu dari kelurahan (JPG/PNG/PDF). Wajib untuk kategori dhuafa.' }]
+        : [];
+  const docItems = [...baseDocs, ...categoryDocs];
   const uploadedCount = docItems.filter((doc) => Boolean(documents[doc.id])).length;
   const allDocumentsUploaded = uploadedCount === docItems.length;
 

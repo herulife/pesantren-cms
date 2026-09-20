@@ -227,7 +227,7 @@ export default function SantriImportPage() {
                 </ul>
               </div>
             ) : rows.length > 0 ? (
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <div className="ap-table-wrap overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">

@@ -20,7 +20,7 @@ import {
 } from '@/lib/api';
 import { exportERaportPDF } from '@/lib/export';
 import {
-	BookOpen, CheckCircle2, ClipboardList, Download, GraduationCap, HeartHandshake, Layers, Printer, RefreshCw, Save, Scale, Search,
+	BookOpen, CheckCircle2, ClipboardList, Download, GraduationCap, HeartHandshake, Info, Layers, Printer, RefreshCw, Save, Scale, Search, X,
 } from 'lucide-react';
 
 type TabKey = 'rekapitulasi' | 'maps' | 'kesantrian';
@@ -66,6 +66,14 @@ export default function ERaportPage() {
 	const [kesValues, setKesValues] = useState<Record<string, string>>({});
 	const [kesSaved, setKesSaved] = useState<Record<string, boolean>>({});
 	const [subProjects, setSubProjects] = useState<{ id: number; name: string; weight: number }[]>([]);
+	const [showFormula, setShowFormula] = useState(false);
+
+	useEffect(() => {
+		if (!showFormula) return;
+		const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowFormula(false); };
+		document.addEventListener('keydown', onKey);
+		return () => document.removeEventListener('keydown', onKey);
+	}, [showFormula]);
 
 	const loadStudents = useCallback(async () => {
 		const s = await getAcademicStudents();
@@ -206,8 +214,18 @@ export default function ERaportPage() {
 		<div className="space-y-6">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="flex items-center gap-2 text-2xl font-black text-slate-900"><GraduationCap size={24} className="text-sky-600" /> E-Raport Santri</h1>
-					<p className="mt-1 text-sm text-slate-500">Nilai Akhir = Mapel×50% + Project×25% + Kesantrian×25% (bobot dapat diatur, total 100%).</p>
+					<h1 className="flex items-center gap-2 text-2xl font-black text-slate-900"><GraduationCap size={24} className="text-sky-600" /> E-Raport Santri
+						<button
+							type="button"
+							onClick={() => setShowFormula(true)}
+							aria-label="Lihat cara hitung Nilai Akhir"
+							aria-haspopup="dialog"
+							title="Cara hitung Nilai Akhir"
+							className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 text-sky-600 transition hover:bg-sky-100 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+						>
+							<Info size={17} />
+						</button>
+					</h1>
 				</div>
 				<div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5">
 					<button onClick={() => setTab('rekapitulasi')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'rekapitulasi' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Rekap</button>
@@ -301,7 +319,7 @@ export default function ERaportPage() {
 									<div className="flex items-center justify-between">
 										<h3 className="flex items-center gap-2 text-sm font-black text-slate-900"><BookOpen size={16} className="text-sky-600" /> Rincian Mata Pelajaran</h3>
 									</div>
-									<div className="mt-3 overflow-x-auto">
+									<div className="ap-table-wrap mt-3 overflow-x-auto">
 										<table className="w-full text-left text-sm">
 											<thead>
 												<tr className="border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
@@ -439,6 +457,66 @@ export default function ERaportPage() {
 								<button onClick={() => handleKesantrianSave(a.key)} className="rounded-xl bg-sky-600 px-4 py-2 text-xs font-bold text-white hover:bg-sky-700">Simpan</button>
 							</div>
 						))}
+					</div>
+				</div>
+			)}
+			{showFormula && (
+				<div
+					className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 backdrop-blur-sm sm:items-center sm:p-6"
+					onClick={() => setShowFormula(false)}
+					role="presentation"
+				>
+					<div
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="admin-formula-title"
+						onClick={(e) => e.stopPropagation()}
+						className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"
+					>
+						<div className="flex items-start justify-between gap-3">
+							<div>
+								<p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-600">Cara Hitung</p>
+								<h3 id="admin-formula-title" className="mt-1 font-outfit text-xl font-black tracking-tight text-slate-900">
+									Nilai Akhir E-Raport
+								</h3>
+							</div>
+							<button
+								type="button"
+								onClick={() => setShowFormula(false)}
+								aria-label="Tutup penjelasan"
+								className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+							>
+								<X size={18} />
+							</button>
+						</div>
+						<p className="mt-3 text-sm leading-6 text-slate-600">
+							Nilai Akhir adalah <strong className="text-slate-900">rata-rata berbobot</strong> dari 3 komponen:
+						</p>
+						<ul className="mt-4 space-y-3">
+							{[
+								{ name: 'Nilai Mapel × 50%', desc: 'Rata-rata semua mapel. Bobot tiap mapel diatur di tab Bobot Mapel (total wajib 100%).', tint: 'bg-sky-50 text-sky-700' },
+								{ name: 'Nilai Project × 25%', desc: 'Rata-rata sub-project. Bobot tiap sub-project diatur di halaman Project (total wajib 100%).', tint: 'bg-emerald-50 text-emerald-700' },
+								{ name: 'Nilai Kesantrian × 25%', desc: 'Rata-rata 4 aspek (disiplin, ibadah, kemandirian, adab) skala 1-4.', tint: 'bg-amber-50 text-amber-700' },
+							].map((row) => (
+								<li key={row.name} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5">
+									<span className={`inline-block rounded-full px-2.5 py-1 text-xs font-black ${row.tint}`}>{row.name}</span>
+									<span className="mt-1.5 block text-xs leading-5 text-slate-500">{row.desc}</span>
+								</li>
+							))}
+						</ul>
+						<div className="mt-4 rounded-2xl bg-sky-50 p-4">
+							<p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sky-600">Contoh hitung</p>
+							<p className="mt-2 text-sm font-semibold leading-6 text-slate-800">
+								(80 × 50%) + (90 × 25%) + (85 × 25%) = 83,75
+							</p>
+						</div>
+						<button
+							type="button"
+							onClick={() => setShowFormula(false)}
+							className="mt-5 min-h-[44px] w-full rounded-2xl bg-sky-600 py-3 text-sm font-bold text-white transition hover:bg-sky-700"
+						>
+							Mengerti
+						</button>
 					</div>
 				</div>
 			)}

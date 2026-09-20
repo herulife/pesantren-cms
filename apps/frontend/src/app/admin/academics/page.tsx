@@ -482,7 +482,7 @@ export default function AcademicsPage() {
                 <h3 className="text-lg font-semibold text-slate-900">Rekap Nilai Siswa</h3>
                 <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-600">{academicPeriodLabel}</span>
               </div>
-              <div className="overflow-x-auto">
+              <div className="ap-table-wrap overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/80">
@@ -576,7 +576,7 @@ export default function AcademicsPage() {
       ))}</div>}
 
       {['grades', 'attendance', 'tahfidz'].includes(activeTab) && <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        {isLoading ? <div className="py-24 text-center text-sm font-bold text-slate-400">Memuat data...</div> : <div className="overflow-x-auto">
+        {isLoading ? <div className="py-24 text-center text-sm font-bold text-slate-400">Memuat data...</div> : <div className="ap-table-wrap overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th>{activeTab === 'grades' && <><th className="px-4 py-4">Mapel</th><th className="px-4 py-4">UTS</th><th className="px-4 py-4">UAS</th><th className="px-4 py-4">Tugas</th><th className="px-4 py-4">Akhir</th><th className="px-4 py-4">Grade</th></>}{activeTab === 'attendance' && <><th className="px-4 py-4">Tanggal</th><th className="px-4 py-4">Status</th></>}{activeTab === 'tahfidz' && <><th className="px-4 py-4">Surah</th><th className="px-4 py-4">Juz</th><th className="px-4 py-4">Ayat</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Evaluasi</th></>}<th className="px-6 py-4 text-right">Aksi</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
@@ -641,7 +641,7 @@ export default function AcademicsPage() {
             <div className="border-b border-slate-100 px-5 py-4">
               <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Peringkat Santri</h5>
             </div>
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>
@@ -999,7 +999,7 @@ export default function AcademicsPage() {
             <div className="border-b border-slate-100 px-5 py-4">
               <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Peringkat Santri</h5>
             </div>
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>

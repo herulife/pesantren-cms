@@ -20,42 +20,42 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
   pending: {
     title: 'Pendaftaran Sedang Disiapkan',
     description: 'Lengkapi biodata dan dokumen agar panitia bisa mulai memeriksa berkas pendaftaran kamu.',
-    accent: 'from-amber-500 to-orange-600',
+    accent: 'from-amber-600 to-orange-700',
     actionLabel: 'Lengkapi Sekarang',
     actionHref: '/portal/biodata',
   },
   review: {
     title: 'Berkas Sedang Direview',
     description: 'Panitia sedang memeriksa biodata dan dokumen yang sudah kamu kirim. Pantau portal secara berkala.',
-    accent: 'from-sky-600 to-cyan-600',
+    accent: 'from-sky-700 to-cyan-800',
     actionLabel: 'Lihat Dokumen',
     actionHref: '/portal/documents',
   },
   tes: {
     title: 'Diundang Tes Seleksi',
     description: 'Alhamdulillah, berkas kamu lolos pemeriksaan. Perhatikan jadwal dan lokasi tes seleksi di bawah.',
-    accent: 'from-indigo-600 to-sky-600',
+    accent: 'from-indigo-700 to-sky-800',
     actionLabel: 'Hubungi Panitia',
     actionHref: '#tes-info',
   },
   accepted: {
     title: 'Diterima',
     description: 'Selamat! Kamu dinyatakan diterima. Lanjutkan ke masa daftar ulang sesuai arahan panitia.',
-    accent: 'from-sky-600 to-cyan-600',
+    accent: 'from-sky-700 to-cyan-800',
     actionLabel: 'Buka Raport',
     actionHref: '/portal/raport',
   },
   re_registration: {
     title: 'Masa Daftar Ulang',
     description: 'Saatnya melakukan daftar ulang. Selesaikan sebelum batas waktu agar status santri kamu terekam.',
-    accent: 'from-sky-700 to-indigo-600',
+    accent: 'from-sky-800 to-indigo-800',
     actionLabel: 'Info Daftar Ulang',
     actionHref: '#daftar-ulang-info',
   },
   rejected: {
     title: 'Perlu Perbaikan Berkas',
     description: 'Pendaftaran belum bisa dilanjutkan. Silakan periksa kembali data dan dokumen lalu hubungi panitia bila perlu.',
-    accent: 'from-rose-600 to-red-600',
+    accent: 'from-rose-700 to-red-800',
     actionLabel: 'Periksa Biodata',
     actionHref: '/portal/biodata',
   },
@@ -122,7 +122,11 @@ export default function PortalDashboard() {
       registration?.mother_phone,
     ];
 
-    const documentFields = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url];
+    const documentFields = [
+      registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url,
+      ...(registration?.category === 'yatim' ? [registration?.yatim_doc_url] : []),
+      ...(registration?.category === 'dhuafa' ? [registration?.sktm_doc_url] : []),
+    ];
 
     const biodataCompleted = biodataFields.every(isFilled);
     const documentsCompleted = documentFields.every(isFilled);
@@ -276,6 +280,7 @@ export default function PortalDashboard() {
   const biodataSummary = [
     { label: 'Nama Lengkap', value: registration?.full_name || user?.name || '-' },
     { label: 'NIK', value: registration?.nik || '-' },
+    { label: 'Jenjang', value: (registration?.jenjang || '-').toUpperCase() },
     { label: 'Program Pilihan', value: registration?.program_choice || '-' },
     { label: 'Asal Sekolah', value: registration?.school_origin || '-' },
     { label: 'Ayah', value: registration?.father_name || '-' },
@@ -311,6 +316,38 @@ export default function PortalDashboard() {
       accent: 'border-violet-100 bg-violet-50 text-violet-700',
     },
   ];
+
+  const statusDetail = (item: ChecklistItem): string => {
+    switch (item.title) {
+      case 'Pembuatan Akun Portal':
+        return 'Selesai';
+      case 'Kelengkapan Biodata':
+        return portalState.biodataCompleted ? 'Data diri + orang tua lengkap' : 'Masih ada data yang belum diisi';
+      case 'Unggah Dokumen':
+        return portalState.documentsCompleted ? 'KK • ijazah • pas foto lengkap' : 'Ada berkas yang belum diunggah';
+      case 'Bayar Pendaftaran':
+        if (portalState.paymentCompleted) return 'Lunas dan terverifikasi panitia';
+        if (portalState.paymentSubmitted) return 'Bukti terkirim • menunggu verifikasi';
+        return 'Belum ada bukti transfer';
+      case 'Tes Seleksi': {
+        const info = [registration?.test_date, registration?.test_location].filter(Boolean).join(' • ');
+        return info || 'Jadwal menyusul dari panitia';
+      }
+      case 'Tunggu Pengumuman':
+        return 'Hasil keluar setelah tes selesai';
+      case 'Pengumuman & Daftar Ulang':
+        if (portalState.status === 're_registration' && registration?.re_registration_deadline)
+          return `Batas: ${registration.re_registration_deadline}`;
+        if (portalState.status === 're_registration') return 'Sedang masa daftar ulang';
+        return 'Menunggu undangan panitia';
+      case 'Selesaikan Daftar Ulang':
+        return registration?.re_registration_deadline ? `Batas: ${registration.re_registration_deadline}` : 'Hubungi panitia bila terkendala';
+      case 'Ujian Daring (CBT)':
+        return 'Kuis • ujian semester online';
+      default:
+        return item.completed ? 'Selesai' : 'Belum selesai';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -362,7 +399,7 @@ export default function PortalDashboard() {
 
   return (
     <>
-      <div className="mb-8">
+      <div className="ap-fade-in mb-8">
         <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
           Ahlan Wa Sahlan, <br /> <span className="text-sky-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
         </h3>
@@ -375,7 +412,7 @@ export default function PortalDashboard() {
 
       <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${portalState.meta.accent} p-8 text-white shadow-xl md:col-span-2`}>
-          <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-white/5 blur-3xl" />
 
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div>
@@ -383,7 +420,7 @@ export default function PortalDashboard() {
                 <Activity size={12} /> Status Pendaftaran
               </span>
               <h4 className="mb-2 text-2xl font-black uppercase tracking-tight">{portalState.meta.title}</h4>
-              <p className="max-w-sm text-sm leading-relaxed text-white/80">{portalState.meta.description}</p>
+              <p className="max-w-sm text-sm leading-relaxed text-white/70">{portalState.meta.description}</p>
               {status === 'rejected' && registration?.rejection_note?.trim() ? (
                 <p className="mt-3 max-w-sm rounded-2xl border border-white/25 bg-white/15 px-4 py-3 text-xs font-bold leading-5 text-white">
                   Catatan panitia: {registration.rejection_note.trim()}
@@ -399,16 +436,16 @@ export default function PortalDashboard() {
                     key={`status-progress-${item.title}`}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur ${
                       item.completed
-                        ? 'border-white/30 bg-white/20'
+                        ? 'border-white/25 bg-white/15'
                         : isAttentionPaymentStep
                           ? 'border-rose-200 bg-white text-rose-800 shadow-lg shadow-rose-950/20'
-                          : 'border-white/15 bg-slate-950/15'
+                          : 'border-white/10 bg-slate-950/25'
                     }`}
                   >
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                         item.completed
-                          ? 'bg-white text-sky-600'
+                          ? 'bg-white/95 text-sky-700'
                           : isAttentionPaymentStep
                             ? 'bg-rose-600 text-white'
                             : 'bg-white/10 text-white/80'
@@ -417,9 +454,9 @@ export default function PortalDashboard() {
                       {item.completed ? <CheckCircle2 size={17} /> : <AlertCircle size={17} />}
                     </span>
                     <div className="min-w-0">
-                      <p className={`truncate text-sm font-black leading-tight ${isAttentionPaymentStep ? 'text-rose-950' : 'text-white'}`}>{item.title}</p>
-                      <p className={`mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] ${isAttentionPaymentStep ? 'text-rose-600' : 'text-white/70'}`}>
-                        {item.completed ? 'Selesai' : isAttentionPaymentStep ? 'Perlu diperbaiki' : 'Belum selesai'}
+                      <p className={`break-words text-sm font-black leading-snug ${isAttentionPaymentStep ? 'text-rose-950' : 'text-white'}`}>{item.title}</p>
+                      <p className={`mt-0.5 break-words text-[11px] font-medium leading-snug ${isAttentionPaymentStep ? 'text-rose-600' : item.completed ? 'text-emerald-300' : 'text-white/70'}`}>
+                        {statusDetail(item)}
                       </p>
                     </div>
                   </div>
@@ -462,7 +499,7 @@ export default function PortalDashboard() {
 
           <Link
             href={portalState.actionHref}
-            className="w-full rounded-xl border-2 border-amber-200 bg-white py-4 text-center text-xs font-bold uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50"
+            className="ap-shimmer-wrap w-full rounded-xl border-2 border-amber-200 bg-white py-4 text-center text-xs font-bold uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50"
           >
             {portalState.actionLabel}
           </Link>

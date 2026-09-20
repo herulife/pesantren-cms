@@ -251,6 +251,7 @@ func createTables() {
 		phone TEXT DEFAULT '',
 		email TEXT DEFAULT '',
 		kind TEXT NOT NULL DEFAULT 'Guru',
+		photo_url TEXT DEFAULT '',
 		is_active INTEGER NOT NULL DEFAULT 1,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -457,6 +458,10 @@ func createTables() {
 		mother_phone TEXT,
 		school_origin TEXT,
 		program_choice TEXT,
+		jenjang TEXT DEFAULT '',
+		category TEXT DEFAULT 'reguler',
+		yatim_doc_url TEXT DEFAULT '',
+		sktm_doc_url TEXT DEFAULT '',
 		kk_url TEXT,
 		ijazah_url TEXT,
 		pasfoto_url TEXT,
@@ -490,6 +495,36 @@ func createTables() {
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_payments_reg ON psb_payments(registration_id);
 	CREATE INDEX IF NOT EXISTS idx_psb_payments_user ON psb_payments(user_id);
 	CREATE INDEX IF NOT EXISTS idx_psb_payments_date ON psb_payments(paid_at);
+
+	CREATE TABLE IF NOT EXISTS otp_codes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		phone TEXT NOT NULL,
+		purpose TEXT NOT NULL DEFAULT 'psb',
+		code_hash TEXT NOT NULL,
+		attempts INTEGER NOT NULL DEFAULT 0,
+		max_attempts INTEGER NOT NULL DEFAULT 5,
+		expires_at DATETIME NOT NULL,
+		consumed_at DATETIME,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE INDEX IF NOT EXISTS idx_otp_codes_phone ON otp_codes(phone, purpose, created_at DESC);
+
+	CREATE TABLE IF NOT EXISTS invoices (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		registration_id INTEGER NOT NULL DEFAULT 0,
+		code TEXT NOT NULL UNIQUE,
+		amount INTEGER NOT NULL DEFAULT 0,
+		method TEXT NOT NULL DEFAULT 'transfer',
+		status TEXT NOT NULL DEFAULT 'pending',
+		gateway_tx_id TEXT NOT NULL DEFAULT '',
+		webhook_received_at TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_code ON invoices(code);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_gateway_tx ON invoices(gateway_tx_id) WHERE gateway_tx_id <> '';
+	CREATE INDEX IF NOT EXISTS idx_invoices_reg ON invoices(registration_id);
+
 
 	CREATE TABLE IF NOT EXISTS settings (
 		key TEXT PRIMARY KEY,
@@ -608,6 +643,12 @@ func createTables() {
 		status TEXT DEFAULT 'aktif',
 		parent_name TEXT,
 		parent_phone TEXT,
+		nik TEXT DEFAULT '',
+		father_name TEXT DEFAULT '',
+		father_phone TEXT DEFAULT '',
+		mother_name TEXT DEFAULT '',
+		mother_phone TEXT DEFAULT '',
+		registration_id INTEGER DEFAULT 0,
 		photo_url TEXT,
 		user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -808,6 +849,19 @@ func createTables() {
 	addColumnIfNotExists("donations", "donor_id", "INTEGER")
 	addColumnIfNotExists("donations", "type", "TEXT DEFAULT ''")
 	addColumnIfNotExists("donations", "notes", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "category", "TEXT DEFAULT 'reguler'")
+	addColumnIfNotExists("registrations", "jenjang", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "jenjang", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "yatim_doc_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "sktm_doc_url", "TEXT DEFAULT ''")
+	_, _ = DB.Exec("UPDATE registrations SET program_choice='tahfidz' WHERE lower(program_choice)='tahfidz'")
+	addColumnIfNotExists("employees", "photo_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "registration_id", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("santri", "mother_phone", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "mother_name", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "father_phone", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "father_name", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "nik", "TEXT DEFAULT ''")
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 	_, _ = DB.Exec("UPDATE settings SET updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 

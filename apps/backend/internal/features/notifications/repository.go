@@ -40,12 +40,27 @@ func NewRepository(db *sql.DB) Repository {
 	return &repository{db: db}
 }
 
+// GetPendingTagihan mengambil tagihan AKTIF dari spp/iuran (sisa = amount-paid)
+// plus baris pending tabel payments legacy. Diurut agar broadcast stabil.
 func (r *repository) GetPendingTagihan() ([]TagihanTarget, error) {
 	query := `
-		SELECT p.amount, p.description, u.name, u.whatsapp 
-		FROM payments p 
-		JOIN users u ON p.user_id = u.id 
-		WHERE p.status = 'pending' AND u.whatsapp != ''
+		SELECT amount - paid_amount, 'SPP ' || period, s.name, s.parent_phone
+		FROM spp_bills b JOIN santri s ON s.id = b.santri_id
+		WHERE b.status IN ('unpaid', 'partial', 'pending')
+		  AND (b.amount - b.paid_amount) > 0
+		  AND TRIM(COALESCE(s.parent_phone, '')) != ''
+		UNION ALL
+		SELECT amount - paid_amount, b.name || ' ' || period, s.name, s.parent_phone
+		FROM iuran_bills b JOIN santri s ON s.id = b.santri_id
+		WHERE b.status IN ('unpaid', 'partial', 'pending')
+		  AND (b.amount - b.paid_amount) > 0
+		  AND TRIM(COALESCE(s.parent_phone, '')) != ''
+		UNION ALL
+		SELECT p.amount, p.description, u.name, u.whatsapp
+		FROM payments p
+		JOIN users u ON p.user_id = u.id
+		WHERE p.status = 'pending' AND TRIM(COALESCE(u.whatsapp, '')) != ''
+		ORDER BY 2, 3
 	`
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -95,9 +110,11 @@ func (r *repository) GetNilai() ([]NilaiTarget, error) {
 
 func (r *repository) GetPSBStatus() ([]PSBTarget, error) {
 	query := `
-		SELECT full_name, parent_phone, status 
-		FROM registrations 
-		WHERE parent_phone != '' AND parent_phone IS NOT NULL
+		SELECT full_name,
+			COALESCE(NULLIF(TRIM(parent_phone), ''), NULLIF(TRIM(father_phone), ''), NULLIF(TRIM(mother_phone), '')),
+			status
+		FROM registrations
+		WHERE COALESCE(NULLIF(TRIM(parent_phone), ''), NULLIF(TRIM(father_phone), ''), NULLIF(TRIM(mother_phone), '')) IS NOT NULL
 		AND status IN ('pending', 'accepted', 'rejected')
 	`
 	rows, err := r.db.Query(query)

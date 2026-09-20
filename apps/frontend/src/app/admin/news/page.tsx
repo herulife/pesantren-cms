@@ -276,7 +276,7 @@ export default function NewsAdminPage() {
          )}
 
          {/* Modern Table Layout */}
-         <div className="overflow-x-auto min-h-[400px]">
+         <div className="ap-table-wrap overflow-x-auto min-h-[400px]">
             <table className="w-full text-left border-collapse">
                <thead>
                   <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">

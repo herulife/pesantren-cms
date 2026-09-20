@@ -526,7 +526,7 @@ function AcademicsFormContent() {
                 <p className="text-sm font-black text-slate-900">Daftar Nilai Santri</p>
                 <p className="text-xs font-medium text-slate-500">Kosongkan baris yang belum ingin diproses.</p>
               </div>
-              <div className="overflow-x-auto">
+              <div className="ap-table-wrap overflow-x-auto">
                 <table className="min-w-[860px] w-full text-sm">
                   <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                     <tr>
@@ -586,7 +586,7 @@ function AcademicsFormContent() {
                 <p className="text-sm font-black text-slate-900">Daftar Nilai Mapel Aktif</p>
                 <p className="text-xs font-medium text-slate-500">Perubahan akan disimpan serentak saat kamu klik tombol simpan.</p>
               </div>
-              <div className="overflow-x-auto">
+              <div className="ap-table-wrap overflow-x-auto">
                 <table className="min-w-[860px] w-full text-sm">
                   <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                     <tr>

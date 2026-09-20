@@ -320,7 +320,7 @@ export default function NotificationsPage() {
                  </div>
                </div>
              ) : (
-             <div className="overflow-x-auto">
+             <div className="ap-table-wrap overflow-x-auto">
                <table className="w-full text-left">
                   <thead className="bg-slate-50">
                     <tr>

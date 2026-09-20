@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Newspaper, Search } from 'lucide-react';
-import { getNews, News } from '@/lib/api';
+import { CalendarDays, MapPin, Newspaper, Search } from 'lucide-react';
+import { getAgendas, getNews, type Agenda, type News } from '@/lib/api';
 import PublicLayout from '@/components/PublicLayout';
 import { PublicEmptyState } from '@/components/PublicState';
+import Link from 'next/link';
 import PublicSectionIntro from '@/components/PublicSectionIntro';
 import NewsCard from '@/components/NewsCard';
 
@@ -12,12 +13,19 @@ export default function NewsPortal() {
   const [news, setNews] = useState<News[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [agendas, setAgendas] = useState<Agenda[]>([]);
 
   useEffect(() => {
     async function fetchNews() {
       try {
         const data = await getNews();
         setNews(Array.isArray(data) ? data.slice(0, 12) : []);
+      } catch {
+        setNews([]);
+      }
+      try {
+        const agendaData = await getAgendas();
+        setAgendas(Array.isArray(agendaData) ? agendaData.slice(0, 6) : []);
       } catch (error) {
         console.error('Error fetching news:', error);
         setNews([]);
@@ -120,6 +128,59 @@ export default function NewsPortal() {
           />
         )}
       </section>
+
+      {agendas.length > 0 ? (
+        <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-600">Agenda</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Agenda Mendatang</h2>
+            </div>
+            <Link href="/agendas" className="text-xs font-black uppercase tracking-[0.2em] text-sky-600 hover:text-sky-800">
+              Lihat agenda lengkap →
+            </Link>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {agendas.map((agenda) => (
+              <article key={agenda.id} className="flex h-full flex-col rounded-[1.75rem] border border-slate-200/80 bg-white p-5 shadow-[0_20px_42px_-32px_rgba(250,204,21,0.16)]">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-[1.35rem] bg-sky-500 text-white shadow-lg shadow-sky-200/70">
+                    <span className="text-[9px] font-black uppercase tracking-[0.18em]">
+                      {agenda.start_date ? new Date(agenda.start_date).toLocaleDateString('id-ID', { month: 'short' }) : '-'}
+                    </span>
+                    <span className="mt-1 text-xl font-black leading-none">
+                      {agenda.start_date ? new Date(agenda.start_date).getDate() : '-'}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">
+                      {agenda.category || 'Agenda'}
+                    </p>
+                    <h3 className="mt-2 line-clamp-2 text-lg font-black tracking-tight text-slate-900">
+                      {agenda.title}
+                    </h3>
+                  </div>
+                </div>
+                {agenda.description ? (
+                  <p className="mt-4 line-clamp-3 text-sm font-medium leading-6 text-slate-600">
+                    {agenda.description}
+                  </p>
+                ) : null}
+                <div className="mt-5 space-y-2 text-sm text-slate-500">
+                  <div className="flex items-start gap-2">
+                    <CalendarDays size={15} className="mt-0.5 shrink-0 text-sky-500" />
+                    <span>{agenda.time_info || (agenda.start_date ? new Date(agenda.start_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-')}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin size={15} className="mt-0.5 shrink-0 text-sky-500" />
+                    <span>{agenda.location || 'Kompleks Al-Maa Parung'}</span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </PublicLayout>
   );
 }

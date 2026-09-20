@@ -2,22 +2,26 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
   Banknote,
   CheckCircle2,
+  Clock,
+  Copy,
   CreditCard,
   Eye,
+  Receipt,
   Landmark,
+  MessageCircle,
   RefreshCw,
   ShieldCheck,
   UploadCloud,
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import KwitansiModal, { type KwitansiTx } from '@/components/KwitansiModal';
+import ProofImage, { openProofInNewTab } from '@/components/ProofImage';
 import {
   getMyPSBRegistration,
   getMyPSBReceipt,
@@ -80,9 +84,17 @@ const paymentStatusMeta: Record<PaymentStatus, { label: string; title: string; d
 };
 
 export default function PortalPaymentPage() {
-  const router = useRouter();
   const { showToast } = useToast();
   const hasShownRejectedNotice = useRef(false);
+
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('success', `${label} disalin.`);
+    } catch {
+      showToast('error', 'Gagal menyalin otomatis. Salin manual dari teks di atas.');
+    }
+  };
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -93,6 +105,22 @@ export default function PortalPaymentPage() {
   const [settings, setSettings] = useState<SettingsMap>({});
   const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
   const [receipt, setReceipt] = useState<KwitansiTx | null>(null);
+  const [showKwitansi, setShowKwitansi] = useState(false);
+
+  const toKwitansiTx = (r: {
+    code: string;
+    paid_at: string;
+    santri_name?: string | null;
+    amount: number;
+    method: string;
+  }): KwitansiTx => ({
+    code: r.code,
+    date: r.paid_at,
+    santri_name: r.santri_name || registration?.full_name,
+    description: 'Biaya Pendaftaran PSB',
+    amount: r.amount,
+    method: r.method,
+  });
 
   const loadReceipt = async () => {
     try {
@@ -101,14 +129,8 @@ export default function PortalPaymentPage() {
         showToast('error', 'Kwitansi belum tersedia.');
         return;
       }
-      setReceipt({
-        code: r.code,
-        date: r.paid_at,
-        santri_name: r.santri_name || registration?.full_name,
-        description: 'Biaya Pendaftaran PSB',
-        amount: r.amount,
-        method: r.method,
-      });
+      setReceipt(toKwitansiTx(r));
+      setShowKwitansi(true);
     } catch {
       showToast('error', 'Gagal memuat kwitansi.');
     }
@@ -149,7 +171,12 @@ export default function PortalPaymentPage() {
     registration?.mother_job,
     registration?.mother_phone,
   ].every(isFilled);
-  const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
+  const requiredDocs = [
+    registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url,
+    ...(registration?.category === 'yatim' ? [registration?.yatim_doc_url] : []),
+    ...(registration?.category === 'dhuafa' ? [registration?.sktm_doc_url] : []),
+  ];
+  const documentsCompleted = requiredDocs.every(isFilled);
   const canUploadPayment = biodataCompleted && documentsCompleted;
   const paymentStatus = normalizePaymentStatus(registration?.payment_status);
   const statusMeta = paymentStatusMeta[paymentStatus];
@@ -170,6 +197,7 @@ export default function PortalPaymentPage() {
   const configuredAccountNumber = settings.psb_payment_account_number?.trim() || '';
   const configuredAccountName = settings.psb_payment_account_name?.trim() || '';
   const configuredPaymentNote = settings.psb_payment_note?.trim() || '';
+  const configuredWaHref = settings.psb_page_wa?.trim() || '';
   const configuredInstructions = settings.psb_payment_instructions?.trim() || '';
   const configuredAmount = Number(settings.psb_payment_amount || 0);
   const hasBankInfo = Boolean(configuredBankName || configuredAccountNumber || configuredAccountName || configuredAmount > 0);
@@ -209,6 +237,16 @@ export default function PortalPaymentPage() {
       completed: proofSent || paymentStatus === 'paid',
     },
   ];
+
+  useEffect(() => {
+    if (paymentStatus !== 'pending') return;
+    const id = window.setInterval(() => {
+      void getMyPSBRegistration()
+        .then((data) => setRegistration(data))
+        .catch(() => undefined);
+    }, 30000);
+    return () => window.clearInterval(id);
+  }, [paymentStatus]);
 
   useEffect(() => {
     if (hasPaymentWarning && paymentNote && !hasShownRejectedNotice.current) {
@@ -287,9 +325,7 @@ export default function PortalPaymentPage() {
       const message = 'Bukti pembayaran berhasil dikirim. Status pembayaran sekarang menunggu verifikasi panitia.';
       setSuccessMessage(message);
       showToast('success', message);
-      window.setTimeout(() => {
-        router.push('/portal');
-      }, 1600);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.';
       showToast('error', message);
@@ -297,6 +333,28 @@ export default function PortalPaymentPage() {
       setIsUploading(false);
     }
   };
+
+  useEffect(() => {
+    if (paymentStatus !== 'pending' && paymentStatus !== 'paid') return;
+    let alive = true;
+    getMyPSBReceipt()
+      .then((r) => {
+        if (alive && r) {
+          setReceipt({
+            code: r.code,
+            date: r.paid_at,
+            santri_name: r.santri_name || registration?.full_name,
+            description: 'Biaya Pendaftaran PSB',
+            amount: r.amount,
+            method: r.method,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [paymentStatus, registration?.full_name]);
 
   if (isLoading) {
     return (
@@ -366,18 +424,117 @@ export default function PortalPaymentPage() {
             <span className="inline-flex w-fit rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]">
               {proofUrl ? 'Bukti sudah ada' : 'Belum ada bukti'}
             </span>
-            {paymentStatus === 'paid' ? (
-              <button
-                type="button"
-                onClick={() => void loadReceipt()}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-800 shadow-sm transition hover:bg-sky-50"
-              >
-                <Banknote size={14} /> Unduh Kwitansi
-              </button>
-            ) : null}
           </div>
         </div>
       </div>
+
+      {paymentStatus === 'pending' ? (
+        <div className="mb-8 rounded-[2rem] border border-sky-200 bg-sky-50 p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl bg-white p-3 text-sky-600 shadow-sm">
+              <Clock size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">Yang Perlu Kamu Tahu</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-sky-950">
+                Bukti Diterima, Verifikasi Sedang Berjalan
+              </h4>
+              <ul className="mt-4 space-y-2 text-sm font-semibold leading-6 text-sky-900/80">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 size={16} className="mt-1 shrink-0 text-sky-600" />
+                  Bukti transfer kamu sudah masuk ke panitia.
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock size={16} className="mt-1 shrink-0 text-sky-600" />
+                  Verifikasi biasanya selesai dalam 1–2 hari kerja.
+                </li>
+                <li className="flex items-start gap-2">
+                  <ShieldCheck size={16} className="mt-1 shrink-0 text-sky-600" />
+                  Jangan upload ulang / kirim ganda — kecuali ada catatan panitia.
+                </li>
+                <li className="flex items-start gap-2">
+                  <RefreshCw size={16} className="mt-1 shrink-0 text-sky-600" />
+                  Status di halaman ini diperbarui otomatis.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {(paymentStatus === 'pending' || paymentStatus === 'paid') && Boolean(proofUrl) ? (
+        <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-sm">
+                <Receipt size={18} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Kwitansi Pembayaran</p>
+                <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900">
+                  {paymentStatus === 'paid' ? 'Pembayaran Dinyatakan Lunas' : 'Kwitansi Sementara'}
+                </h4>
+              </div>
+            </div>
+            <span
+              className={`inline-flex w-fit rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] ${
+                paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {paymentStatus === 'paid' ? 'Lunas' : 'Menunggu Verifikasi'}
+            </span>
+          </div>
+          <div className="grid gap-5 px-6 py-5 md:grid-cols-2">
+            <dl className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-semibold text-slate-500">Kode Kwitansi</dt>
+                <dd className="font-black tracking-wide text-sky-900">{receipt?.code || 'KWI-...'}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-semibold text-slate-500">Atas Nama</dt>
+                <dd className="max-w-[62%] truncate font-black text-slate-900">{registration?.full_name || '-'}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-semibold text-slate-500">Nominal</dt>
+                <dd className="font-black text-sky-900">{formatCurrency(registration?.payment_amount)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-semibold text-slate-500">Tanggal Transfer</dt>
+                <dd className="font-black text-slate-900">{paymentDate || '-'}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-semibold text-slate-500">Metode</dt>
+                <dd className="font-black text-slate-900">Transfer Bank</dd>
+              </div>
+            </dl>
+            <div className="flex flex-col gap-4">
+              {proofDisplayUrl ? (
+                <button
+                  type="button"
+                  onClick={() => void openProofInNewTab(proofDisplayUrl, (m) => showToast('error', m))}
+                  className="group relative block w-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 text-left"
+                >
+                  <ProofImage
+                    src={proofDisplayUrl}
+                    alt="Bukti transfer"
+                    className="h-36 w-full object-cover transition group-hover:scale-[1.02]"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-gradient-to-t from-black/70 to-transparent px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-white">
+                    <Eye size={14} /> Lihat Bukti Transfer
+                  </span>
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void loadReceipt()}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-sm transition hover:bg-sky-700"
+              >
+                <Banknote size={15} /> Buka / Unduh Kwitansi
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -505,11 +662,33 @@ export default function PortalPaymentPage() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Nomor Rekening</p>
+                    <p className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                      Nomor Rekening
+                      {configuredAccountNumber ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleCopy(configuredAccountNumber, 'Nomor rekening')}
+                          className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black text-sky-700 shadow-sm transition hover:bg-sky-50"
+                        >
+                          <Copy size={11} /> Salin
+                        </button>
+                      ) : null}
+                    </p>
                     <p className="mt-2 break-all font-mono text-xl font-black tracking-wide text-slate-900">{configuredAccountNumber || '-'}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Atas Nama</p>
+                    <p className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                      Atas Nama
+                      {configuredAccountName ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleCopy(configuredAccountName, 'Atas nama rekening')}
+                          className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black text-sky-700 shadow-sm transition hover:bg-sky-50"
+                        >
+                          <Copy size={11} /> Salin
+                        </button>
+                      ) : null}
+                    </p>
                     <p className="mt-2 text-sm font-black leading-6 text-slate-900">{configuredAccountName || '-'}</p>
                   </div>
                 </div>
@@ -538,6 +717,18 @@ export default function PortalPaymentPage() {
               <p className="whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 font-semibold text-slate-700">
                 {configuredInstructions}
               </p>
+            ) : null}
+
+            {configuredWaHref ? (
+              <a
+                href={configuredWaHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-black text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
+              >
+                <MessageCircle size={16} />
+                Butuh bantuan? Chat Panitia PSB di WhatsApp
+              </a>
             ) : null}
           </div>
         </div>
@@ -603,17 +794,16 @@ export default function PortalPaymentPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                {proofDisplayUrl ? (
-                  <a
-                    href={proofDisplayUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
-                  >
-                    <Eye size={16} />
-                    Preview
-                  </a>
-                ) : null}
+              {proofDisplayUrl ? (
+                <button
+                  type="button"
+                  onClick={() => void openProofInNewTab(proofDisplayUrl, (m) => showToast('error', m))}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
+                >
+                  <Eye size={16} />
+                  Preview
+                </button>
+              ) : null}
                 <div className="relative">
                   <input
                     type="file"
@@ -652,15 +842,19 @@ export default function PortalPaymentPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
               >
                 {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
+                {isUploading ? 'Mengirim' : parsedAmount > 0 ? `Kirim Bukti ${formatCurrency(parsedAmount)}` : 'Kirim Bukti Pembayaran'}
               </button>
-              {paymentStatus === 'pending' || paymentStatus === 'paid' ? (
+              {paymentStatus === 'paid' ? (
                 <Link
                   href="/portal"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-sky-600"
                 >
                   Pantau Status di Dasbor <ArrowRight size={16} />
                 </Link>
+              ) : paymentStatus === 'pending' ? (
+                <span className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-50 px-5 py-3 text-xs font-black uppercase tracking-widest text-sky-700">
+                  <RefreshCw size={16} className="animate-spin" /> Menunggu Verifikasi Panitia
+                </span>
               ) : (
                 <Link
                   href="/portal/documents"
@@ -674,11 +868,15 @@ export default function PortalPaymentPage() {
         </div>
       </div>
 
-      {receipt ? (
+      {showKwitansi && receipt ? (
         <KwitansiModal
           data={receipt}
+          schoolName={settings.school_name}
+          schoolAddress={settings.school_address}
+          schoolPhone={settings.school_phone}
+          logoUrl={resolveDisplayImageUrl(settings.web_logo_url || "/assets/img/logo-alama.jpg")}
           petugas="Panitia PSB"
-          onClose={() => setReceipt(null)}
+          onClose={() => setShowKwitansi(false)}
         />
       ) : null}
     </>

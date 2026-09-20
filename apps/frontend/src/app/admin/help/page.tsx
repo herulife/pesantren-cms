@@ -278,7 +278,7 @@ function HelpContent() {
               <span className="font-bold text-slate-400"> Tidak</span> artinya tidak bisa dibuka.
             </p>
 
-            <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
+            <div className="ap-table-wrap mt-5 overflow-x-auto rounded-xl border border-slate-200">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr className="text-left text-xs font-bold uppercase tracking-[0.18em] text-slate-500">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, acceptPSBToSantri, getPublicSettingsMap, Registration, resolveDisplayImageUrl } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import ProofImage, { openProofInNewTab } from '@/components/ProofImage';
 import { 
   CheckCircle, 
   XCircle, 
@@ -143,7 +144,8 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     try {
       const res = await acceptPSBToSantri(registration.id);
       if (res.success) {
-        showToast('success', 'Pendaftar berhasil dipindahkan menjadi santri.');
+        showToast('success', 'Pendaftar berhasil dipindahkan menjadi santri. Memuat ulang…');
+        window.setTimeout(() => window.location.reload(), 1200);
         return;
       }
       showToast('error', res.message || 'Gagal memindahkan ke santri.');
@@ -371,6 +373,8 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                <div className="flex items-center gap-3">
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-lg">ID: #PSB-{registration.id.toString().padStart(4, '0')}</span>
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-lg">Gender: {registration.gender === 'L' ? 'Laki-Laki' : 'Perempuan'}</span>
+                  <span className="text-xs font-black uppercase tracking-widest bg-sky-50 px-4 py-2 rounded-lg text-sky-700">Kategori: {registration.category === 'yatim' ? 'Yatim' : registration.category === 'dhuafa' ? 'Dhuafa' : 'Reguler'}</span>
+                  <span className="text-xs font-black uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-lg text-slate-500">Jenjang {(registration.jenjang || '-').toUpperCase()} | Program: {registration.program_choice === 'bahasa' ? 'Bahasa Arab' : 'Tahfidz'}</span>
                </div>
             </div>
          </div>
@@ -394,7 +398,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                   <div>
                      <label className="block text-[10px] font-black text-sky-600 uppercase tracking-[0.2em] mb-2">Asal Sekolah & Program</label>
                      <p className="font-bold text-slate-900 text-lg">{registration.school_origin}</p>
-                     <p className="mt-1 text-sm font-semibold text-slate-500">{registration.program_choice || '-'}</p>
+                     <p className="mt-1 text-sm font-semibold text-slate-500">{(registration.jenjang || '-').toUpperCase()} / {registration.program_choice || '-'}</p>
                   </div>
                </div>
             </div>
@@ -468,14 +472,13 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bukti Transfer</p>
                 {paymentProofUrl ? (
-                  <a
-                    href={paymentProofUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => void openProofInNewTab(paymentProofUrl, (m) => showToast('error', m))}
                     className="mt-2 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-sky-700 ring-1 ring-sky-100 transition hover:bg-sky-50"
                   >
                     <Eye size={14} /> Preview
-                  </a>
+                  </button>
                 ) : (
                   <p className="mt-2 text-sm font-bold text-slate-400">Belum ada bukti</p>
                 )}
@@ -743,13 +746,13 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
               ) : null}
             </div>
 
-            {registration.status === 're_registration' && paymentStatus === 'paid' ? (
+            {['re_registration', 'accepted'].includes(registration.status) && paymentStatus === 'paid' ? (
               <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">Langkah Akhir</p>
                     <p className="mt-1 text-sm font-semibold leading-6 text-sky-900">
-                      Daftar ulang selesai. Pindahkan pendaftar ke data santri untuk mengelola presensi, SPP & iuran.
+                      {registration.status === 'accepted' ? 'Calon santri dinyatakan lulus dan pembayaran lunas. Pindahkan ke data santri untuk mengelola presensi, SPP & iuran.' : 'Daftar ulang selesai. Pindahkan pendaftar ke data santri untuk mengelola presensi, SPP & iuran.'}
                     </p>
                   </div>
                   <button
@@ -776,6 +779,8 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                 { label: 'Kartu Keluarga', value: registration.kk_url },
                 { label: 'Ijazah/Surat Kelulusan', value: registration.ijazah_url },
                 { label: 'Pas Foto', value: registration.pasfoto_url },
+                ...(registration.category === 'yatim' ? [{ label: 'Surat Keterangan Kematian', value: registration.yatim_doc_url }] : []),
+                ...(registration.category === 'dhuafa' ? [{ label: 'SKTM', value: registration.sktm_doc_url }] : []),
               ].map((doc) => {
                 const url = getDocumentUrl(doc.value);
                 const hasFile = Boolean(url);

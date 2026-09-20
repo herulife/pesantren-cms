@@ -35,6 +35,12 @@ const initialForm = {
   status: 'aktif',
   parent_name: '',
   parent_phone: '',
+  nik: '',
+  father_name: '',
+  father_phone: '',
+  mother_name: '',
+  mother_phone: '',
+  registration_id: 0,
 };
 
 export default function SantriFormPage() {
@@ -74,6 +80,12 @@ function SantriFormContent() {
             status: s.status || 'aktif',
             parent_name: s.parent_name || '',
             parent_phone: s.parent_phone || '',
+            nik: s.nik || '',
+            father_name: s.father_name || '',
+            father_phone: s.father_phone || '',
+            mother_name: s.mother_name || '',
+            mother_phone: s.mother_phone || '',
+            registration_id: s.registration_id || 0,
           });
         } else {
           showToast('error', 'Santri tidak ditemukan');
@@ -105,6 +117,11 @@ function SantriFormContent() {
       status: form.status,
       parent_name: form.parent_name.trim(),
       parent_phone: form.parent_phone.trim(),
+      nik: form.nik.trim(),
+      father_name: form.father_name.trim(),
+      father_phone: form.father_phone.trim(),
+      mother_name: form.mother_name.trim(),
+      mother_phone: form.mother_phone.trim(),
     };
 
     let res;
@@ -145,6 +162,11 @@ function SantriFormContent() {
         <p className="mt-1 text-sm text-slate-500">
           {isEdit ? 'Perbarui informasi data santri.' : 'Lengkapi data di bawah untuk menambahkan santri baru.'}
         </p>
+        {isEdit && form.registration_id > 0 && (
+          <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">
+            Asal PSB #{form.registration_id} — NIK & data ortu tersalin otomatis
+          </p>
+        )}
 
         {loading ? (
           <div className="py-20 text-center text-sm text-slate-400">Memuat data...</div>
@@ -281,6 +303,66 @@ function SantriFormContent() {
               {errors.parent_phone && <p className="mt-1 text-xs font-semibold text-red-500">{errors.parent_phone}</p>}
             </div>
 
+            <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Identitas & Orang Tua</p>
+              <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">NIK</label>
+                  <input
+                    value={form.nik}
+                    onChange={set('nik')}
+                    inputMode="numeric"
+                    maxLength={16}
+                    placeholder="16 digit NIK"
+                    className={inputClass(errors.nik)}
+                  />
+                  {errors.nik && <p className="mt-1 text-xs font-semibold text-red-500">{errors.nik}</p>}
+                  {!errors.nik && (
+                    <p className="mt-1 text-xs text-slate-400">Otomatis terisi dari data PSB bila ada.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Nama Ayah</label>
+                  <input
+                    value={form.father_name}
+                    onChange={set('father_name')}
+                    placeholder="Nama ayah kandung"
+                    className={inputClass()}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">No. HP Ayah</label>
+                  <input
+                    value={form.father_phone}
+                    onChange={set('father_phone')}
+                    inputMode="tel"
+                    placeholder="Contoh: 081234567890"
+                    className={inputClass(errors.father_phone)}
+                  />
+                  {errors.father_phone && <p className="mt-1 text-xs font-semibold text-red-500">{errors.father_phone}</p>}
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Nama Ibu</label>
+                  <input
+                    value={form.mother_name}
+                    onChange={set('mother_name')}
+                    placeholder="Nama ibu kandung"
+                    className={inputClass()}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">No. HP Ibu</label>
+                  <input
+                    value={form.mother_phone}
+                    onChange={set('mother_phone')}
+                    inputMode="tel"
+                    placeholder="Contoh: 081234567890"
+                    className={inputClass(errors.mother_phone)}
+                  />
+                  {errors.mother_phone && <p className="mt-1 text-xs font-semibold text-red-500">{errors.mother_phone}</p>}
+                </div>
+              </div>
+            </div>
             <div className="flex items-center justify-end gap-3 md:col-span-2">
               <button
                 type="button"

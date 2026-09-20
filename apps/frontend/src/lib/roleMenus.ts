@@ -15,8 +15,8 @@ export interface RoleMenuDef {
 
 export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Dashboard', label: 'Dashboard Utama', href: '/admin', docRef: 'dashboard' },
-  { category: 'Data Master', label: 'Data Pegawai', href: '/admin/employees', roles: ['superadmin', 'admin'], docRef: 'teachers' },
-  { category: 'Data Master', label: 'Staf Pengajar', href: '/admin/teachers', roles: ['tim_media'], docRef: 'teachers' },
+  { category: 'Sistem', label: 'Data Pegawai', href: '/admin/employees', roles: ['superadmin', 'admin'], docRef: 'teachers' },
+  { category: 'Konten & Publikasi', label: 'Staf Mengajar', href: '/admin/settings?tab=Staf%20Mengajar', roles: ['tim_media'], docRef: 'teachers' },
   { category: 'Transaksi', label: 'Pembayaran SPP', href: '/admin/payments', roles: ['bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
   { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['bendahara'], docRef: 'academics' },

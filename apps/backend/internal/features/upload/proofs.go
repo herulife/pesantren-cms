@@ -80,11 +80,21 @@ func ServeProof(db *sql.DB) http.HandlerFunc {
 
 		user, ok := auth.GetAuthenticatedUser(r)
 		if !ok {
+			w.Header().Set("Cache-Control", "no-store")
 			http.Error(w, `{"success":false,"message":"Akses belum diizinkan"}`, http.StatusUnauthorized)
 			return
 		}
-		if user.Role != "superadmin" && user.Role != "bendahara" {
-			proofPath := "/uploads/proofs/" + file
+		proofPath := "/uploads/proofs/" + file
+		if user.Role == "panitia_psb" {
+			// Tugas verifikasi PSB: boleh melihat bukti pendaftaran mana pun.
+			var onePanitia int
+			qPanitia := `SELECT 1 FROM registrations WHERE payment_proof_url = ? LIMIT 1`
+			if errPanitia := db.QueryRow(qPanitia, proofPath).Scan(&onePanitia); errPanitia != nil {
+				w.Header().Set("Cache-Control", "no-store")
+				http.Error(w, `{"success":false,"message":"Akses ditolak"}`, http.StatusForbidden)
+				return
+			}
+		} else if user.Role != "superadmin" && user.Role != "bendahara" {
 			var one int
 			q := `SELECT 1 FROM spp_bills b JOIN santri s ON s.id = b.santri_id
 			      WHERE b.payment_proof = ? AND s.user_id = ? LIMIT 1`
@@ -92,13 +102,17 @@ func ServeProof(db *sql.DB) http.HandlerFunc {
 				q2 := `SELECT 1 FROM iuran_bills b JOIN santri s ON s.id = b.santri_id
 				      WHERE b.payment_proof = ? AND s.user_id = ? LIMIT 1`
 				if err2 := db.QueryRow(q2, proofPath, user.ID).Scan(&one); err2 != nil {
-					logger.Warn(r.Context(), "proof access denied", logger.Field{
-						"correlation_id": logger.CorrelationID(r),
-						"user_id":        user.ID,
-						"file":           file,
-					})
+					q3 := `SELECT 1 FROM registrations WHERE payment_proof_url = ? AND user_id = ? LIMIT 1`
+					if err3 := db.QueryRow(q3, proofPath, user.ID).Scan(&one); err3 != nil {
+						logger.Warn(r.Context(), "proof access denied", logger.Field{
+							"correlation_id": logger.CorrelationID(r),
+							"user_id":        user.ID,
+							"file":           file,
+						})
+						w.Header().Set("Cache-Control", "no-store")
 					http.Error(w, `{"success":false,"message":"Akses ditolak"}`, http.StatusForbidden)
-					return
+						return
+					}
 				}
 			}
 		}

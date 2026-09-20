@@ -193,8 +193,8 @@ function TeachersAdminPageContent() {
     <>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">SDM & Staf Pengajar</h1>
-          <p className="text-slate-500 text-sm font-medium">Kelola profil ustadz dan ustadzah yang berkhidmah di Al-Maa.</p>
+          <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">Data Pengajar</h1>
+          <p className="text-slate-500 text-sm font-medium">Etalase profil publik (foto, mapel, bio) — tidak terhubung ke absensi. Data kepegawaian operasional dikelola di menu Data Pegawai.</p>
         </div>
         <button 
           onClick={() => router.push('/admin/teachers/form')}
@@ -263,7 +263,7 @@ function TeachersAdminPageContent() {
                       <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight uppercase mb-1">{teacher.name}</h3>
                       <div className="flex items-center gap-1.5 text-sky-600 text-[10px] font-black uppercase tracking-widest">
                          <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                         Staf Pengajar
+                         Pengajar
                       </div>
                     </div>
 
@@ -511,10 +511,18 @@ function TeachersAdminPageContent() {
   );
 }
 
-export default function TeachersAdminPage() {
+export function TeachersManager() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
       <TeachersAdminPageContent />
     </Suspense>
   );
+}
+
+export default function TeachersAdminPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/admin/settings?tab=Staf%20Mengajar');
+  }, [router]);
+  return null;
 }

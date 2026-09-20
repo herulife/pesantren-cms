@@ -283,7 +283,7 @@ export default function ProjectPage() {
 			{tab === 'weights' && (
 				<div className="rounded-3xl border border-slate-200 bg-white p-6">
 					<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Save size={18} className="text-sky-600" /> Ringkasan Bobot</h3>
-					<p className="mt-1 text-sm text-slate-500">Bobot sub project wajib total 100%. E-Raport = (Mapel×50%) + (Project×25%) + (Kesantrian×25%).</p>
+					<p className="mt-1 text-sm text-slate-500">Total bobot semua sub-project wajib 100% (misalnya 4 sub-project @25%). Nilai Project ini lalu menyumbang 25% ke Nilai Akhir E-Raport.</p>
 					<div className="mt-5 space-y-3">
 						{subs.map(s => (
 							<div key={s.id} className="flex items-center gap-4">

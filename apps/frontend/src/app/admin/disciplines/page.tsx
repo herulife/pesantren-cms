@@ -327,7 +327,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
               <p className="mt-1 text-xs text-slate-400">Data akan muncul setelah Anda mencatat pelanggaran pertama.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>
@@ -396,7 +396,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
               <p className="mt-4 text-sm font-bold">Belum ada riwayat pelanggaran.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>

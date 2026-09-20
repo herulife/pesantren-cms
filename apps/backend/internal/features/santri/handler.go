@@ -28,6 +28,12 @@ type Santri struct {
 	Status      string `json:"status"`
 	ParentName  string `json:"parent_name"`
 	ParentPhone string `json:"parent_phone"`
+	NIK         string `json:"nik"`
+	FatherName  string `json:"father_name"`
+	FatherPhone string `json:"father_phone"`
+	MotherName  string `json:"mother_name"`
+	MotherPhone string `json:"mother_phone"`
+	RegistrationID int   `json:"registration_id"`
 	PhotoURL    string `json:"photo_url"`
 	UserID      *int   `json:"user_id,omitempty"`
 	CreatedAt   string `json:"created_at"`
@@ -49,6 +55,12 @@ type SantriInput struct {
 	Status      string `json:"status"`
 	ParentName  string `json:"parent_name"`
 	ParentPhone string `json:"parent_phone"`
+	NIK         string `json:"nik"`
+	FatherName  string `json:"father_name"`
+	FatherPhone string `json:"father_phone"`
+	MotherName  string `json:"mother_name"`
+	MotherPhone string `json:"mother_phone"`
+	RegistrationID int   `json:"registration_id"`
 	PhotoURL    string `json:"photo_url"`
 }
 
@@ -57,7 +69,7 @@ func (in *SantriInput) toSantri() *Santri {
 		NIS: in.NIS, Name: in.Name, Nickname: in.Nickname, Gender: in.Gender,
 		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
 		Class: in.Class, Angkatan: in.Angkatan, Status: in.Status,
-		ParentName: in.ParentName, ParentPhone: in.ParentPhone, PhotoURL: in.PhotoURL,
+		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
 	}
 }
 
@@ -166,6 +178,24 @@ func validateSantri(s *Santri) map[string]string {
 	if s.ParentPhone != "" && !validators.ValidatePhone(s.ParentPhone) {
 		errs["parent_phone"] = "No HP wali tidak valid"
 	}
+	if s.NIK != "" {
+		validNIK := len(s.NIK) == 16
+		for _, c := range s.NIK {
+			if c < '0' || c > '9' {
+				validNIK = false
+				break
+			}
+		}
+		if !validNIK {
+			errs["nik"] = "NIK harus 16 digit angka"
+		}
+	}
+	if s.FatherPhone != "" && !validators.ValidatePhone(s.FatherPhone) {
+		errs["father_phone"] = "No HP ayah tidak valid"
+	}
+	if s.MotherPhone != "" && !validators.ValidatePhone(s.MotherPhone) {
+		errs["mother_phone"] = "No HP ibu tidak valid"
+	}
 	if len(errs) == 0 {
 		return nil
 	}
@@ -264,6 +294,14 @@ func (h *Handler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusConflict, false, "Beberapa NIS sudah terdaftar", map[string]interface{}{"inserted": inserted})
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "BULK_CREATE_SANTRI", Entity: "santri",
+		After: map[string]interface{}{"inserted": inserted},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	sendJSONResponse(w, http.StatusCreated, true, strconv.Itoa(inserted)+" santri berhasil ditambahkan", map[string]interface{}{"inserted": inserted})
 }
 
@@ -377,6 +415,13 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menghapus santri", nil)
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "DELETE_SANTRI", Entity: "santri", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	sendJSONResponse(w, http.StatusOK, true, "Santri berhasil dihapus", nil)
 }
 
@@ -407,6 +452,14 @@ func (h *Handler) SetClass(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menyimpan kelas", nil)
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "SET_CLASS_SANTRI", Entity: "santri",
+		After: map[string]interface{}{"updated": n},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	sendJSONResponse(w, http.StatusOK, true, strconv.Itoa(n)+" santri berhasil diset kelasnya", map[string]interface{}{"updated": n})
 }
 
@@ -428,5 +481,13 @@ func (h *Handler) BulkDelete(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menghapus santri", nil)
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "BULK_DELETE_SANTRI", Entity: "santri",
+		After: map[string]interface{}{"deleted": deleted, "ids": req.IDs},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 	sendJSONResponse(w, http.StatusOK, true, strconv.Itoa(deleted)+" santri berhasil dihapus", map[string]interface{}{"deleted": deleted})
 }

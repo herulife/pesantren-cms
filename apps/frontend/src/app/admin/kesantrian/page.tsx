@@ -321,7 +321,7 @@ export default function KesantrianPage() {
 
       {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="ap-table-wrap overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   getNews,
-  getAgendas,
   getCampaigns,
   getGallery,
   getPublicSettingsMap,
@@ -13,7 +12,6 @@ import {
   getVideos,
   Campaign,
   News,
-  Agenda,
   GalleryItem,
   Program,
   SettingsMap,
@@ -117,8 +115,6 @@ const focusAreas = [
 
 const fallbackCurriculumTracks = ['Kurikulum Pondok', 'Kurikulum DIKNAS', 'Kurikulum Tahfidz'];
 
-const fallbackExtracurriculars = ['Panahan', 'Basket', 'Futsal', 'Karate', 'Tata Boga', 'Teknik Otomotif'];
-
 const fallbackFeaturedProgramCards = [
   {
     title: 'Akselerasi Tahfidz 30 Juz',
@@ -139,29 +135,6 @@ const fallbackFeaturedProgramCards = [
     title: 'Mahasantri Bahasa Arab',
     subtitle: 'Kemampuan baca kitab dan berbahasa Arab aktif.',
     image: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?auto=format&fit=crop&w=900&q=60',
-  },
-];
-
-const fallbackExtracurricularCards = [
-  {
-    title: 'Tata Boga',
-    subtitle: 'Keterampilan hidup yang aplikatif dan bermanfaat.',
-    image: 'https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    title: 'Teknik Otomotif',
-    subtitle: 'Praktik kerja tangan dan pemahaman teknis dasar.',
-    image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    title: 'Futsal & Olahraga',
-    subtitle: 'Melatih fisik, fokus, dan sportivitas santri.',
-    image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    title: 'Panahan & Beladiri',
-    subtitle: 'Mengasah konsentrasi, keberanian, dan kesigapan.',
-    image: 'https://images.unsplash.com/photo-1517260739337-6799d239ce83?auto=format&fit=crop&w=900&q=60',
   },
 ];
 
@@ -205,18 +178,6 @@ const createHeroSlide = (overrides: Partial<HeroSlide> = {}, fallbackKey?: strin
   ...overrides,
 });
 
-const formatAgendaDay = (dateStr: string) => new Date(dateStr).getDate();
-
-const formatAgendaMonth = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString('id-ID', { month: 'short' });
-
-const formatAgendaFullDate = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
 
 const fullHeroSlideImage = (id: string) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1920&q=80`;
@@ -318,7 +279,6 @@ function extractListItems<T>(payload: MaybeListResponse<T>): T[] {
 
 export default function LandingPage() {
   const [news, setNews] = useState<News[]>([]);
-  const [agendas, setAgendas] = useState<Agenda[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -384,9 +344,8 @@ export default function LandingPage() {
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [newsData, agendasData, galleryData, videosData, programsData, settingsData, campaignsData] = await Promise.all([
+        const [newsData, galleryData, videosData, programsData, settingsData, campaignsData] = await Promise.all([
           getNews(),
-          getAgendas(),
           getGallery({ limit: 24, offset: 0 }),
           getVideos({ limit: 24, offset: 0 }),
           getPrograms(),
@@ -395,7 +354,6 @@ export default function LandingPage() {
         ]);
 
         setNews(extractListItems(newsData).slice(0, 3));
-        setAgendas(extractListItems(agendasData).slice(0, 3));
         setGallery(extractListItems(galleryData));
         setVideos(extractListItems(videosData));
         setPrograms(extractListItems(programsData));
@@ -436,11 +394,6 @@ export default function LandingPage() {
     () => sortedPrograms.filter((p) => (p.category || 'program') === 'program'),
     [sortedPrograms]
   );
-  const ekskulPrograms = useMemo(
-    () => sortedPrograms.filter((p) => p.category === 'ekskul'),
-    [sortedPrograms]
-  );
-
   const toCard = (p: Program, fallbackImage: string) => ({
     title: p.title,
     subtitle:
@@ -462,32 +415,12 @@ export default function LandingPage() {
     [intiPrograms]
   );
 
-  const displayExtracurricularCards = useMemo(
-    () =>
-      ekskulPrograms.length > 0
-        ? ekskulPrograms
-            .slice(0, 4)
-            .map((p) =>
-              toCard(p, fallbackExtracurricularCards[0]?.image || '')
-            )
-        : fallbackExtracurricularCards,
-    [ekskulPrograms]
-  );
-
   const displayCurriculumTracks = useMemo(
     () =>
       intiPrograms.length > 0
         ? intiPrograms.slice(0, 6).map((p) => p.title)
         : fallbackCurriculumTracks,
     [intiPrograms]
-  );
-
-  const displayExtracurriculars = useMemo(
-    () =>
-      ekskulPrograms.length > 0
-        ? ekskulPrograms.slice(0, 8).map((p) => p.title)
-        : fallbackExtracurriculars,
-    [ekskulPrograms]
   );
 
   const schoolPhone =
@@ -732,14 +665,14 @@ export default function LandingPage() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-200 to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.06),_transparent_24%)]" />
         <div className="container mx-auto max-w-6xl px-4">
-          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch lg:gap-8 xl:gap-10">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="relative z-10">
+          <div className="relative z-10">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
               <PublicSectionIntro
                 eyebrow="Program Inti"
                 title="Program utama yang membentuk ritme belajar santri"
                 description="Tahfidz, adab, wawasan Islam, dan kesiapan hidup disusun berjalan seimbang setiap hari."
               />
-              <div className="mt-7 grid gap-4 sm:mt-8 sm:grid-cols-2">
+              <div className="mt-7 grid gap-4 sm:mt-8 sm:grid-cols-2 lg:grid-cols-4">
                 {displayFeaturedProgramCards.map((program) => (
                   <div
                     key={program.title}
@@ -751,7 +684,7 @@ export default function LandingPage() {
                         alt={program.title}
                         fill
                         unoptimized
-                        sizes="(max-width: 768px) 100vw, 33vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/24 to-transparent" />
@@ -766,7 +699,8 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap gap-3">
                 {displayCurriculumTracks.map((track) => (
                   <span
                     key={track}
@@ -778,57 +712,10 @@ export default function LandingPage() {
               </div>
               <Link
                 href="/program"
-                className="mt-8 inline-flex items-center gap-3 self-start rounded-full border border-sky-200 bg-white px-6 py-3 text-sm font-bold text-sky-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700"
+                className="inline-flex items-center gap-3 self-start rounded-full border border-sky-200 bg-white px-6 py-3 text-sm font-bold text-sky-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700 lg:self-auto"
               >
                 Jelajahi program <ArrowRight size={16} />
               </Link>
-            </motion.div>
-
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUpVariant}
-              className="relative z-10 rounded-[1.8rem] border border-sky-900/80 bg-[linear-gradient(180deg,#facc15_0%,#10251d_100%)] p-6 text-white shadow-[0_35px_80px_-35px_rgba(250,204,21,0.35)] md:rounded-[2rem] md:p-8"
-            >
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-200">Ekstrakurikuler</p>
-              <h3 className="mt-3 text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.35rem]">
-                Aktivitas penunjang yang membuat santri aktif, terampil, dan percaya diri.
-              </h3>
-              <div className="mt-7 grid gap-4 sm:mt-8 sm:grid-cols-2">
-                {displayExtracurricularCards.map((item, index) => (
-                  <div
-                    key={item.title}
-                    className="group overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 shadow-[0_18px_40px_-32px_rgba(0,0,0,0.35)] backdrop-blur-sm transition-all hover:-translate-y-1 md:rounded-[1.65rem]"
-                  >
-                    <div className="relative h-36 md:h-40">
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        fill
-                        priority={index === 0}
-                        unoptimized
-                        sizes="(max-width: 768px) 100vw, 28vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/22 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-4">
-                        <p className="text-sm font-black text-white">{item.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-200">{item.subtitle}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                {displayExtracurriculars.map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200"
-                  >
-                    {item}
-                  </span>
-                ))}
               </div>
             </motion.div>
           </div>
@@ -1085,127 +972,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-t border-slate-200 bg-[linear-gradient(180deg,#f6f7f3_0%,#eef4ef_100%)] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.08),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.05),_transparent_20%)]" />
-        <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
-            <PublicSectionIntro
-              eyebrow="Agenda Mendatang"
-              title="Agenda terdekat yang sedang disiapkan pondok"
-              description="Pantau jadwal penting dan kegiatan yang akan berlangsung dalam waktu dekat."
-              actionHref="/agendas"
-              actionLabel="Lihat agenda lengkap"
-            />
-          </motion.div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3 xl:gap-5">
-            {isLoading ? (
-              <PublicGridSkeleton count={3} className="grid gap-4 md:grid-cols-3 col-span-full" itemClassName="h-44 rounded-[1.75rem]" />
-            ) : agendas.length > 0 ? (
-              <>
-                <article className="group overflow-hidden rounded-[1.85rem] border border-white/75 bg-white/92 shadow-[0_26px_60px_-34px_rgba(250,204,21,0.18)] backdrop-blur-sm md:col-span-2">
-                  <div className="grid h-full gap-0 md:grid-cols-[0.9fr_1.1fr]">
-                    <div className="relative overflow-hidden bg-[linear-gradient(135deg,#facc15_0%,#10251d_100%)] p-6 text-white md:p-7">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.24),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.12),_transparent_26%)]" />
-                      <div className="relative flex h-full flex-col">
-                        <span className="inline-flex w-fit rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-100 backdrop-blur-sm">
-                          {agendas[0].category || 'Agenda Pondok'}
-                        </span>
-                        <div className="mt-8 flex items-end gap-4">
-                          <div className="rounded-[1.6rem] border border-white/10 bg-white/10 px-5 py-4 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-                            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200">
-                              {formatAgendaMonth(agendas[0].start_date)}
-                            </p>
-                            <p className="mt-2 text-4xl font-black leading-none">
-                              {formatAgendaDay(agendas[0].start_date)}
-                            </p>
-                          </div>
-                          <div className="pb-1">
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/80">Jadwal Terdekat</p>
-                            <p className="mt-2 text-sm font-semibold text-slate-200">
-                              {agendas[0].time_info || '08:00 - selesai'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex h-full flex-col p-6 md:p-7">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">Agenda Utama</p>
-                      <h3 className="mt-3 text-[1.9rem] font-black leading-[1.02] tracking-[-0.03em] text-slate-900">
-                        {agendas[0].title}
-                      </h3>
-                      <p className="mt-4 text-sm font-medium leading-7 text-slate-600 md:text-[15px]">
-                        {agendas[0].description ||
-                          'Agenda ini menjadi bagian dari pembinaan rutin untuk memperkuat ilmu, adab, dan kebersamaan di lingkungan Al-Maa.'}
-                      </p>
-                      <div className="mt-6 grid gap-3 text-sm text-slate-600">
-                        <div className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
-                          <Calendar size={16} className="mt-0.5 shrink-0 text-sky-600" />
-                          <span>{formatAgendaFullDate(agendas[0].start_date)}</span>
-                        </div>
-                        <div className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
-                          <MapPin size={16} className="mt-0.5 shrink-0 text-sky-600" />
-                          <span>{agendas[0].location || 'Kompleks Al-Maa Parung'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-
-                <div className="grid gap-4 md:auto-rows-fr">
-                  {agendas.slice(1, 3).map((agenda) => (
-                    <article
-                      key={agenda.id}
-                      className="flex h-full flex-col rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_42px_-32px_rgba(250,204,21,0.16)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky-200"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-[1.35rem] bg-sky-500 text-white shadow-lg shadow-sky-200/70">
-                          <span className="text-[9px] font-black uppercase tracking-[0.18em]">{formatAgendaMonth(agenda.start_date)}</span>
-                          <span className="mt-1 text-xl font-black leading-none">{formatAgendaDay(agenda.start_date)}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">
-                            {agenda.category || 'Agenda'}
-                          </p>
-                          <h3 className="mt-2 line-clamp-2 text-lg font-black tracking-tight text-slate-900">
-                            {agenda.title}
-                          </h3>
-                        </div>
-                      </div>
-
-                      <p className="mt-4 line-clamp-3 text-sm font-medium leading-6 text-slate-600">
-                        {agenda.description ||
-                          'Agenda pembinaan terjadwal yang memperkuat ilmu, adab, dan kebersamaan di lingkungan pondok.'}
-                      </p>
-
-                      <div className="mt-5 space-y-2 text-sm text-slate-500">
-                        <div className="flex items-start gap-2">
-                          <Calendar size={15} className="mt-0.5 shrink-0 text-sky-500" />
-                          <span>{agenda.time_info || formatAgendaFullDate(agenda.start_date)}</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <MapPin size={15} className="mt-0.5 shrink-0 text-sky-500" />
-                          <span>{agenda.location || 'Kompleks Al-Maa Parung'}</span>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="md:col-span-3">
-                <PublicEmptyState
-                  icon={Calendar}
-                  title="Belum ada agenda terbaru"
-                  description="Agenda pondok yang akan datang akan ditampilkan di sini."
-                  className="bg-white"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      
 
       <section className="relative overflow-hidden bg-[linear-gradient(180deg,#f5f7f3_0%,#ffffff_24%,#ffffff_100%)] pb-12 pt-8 md:pb-16 md:pt-14">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-sky-50/80 to-transparent" />

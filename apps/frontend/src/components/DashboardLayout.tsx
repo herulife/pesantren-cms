@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import Sidebar from './Sidebar';
+import FloatingQuickMenu from './FloatingQuickMenu';
 import { useAuth } from './AuthProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="admin-panel-shell min-h-screen bg-slate-50 text-slate-800">
       {isMobileSidebarOpen && (
         <button
           type="button"
@@ -26,11 +27,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <Sidebar onClose={() => setIsMobileSidebarOpen(false)} />
+        <Suspense fallback={<div className="h-full w-64" aria-hidden="true" />}>
+          <Sidebar onClose={() => setIsMobileSidebarOpen(false)} />
+        </Suspense>
       </div>
 
       <div className="flex min-h-screen flex-col lg:pl-[17rem]">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm lg:mx-3 lg:mt-3 lg:rounded-xl lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/85 px-4 shadow-sm backdrop-blur-md lg:mx-3 lg:mt-3 lg:rounded-xl lg:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -68,7 +71,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:px-8 lg:pb-8 lg:pt-7">{children}</main>
+        <main className="ap-fade-in flex-1 p-4 lg:px-8 lg:pb-8 lg:pt-7">{children}</main>
+
+        <FloatingQuickMenu />
       </div>
     </div>
   );

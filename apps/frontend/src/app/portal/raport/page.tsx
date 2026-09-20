@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Download, Eye, FileText, Printer, RefreshCw, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { BookOpen, Download, Eye, FileText, Info, Printer, RefreshCw, Sparkles, Target, TrendingUp, X } from 'lucide-react';
 import { getMyAcademicGrades, getMyAttendanceSummary, getMyTahfidz, getMyRaport, type Grade, type TahfidzProgress, type ComputedRaport } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { downloadStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
@@ -56,6 +56,14 @@ export default function PortalRaportPage() {
   const [tahfidz, setTahfidz] = useState<TahfidzProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [eraport, setEraport] = useState<ComputedRaport | null>(null);
+  const [showFormula, setShowFormula] = useState(false);
+
+  useEffect(() => {
+    if (!showFormula) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowFormula(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showFormula]);
 
   useEffect(() => {
     const fetchAcademicData = async () => {
@@ -224,9 +232,15 @@ export default function PortalRaportPage() {
               <h2 className="mt-1 font-outfit text-lg font-black tracking-tight text-white">
                 E-Raport {eraport.semester === '1' ? 'Semester Ganjil' : 'Semester Genap'} · TA {eraport.academic_year}
               </h2>
-              <p className="mt-1 text-xs text-sky-100">
-                Bobot Mapel {eraport.weights?.mapel ?? 50}% · Project {eraport.weights?.project ?? 25}% · Kesantrian {eraport.weights?.kesantrian ?? 25}%
-              </p>
+              <button
+                type="button"
+                onClick={() => setShowFormula(true)}
+                aria-label="Lihat cara hitung Nilai Akhir"
+                aria-haspopup="dialog"
+                className="mt-2 inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                <Info size={14} /> Cara hitung nilai?
+              </button>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-3 text-center ring-1 ring-white/20">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100">Nilai Akhir</p>
@@ -247,6 +261,76 @@ export default function PortalRaportPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {showFormula && eraport && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 backdrop-blur-sm sm:items-center sm:p-6"
+          onClick={() => setShowFormula(false)}
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="formula-title"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-600">Penjelasan untuk Wali</p>
+                <h3 id="formula-title" className="mt-1 font-outfit text-xl font-black tracking-tight text-slate-900">
+                  Dari mana Nilai Akhir berasal?
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFormula(false)}
+                aria-label="Tutup penjelasan"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Nilai Akhir putra/putri Bapak/Ibu adalah <strong className="text-slate-900">gabungan 3 nilai</strong> berikut ini:
+            </p>
+            <ul className="mt-4 space-y-3">
+              {[
+                { name: 'Mata Pelajaran', weight: eraport.weights?.mapel ?? 50, desc: 'Rata-rata nilai semua mapel semester ini.', tint: 'bg-sky-50 text-sky-700' },
+                { name: 'Project', weight: eraport.weights?.project ?? 25, desc: 'Nilai tugas dan project santri.', tint: 'bg-emerald-50 text-emerald-700' },
+                { name: 'Kesantrian', weight: eraport.weights?.kesantrian ?? 25, desc: 'Penilaian adab, ibadah, disiplin, dan kemandirian.', tint: 'bg-amber-50 text-amber-700' },
+              ].map((row) => (
+                <li key={row.name} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5">
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${row.tint}`}>{row.weight}%</span>
+                  <span>
+                    <span className="block text-sm font-bold text-slate-900">{row.name}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-slate-500">{row.desc}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 rounded-2xl bg-sky-50 p-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sky-600">Contoh hitung semester ini</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">
+                ({Number(eraport.mapel_score || 0).toFixed(1)} × {eraport.weights?.mapel ?? 50}%)
+                {' + '}({Number(eraport.project_score || 0).toFixed(1)} × {eraport.weights?.project ?? 25}%)
+                {' + '}({Number(eraport.kesantrian_score || 0).toFixed(1)} × {eraport.weights?.kesantrian ?? 25}%)
+                {' = '}{eraport.final_score?.toFixed(2)}
+              </p>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              Bobot tiap bagian sudah ditentukan oleh sekolah. Predikat kelulusan: {eraport.predikat}.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowFormula(false)}
+              className="mt-5 min-h-[44px] w-full rounded-2xl bg-sky-600 py-3 text-sm font-bold text-white transition hover:bg-sky-700"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

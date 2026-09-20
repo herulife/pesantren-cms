@@ -22,7 +22,7 @@ type PSBRepository interface {
 	FindByID(ctx context.Context, id int) (*Registration, error)
 	FindByUserID(ctx context.Context, userID int) (*Registration, error)
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
-	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL string) (*Registration, error)
+	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL string) (*Registration, error)
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
 	UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error
 	UpdateStatus(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error
@@ -41,6 +41,7 @@ type PublicPSBResult struct {
 	Status        string `json:"status"`
 	StatusLabel   string `json:"status_label"`
 	ProgramChoice string `json:"program_choice"`
+	Jenjang string `json:"jenjang"`
 	TestDate      string `json:"test_date"`
 	RejectionNote string `json:"rejection_note,omitempty"`
 }
@@ -73,12 +74,16 @@ type portalRegistrationRequest struct {
 	MotherPhone   string `json:"mother_phone"`
 	SchoolOrigin  string `json:"school_origin"`
 	ProgramChoice string `json:"program_choice"`
+	Jenjang string `json:"jenjang"`
+	Category string `json:"category"`
 }
 
 type portalDocumentsRequest struct {
 	KKURL      string `json:"kk_url"`
 	IjazahURL  string `json:"ijazah_url"`
 	PasfotoURL string `json:"pasfoto_url"`
+	YatimDocURL string `json:"yatim_doc_url"`
+	SktmDocURL  string `json:"sktm_doc_url"`
 }
 
 type portalPaymentRequest struct {
@@ -94,6 +99,8 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 	req.NIK = validators.NormalizeText(req.NIK)
 	req.BirthDate = validators.NormalizeText(req.BirthDate)
 	req.ProgramChoice = validators.NormalizeText(req.ProgramChoice)
+	req.Jenjang = validators.NormalizeText(req.Jenjang)
+	req.Category = validators.NormalizeText(req.Category)
 	if req.FullName == "" {
 		errs.Add("full_name", "Nama lengkap wajib diisi")
 	}
@@ -127,6 +134,28 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 	}
 	if req.MotherPhone != "" && !validators.ValidatePhone(req.MotherPhone) {
 		errs.Add("mother_phone", "No HP ibu tidak valid")
+	}
+	if req.Category == "" {
+		req.Category = "reguler"
+	}
+	programLower := strings.ToLower(strings.TrimSpace(req.ProgramChoice))
+	if strings.HasPrefix(programLower, "tahfidz") {
+		req.ProgramChoice = "tahfidz"
+	} else if programLower == "bahasa" || programLower == "bahasa arab" {
+		req.ProgramChoice = "bahasa"
+	} else if req.ProgramChoice == "" {
+		errs.Add("program_choice", "Pilih program Tahfidz atau Bahasa")
+	} else {
+		errs.Add("program_choice", "Program harus Tahfidz atau Bahasa")
+	}
+	jl := strings.ToLower(strings.TrimSpace(req.Jenjang))
+	if jl == "smp" || jl == "smk" {
+		req.Jenjang = jl
+	} else {
+		errs.Add("jenjang", "Jenjang harus SMP atau SMK")
+	}
+	if req.Category != "reguler" && req.Category != "yatim" && req.Category != "dhuafa" {
+		errs.Add("category", "Kategori harus Reguler, Yatim, atau Dhuafa")
 	}
 	if len(errs) == 0 {
 		return nil
@@ -222,7 +251,11 @@ func (h *Handler) GetMine(w http.ResponseWriter, r *http.Request) {
 
 	reg, err := h.repo.FindByUserID(r.Context(), userID)
 	if err != nil {
-		SendSuccessResponse(w, http.StatusOK, nil, "Belum ada data PSB")
+		if errors.Is(err, sql.ErrNoRows) {
+			SendSuccessResponse(w, http.StatusOK, nil, "Belum ada data PSB")
+			return
+		}
+		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memuat data PSB")
 		return
 	}
 
@@ -269,8 +302,34 @@ func (h *Handler) SaveMine(w http.ResponseWriter, r *http.Request) {
 		MotherPhone:   req.MotherPhone,
 		SchoolOrigin:  req.SchoolOrigin,
 		ProgramChoice: req.ProgramChoice,
+		Jenjang:       req.Jenjang,
+		Category:      req.Category,
 	})
 	if err != nil {
+		if errors.Is(err, ErrDuplicateNIK) {
+			SendErrorResponse(w, http.StatusConflict, "NIK sudah terdaftar atas nama pendaftar lain. Periksa kembali atau hubungi panitia PSB.")
+			return
+		}
+		if errors.Is(err, ErrYatimQuotaFull) {
+			SendErrorResponse(w, http.StatusConflict, "Kuota beasiswa yatim sudah penuh (5 orang). Hubungi panitia PSB.")
+			return
+		}
+		if errors.Is(err, ErrInvalidJenjang) {
+			SendErrorResponse(w, http.StatusBadRequest, "Jenjang harus SMP atau SMK")
+			return
+		}
+		if errors.Is(err, ErrJenjangQuotaFull) {
+			SendErrorResponse(w, http.StatusConflict, "Kuota jenjang sudah penuh. Hubungi panitia PSB.")
+			return
+		}
+		if errors.Is(err, ErrInvalidCategory) || errors.Is(err, ErrInvalidProgram) {
+			SendErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if errors.Is(err, ErrEditLocked) {
+			SendErrorResponse(w, http.StatusForbidden, "Biodata sudah dikunci karena masuk tahap verifikasi. Hubungi panitia PSB untuk perubahan.")
+			return
+		}
 		SendErrorResponse(w, http.StatusInternalServerError, "Gagal menyimpan biodata PSB")
 		return
 	}
@@ -308,8 +367,16 @@ func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, http.StatusBadRequest, "URL Pasfoto tidak valid")
 		return
 	}
+	if req.YatimDocURL != "" && !validators.ValidateMediaURL(req.YatimDocURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL surat keterangan tidak valid")
+		return
+	}
+	if req.SktmDocURL != "" && !validators.ValidateMediaURL(req.SktmDocURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL SKTM tidak valid")
+		return
+	}
 
-	reg, err := h.repo.UpdateDocumentsByUserID(r.Context(), userID, req.KKURL, req.IjazahURL, req.PasfotoURL)
+	reg, err := h.repo.UpdateDocumentsByUserID(r.Context(), userID, req.KKURL, req.IjazahURL, req.PasfotoURL, req.YatimDocURL, req.SktmDocURL)
 	if err != nil {
 		SendErrorResponse(w, http.StatusBadRequest, "Lengkapi biodata PSB terlebih dahulu sebelum unggah dokumen")
 		return
@@ -374,7 +441,13 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendSuccessResponse(w, http.StatusOK, reg, "Bukti pembayaran berhasil dikirim dan menunggu verifikasi")
+	msg := "Bukti pembayaran berhasil dikirim dan menunggu verifikasi"
+	if expRepo, ok := h.repo.(interface{ ExpectedPSBAmount(context.Context) int }); ok {
+		if exp := expRepo.ExpectedPSBAmount(r.Context()); exp > 0 && reg.PaymentAmount != exp {
+			msg = "Bukti diterima, tetapi nominal berbeda dari ketentuan. Panitia akan memverifikasi."
+		}
+	}
+	SendSuccessResponse(w, http.StatusOK, reg, msg)
 }
 
 func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
@@ -572,6 +645,15 @@ func (h *Handler) AcceptToSantri(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, ErrAlreadySantri):
 			SendErrorResponse(w, http.StatusConflict, "Pendaftar ini sudah menjadi santri")
 			return
+		case errors.Is(err, ErrYatimQuotaFull):
+			SendErrorResponse(w, http.StatusConflict, "Kuota beasiswa yatim sudah penuh (5 orang)")
+			return
+		case errors.Is(err, ErrYatimDocMissing):
+			SendErrorResponse(w, http.StatusBadRequest, "Surat keterangan kematian wajib diunggah untuk kategori yatim")
+			return
+		case errors.Is(err, ErrDhuafaDocMissing):
+			SendErrorResponse(w, http.StatusBadRequest, "SKTM wajib diunggah untuk kategori dhuafa")
+			return
 		case errors.Is(err, sql.ErrNoRows):
 			SendErrorResponse(w, http.StatusNotFound, "Registration not found")
 			return
@@ -619,10 +701,21 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Delete(r.Context(), id); err != nil {
+		if errors.Is(err, ErrAlreadySantri) {
+			SendErrorResponse(w, http.StatusConflict, "Pendaftar ini sudah menjadi santri dan tidak bisa dihapus")
+			return
+		}
 		logger.LogError("Failed to delete registration ID %d: %v", id, err)
 		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses permintaan (Internal Server Error)")
 		return
 	}
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		ActorID: actorID, ActorRole: actorRole,
+		Action: "DELETE_PSB_REGISTRATION", Entity: "registration", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	logger.LogInfo("Successfully deleted registration ID %d", id)
 	SendSuccessResponse(w, http.StatusOK, nil, "Registration deleted successfully")
@@ -642,6 +735,8 @@ func psbStatusLabel(status string) string {
 		return "Masa daftar ulang"
 	case "rejected":
 		return "Belum dapat diterima"
+	case "santri":
+		return "Sudah menjadi santri"
 	default:
 		return "Sedang diproses"
 	}
@@ -733,7 +828,7 @@ type IRepository interface {
 	FindByID(ctx context.Context, id int) (*Registration, error)
 	FindByUserID(ctx context.Context, userID int) (*Registration, error)
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
-	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL string) (*Registration, error)
+	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL string) (*Registration, error)
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
 	UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error
 	UpdateStatus(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error

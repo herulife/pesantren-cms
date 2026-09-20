@@ -361,6 +361,15 @@ export function getGallerySortTimestamp(eventDate?: string | null, createdAt?: s
 
 async function parseResponse(res: Response) {
 	if (!res.ok) {
+		// Sesi kedaluwarsa/hilang: arahkan ke login (kecuali sedang di login/register).
+		if (res.status === 401 && typeof window !== 'undefined') {
+			const path = window.location.pathname;
+			if (!path.startsWith('/login') && !path.startsWith('/register')) {
+				const from = encodeURIComponent(path + window.location.search);
+				window.location.href = `/login?from=${from}`;
+				throw new Error('Sesi berakhir. Mengalihkan ke halaman masuk…');
+			}
+		}
 		const contentType = res.headers.get("content-type");
 		let errMsg = `Permintaan gagal: ${res.status} ${res.statusText}`;
 		if (contentType && contentType.includes("application/json")) {
@@ -474,6 +483,10 @@ export interface Registration {
 	mother_job?: string;
 	mother_phone?: string;
 	program_choice: string;
+	jenjang: string;
+	category?: string;
+	yatim_doc_url?: string;
+	sktm_doc_url?: string;
 	kk_url?: string;
 	ijazah_url?: string;
 	pasfoto_url?: string;
@@ -1922,6 +1935,7 @@ export interface PSBPengumuman {
 	status: string;
 	status_label: string;
 	program_choice: string;
+	jenjang: string;
 	test_date?: string;
 	rejection_note?: string;
 }
@@ -1958,6 +1972,8 @@ export async function saveMyPSBDocuments(payload: {
 	kk_url?: string;
 	ijazah_url?: string;
 	pasfoto_url?: string;
+	yatim_doc_url?: string;
+	sktm_doc_url?: string;
 }) {
 	const res = await fetch(`${API_BASE_URL}/psb/me/documents`, {
 		method: 'PUT',
@@ -3072,6 +3088,12 @@ export interface Santri {
 	status: string;
 	parent_name: string;
 	parent_phone: string;
+	nik: string;
+	father_name: string;
+	father_phone: string;
+	mother_name: string;
+	mother_phone: string;
+	registration_id: number;
 	photo_url: string;
 	user_id?: number | null;
 	created_at: string;
@@ -3380,7 +3402,7 @@ export async function getReportPerGuru(params: { semester?: string; year?: strin
   } catch (e) { console.error("[API] Fetch per-guru error:", e); return []; }
 }
 
-export interface Employee { code: string; name: string; gender: string; birth_place: string; birth_date: string; phone: string; email: string; kind: string; is_active: number; created_at: string; updated_at: string; }
+export interface Employee { code: string; name: string; gender: string; birth_place: string; birth_date: string; phone: string; email: string; kind: string; photo_url: string; is_active: number; created_at: string; updated_at: string; }
 export interface TeacherAttendance { id: number; employee_code: string; employee_name?: string; date: string; status: string; notes: string; time_in: string; time_out: string; minutes: number; }
 export interface PerGuruSummary { without_info: number; present: number; sick: number; permit: number; total_minutes: number; count: number; }
 export interface RekapAbsensi { code: string; name: string; days: number; present: number; sick: number; permit: number; alpha: number; percent: number; }
@@ -3394,12 +3416,16 @@ export async function getEmployees(search = "") {
     return (result.data || []) as Employee[];
   } catch (e) { console.error("[API] Fetch employees error:", e); return []; }
 }
-export async function createEmployee(data: { code: string; name: string; gender?: string; birth_place?: string; birth_date?: string; phone?: string; email?: string; kind: string }) {
+export async function createEmployee(data: { code: string; name: string; gender?: string; photo_url?: string; birth_place?: string; birth_date?: string; phone?: string; email?: string; kind: string }) {
   const res = await fetch(`${API_BASE_URL}/hr/employees`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
   return parseResponse(res);
 }
 export async function deleteEmployee(code: string) {
   const res = await fetch(`${API_BASE_URL}/hr/employees/${encodeURIComponent(code)}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function updateEmployee(code: string, data: { code?: string; name?: string; gender?: string; photo_url?: string; birth_place?: string; birth_date?: string; phone?: string; email?: string; kind?: string }) {
+  const res = await fetch(`${API_BASE_URL}/hr/employees/${encodeURIComponent(code)}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
   return parseResponse(res);
 }
 export async function getTeacherAttendance(params: { code?: string; from?: string; to?: string } = {}) {

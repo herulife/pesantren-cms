@@ -16,6 +16,7 @@ import (
 	"almaparung-api/internal/features/messages"
 	"almaparung-api/internal/features/news"
 	"almaparung-api/internal/features/notifications"
+	"almaparung-api/internal/features/otp"
 	"almaparung-api/internal/features/payments"
 	"almaparung-api/internal/features/programs"
 	"almaparung-api/internal/features/project"
@@ -25,6 +26,7 @@ import (
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/spp"
 	"almaparung-api/internal/features/iuran"
+	"almaparung-api/internal/features/invoices"
 	"almaparung-api/internal/features/school"
 	"almaparung-api/internal/features/kas"
 	"almaparung-api/internal/features/hr"
@@ -174,6 +176,12 @@ func main() {
 	walletRepo := wallet.NewRepository(database.DB)
 	walletHandler := wallet.NewHandler(walletRepo)
 
+	otpRepo := otp.NewRepository(database.DB)
+	otpHandler := otp.NewHandler(otpRepo)
+
+	invoiceRepo := invoices.NewRepository(database.DB)
+	invoiceHandler := invoices.NewHandler(invoiceRepo)
+
 	loginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	googleLoginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	registerLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
@@ -182,6 +190,8 @@ func main() {
 	// (portal butuh upload bukti), dibatasi 30/jam. Webhook Telegram 120/menit.
 	uploadLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 	webhookLimiter := appmiddleware.NewRateLimiter(120, time.Minute)
+	otpRequestLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
+	otpVerifyLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 
 	// 5. Mount Routes
 	r.Route("/api", func(r chi.Router) {
@@ -207,6 +217,9 @@ func main() {
 		r.With(googleLoginLimiter.Middleware).Post("/auth/google", authHandler.GoogleLogin)
 		r.Post("/logout", authHandler.Logout)
 		r.With(webhookLimiter.Middleware).Post("/telegram/webhook", notificationHandler.TelegramWebhook)
+		r.With(otpRequestLimiter.Middleware).Post("/otp/request", otpHandler.Request)
+		r.With(otpVerifyLimiter.Middleware).Post("/otp/verify", otpHandler.Verify)
+		r.With(webhookLimiter.Middleware).Post("/invoices/webhook", invoiceHandler.Webhook)
 
 		// Public Contact Message
 		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
@@ -397,6 +410,12 @@ func main() {
 				r.Mount("/raport", raportHandler.Routes())
 			})
 
+			// Invoice manual oleh panitia/bendahara. Webhook gateway tetap publik + HMAC.
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb"))
+				r.Post("/invoices", invoiceHandler.Create)
+			})
+
 			// Portal PSB for calon santri / wali
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("user"))
@@ -437,6 +456,12 @@ func main() {
 				r.Mount("/disciplines", disciplineHandler.Routes())
 			})
 
+			// Broadcast PSB: panitia boleh kirim pengumuman status (endpoint notifikasi lain tetap superadmin/bendahara).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb"))
+				r.Post("/notifications/broadcast-psb", notificationHandler.BroadcastPSB)
+			})
+
 			// Academic & Notifications
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("superadmin", "bendahara"))
@@ -450,7 +475,11 @@ func main() {
 
 	// PHASE 4: proofs privat via handler berauth (chi memprioritaskan node
 	// statis /uploads/proofs di atas catch-all /uploads/*).
-	r.Get("/uploads/proofs/{file}", upload.ServeProof(database.DB))
+	// AuthMiddleware WAJIB: ServeProof membaca user dari context.
+	r.Group(func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Get("/uploads/proofs/{file}", upload.ServeProof(database.DB))
+	})
 
 	// Serve Static Files -> public/uploads
 	fileServer := http.FileServer(http.Dir("./public/uploads"))

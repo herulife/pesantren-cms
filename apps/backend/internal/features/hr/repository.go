@@ -15,6 +15,7 @@ type Employee struct {
 	Phone     string    `json:"phone"`
 	Email     string    `json:"email"`
 	Kind      string    `json:"kind"`
+	PhotoURL  string    `json:"photo_url"`
 	IsActive  int       `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -57,7 +58,7 @@ type Repository struct{ db *sql.DB }
 func NewRepository(db *sql.DB) *Repository { return &Repository{db: db} }
 
 func (r *Repository) ListEmployees(activeOnly bool, search string) ([]Employee, error) {
-	q := `SELECT code, name, gender, birth_place, birth_date, phone, email, kind, is_active, created_at, updated_at FROM employees WHERE 1=1`
+	q := `SELECT code, name, gender, birth_place, birth_date, phone, email, kind, photo_url, is_active, created_at, updated_at FROM employees WHERE 1=1`
 	args := []interface{}{}
 	if activeOnly {
 		q += ` AND is_active=1`
@@ -75,7 +76,7 @@ func (r *Repository) ListEmployees(activeOnly bool, search string) ([]Employee, 
 	out := []Employee{}
 	for rows.Next() {
 		var e Employee
-		if err := rows.Scan(&e.Code, &e.Name, &e.Gender, &e.BirthPlace, &e.BirthDate, &e.Phone, &e.Email, &e.Kind, &e.IsActive, &e.CreatedAt, &e.UpdatedAt); err != nil {
+		if err := rows.Scan(&e.Code, &e.Name, &e.Gender, &e.BirthPlace, &e.BirthDate, &e.Phone, &e.Email, &e.Kind, &e.PhotoURL, &e.IsActive, &e.CreatedAt, &e.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, e)
@@ -84,14 +85,14 @@ func (r *Repository) ListEmployees(activeOnly bool, search string) ([]Employee, 
 }
 
 func (r *Repository) CreateEmployee(e *Employee) error {
-	_, err := r.db.Exec(`INSERT INTO employees (code, name, gender, birth_place, birth_date, phone, email, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		strings.TrimSpace(e.Code), strings.TrimSpace(e.Name), e.Gender, e.BirthPlace, e.BirthDate, e.Phone, e.Email, e.Kind)
+	_, err := r.db.Exec(`INSERT INTO employees (code, name, gender, birth_place, birth_date, phone, email, kind, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		strings.TrimSpace(e.Code), strings.TrimSpace(e.Name), e.Gender, e.BirthPlace, e.BirthDate, e.Phone, e.Email, e.Kind, e.PhotoURL)
 	return err
 }
 
 func (r *Repository) UpdateEmployee(e *Employee) error {
-	_, err := r.db.Exec(`UPDATE employees SET name=?, gender=?, birth_place=?, birth_date=?, phone=?, email=?, kind=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE code=?`,
-		strings.TrimSpace(e.Name), e.Gender, e.BirthPlace, e.BirthDate, e.Phone, e.Email, e.Kind, e.IsActive, e.Code)
+	_, err := r.db.Exec(`UPDATE employees SET name=?, gender=?, birth_place=?, birth_date=?, phone=?, email=?, kind=?, photo_url=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE code=?`,
+		strings.TrimSpace(e.Name), e.Gender, e.BirthPlace, e.BirthDate, e.Phone, e.Email, e.Kind, e.PhotoURL, e.IsActive, e.Code)
 	return err
 }
 

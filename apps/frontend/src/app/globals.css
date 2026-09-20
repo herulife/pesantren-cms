@@ -343,3 +343,178 @@ html, body {
 .sb-group-items.open { grid-template-rows: 1fr; opacity: 1; }
 .sb-group-items button { cursor: pointer; }
 .sb-group-items > .sb-group-inner { overflow: hidden; min-height: 0; }
+
+/* ===== Alma UI kit — pola jurnal-guru-design, warna inti Alma (sky/emerald/slate) =====
+ * Struktur & ritme diambil dari skill jurnal-guru-design; SEMUA warna memakai
+ * token Alma (sky #0ea5e9, cyan #06b6d4, emerald #10b981, slate). Bukan hijau JG. */
+.ap-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ap-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(14, 165, 233, 0.12);
+}
+.ap-stat { position: relative; overflow: hidden; }
+.ap-stat-deco {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 9999px;
+  opacity: 0.15;
+  top: -20px;
+  right: -20px;
+  pointer-events: none;
+}
+.ap-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ap-btn:active { transform: scale(0.97); }
+.ap-btn-primary { background: #0ea5e9; color: #fff; }
+.ap-btn-primary:hover { background: #0284c7; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); }
+.ap-btn-gradient { background: linear-gradient(to right, #0ea5e9, #06b6d4); color: #fff; }
+.ap-btn-gradient:hover { filter: brightness(1.05); box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35); }
+.ap-btn-success { background: #10b981; color: #fff; }
+.ap-btn-success:hover { background: #059669; }
+.ap-btn-outline { background: transparent; color: #475569; border: 2px solid #e2e8f0; }
+.ap-btn-outline:hover { border-color: #0ea5e9; color: #0284c7; background: #f0f9ff; }
+.ap-btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.ap-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #fff;
+  outline: none;
+}
+.ap-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+.ap-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+.ap-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ap-badge-success { background: #d1fae5; color: #065f46; }
+.ap-badge-warning { background: #fef3c7; color: #92400e; }
+.ap-badge-info { background: #e0f2fe; color: #075985; }
+.ap-badge-danger { background: #ffe4e6; color: #be123c; }
+.ap-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.ap-table-wrap table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.ap-table-wrap thead th {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.ap-table-wrap tbody td {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+.ap-table-wrap tbody tr { background: #fff; }
+.ap-table-wrap tbody tr:nth-child(even) { background: #f8fafc; }
+.ap-table-wrap tbody tr:hover { background: #f0f9ff; }
+/* Header halaman ala JG: sticky blur di atas konten */
+.ap-page-header {
+  position: sticky;
+  top: 4rem;
+  z-index: 10;
+  background: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e2e8f0;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding: 0.75rem 1rem;
+}
+@media (min-width: 1024px) {
+  .ap-page-header { top: 0; margin-left: -2rem; margin-right: -2rem; padding-left: 2rem; padding-right: 2rem; }
+}
+.ap-fade-in { animation: ap-fade-in 0.3s ease; }
+@keyframes ap-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Reveal on-scroll ala JG (pakai IntersectionObserver, class .is-visible) */
+.ap-reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease-out, transform 0.7s ease-out; }
+.ap-reveal.is-visible { opacity: 1; transform: translateY(0); }
+/* Shimmer CTA ala JG untuk tombol primer publik */
+.ap-shimmer-wrap { position: relative; overflow: hidden; }
+.ap-shimmer-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: ap-shimmer 3.2s ease-in-out infinite;
+}
+@keyframes ap-shimmer {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  60%, 100% { transform: translateX(250%) skewX(-20deg); }
+}
+/* Modal ala JG */
+.ap-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.5);
+  backdrop-filter: blur(4px);
+}
+.ap-modal-content {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 16px;
+  box-shadow: 0 25px 60px rgba(2, 6, 23, 0.2);
+}
+.ap-btn:focus-visible, .ap-input:focus-visible, .ap-card:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+/* Print: dokumen resmi A4 */
+@media print {
+  .ap-card { box-shadow: none !important; transform: none !important; break-inside: avoid; }
+  .ap-table-wrap { overflow: visible !important; border-radius: 0; }
+  .ap-modal-overlay { display: none !important; }
+}

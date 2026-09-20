@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
@@ -19,6 +19,8 @@ interface MenuItem {
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
   const { logout, hasRole, user } = useAuth();
   const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
 
@@ -39,7 +41,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     '/admin/raport': <GraduationCap size={18} />,
     '/admin/academics': <BookOpen size={18} />,
     '/admin/project': <FolderTree size={18} />,
-    '/admin/teachers': <UserCheck size={18} />,
+    '/admin/settings?tab=Staf%20Mengajar': <UserCheck size={18} />,
     '/admin/disciplines': <Shield size={18} />,
     '/admin/kesantrian': <ClipboardList size={18} />,
     '/admin/donations': <Heart size={18} />,
@@ -76,7 +78,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
   const groupOfPath = (path: string) => {
     for (const [cat, items] of groups) {
-      if (items.some((item) => (item.href === '/admin' ? path === item.href : path.startsWith(item.href)))) {
+      if (items.some((item) => {
+      const base = item.href.split('?')[0];
+      return item.href === '/admin' ? path === base : path.startsWith(base);
+    })) {
         return cat;
       }
     }
@@ -169,12 +174,17 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               <div className={`sb-group-items${isOpen ? ' open' : ''}`}>
                 <div className="sb-group-inner">
               {shown.map((item) => {
-                const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
+                const full = search ? `${pathname}?${search}` : pathname;
+                const isActive = item.href === '/admin'
+                  ? full === '/admin'
+                  : item.href.includes('?')
+                    ? full === item.href || full.startsWith(`${item.href}&`)
+                    : pathname.startsWith(item.href);
                 return (
               <div key={item.href} className={`flex items-center gap-2 rounded-lg transition-colors ${
                 isActive ? 'bg-gradient-to-r from-sky-500/18 via-sky-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
               }`}>
-                <Link href={item.href} onClick={onClose} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
+                <Link href={item.href} onClick={onClose} aria-current={isActive ? 'page' : undefined} aria-label={item.label} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
                   <div className={isActive ? 'text-sky-300' : 'text-slate-500'}>
                     {item.icon}
                   </div>

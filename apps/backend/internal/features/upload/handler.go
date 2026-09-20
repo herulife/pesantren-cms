@@ -177,6 +177,9 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	// pengunjung (localhost menunjuk ke perangkat masing-masing). Frontend
 	// menulis ulang path ini ke origin API via normalizeApiAssetUrl.
 	publicURL := fmt.Sprintf("/uploads/%s", newFileName)
+	if r.FormValue("kind") == "proof" {
+		publicURL = fmt.Sprintf("/uploads/proofs/%s", newFileName)
+	}
 
 	logger.Info(r.Context(), "upload completed", logger.Field{
 		"operation":      "upload_image",

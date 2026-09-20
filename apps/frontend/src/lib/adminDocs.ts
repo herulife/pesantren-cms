@@ -297,7 +297,7 @@ export const adminDocSections: AdminDocSection[] = [
     id: 'teachers',
     title: 'Data Pengajar',
     category: 'Santri',
-    href: '/admin/teachers',
+    href: '/admin/settings?tab=Staf%20Mengajar',
     summary:
       'Daftar ustadz, ustadzah, dan guru yang tampil di website. Supaya pengunjung tahu siapa yang mengajar.',
     audience: ['Pimpinan', 'Tim Media'],

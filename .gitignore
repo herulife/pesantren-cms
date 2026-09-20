@@ -50,6 +50,8 @@ data/
 # Backup archives (contain secrets/db)
 backups/*.tar.gz
 backups/*.db
+backups/*.db.*
+backups/*.gz
 
 # DB backup sementara (autocommit)
 *.db.bak.*

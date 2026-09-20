@@ -18,6 +18,8 @@ type BiodataForm = {
   address: string;
   school_origin: string;
   program_choice: string;
+  jenjang: string;
+  category: string;
   father_name: string;
   father_job: string;
   father_phone: string;
@@ -36,6 +38,8 @@ const initialForm: BiodataForm = {
   address: '',
   school_origin: '',
   program_choice: '',
+  jenjang: '',
+  category: 'reguler',
   father_name: '',
   father_job: '',
   father_phone: '',
@@ -53,6 +57,8 @@ const dataDiriFields: Array<keyof BiodataForm> = [
   'address',
   'school_origin',
   'program_choice',
+  'jenjang',
+  'category',
 ];
 
 const dataOrangTuaFields: Array<keyof BiodataForm> = [
@@ -63,6 +69,10 @@ const dataOrangTuaFields: Array<keyof BiodataForm> = [
   'mother_job',
   'mother_phone',
 ];
+
+const categoryLabel = (c?: string) => c === 'yatim' ? 'Yatim' : c === 'dhuafa' ? 'Dhuafa' : 'Reguler';
+const jenjangLabel = (j?: string) => j === 'smk' ? 'SMK' : j === 'smp' ? 'SMP' : (j || '-');
+const programLabel = (p?: string) => p === 'bahasa' ? 'Bahasa Arab' : p === 'tahfidz' ? "Tahfidz Al-Qur'an" : (p || '-');
 
 function isFilled(value: string) {
   return Boolean(value.trim());
@@ -89,7 +99,8 @@ function validateDataDiri(form: BiodataForm): Partial<Record<keyof BiodataForm, 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.birth_date.trim())) e.birth_date = 'Tanggal lahir wajib YYYY-MM-DD';
   if (!isFilled(form.address)) e.address = 'Alamat wajib diisi';
   if (!isFilled(form.school_origin)) e.school_origin = 'Asal sekolah wajib diisi';
-  if (!isFilled(form.program_choice)) e.program_choice = 'Pilih program';
+  if (form.program_choice !== 'tahfidz' && form.program_choice !== 'bahasa') e.program_choice = 'Pilih program Tahfidz atau Bahasa';
+  if (form.jenjang !== 'smp' && form.jenjang !== 'smk') e.jenjang = 'Pilih jenjang SMP atau SMK';
   return e;
 }
 
@@ -152,7 +163,9 @@ function BiodataPageContent() {
           birth_date: data?.birth_date || '',
           address: data?.address || '',
           school_origin: data?.school_origin || '',
-          program_choice: data?.program_choice || '',
+          program_choice: (data?.program_choice || '').trim().toLowerCase(),
+          jenjang: (data?.jenjang || '').trim().toLowerCase(),
+          category: data?.category || 'reguler',
           father_name: data?.father_name || data?.parent_name || '',
           father_job: data?.father_job || '',
           father_phone: data?.father_phone || data?.parent_phone || '',
@@ -411,7 +424,9 @@ function BiodataPageContent() {
                   { label: 'NIK', value: formData.nik || '-' },
                   { label: 'Tempat, Tanggal Lahir', value: [formData.birth_place, formData.birth_date].filter(Boolean).join(', ') || '-' },
                   { label: 'Asal Sekolah', value: formData.school_origin || '-' },
-                  { label: 'Program Pilihan', value: formData.program_choice || '-' },
+                  { label: 'Kategori', value: categoryLabel(formData.category) },
+                  { label: 'Program Pilihan', value: programLabel(formData.program_choice) },
+                  { label: 'Jenjang', value: jenjangLabel(formData.jenjang) },
                   { label: 'Alamat Lengkap', value: formData.address || '-' },
                 ].map((item) => (
                   <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -555,16 +570,56 @@ function BiodataPageContent() {
                 </div>
 
                 <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Kategori Pendaftar</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => handleChange('category', e.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
+                  >
+                    <option value="reguler">Reguler</option>
+                    <option value="yatim">Yatim (beasiswa, kuota 5)</option>
+                    <option value="dhuafa">Dhuafa (beasiswa)</option>
+                  </select>
+                  {formData.category === 'yatim' && (
+                    <p className="mt-1 text-xs font-semibold text-amber-700">Wajib unggah surat keterangan kematian di langkah Dokumen.</p>
+                  )}
+                  {formData.category === 'dhuafa' && (
+                    <p className="mt-1 text-xs font-semibold text-amber-700">Wajib unggah SKTM di langkah Dokumen.</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Jenjang</label>
+                  <select
+                    value={formData.jenjang}
+                    onChange={(e) => handleChange('jenjang', e.target.value)}
+                    aria-invalid={!!errors.jenjang}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    required
+                  >
+                    <option value="">Pilih jenjang</option>
+                    <option value="smp">SMP</option>
+                    <option value="smk">SMK</option>
+                  </select>
+                  {errors.jenjang ? <p className="mt-1 text-xs font-bold text-rose-600">{errors.jenjang}</p> : null}
+                  <p className="mt-1 text-xs font-semibold text-slate-500">SMP dari SD/MI • SMK dari SMP/MTs • Kelas awal otomatis VII / X.</p>
+                </div>
+
+                <div>
                   <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Pilihan Program</label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.program_choice}
                     onChange={(e) => handleChange('program_choice', e.target.value)}
                     aria-invalid={!!errors.program_choice}
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
-                    placeholder="Contoh: Tahfidz Reguler"
                     required
-                  />
+                  >
+                    <option value="">Pilih program</option>
+                    <option value="tahfidz">Tahfidz Al-Qur&apos;an</option>
+                    <option value="bahasa">Bahasa Arab</option>
+                  </select>
+                  {errors.program_choice ? <p className="mt-1 text-xs font-bold text-rose-600">{errors.program_choice}</p> : null}
                 </div>
 
                 <div className="md:col-span-2">

@@ -92,6 +92,38 @@ export const portalDocSections: PortalDocSection[] = [
     ],
   },
   {
+    id: 'payment',
+    title: 'Bayar Pendaftaran & Upload Bukti',
+    href: '/portal/payment',
+    summary: 'Transfer biaya pendaftaran ke rekening pondok, lalu unggah buktinya di sini. Panitia akan memverifikasi.',
+    quickActions: [
+      'Salin nomor rekening dan nominal yang harus ditransfer.',
+      'Isi nominal transfer dan tanggal bayar sesuai bukti.',
+      'Unggah foto bukti transfer lalu tekan Kirim Bukti Pembayaran.',
+      'Pantau status: Menunggu Verifikasi → Lunas.',
+    ],
+    workflows: [
+      {
+        title: 'Cara membayar pendaftaran',
+        steps: [
+          'Buka halaman Bayar Pendaftaran.',
+          'Lihat rekening tujuan (bank, nomor, atas nama) dan nominal diharapkan.',
+          'Transfer dari m-banking / ATM / e-banking sesuai nominal.',
+          'Kembali ke halaman bayar, isi nominal dan tanggal transfer.',
+          'Klik Pilih Bukti, lalu pilih foto bukti transfer.',
+          'Tekan Kirim Bukti Pembayaran. Status berubah menjadi Menunggu Verifikasi.',
+          'Cek status di halaman ini, biasanya diverifikasi dalam 1-2 hari kerja.',
+        ],
+      },
+    ],
+    tips: [
+      'Isi nominal sesuai bukti transfer. Salah nominal bisa membuat verifikasi ditolak.',
+      'Jangan kirim ulang / upload ganda saat status masih Menunggu Verifikasi.',
+      'Kalau bukti ditolak, baca Catatan Panitia lalu upload ulang bukti yang benar.',
+      'Butuh bantuan? Gunakan tombol Chat Panitia PSB di halaman pembayaran.',
+    ],
+  },
+  {
     id: 'academics',
     title: 'Lihat Nilai & Raport Anak',
     href: '/portal/raport',

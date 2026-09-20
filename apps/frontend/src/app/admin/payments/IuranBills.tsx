@@ -8,6 +8,7 @@ import {
 } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
+import { openProofInNewTab } from '@/components/ProofImage';
 import { Plus, Trash2, Search, X, Receipt, Calendar, Wallet, RotateCcw, Pencil, Users } from 'lucide-react';
 
 const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -428,9 +429,9 @@ export default function IuranBills() {
                           {b.status === 'pending' && (
                             <>
                               {b.payment_proof && (
-                                <a href={b.payment_proof} target="_blank" rel="noreferrer" title="Lihat bukti" className="px-3 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-black uppercase hover:bg-slate-200 transition-all">
+                                <button onClick={() => void openProofInNewTab(b.payment_proof, (m) => showToast('error', m))} title="Lihat bukti" className="px-3 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-black uppercase hover:bg-slate-200 transition-all">
                                   Bukti
-                                </a>
+                                </button>
                               )}
                               <button onClick={() => doVerify(b.id, true)} title="Terima pembayaran" className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase hover:bg-emerald-700 transition-all">
                                 Terima

@@ -133,7 +133,7 @@ export default function LogsAdminPage() {
             <p className="text-slate-300 font-black uppercase tracking-[0.3em] text-xs font-outfit">Membaca Memori Sistem...</p>
           </div>
         ) : logs.length > 0 ? (
-          <div className="overflow-x-auto min-h-[500px]">
+          <div className="ap-table-wrap overflow-x-auto min-h-[500px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100">

@@ -493,7 +493,7 @@ export default function DonationsAdminPage() {
               Memuat Data Donatur...
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -556,7 +556,7 @@ export default function DonationsAdminPage() {
                 Menyusun Log Donatur...
              </div>
            ) : (
-             <div className="overflow-x-auto">
+             <div className="ap-table-wrap overflow-x-auto">
                <table className="w-full text-left border-collapse">
                  <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">

@@ -37,7 +37,6 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/send-telegram", h.SendTelegram)
 	r.Post("/broadcast-tagihan", h.BroadcastTagihan)
 	r.Post("/broadcast-nilai", h.BroadcastNilai)
-	r.Post("/broadcast-psb", h.BroadcastPSB)
 	return r
 }
 

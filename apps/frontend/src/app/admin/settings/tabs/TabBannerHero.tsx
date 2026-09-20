@@ -96,6 +96,9 @@ export default function TabBannerHero() {
   const [isDirty, setIsDirty] = useState(false);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [isGalleryLoading, setIsGalleryLoading] = useState(false);
+  const [galleryOffset, setGalleryOffset] = useState(0);
+  const [galleryTotal, setGalleryTotal] = useState(0);
+  const GALLERY_LIMIT = 12;
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { showToast } = useToast();
 
@@ -130,17 +133,30 @@ export default function TabBannerHero() {
           button_url: settingsMap.banner_button_url || undefined,
         }, 'slide-1'),
       ];
-    setSlides(parsedSlides);
-    setSelectedSlideId(parsedSlides[0]?.id || '');
+    // Perbaiki data lama yang ID-nya kembar (akibat bug tambah-hapus).
+    const seen = new Set<string>();
+    const deduped = parsedSlides.map((slide, index) => {
+      if (!slide.id || seen.has(slide.id)) {
+        return { ...slide, id: `slide-${Date.now().toString(36)}-${index}` };
+      }
+      seen.add(slide.id);
+      return slide;
+    });
+    setSlides(deduped);
+    setSelectedSlideId(deduped[0]?.id || '');
     setIsDirty(false);
     setIsLoading(false);
   };
 
-  const fetchGalleryItems = async () => {
+  const fetchGalleryItems = async (append = false) => {
     setIsGalleryLoading(true);
     try {
-      const result = await getGallery({ limit: 12, offset: 0 });
-      setGalleryItems((result.data || []) as GalleryItem[]);
+      const offset = append ? galleryOffset + GALLERY_LIMIT : 0;
+      const result = await getGallery({ limit: GALLERY_LIMIT, offset });
+      const items = ((result.data || []) as GalleryItem[]);
+      setGalleryItems((prev) => (append ? [...prev, ...items] : items));
+      setGalleryOffset(offset);
+      setGalleryTotal(result.pagination?.total || (offset + items.length));
     } finally {
       setIsGalleryLoading(false);
     }
@@ -151,12 +167,27 @@ export default function TabBannerHero() {
     setIsDirty(true);
   };
 
+  // ID unik anti-kembar: max suffix + 1 (fallback timestamp bila tabrakan).
+  const nextSlideId = (prev: HeroSlide[]) => {
+    let max = 0;
+    for (const item of prev) {
+      const m = /^slide-(\d+)$/.exec(item.id || '');
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    }
+    const candidate = `slide-${max + 1}`;
+    if (prev.some((item) => item.id === candidate)) {
+      return `slide-${Date.now().toString(36)}`;
+    }
+    return candidate;
+  };
+
   const addSlide = () => {
+    const id = nextSlideId(slides);
     const nextSlide = createSlide({
       title: `Slide ${slides.length + 1}`,
       button_text: 'Lihat Selengkapnya',
       button_url: '/profil',
-    }, `slide-${slides.length + 1}`);
+    }, id);
     setSlides((prev) => [...prev, nextSlide]);
     setSelectedSlideId(nextSlide.id);
     setIsDirty(true);
@@ -424,6 +455,7 @@ export default function TabBannerHero() {
                   {Array.from({ length: 6 }).map((_, i) => (<div key={i} className="h-20 animate-pulse rounded-xl bg-slate-100" />))}
                 </div>
               ) : galleryItems.length > 0 ? (
+                <div className="max-h-72 overflow-y-auto pr-1">
                 <div className="grid grid-cols-3 gap-2">
                   {galleryItems.map((item) => {
                     const imageUrl = resolveDisplayImageUrl(item.image_url);
@@ -435,6 +467,17 @@ export default function TabBannerHero() {
                       </button>
                     );
                   })}
+                </div>
+                {galleryOffset + galleryItems.length < galleryTotal ? (
+                  <button
+                    type="button"
+                    onClick={() => void fetchGalleryItems(true)}
+                    disabled={isGalleryLoading}
+                    className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    {isGalleryLoading ? 'Memuat…' : `Tampilkan lebih banyak (${galleryTotal - galleryOffset - galleryItems.length} lagi)`}
+                  </button>
+                ) : null}
                 </div>
               ) : (
                 <p className="rounded-xl bg-slate-50 py-6 text-center text-sm text-slate-400">Belum ada gambar galeri.</p>

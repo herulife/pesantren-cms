@@ -219,7 +219,7 @@ export default function MessagesAdminPage() {
 						<p className="text-slate-400 max-w-xs mx-auto text-sm font-medium">Tidak ada pesan yang masuk untuk saat ini atau hasil pencarian nihil.</p>
 					</div>
 				) : (
-					<div className="overflow-x-auto min-h-[400px]">
+					<div className="ap-table-wrap overflow-x-auto min-h-[400px]">
 						<table className="w-full text-left border-collapse">
 							<thead>
 								<tr className="bg-slate-50/80 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">

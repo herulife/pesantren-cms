@@ -133,7 +133,7 @@ export default function PsbStatusPage() {
                       </p>
                       <h4 className={`text-2xl font-black uppercase tracking-tight mb-2 ${statusTone.title}`}>{result.status_label}</h4>
                       {result.program_choice ? (
-                        <p className={`text-sm font-medium ${statusTone.body}`}>Program: {result.program_choice}</p>
+                        <p className={`text-sm font-medium ${statusTone.body}`}>Jenjang: {(result.jenjang || '-').toUpperCase()} | Program: {result.program_choice}</p>
                       ) : null}
                       {result.status === 'tes' && result.test_date ? (
                         <p className={`mt-3 flex items-start gap-2 text-sm font-medium ${statusTone.body}`}>

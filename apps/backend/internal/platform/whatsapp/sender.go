@@ -3,6 +3,7 @@ package whatsapp
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"almaparung-api/internal/platform/wagate"
@@ -34,13 +35,23 @@ func IsConfigured(apiKey, apiURL string) bool {
 	return wagate.GetManager().StatusNow().Connected
 }
 
+// PortalBaseURL membaca APP_URL (default domain produksi) untuk link dashboard di pesan WA.
+func PortalBaseURL() string {
+	base := strings.TrimSpace(os.Getenv("APP_URL"))
+	if base == "" {
+		return "https://almaparung.com"
+	}
+	return strings.TrimRight(base, "/")
+}
+
 // Template pesan
 func FormatTagihanSPP(namaSantri string, bulan string, jumlah int) string {
 	return fmt.Sprintf(
 		"Assalamu'alaikum Wr. Wb.\n\n"+
 			"Yth. Wali Santri *%s*,\n"+
 			"Kami mengingatkan bahwa tagihan SPP bulan *%s* sebesar *Rp %s* belum terbayarkan.\n\n"+
-			"Mohon segera melakukan pembayaran melalui portal atau transfer ke rekening pondok.\n\n"+
+			"Mohon segera melakukan pembayaran melalui portal atau transfer ke rekening pondok.\n" +
+			"Lihat & bayar di dashboard: " + PortalBaseURL() + "/portal/payment-spp\n\n" +
 			"Jazakumullahu khairan.\n"+
 			"_Admin Al-Maa_",
 		namaSantri, bulan, formatRupiah(jumlah))
@@ -81,7 +92,7 @@ func FormatPSBUpdate(namaCalon string, statusText string, detail string) string 
 	if strings.TrimSpace(detail) != "" {
 		msg += "\n" + strings.TrimSpace(detail) + ".\n"
 	}
-	msg += "\nSilakan cek detail dan langkah berikutnya di Portal Wali Santri Al-Maa.\n\n" +
+	msg += "\nSilakan cek detail dan langkah berikutnya di Portal Wali Santri Al-Maa:\n" + PortalBaseURL() + "/portal/payment\n\n" +
 		"_Panitia PSB Al-Maa_"
 	return msg
 }
@@ -152,7 +163,7 @@ func FormatKwitansi(namaSantri, receiptNo, periode string, total int) string {
 			"Alhamdulillah, pembayaran periode *%s* telah kami terima dengan rincian:\n\n"+
 			"No. Kwitansi: *%s*\n"+
 			"Total: *Rp %s*\n\n"+
-			"Kwitansi rekap dapat dilihat/diunduh di portal orang tua.\n\n"+
+			"Kwitansi rekap dapat dilihat/diunduh di dashboard pembayaran:\n" + PortalBaseURL() + "/portal/payment-spp\n\n" +
 			"Jazakumullahu khairan.\n"+
 			"_Bendahara Al-Maa_",
 		namaSantri, periode, receiptNo, formatRupiah(total))

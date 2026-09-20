@@ -315,7 +315,7 @@ export default function PaymentsAdminPage() {
             <div className="animate-spin w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full mx-auto"></div>
           </div>
         ) : payments.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="ap-table-wrap overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">

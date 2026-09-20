@@ -531,7 +531,7 @@ export default function UsersPage() {
             <p className="text-slate-300 font-black uppercase tracking-[0.3em] text-xs">Sinkronisasi Database Otoritas...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto min-h-[400px]">
+          <div className="ap-table-wrap overflow-x-auto min-h-[400px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100">

@@ -25,6 +25,9 @@ var (
 // _txlock=immediate sehingga BEGIN di sini selalu IMMEDIATE (RESERVED lock
 // sejak awal, bukan saat tulis pertama) — wajib untuk pay-vs-pay,
 // pay-vs-cancel, verify-vs-pay.
+// BeginTx membuka transaksi (deferred; SQLite menaikkan ke RESERVED saat tulis
+// pertama). Proteksi race bertumpu pada conditional-UPDATE + verifikasi
+// RowsAffected + RetryOnBusy, bukan pada lock di awal transaksi.
 func BeginTx(db *sql.DB) (*sql.Tx, error) {
 	return db.Begin()
 }

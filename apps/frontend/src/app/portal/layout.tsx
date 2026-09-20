@@ -110,10 +110,14 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     registration?.mother_phone,
   ].every(isFilled);
   const biodataCompleted = dataDiriCompleted && dataOrangTuaCompleted;
-  const documentsCompleted = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url].every(isFilled);
+  const requiredDocs = [
+    registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url,
+    ...(registration?.category === 'yatim' ? [registration?.yatim_doc_url] : []),
+    ...(registration?.category === 'dhuafa' ? [registration?.sktm_doc_url] : []),
+  ];
+  const documentsCompleted = requiredDocs.every(isFilled);
   const paymentCompleted = paymentStatus === 'paid';
-  const paymentSubmitted = paymentStatus === 'pending';
-  const wizardComplete = biodataCompleted && documentsCompleted && (paymentSubmitted || paymentCompleted);
+  const wizardComplete = biodataCompleted && documentsCompleted && paymentCompleted;
   const wizardMode = !hasStudentAccess && !wizardComplete;
   const showWizardShell = wizardMode && !isLoading;
 
@@ -188,6 +192,14 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (hasStudentAccess || isLoading) return;
     if (wizardMode) {
+      if (biodataCompleted && documentsCompleted && !paymentCompleted) {
+        if (pathname !== '/portal/payment') {
+          showToast('info', 'Pembayaran pendaftaran belum selesai — semua halaman dialihkan ke halaman pembayaran.');
+          router.replace('/portal/payment');
+        }
+        return;
+      }
+
       if (isAllowedWizardPath) {
         if (pathname.startsWith('/portal/documents') && !biodataCompleted) {
           showToast(
@@ -224,6 +236,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     dataDiriCompleted,
     dataOrangTuaCompleted,
     documentsCompleted,
+    paymentCompleted,
     activeWizardPath,
     router,
     showToast,
@@ -291,7 +304,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
       label: 'Bayar Pendaftaran',
       description: 'Upload bukti transfer biaya pendaftaran.',
       icon: <CreditCard size={20} />,
-      docRef: 'dashboard',
+      docRef: 'payment',
     },
     {
       href: '/portal/help',
@@ -432,7 +445,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
       <PublicLayout hideNavbar>
         <div className="bg-slate-50 min-h-screen py-8 lg:py-10">
           <div className="container mx-auto max-w-4xl px-4">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="sticky top-0 z-30 mb-6 flex flex-wrap items-center justify-between gap-3 bg-slate-50/85 py-3 backdrop-blur-md">
               <Link
                 href="/"
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
@@ -527,7 +540,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     <PublicLayout hideNavbar>
       <div className="bg-slate-50 min-h-screen py-8 lg:py-10">
         <div className="container mx-auto max-w-7xl px-4">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="sticky top-0 z-30 mb-6 flex flex-wrap items-center justify-between gap-3 bg-slate-50/85 py-3 backdrop-blur-md">
             <Link
               href="/"
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
@@ -602,6 +615,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                               <Link
                                 key={item.href}
                                 href={group.locked ? '/portal' : item.href}
+                                aria-current={isActive ? 'page' : undefined}
                                 className={`inline-flex shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
                                   isActive
                                     ? 'border-sky-200 bg-sky-50 text-sky-700'
@@ -692,7 +706,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                              } ${group.locked ? 'opacity-70' : ''}`}
                            >
-                             <Link href={group.locked ? '/portal' : item.href} className="flex flex-1 items-center gap-4 p-4">
+                             <Link href={group.locked ? '/portal' : item.href} aria-current={isActive ? 'page' : undefined} className="flex flex-1 items-center gap-4 p-4">
                                <span className={isActive ? 'text-sky-200' : 'text-slate-400'}>{item.icon}</span>
                                <div className="min-w-0">
                                  <div className="font-bold text-sm tracking-wide">{item.label}</div>
@@ -741,7 +755,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Content Area */}
-            <div className="min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
+            <div className="ap-fade-in min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
               {!isLoading && !hasStudentAccess && !isRaportPage && (
                 <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online — 3 Langkah</p>
@@ -871,6 +885,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                   <Link
                     key={`mobile-bottom-tab-${item.href}`}
                     href={item.href}
+                    aria-current={item.active ? 'page' : undefined}
                     className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold transition-all duration-300 ${
                       item.active
                         ? 'bg-sky-50 text-sky-700 shadow-sm'
