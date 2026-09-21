@@ -55,7 +55,7 @@ export default function BsTagihanSpp() {
     e.preventDefault();
     const r = await updateSppAutoConfig(cfg);
     setOk(r.success);
-    setMsg(r.message || );
+    setMsg(r.message || '');
   };
 
   const doVerify = async (id: number, approve: boolean) => {
@@ -126,8 +126,8 @@ export default function BsTagihanSpp() {
                 <label className="form-check-label" htmlFor="autoSPP">Aktifkan tagihan otomatis</label>
               </div>
             </div>
-            <div className="col-md-2"><label className="form-label">Besar SPP</label><input type="number" min="1" step="1000" className="form-control" value={cfg.amount || } onChange={(e) => setCfg({ ...cfg, amount: Number(e.target.value) || 0 })} /></div>
-            <div className="col-md-2"><label className="form-label">Jatuh Tempo (tanggal)</label><input type="number" min="1" max="28" className="form-control" value={cfg.due_day || } onChange={(e) => setCfg({ ...cfg, due_day: Number(e.target.value) || 0 })} /></div>
+            <div className="col-md-2"><label className="form-label">Besar SPP</label><input type="number" min="1" step="1000" className="form-control" value={cfg.amount || ''} onChange={(e) => setCfg({ ...cfg, amount: Number(e.target.value) || 0 })} /></div>
+            <div className="col-md-2"><label className="form-label">Jatuh Tempo (tanggal)</label><input type="number" min="1" max="28" className="form-control" value={cfg.due_day || ''} onChange={(e) => setCfg({ ...cfg, due_day: Number(e.target.value) || 0 })} /></div>
             <div className="col-md-2">
               <div className="form-check form-switch">
                 <input className="form-check-input" type="checkbox" id="autoWA" checked={cfg.wa_enabled} onChange={(e) => setCfg({ ...cfg, wa_enabled: e.target.checked })} />
