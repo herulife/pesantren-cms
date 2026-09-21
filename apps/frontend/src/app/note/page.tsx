@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Clipboard, ClipboardCheck, Plus, RefreshCw, Trash2, StickyNote, ExternalLink, Save } from 'lucide-react';
-import { createNote, deleteNote, type CreateNoteResult } from '@/lib/api';
+import Link from 'next/link';
+import {
+  Clipboard, ClipboardCheck, Plus, RefreshCw, Trash2, StickyNote, ExternalLink, Save,
+  KeyRound, FolderOpen, Link2, FileText, Eye,
+} from 'lucide-react';
+import { createNote, deleteNote, getMyNotes, type CreateNoteResult, type MineNote } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import PublicLayout from '@/components/PublicLayout';
 
@@ -16,6 +20,7 @@ const EXPIRY_OPTIONS = [
 ];
 
 const STORAGE_KEY = 'alma_note_state_v1';
+const KEY_STORAGE = 'alma_note_key_v1';
 
 type SavedState = {
   title: string;
@@ -51,6 +56,51 @@ function clearSavedState() {
   }
 }
 
+function loadKey(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return window.localStorage.getItem(KEY_STORAGE) || '';
+  } catch {
+    return '';
+  }
+}
+
+function saveKey(key: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(KEY_STORAGE, key);
+  } catch {
+    // abaikan
+  }
+}
+
+function generateNoteKey(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const arr = new Uint8Array(24);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(arr);
+  } else {
+    for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(Math.random() * 256);
+  }
+  let s = '';
+  for (const n of arr) s += chars[n % chars.length];
+  return s;
+}
+
+function formatFullDate(iso: string): string {
+  if (!iso) return '';
+  return new Date(iso + (iso.includes('Z') ? '' : 'Z')).toLocaleString('id-ID');
+}
+
+function formatShortDate(iso: string): string {
+  if (!iso) return '';
+  return new Date(iso + (iso.includes('Z') ? '' : 'Z')).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export function NotePageContent() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -58,7 +108,25 @@ export function NotePageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<CreateNoteResult | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const [ownerKey, setOwnerKey] = useState('');
+  const [myNotes, setMyNotes] = useState<MineNote[]>([]);
+  const [myNotesLoading, setMyNotesLoading] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
+  const [keyCopied, setKeyCopied] = useState(false);
+
   const { showToast } = useToast();
+
+  const refreshMyNotes = async (key: string) => {
+    if (!key) return;
+    setMyNotesLoading(true);
+    try {
+      const notes = await getMyNotes(key);
+      setMyNotes(notes);
+    } finally {
+      setMyNotesLoading(false);
+    }
+  };
 
   useEffect(() => {
     const saved = loadSavedState();
@@ -82,6 +150,16 @@ export function NotePageContent() {
     }
   }, [title, content, expiresInDays, result]);
 
+  useEffect(() => {
+    let currentKey = loadKey();
+    if (!currentKey) {
+      currentKey = generateNoteKey();
+      saveKey(currentKey);
+    }
+    setOwnerKey(currentKey);
+    refreshMyNotes(currentKey);
+  }, []);
+
   const shareUrl = result ? `${window.location.origin}/note/${result.url_id}` : '';
 
   const handleCopy = async () => {
@@ -96,6 +174,49 @@ export function NotePageContent() {
     }
   };
 
+  const handleCopyKey = async () => {
+    if (!ownerKey) return;
+    try {
+      await navigator.clipboard.writeText(ownerKey);
+      setKeyCopied(true);
+      showToast('success', 'Kunci berhasil disalin!');
+      setTimeout(() => setKeyCopied(false), 2000);
+    } catch {
+      showToast('error', 'Gagal menyalin kunci.');
+    }
+  };
+
+  const handleApplyKey = () => {
+    const cleaned = keyInput.trim();
+    if (!cleaned) {
+      showToast('error', 'Tempel kunci dulu.');
+      return;
+    }
+    saveKey(cleaned);
+    setOwnerKey(cleaned);
+    setKeyInput('');
+    refreshMyNotes(cleaned);
+    showToast('success', 'Kunci diterapkan. Catatan dari perangkat lain dimuat.');
+  };
+
+  const handleDeleteNote = async (item: MineNote) => {
+    const ok = window.confirm(`Hapus catatan "${item.title || '(tanpa judul)'}"?`);
+    if (!ok) return;
+    const res = await deleteNote(item.url_id, item.delete_token);
+    if (res.success) {
+      if (result && result.url_id === item.url_id) {
+        clearSavedState();
+        setResult(null);
+        setTitle('');
+        setContent('');
+      }
+      setMyNotes((prev) => prev.filter((n) => n.url_id !== item.url_id));
+      showToast('success', 'Catatan berhasil dihapus.');
+    } else {
+      showToast('error', res.message || 'Gagal menghapus catatan.');
+    }
+  };
+
   const handleDelete = async () => {
     if (!result) return;
     const ok = window.confirm('Hapus catatan ini? Link-nya tidak akan bisa diakses lagi.');
@@ -106,6 +227,7 @@ export function NotePageContent() {
       setResult(null);
       setTitle('');
       setContent('');
+      setMyNotes((prev) => prev.filter((n) => n.url_id !== result!.url_id));
       showToast('success', 'Catatan berhasil dihapus.');
     } else {
       showToast('error', res.message || 'Gagal menghapus catatan.');
@@ -120,14 +242,21 @@ export function NotePageContent() {
     }
     setIsSubmitting(true);
     try {
+      const currentKey = ownerKey || loadKey() || generateNoteKey();
+      if (!ownerKey) {
+        saveKey(currentKey);
+        setOwnerKey(currentKey);
+      }
       const created = await createNote({
         title: title.trim(),
         content,
         expires_in_days: expiresInDays > 0 ? expiresInDays : undefined,
+        owner_key: currentKey,
       });
       if (created) {
         setResult(created);
         showToast('success', 'Catatan berhasil disimpan!');
+        refreshMyNotes(currentKey);
       } else {
         showToast('error', 'Gagal menyimpan catatan.');
       }
@@ -146,9 +275,7 @@ export function NotePageContent() {
     setCopied(false);
   };
 
-  const formattedDate = result?.created_at
-    ? new Date(result.created_at + (result.created_at.includes('Z') ? '' : 'Z')).toLocaleString('id-ID')
-    : '';
+  const formattedDate = result?.created_at ? formatFullDate(result.created_at) : '';
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -163,13 +290,13 @@ export function NotePageContent() {
             Tempel Catatan, Bagikan Link
           </h1>
           <p className="mx-auto max-w-2xl text-lg leading-relaxed text-sky-100/80">
-            Tempel teks di bawah ini, simpan, lalu bagikan link-nya. Bisa dibuka di mana saja
-            dari HP atau komputer — tanpa login.
+            Tempel teks, simpan, lalu bagikan link-nya. Semua catatanmu tersimpan di server,
+            bisa dibuka dari HP atau komputer mana pun — tanpa login.
           </p>
         </div>
       </div>
 
-      <div className="relative z-20 mx-auto -mt-10 max-w-7xl px-4">
+      <div className="relative z-20 mx-auto -mt-10 max-w-7xl space-y-8 px-4">
         <div className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white/95 p-6 shadow-xl shadow-slate-200/50 backdrop-blur-sm md:p-10">
           {!result ? (
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -318,6 +445,121 @@ export function NotePageContent() {
             Catatan bersifat publik — siapa pun yang punya link-nya bisa membacanya. Jangan
             tempel informasi rahasia (password, data pribadi santri, dll).
           </p>
+        </div>
+
+        <div className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white/95 shadow-xl shadow-slate-200/50">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5 md:px-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                <FolderOpen size={20} />
+              </div>
+              <div>
+                <h2 className="font-outfit text-xl font-black text-slate-800">Catatan Saya</h2>
+                <p className="text-xs text-slate-400">
+                  Tersimpan di server — bisa dibuka dari perangkat mana pun.
+                </p>
+              </div>
+            </div>
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-black text-sky-700">
+              {myNotesLoading ? 'Memuat…' : `${myNotes.length} catatan`}
+            </span>
+          </div>
+
+          <div className="px-6 py-6 md:px-8">
+            {myNotes.length === 0 && !myNotesLoading ? (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm">
+                  <FileText size={26} />
+                </div>
+                <p className="text-sm font-bold text-slate-500">
+                  Belum ada catatan tersimpan.
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Simpan catatan pertama di atas, nanti otomatis muncul di sini.
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {myNotes.map((item) => (
+                  <li
+                    key={item.url_id}
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-sky-200 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-800">
+                        {item.title || '(tanpa judul)'}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                        <span>{formatShortDate(item.created_at)}</span>
+                        <span>
+                          {item.expires_at
+                            ? `Sampai ${new Date(item.expires_at).toLocaleDateString('id-ID')}`
+                            : 'Selamanya'}
+                        </span>
+                        <span className="max-w-[30ch] truncate font-mono">{item.url_id}</span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Link
+                        href={`/note/${item.url_id}`}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                      >
+                        <Eye size={14} /> Buka
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNote(item)}
+                        className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-red-500 transition hover:bg-red-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="mt-6 rounded-2xl border border-slate-100 bg-white p-5">
+              <p className="mb-3 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
+                <KeyRound size={14} className="text-amber-500" /> Kunci pribadi catatanmu
+              </p>
+              <div className="flex flex-col gap-3 md:flex-row">
+                <div className="flex flex-1 gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <span className="min-w-0 flex-1 truncate font-mono text-xs font-bold text-slate-700">
+                    {ownerKey}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyKey}
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white transition hover:bg-slate-800"
+                  >
+                    {keyCopied ? <ClipboardCheck size={13} /> : <Clipboard size={13} />}
+                    {keyCopied ? 'Tersalin!' : 'Salin'}
+                  </button>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-slate-400">
+                Untuk membuka catatanmu di perangkat lain: salin kunci ini, lalu tempel di kotak
+                bawah pada perangkat tersebut.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="text"
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  placeholder="Tempel kunci dari perangkat lain…"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-sm font-bold text-slate-700 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyKey}
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
+                >
+                  <Link2 size={15} /> Pakai Kunci
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
