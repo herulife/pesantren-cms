@@ -4,12 +4,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   getSppBills, getSppSummary, getSppSantri, generateSppBills,
   createSppBill, updateSppBill, paySppBill, cancelSppBill, deleteSppBill, deleteSppByPeriod, deleteSppBySantri, verifySppBill,
-  SppBill, SppSummary, SppSantri,
+  getSppAutoConfig, updateSppAutoConfig,
+  SppBill, SppSummary, SppSantri, SppAutoConfig,
 } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { openProofInNewTab } from '@/components/ProofImage';
-import { Plus, Trash2, Search, X, Receipt, Calendar, Wallet, RotateCcw, Pencil, Users } from 'lucide-react';
+import { Plus, Trash2, Search, X, Receipt, Calendar, Wallet, RotateCcw, Pencil, Users, Zap } from 'lucide-react';
 
 const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -48,6 +49,8 @@ export default function SppBills() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [autoCfg, setAutoCfg] = useState<SppAutoConfig>({ enabled: false, amount: 0, due_day: 10, wa_enabled: false });
+  const [isSavingAuto, setIsSavingAuto] = useState(false);
 
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [genAmount, setGenAmount] = useState('');
@@ -101,14 +104,16 @@ export default function SppBills() {
   const fetchData = useCallback(async (p: string) => {
     setIsLoading(true);
     try {
-      const [bData, sData, santri] = await Promise.all([
+      const [bData, sData, santri, cfg] = await Promise.all([
         getSppBills({ period: p }),
         getSppSummary(p),
         getSppSantri(),
+        getSppAutoConfig(),
       ]);
       setBills(bData);
       setSummary(sData);
       setSantriList(santri);
+      setAutoCfg(cfg || { enabled: false, amount: 0, due_day: 10, wa_enabled: false });
     } finally {
       setIsLoading(false);
     }
@@ -141,6 +146,32 @@ export default function SppBills() {
       showToast('error', e instanceof Error ? e.message : 'Terjadi kesalahan sistem.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSaveAuto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (autoCfg.amount <= 0) {
+      showToast('error', 'Isi besar SPP terlebih dahulu.');
+      return;
+    }
+    if (autoCfg.due_day < 1 || autoCfg.due_day > 28) {
+      showToast('error', 'Jatuh tempo harus tanggal 1-28.');
+      return;
+    }
+    setIsSavingAuto(true);
+    try {
+      const res = await updateSppAutoConfig(autoCfg);
+      if (res.success) {
+        showToast('success', res.message || 'Pengaturan tagihan otomatis disimpan.');
+        fetchData(period);
+      } else {
+        showToast('error', res.message || 'Gagal menyimpan pengaturan.');
+      }
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Terjadi kesalahan sistem.');
+    } finally {
+      setIsSavingAuto(false);
     }
   };
 
@@ -335,6 +366,51 @@ export default function SppBills() {
             <p className="text-xs text-slate-400 font-medium mt-1">{summary?.count_unpaid || 0} belum bayar</p>
           </div>
         </div>
+      </div>
+
+      <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
+            <Zap size={22} />
+          </div>
+          <div>
+            <h3 className="font-black text-slate-800 uppercase font-outfit tracking-tight">Tagihan Otomatis</h3>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Buat tagihan SPP tiap bulan tanpa repot generate manual.</p>
+          </div>
+        </div>
+        <form onSubmit={handleSaveAuto} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <label className={labelCls}>Aktif</label>
+            <button
+              type="button"
+              onClick={() => setAutoCfg({ ...autoCfg, enabled: !autoCfg.enabled })}
+              className={`w-full py-4 rounded-xl border font-black uppercase tracking-widest text-[10px] transition-all ${autoCfg.enabled ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+            >
+              {autoCfg.enabled ? 'Aktif' : 'Nonaktif'}
+            </button>
+          </div>
+          <div>
+            <label className={labelCls}>Besar SPP (Rp)</label>
+            <input type="number" min="1" step="1000" placeholder="Contoh: 150000" value={autoCfg.amount || ''} onChange={(e) => setAutoCfg({ ...autoCfg, amount: Number(e.target.value) || 0 })} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Jatuh Tempo (tanggal)</label>
+            <input type="number" min="1" max="28" placeholder="Contoh: 10" value={autoCfg.due_day || ''} onChange={(e) => setAutoCfg({ ...autoCfg, due_day: Number(e.target.value) || 0 })} className={inputCls} />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAutoCfg({ ...autoCfg, wa_enabled: !autoCfg.wa_enabled })}
+              className={`flex-1 py-4 rounded-xl border font-black uppercase tracking-widest text-[10px] transition-all ${autoCfg.wa_enabled ? 'bg-sky-600 text-white border-sky-600 shadow-lg shadow-sky-600/20' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+            >
+              WA Wali {autoCfg.wa_enabled ? 'ON' : 'OFF'}
+            </button>
+            <button type="submit" disabled={isSavingAuto} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all disabled:opacity-60">
+              {isSavingAuto ? '...' : 'Simpan'}
+            </button>
+          </div>
+        </form>
+        <p className="text-xs text-slate-400 font-medium mt-4">Sistem otomatis membuat tagihan untuk semua santri aktif di awal bulan jika bulan itu belum punya tagihan, lalu mengirim WA ke nomor wali (parent/father/mother phone) bila WA dinyalakan. Manual satu-satu tetap bisa dipakai lewat tombol “Tagihan Satuan”.</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
