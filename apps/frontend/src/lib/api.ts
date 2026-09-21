@@ -1268,7 +1268,7 @@ export async function getSppAutoConfig() {
 
 export async function updateSppAutoConfig(data: SppAutoConfig) {
 	const res = await fetch(`${API_BASE_URL}/spp/auto-config`, {
-		method: PUT,
+		method: 'PUT',
 		headers: getAuthHeaders(),
 		body: JSON.stringify(data)
 	});
