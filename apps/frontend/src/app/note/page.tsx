@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Clipboard, ClipboardCheck, Plus, RefreshCw, Trash2, StickyNote, ExternalLink } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Clipboard, ClipboardCheck, Plus, RefreshCw, Trash2, StickyNote, ExternalLink, Save } from 'lucide-react';
 import { createNote, deleteNote, type CreateNoteResult } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import PublicLayout from '@/components/PublicLayout';
@@ -15,6 +15,42 @@ const EXPIRY_OPTIONS = [
   { label: '1 Tahun', value: 365 },
 ];
 
+const STORAGE_KEY = 'alma_note_state_v1';
+
+type SavedState = {
+  title: string;
+  content: string;
+  expiresInDays: number;
+  result: CreateNoteResult | null;
+};
+
+function loadSavedState(): SavedState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return {
+      title: typeof parsed.title === 'string' ? parsed.title : '',
+      content: typeof parsed.content === 'string' ? parsed.content : '',
+      expiresInDays: typeof parsed.expiresInDays === 'number' ? parsed.expiresInDays : 30,
+      result: parsed.result || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearSavedState() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // abaikan
+  }
+}
+
 export function NotePageContent() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -23,6 +59,28 @@ export function NotePageContent() {
   const [result, setResult] = useState<CreateNoteResult | null>(null);
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const saved = loadSavedState();
+    if (saved) {
+      setTitle(saved.title || '');
+      setContent(saved.content || '');
+      if (saved.expiresInDays) setExpiresInDays(saved.expiresInDays);
+      if (saved.result) setResult(saved.result);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ title, content, expiresInDays, result })
+      );
+    } catch {
+      // abaikan (mis. private mode)
+    }
+  }, [title, content, expiresInDays, result]);
 
   const shareUrl = result ? `${window.location.origin}/note/${result.url_id}` : '';
 
@@ -44,6 +102,7 @@ export function NotePageContent() {
     if (!ok) return;
     const res = await deleteNote(result.url_id, result.delete_token);
     if (res.success) {
+      clearSavedState();
       setResult(null);
       setTitle('');
       setContent('');
@@ -80,6 +139,7 @@ export function NotePageContent() {
   };
 
   const handleNew = () => {
+    clearSavedState();
     setResult(null);
     setTitle('');
     setContent('');
@@ -178,6 +238,10 @@ export function NotePageContent() {
                   )}
                 </button>
               </div>
+              <p className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                <Save size={14} className="text-emerald-500" />
+                Draft tersimpan otomatis di perangkat ini — tidak hilang saat halaman di-refresh.
+              </p>
             </form>
           ) : (
             <div className="space-y-6">
