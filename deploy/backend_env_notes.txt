@@ -1,0 +1,10 @@
+DB_PATH=/data/alma-parung.db
+JWT_SECRET=almaa-parung-jwt-secret-2026-super-long-random-key-xyz
+COOKIE_SECURE=true
+DEV_MODE=false
+ENVIRONMENT=production
+APP_URL=https://almaparung.com
+API_PORT=8080
+ALLOWED_ORIGINS=https://almaparung.com,https://www.almaparung.com
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
