@@ -3516,6 +3516,10 @@ export interface Note {
 	expires_at?: string | null;
 }
 
+export interface MineNote extends Note {
+	delete_token: string;
+}
+
 export interface CreateNoteResult {
 	url_id: string;
 	title: string;
@@ -3529,6 +3533,7 @@ export async function createNote(payload: {
 	title?: string;
 	content: string;
 	expires_in_days?: number;
+	owner_key?: string;
 }): Promise<CreateNoteResult | null> {
 	try {
 		const res = await fetch(`${API_BASE_URL}/notes`, {
@@ -3556,6 +3561,20 @@ export async function getNote(url_id: string): Promise<Note | null> {
 	} catch (e) {
 		console.error('[API] Get note error:', e);
 		return null;
+	}
+}
+
+export async function getMyNotes(ownerKey: string): Promise<MineNote[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes/mine?key=${encodeURIComponent(ownerKey)}`, {
+			cache: 'no-store'
+		});
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		return (result.data || []) as MineNote[];
+	} catch (e) {
+		console.error('[API] Get my notes error:', e);
+		return [];
 	}
 }
 
