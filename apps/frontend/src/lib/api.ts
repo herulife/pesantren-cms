@@ -1252,6 +1252,29 @@ export async function generateSppBills(data: { period: string; period_end?: stri
 	return parseResponse(res);
 }
 
+export interface SppAutoConfig {
+	enabled: boolean;
+	amount: number;
+	due_day: number;
+	wa_enabled: boolean;
+}
+
+export async function getSppAutoConfig() {
+	const res = await fetch(`${API_BASE_URL}/spp/auto-config`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function updateSppAutoConfig(data: SppAutoConfig) {
+	const res = await fetch(`${API_BASE_URL}/spp/auto-config`, {
+		method: PUT,
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
 export async function generateIuranBills(data: { name: string; period: string; amount: number; due_date?: string; class?: string; santri_ids?: number[] }) {
 	const res = await fetch(`${API_BASE_URL}/iuran/bills/generate`, {
 		method: 'POST',
