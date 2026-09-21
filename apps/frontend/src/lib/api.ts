@@ -3527,6 +3527,7 @@ export interface CreateNoteResult {
 	created_at: string;
 	expires_at?: string | null;
 	delete_token: string;
+	owner_key?: string;
 }
 
 export async function createNote(payload: {
@@ -3534,6 +3535,7 @@ export async function createNote(payload: {
 	content: string;
 	expires_in_days?: number;
 	owner_key?: string;
+	custom_url?: string;
 }): Promise<CreateNoteResult | null> {
 	try {
 		const res = await fetch(`${API_BASE_URL}/notes`, {
@@ -3563,8 +3565,7 @@ export async function getNote(url_id: string): Promise<Note | null> {
 		return null;
 	}
 }
-
-export async function getMyNotes(ownerKey: string): Promise<MineNote[]> {
+	export async function getMyNotes(ownerKey: string): Promise<MineNote[]> {
 	try {
 		const res = await fetch(`${API_BASE_URL}/notes/mine?key=${encodeURIComponent(ownerKey)}`, {
 			cache: 'no-store'
