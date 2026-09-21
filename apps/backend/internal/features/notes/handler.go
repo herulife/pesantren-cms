@@ -16,6 +16,8 @@ import (
 const (
 	maxNoteContentBytes = 1 << 20
 	maxNoteContentRunes = 500_000
+	maxOwnerKeyLen      = 64
+	minOwnerKeyLen      = 8
 )
 
 var urlAlphabet = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -41,6 +43,7 @@ func NewHandler(repo IRepository) *Handler {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", h.Create)
+	r.Get("/mine", h.ListMine)
 	r.Get("/{urlID}", h.Get)
 	r.Delete("/{urlID}", h.Delete)
 	return r
@@ -70,6 +73,21 @@ func validExpiresInDays(value *int) bool {
 	}
 }
 
+func validOwnerKey(key string) bool {
+	if key == "" {
+		return true
+	}
+	if len(key) < minOwnerKeyLen || len(key) > maxOwnerKeyLen {
+		return false
+	}
+	for _, c := range key {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, maxNoteContentBytes+64*1024))
 	if err != nil {
@@ -82,6 +100,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Title         string `json:"title"`
 		Content       string `json:"content"`
 		ExpiresInDays *int   `json:"expires_in_days"`
+		OwnerKey      string `json:"owner_key"`
 	}
 	if err := validators.DecodeStrictJSON(body, &req); err != nil {
 		logger.Warn(r.Context(), "Bad request decoding note", logger.Field{"error": err.Error()})
@@ -102,6 +121,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Masa berlaku tidak valid", nil)
 		return
 	}
+	req.OwnerKey = strings.TrimSpace(req.OwnerKey)
+	if !validOwnerKey(req.OwnerKey) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Kunci catatan tidak valid", nil)
+		return
+	}
 
 	var expiresAt *string
 	if req.ExpiresInDays != nil && *req.ExpiresInDays > 0 {
@@ -114,6 +138,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:       strings.TrimSpace(req.Title),
 		Content:     req.Content,
 		DeleteToken: randomAlphabetBytes(16),
+		OwnerKey:    req.OwnerKey,
 		ExpiresAt:   expiresAt,
 	}
 
@@ -159,6 +184,35 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) ListMine(w http.ResponseWriter, r *http.Request) {
+	ownerKey := strings.TrimSpace(r.URL.Query().Get("key"))
+	if ownerKey == "" || !validOwnerKey(ownerKey) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Kunci catatan tidak valid", nil)
+		return
+	}
+	notes, err := h.repo.ListByOwner(ownerKey)
+	if err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	items := make([]map[string]interface{}, 0, len(notes))
+	for _, n := range notes {
+		if isExpired(n.ExpiresAt) {
+			continue
+		}
+		items = append(items, map[string]interface{}{
+			"url_id":       n.URLID,
+			"title":        n.Title,
+			"content":      n.Content,
+			"created_at":   n.CreatedAt,
+			"expires_at":   n.ExpiresAt,
+			"delete_token": n.DeleteToken,
+		})
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Berhasil", items)
+}
+
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	urlID := chi.URLParam(r, "urlID")
 	deleteToken := strings.TrimSpace(r.Header.Get("X-Delete-Token"))
@@ -196,5 +250,6 @@ func isExpired(expiresAt *string) bool {
 type IRepository interface {
 	Create(n *Note) error
 	GetByURLID(urlID string) (*Note, error)
+	ListByOwner(ownerKey string) ([]Note, error)
 	DeleteByURLIDAndToken(urlID, deleteToken string) (bool, error)
 }
