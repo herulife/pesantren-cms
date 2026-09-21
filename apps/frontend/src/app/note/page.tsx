@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Clipboard, ClipboardCheck, Plus, RefreshCw, Trash2, StickyNote, ExternalLink, Save,
-  KeyRound, FolderOpen, Link2, FileText, Eye, PenLine, Check,
+  KeyRound, FolderOpen, Link2, FileText, Eye, PenLine, Check, ListVideo,
 } from 'lucide-react';
 import { createNote, deleteNote, getMyNotes, type CreateNoteResult, type MineNote } from '@/lib/api';
 import { useToast } from '@/components/Toast';
@@ -123,6 +123,12 @@ export function NotePageContent() {
   const [keyEditing, setKeyEditing] = useState(false);
 
   const { showToast } = useToast();
+
+  const myNotesRef = useRef<HTMLDivElement>(null);
+
+  const scrollToMyNotes = () => {
+    myNotesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const refreshMyNotes = async (key: string) => {
     if (!key) return;
@@ -478,13 +484,22 @@ export function NotePageContent() {
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={handleNew}
-                  className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-slate-800"
-                >
-                  <Plus size={16} /> Buat Catatan Baru
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleNew}
+                    className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-slate-800"
+                  >
+                    <Plus size={16} /> Buat Catatan Baru
+                  </button>
+                  <button
+                    type="button"
+                    onClick={scrollToMyNotes}
+                    className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                  >
+                    <ListVideo size={16} /> Lihat Semua Catatanku ({myNotes.length})
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={handleDelete}
@@ -493,6 +508,10 @@ export function NotePageContent() {
                   <Trash2 size={16} /> Hapus Catatan
                 </button>
               </div>
+              <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
+                Catatan lama tidak hilang — semua catatanmu tetap tersimpan dan tetap bisa dibuka
+                lewat link-nya. Pantau semuanya di "Catatan Saya" di bawah.
+              </p>
             </div>
           )}
 
@@ -502,7 +521,7 @@ export function NotePageContent() {
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white/95 shadow-xl shadow-slate-200/50">
+        <div ref={myNotesRef} id="my-notes" className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white/95 shadow-xl shadow-slate-200/50">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5 md:px-8">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
@@ -511,7 +530,8 @@ export function NotePageContent() {
               <div>
                 <h2 className="font-outfit text-xl font-black text-slate-800">Catatan Saya</h2>
                 <p className="text-xs text-slate-400">
-                  Tersimpan di server — bisa dibuka dari perangkat mana pun.
+                  Semua catatanmu tersimpan di server — tidak ada yang hilang saat kamu buat
+                  catatan baru, dan bisa dibuka dari perangkat mana pun.
                 </p>
               </div>
             </div>
@@ -541,9 +561,17 @@ export function NotePageContent() {
                     className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-sky-200 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-slate-800">
-                        {item.title || '(tanpa judul)'}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-black text-slate-800">
+                          {item.title || '(tanpa judul)'}
+                        </p>
+                        {result && item.url_id === result.url_id ? (
+                          <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                            Baru
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 line-clamp-1 text-xs text-slate-400">{item.content}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
                         <span>{formatShortDate(item.created_at)}</span>
                         <span>
