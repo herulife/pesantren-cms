@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Clipboard, ClipboardCheck, Plus, RefreshCw, Trash2, StickyNote, ExternalLink, Save,
-  KeyRound, FolderOpen, Link2, FileText, Eye,
+  KeyRound, FolderOpen, Link2, FileText, Eye, PenLine, Check,
 } from 'lucide-react';
 import { createNote, deleteNote, getMyNotes, type CreateNoteResult, type MineNote } from '@/lib/api';
 import { useToast } from '@/components/Toast';
@@ -74,17 +74,22 @@ function saveKey(key: string) {
   }
 }
 
+const KEY_WORDS_1 = ['mangga', 'pisang', 'durian', 'rambutan', 'sirsak', 'jambu', 'nangka', 'salak', 'kelapa', 'jeruk', 'apel', 'tomat', 'bayam', 'kangkung', 'tempe', 'nasi', 'kopi', 'teh', 'susu', 'roti'];
+const KEY_WORDS_2 = ['merah', 'kuning', 'hijau', 'biru', 'pagi', 'malam', 'senja', 'bulan', 'bintang', 'gunung', 'pantai', 'sawah', 'taman', 'sekolah', 'masjid', 'senang'];
+
 function generateNoteKey(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const arr = new Uint8Array(24);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(arr);
-  } else {
-    for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(Math.random() * 256);
-  }
-  let s = '';
-  for (const n of arr) s += chars[n % chars.length];
-  return s;
+  const w1 = KEY_WORDS_1[Math.floor(Math.random() * KEY_WORDS_1.length)];
+  const w2 = KEY_WORDS_2[Math.floor(Math.random() * KEY_WORDS_2.length)];
+  const digits = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+  return `${w1}-${w2}${digits}`;
+}
+
+function validCustomUrl(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  if (v === '') return true;
+  if (v.length < 3 || v.length > 60) return false;
+  if (v === 'mine' || v === 'new') return false;
+  return /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(v);
 }
 
 function formatFullDate(iso: string): string {
@@ -104,6 +109,7 @@ function formatShortDate(iso: string): string {
 export function NotePageContent() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [customUrl, setCustomUrl] = useState('');
   const [expiresInDays, setExpiresInDays] = useState<number>(30);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<CreateNoteResult | null>(null);
@@ -114,6 +120,7 @@ export function NotePageContent() {
   const [myNotesLoading, setMyNotesLoading] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [keyCopied, setKeyCopied] = useState(false);
+  const [keyEditing, setKeyEditing] = useState(false);
 
   const { showToast } = useToast();
 
@@ -188,15 +195,30 @@ export function NotePageContent() {
 
   const handleApplyKey = () => {
     const cleaned = keyInput.trim();
-    if (!cleaned) {
-      showToast('error', 'Tempel kunci dulu.');
+    if (cleaned.length < 6 || cleaned.length > 64) {
+      showToast('error', 'Kunci minimal 6 karakter.');
+      return;
+    }
+    if (!/^[A-Za-z0-9._-]+$/.test(cleaned)) {
+      showToast('error', 'Hanya huruf, angka, -, _, atau .');
       return;
     }
     saveKey(cleaned);
     setOwnerKey(cleaned);
     setKeyInput('');
+    setKeyEditing(false);
     refreshMyNotes(cleaned);
     showToast('success', 'Kunci diterapkan. Catatan dari perangkat lain dimuat.');
+  };
+
+  const handleRandomizeKey = () => {
+    const newKey = generateNoteKey();
+    saveKey(newKey);
+    setOwnerKey(newKey);
+    setKeyInput('');
+    setKeyEditing(false);
+    refreshMyNotes(newKey);
+    showToast('success', 'Kunci baru dibuat. Catatan baru masuk ke kunci ini.');
   };
 
   const handleDeleteNote = async (item: MineNote) => {
@@ -252,6 +274,7 @@ export function NotePageContent() {
         content,
         expires_in_days: expiresInDays > 0 ? expiresInDays : undefined,
         owner_key: currentKey,
+        custom_url: validCustomUrl(customUrl) ? customUrl.trim().toLowerCase() : undefined,
       });
       if (created) {
         setResult(created);
@@ -312,6 +335,38 @@ export function NotePageContent() {
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                   placeholder="Cth: Jadwal rapat guru"
                 />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                  Nama Link (opsional — biar gampang diketik & diingat)
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-5 flex items-center font-mono text-xs font-bold text-slate-300">
+                    {typeof window !== 'undefined' ? window.location.origin : ''}/note/
+                  </span>
+                  <input
+                    type="text"
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    maxLength={60}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-[46%] pr-6 font-mono text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 md:pl-[34%]"
+                    placeholder="jadwal-rapat-guru"
+                  />
+                </div>
+                {customUrl.trim() && !validCustomUrl(customUrl) ? (
+                  <p className="text-xs font-bold text-red-500">
+                    Nama link hanya boleh huruf kecil, angka, dan tanda hubung (3–60 karakter).
+                  </p>
+                ) : customUrl.trim() ? (
+                  <p className="text-xs font-bold text-emerald-600">
+                    Link jadi: {typeof window !== 'undefined' ? window.location.origin : ''}/note/{customUrl.trim().toLowerCase()}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400">
+                    Kosongkan untuk link otomatis pendek (6 karakter). Contoh: jadwal-rapat-guru
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -538,16 +593,52 @@ export function NotePageContent() {
                   </button>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-slate-400">
+              {!keyEditing ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setKeyEditing(true)}
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wide text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                  >
+                    <PenLine size={13} /> Ganti Kunci
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRandomizeKey}
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wide text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                  >
+                    <RefreshCw size={13} /> Kunci Baru
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="text"
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    placeholder="Ketuk kunci sendiri (min. 6 karakter)…"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-sm font-bold text-slate-700 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyKey}
+                    className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
+                  >
+                    <Check size={15} /> Pakai
+                  </button>
+                </div>
+              )}
+              <p className="mt-3 text-xs text-slate-400">
                 Untuk membuka catatanmu di perangkat lain: salin kunci ini, lalu tempel di kotak
-                bawah pada perangkat tersebut.
+                di bawah pada perangkat tersebut. Pakai kunci yang gampang kamu ingat (min. 6
+                karakter) supaya mudah dibawa ke mana-mana.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   value={keyInput}
                   onChange={(e) => setKeyInput(e.target.value)}
-                  placeholder="Tempel kunci dari perangkat lain…"
+                  placeholder="Tempel kunci dari perangkat lain ini…"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-sm font-bold text-slate-700 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 />
                 <button

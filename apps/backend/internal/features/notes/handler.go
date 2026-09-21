@@ -5,8 +5,10 @@ import (
 	"almaparung-api/internal/validators"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -17,10 +19,25 @@ const (
 	maxNoteContentBytes = 1 << 20
 	maxNoteContentRunes = 500_000
 	maxOwnerKeyLen      = 64
-	minOwnerKeyLen      = 8
+	minOwnerKeyLen      = 6
+	maxCustomURLLen     = 60
+	minCustomURLLen     = 3
 )
 
 var urlAlphabet = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+var customURLRe = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$`)
+
+var ownerKeyWords = []string{
+	"mangga", "pisang", "durian", "rambutan", "sirsak", "jambu", "nangka", "salak",
+	"kelapa", "jeruk", "apel", "tomat", "bayam", "kangkung", "tempe", "nasi",
+	"kopi", "teh", "susu", "roti",
+}
+
+var ownerKeyWords2 = []string{
+	"merah", "kuning", "hijau", "biru", "pagi", "malam", "senja", "bulan",
+	"bintang", "gunung", "pantai", "sawah", "taman", "sekolah", "masjid", "senang",
+}
 
 type Handler struct {
 	repo IRepository
@@ -61,6 +78,26 @@ func randomAlphabetBytes(length int) string {
 	return string(buf)
 }
 
+func randomPick(list []string) string {
+	buf := make([]byte, 1)
+	if _, err := rand.Read(buf); err != nil {
+		return list[0]
+	}
+	return list[int(buf[0])%len(list)]
+}
+
+func randomTwoDigits() string {
+	buf := make([]byte, 1)
+	if _, err := rand.Read(buf); err != nil {
+		return "12"
+	}
+	return fmt.Sprintf("%02d", int(buf[0])%100)
+}
+
+func randomOwnerKey() string {
+	return fmt.Sprintf("%s-%s%s", randomPick(ownerKeyWords), randomPick(ownerKeyWords2), randomTwoDigits())
+}
+
 func validExpiresInDays(value *int) bool {
 	if value == nil {
 		return true
@@ -75,17 +112,30 @@ func validExpiresInDays(value *int) bool {
 
 func validOwnerKey(key string) bool {
 	if key == "" {
-		return true
+		return false
 	}
 	if len(key) < minOwnerKeyLen || len(key) > maxOwnerKeyLen {
 		return false
 	}
 	for _, c := range key {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.') {
 			return false
 		}
 	}
 	return true
+}
+
+func validCustomURL(url string) bool {
+	if url == "" {
+		return true
+	}
+	if len(url) < minCustomURLLen || len(url) > maxCustomURLLen {
+		return false
+	}
+	if strings.EqualFold(url, "mine") || strings.EqualFold(url, "new") {
+		return false
+	}
+	return customURLRe.MatchString(url)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +151,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Content       string `json:"content"`
 		ExpiresInDays *int   `json:"expires_in_days"`
 		OwnerKey      string `json:"owner_key"`
+		CustomURL     string `json:"custom_url"`
 	}
 	if err := validators.DecodeStrictJSON(body, &req); err != nil {
 		logger.Warn(r.Context(), "Bad request decoding note", logger.Field{"error": err.Error()})
@@ -121,10 +172,42 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Masa berlaku tidak valid", nil)
 		return
 	}
+
 	req.OwnerKey = strings.TrimSpace(req.OwnerKey)
-	if !validOwnerKey(req.OwnerKey) {
-		sendJSONResponse(w, http.StatusBadRequest, false, "Kunci catatan tidak valid", nil)
+	if req.OwnerKey != "" && !validOwnerKey(req.OwnerKey) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Kunci catatan tidak valid (minimal 6 karakter: huruf, angka, -, _, atau .)", nil)
 		return
+	}
+	if req.OwnerKey == "" {
+		req.OwnerKey = randomOwnerKey()
+	}
+
+	customURL := strings.ToLower(strings.TrimSpace(req.CustomURL))
+	if !validCustomURL(customURL) {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Nama link tidak valid (huruf kecil, angka, atau tanda hubung, 3-60 karakter)", nil)
+		return
+	}
+
+	var urlID string
+	if customURL != "" {
+		if existing, _ := h.repo.GetByURLID(customURL); existing != nil {
+			sendJSONResponse(w, http.StatusConflict, false, "Nama link sudah dipakai. Coba nama lain, atau biarkan kosong untuk link otomatis.", nil)
+			return
+		}
+		urlID = customURL
+	} else {
+		for attempt := 0; attempt < 5; attempt++ {
+			candidate := randomAlphabetBytes(6)
+			if existing, _ := h.repo.GetByURLID(candidate); existing == nil {
+				urlID = candidate
+				break
+			}
+		}
+		if urlID == "" {
+			logger.Error(r.Context(), "Could not allocate unique note URLID", logger.Field{})
+			sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+			return
+		}
 	}
 
 	var expiresAt *string
@@ -134,7 +217,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	note := &Note{
-		URLID:       randomAlphabetBytes(12),
+		URLID:       urlID,
 		Title:       strings.TrimSpace(req.Title),
 		Content:     req.Content,
 		DeleteToken: randomAlphabetBytes(16),
@@ -160,6 +243,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		"created_at":   note.CreatedAt,
 		"expires_at":   note.ExpiresAt,
 		"delete_token": note.DeleteToken,
+		"owner_key":    note.OwnerKey,
 	})
 }
 
