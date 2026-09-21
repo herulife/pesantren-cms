@@ -864,6 +864,7 @@ func createTables() {
 	addColumnIfNotExists("registrations", "jenjang", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "jenjang", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "yatim_doc_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("notes", "owner_key", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "sktm_doc_url", "TEXT DEFAULT ''")
 	_, _ = DB.Exec("UPDATE registrations SET program_choice='tahfidz' WHERE lower(program_choice)='tahfidz'")
 	addColumnIfNotExists("employees", "photo_url", "TEXT DEFAULT ''")
@@ -1072,6 +1073,10 @@ func runMigrations() {
 	{
 		name: "notes_url_id_index",
 		sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_url_id ON notes(url_id);`,
+	},
+	{
+		name: "notes_owner_key_index",
+		sql:  `CREATE INDEX IF NOT EXISTS idx_notes_owner_key ON notes(owner_key);`,
 	},
 	{
 		name: "notes_expires_at_index",
