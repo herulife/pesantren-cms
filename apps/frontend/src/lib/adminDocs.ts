@@ -440,6 +440,7 @@ export const adminDocSections: AdminDocSection[] = [
         alt: 'Screenshot asli tab Log Transaksi donasi',
       },
     ],
+  },
   {
     id: 'payments',
     title: 'Pembayaran Santri (SPP)',
