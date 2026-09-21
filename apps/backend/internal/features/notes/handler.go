@@ -123,6 +123,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	persisted, err := h.repo.GetByURLID(note.URLID)
+	if err == nil && persisted != nil {
+		note.CreatedAt = persisted.CreatedAt
+	}
+
 	sendJSONResponse(w, http.StatusCreated, true, "Catatan berhasil disimpan", map[string]interface{}{
 		"url_id":       note.URLID,
 		"title":        note.Title,
