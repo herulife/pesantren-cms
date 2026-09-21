@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getPayments, createPayment, deletePayment, getPaymentUsers, Payment, CompactUser } from '@/lib/api';
+import { getPayments, deletePayment, Payment } from '@/lib/api';
 import SppBills from './SppBills';
 import SppReport from './SppReport';
 import IuranBills from './IuranBills';
@@ -12,13 +12,11 @@ import Kasir from './Kasir';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { Plus, Trash2, CreditCard, User, Calendar, Receipt, Search, X, FileDown, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, CreditCard, User, Calendar, Receipt, Search, FileDown, FileSpreadsheet } from 'lucide-react';
 
 export default function PaymentsAdminPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [users, setUsers] = useState<CompactUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,33 +26,21 @@ export default function PaymentsAdminPage() {
 
   const fetchData = async () => {
     setIsLoading(true);
-    const [pData, uData] = await Promise.all([getPayments(), getPaymentUsers()]);
+    const pData = await getPayments();
     setPayments(pData);
-    setUsers(uData);
     setIsLoading(false);
   };
-
-  // Form State
-  const [formData, setFormData] = useState({
-    user_id: '',
-    amount: '',
-    description: '',
-    method: 'manual',
-    status: 'success',
-    payment_date: new Date().toISOString().split('T')[0]
-  });
 
   useEffect(() => {
     let cancelled = false;
 
     const loadData = async () => {
       setIsLoading(true);
-      const [pData, uData] = await Promise.all([getPayments(), getPaymentUsers()]);
+      const pData = await getPayments();
       if (cancelled) {
         return;
       }
       setPayments(pData);
-      setUsers(uData);
       setIsLoading(false);
     };
 
@@ -74,44 +60,6 @@ export default function PaymentsAdminPage() {
         fetchData();
       } else {
         showToast('error', res.message || 'Gagal menghapus data.');
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
-      showToast('error', message);
-    }
-  };
-
-  const handleAddPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.user_id || !formData.amount || !formData.description) {
-      showToast('error', 'Harap isi semua field wajib.');
-      return;
-    }
-
-    try {
-      const res = await createPayment({
-        user_id: parseInt(formData.user_id),
-        amount: parseInt(formData.amount),
-        description: formData.description,
-        method: formData.method,
-        status: formData.status,
-        payment_date: formData.payment_date + " 00:00:00"
-      });
-
-      if (res.success) {
-        showToast('success', 'Pembayaran berhasil dicatat.');
-        setIsAddModalOpen(false);
-        setFormData({
-            user_id: '',
-            amount: '',
-            description: '',
-            method: 'manual',
-            status: 'success',
-            payment_date: new Date().toISOString().split('T')[0]
-        });
-        fetchData();
-      } else {
-        showToast('error', res.message || 'Gagal menyimpan data.');
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
@@ -206,7 +154,7 @@ export default function PaymentsAdminPage() {
           onClick={() => setActiveTab('manual')}
           className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'manual' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
-          Pembayaran Manual
+          Pembayaran
         </button>
         <button
           onClick={() => setActiveTab('report')}
@@ -239,6 +187,16 @@ export default function PaymentsAdminPage() {
           Lap. Transaksi
         </button>
       </div>
+
+      <p className="-mt-6 mb-8 text-xs font-medium text-slate-400">
+        {activeTab === 'kasir'
+          ? 'Alur kasir: pilih santri, centang tagihan yang dibayar, lalu simpan — kwitansi tersedia.'
+          : activeTab === 'manual'
+            ? 'Catat dan kelola pembayaran manual di luar tagihan; ekspor PDF/Excel tersedia di kanan atas.'
+            : activeTab === 'transaksi'
+              ? 'Rincian transaksi per tanggal + cetak kwitansi.'
+              : 'Kelola tagihan dan pembayaran santri.'}
+      </p>
 
       {activeTab === 'bills' && <SppBills />}
 
@@ -390,111 +348,6 @@ export default function PaymentsAdminPage() {
         )}
       </div>
       </>
-      )}
-
-      {/* MODAL TAMBAH */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:px-0">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}></div>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative shrink-0 overflow-hidden animate-in fade-in zoom-in duration-300">
-             <form onSubmit={handleAddPayment}>
-               <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center">
-                  <h3 className="text-2xl font-black text-slate-900 uppercase font-outfit tracking-tight">Catat Pembayaran</h3>
-                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
-               </div>
-               
-               <div className="p-10 space-y-6">
-                 <div>
-                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Pilih Santri / User</label>
-                   <select 
-                      value={formData.user_id} 
-                      onChange={(e) => setFormData({...formData, user_id: e.target.value})}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-800"
-                    >
-                      <option value="">-- Pilih User --</option>
-                      {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
-                   </select>
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-6">
-                   <div>
-                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Jumlah (Rp)</label>
-                     <input 
-                        type="number"
-                        placeholder="Contoh: 500000"
-                        value={formData.amount} 
-                        onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
-                     />
-                   </div>
-                   <div>
-                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Tanggal</label>
-                     <input 
-                        type="date"
-                        value={formData.payment_date} 
-                        onChange={(e) => setFormData({...formData, payment_date: e.target.value})}
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
-                     />
-                   </div>
-                 </div>
-
-                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Keterangan</label>
-                    <textarea 
-                        rows={3}
-                        placeholder="Contoh: Pembayaran SPP Bulan Januari 2025"
-                        value={formData.description} 
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
-                    ></textarea>
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-6">
-                   <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Metode</label>
-                      <select 
-                          value={formData.method} 
-                          onChange={(e) => setFormData({...formData, method: e.target.value})}
-                          className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
-                      >
-                        <option value="manual">Tunai / Manual</option>
-                        <option value="transfer">Transfer Bank</option>
-                        <option value="other">Lainnya</option>
-                      </select>
-                   </div>
-                   <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Status</label>
-                      <select 
-                          value={formData.status} 
-                          onChange={(e) => setFormData({...formData, status: e.target.value})}
-                          className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
-                      >
-                        <option value="success">Sukses (Lunas)</option>
-                        <option value="pending">Pending</option>
-                        <option value="failed">Gagal</option>
-                      </select>
-                   </div>
-                 </div>
-               </div>
-
-               <div className="px-10 py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
-                  <button 
-                     type="button" 
-                     onClick={() => setIsAddModalOpen(false)}
-                     className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                     type="submit"
-                     className="flex-1 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20"
-                  >
-                    Simpan Transaksi
-                  </button>
-               </div>
-             </form>
-          </div>
-        </div>
       )}
 
       <ConfirmDialog 

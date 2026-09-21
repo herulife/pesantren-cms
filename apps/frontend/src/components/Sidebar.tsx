@@ -41,7 +41,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     '/admin/raport': <GraduationCap size={18} />,
     '/admin/academics': <BookOpen size={18} />,
     '/admin/project': <FolderTree size={18} />,
-    '/admin/settings?tab=Staf%20Mengajar': <UserCheck size={18} />,
+    '/admin/teachers': <UserCheck size={18} />,
     '/admin/disciplines': <Shield size={18} />,
     '/admin/kesantrian': <ClipboardList size={18} />,
     '/admin/donations': <Heart size={18} />,
