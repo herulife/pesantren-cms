@@ -3506,3 +3506,69 @@ export async function syncAbsen(from: string, to: string) {
   return parseResponse(res);
 }
 
+// ========== Notes (pastebin tanpa login) ==========
+
+export interface Note {
+	url_id: string;
+	title: string;
+	content: string;
+	created_at: string;
+	expires_at?: string | null;
+}
+
+export interface CreateNoteResult {
+	url_id: string;
+	title: string;
+	content: string;
+	created_at: string;
+	expires_at?: string | null;
+	delete_token: string;
+}
+
+export async function createNote(payload: {
+	title?: string;
+	content: string;
+	expires_in_days?: number;
+}): Promise<CreateNoteResult | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes`, {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload)
+		});
+		const result = await parseResponse(res);
+		if (!result.success || !result.data) return null;
+		return result.data as CreateNoteResult;
+	} catch (e) {
+		console.error('[API] Create note error:', e);
+		return null;
+	}
+}
+
+export async function getNote(url_id: string): Promise<Note | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes/${encodeURIComponent(url_id)}`, {
+			cache: 'no-store'
+		});
+		if (!res.ok) return null;
+		const result = await parseResponse(res);
+		return (result.data || null) as Note | null;
+	} catch (e) {
+		console.error('[API] Get note error:', e);
+		return null;
+	}
+}
+
+export async function deleteNote(url_id: string, delete_token: string): Promise<{ success: boolean; message: string }> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes/${encodeURIComponent(url_id)}`, {
+			method: 'DELETE',
+			headers: { ...getAuthHeaders(), 'X-Delete-Token': delete_token }
+		});
+		const result = await parseResponse(res);
+		return { success: result.success === true, message: result.message || '' };
+	} catch (e) {
+		console.error('[API] Delete note error:', e);
+		return { success: false, message: e instanceof Error ? e.message : 'Gagal menghapus catatan' };
+	}
+}
