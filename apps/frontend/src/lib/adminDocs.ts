@@ -4,6 +4,10 @@ export interface AdminDocSection {
   category: string;
   href: string;
   summary: string;
+  image?: {
+    src: string;
+    alt: string;
+  };
   audience: string[];
   quickActions: string[];
   workflows: Array<{
@@ -34,6 +38,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Halaman Depan (Dashboard)',
     category: 'Mulai dari sini',
     href: '/admin',
+    image: { src: '/assets/tutorials/admin-dashboard.png', alt: 'Tampilan halaman depan admin berisi ringkasan menu dan pintasan cepat' },
     summary:
       'Halaman pertama setelah masuk. Isinya ringkasan angka-angka penting supaya tahu apa yang harus dikerjakan hari ini.',
     audience: ['Semua petugas'],
@@ -62,6 +67,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Berita',
     category: 'Isi Website',
     href: '/admin/news',
+    image: { src: '/assets/tutorials/admin-news.png', alt: 'Tampilan menu Berita dengan tombol Tulis Berita dan daftar berita' },
     summary:
       'Tempat menulis berita pondok supaya website terlihat hidup. Contoh: kegiatan santri, pengumuman, prestasi.',
     audience: ['Pimpinan', 'Tim Media'],
@@ -94,6 +100,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Program Pondok',
     category: 'Isi Website',
     href: '/admin/programs',
+    image: { src: '/assets/tutorials/admin-programs.png', alt: 'Tampilan menu Program Pondok: tab Program Unggulan dan Ekstrakurikuler' },
     summary:
       'Daftar program yang tampil di halaman Program website. Contoh: Tahfidz, Bahasa Arab, Ekstrakurikuler. Ada 2 jenis: Program Unggulan dan Ekstrakurikuler.',
     audience: ['Pimpinan', 'Tim Media'],
@@ -138,6 +145,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Agenda Kegiatan',
     category: 'Isi Website',
     href: '/admin/agendas',
+    image: { src: '/assets/tutorials/admin-agendas.png', alt: 'Tampilan menu Agenda Kegiatan' },
     summary:
       'Jadwal acara pondok yang tampil di website. Contoh: kajian, lomba, libur santri, penerimaan tamu.',
     audience: ['Semua petugas'],
@@ -167,6 +175,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Galeri Foto',
     category: 'Isi Website',
     href: '/admin/gallery',
+    image: { src: '/assets/tutorials/admin-gallery.png', alt: 'Tampilan Galeri Foto: daftar album kegiatan' },
     summary:
       'Kumpulan foto kegiatan pondok. Foto-foto di sini juga bisa dipakai ulang untuk berita dan program.',
     audience: ['Pimpinan', 'Tim Media'],
@@ -199,6 +208,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Video Kegiatan',
     category: 'Isi Website',
     href: '/admin/videos',
+    image: { src: '/assets/tutorials/admin-videos.png', alt: 'Tampilan Pustaka Video: daftar seri video' },
     summary:
       'Daftar video YouTube pondok yang tampil di website. Videonya tetap di YouTube, di sini cuma ditempel link-nya.',
     audience: ['Pimpinan', 'Tim Media'],
@@ -228,6 +238,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Pendaftar Baru (PSB)',
     category: 'Santri',
     href: '/admin/psb',
+    image: { src: '/assets/tutorials/admin-psb.png', alt: 'Tampilan Pendaftar Baru (PSB): daftar calon santri' },
     summary:
       'Daftar anak yang mendaftar jadi santri. Di sini panitia memeriksa data, melihat dokumen, dan menentukan diterima atau tidak.',
     audience: ['Pimpinan', 'Panitia PSB'],
@@ -258,6 +269,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Nilai & Raport (eRapor)',
     category: 'Santri',
     href: '/admin/academics',
+    image: { src: '/assets/tutorials/admin-academics.png', alt: 'Tampilan Dashboard eRapor: rekap nilai santri' },
     summary:
       'Tempat mengisi nilai, absen, hafalan, dan menyusun raport. Apa yang diisi di sini akan dilihat wali di HP-nya.',
     audience: ['Pimpinan', 'Bendahara'],
@@ -298,6 +310,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Data Pengajar',
     category: 'Santri',
     href: '/admin/settings?tab=Staf%20Mengajar',
+    image: { src: '/assets/tutorials/admin-teachers.png', alt: 'Tampilan Data Pengajar di tab Staf Mengajar' },
     summary:
       'Daftar ustadz, ustadzah, dan guru yang tampil di website. Supaya pengunjung tahu siapa yang mengajar.',
     audience: ['Pimpinan', 'Tim Media'],
@@ -328,6 +341,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Catatan Kedisiplinan',
     category: 'Santri',
     href: '/admin/disciplines',
+    image: { src: '/assets/tutorials/admin-disciplines.png', alt: 'Tampilan Manajemen Kedisiplinan: rekapitulasi poin santri' },
     summary:
       'Catatan poin kedisiplinan santri. Tiap santri punya poin, kalau melanggar aturan poinnya berkurang.',
     audience: ['Pimpinan', 'Panitia PSB'],
@@ -366,6 +380,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Donasi',
     category: 'Keuangan',
     href: '/admin/donations',
+    image: { src: '/assets/tutorials/admin-donations.png', alt: 'Tampilan menu Donasi: kampanye aktif dan agregat dana' },
     summary:
       'Kelola penggalangan dana (misal: bangun masjid, wakaf). Bikin halamannya, pantau uang masuk, dan setujui (verifikasi) tiap donasi.',
     audience: ['Pimpinan', 'Bendahara'],
@@ -404,40 +419,41 @@ export const adminDocSections: AdminDocSection[] = [
     ],
     visualSteps: [
       {
-        title: 'Buka menu Donasi, lalu bikin baru',
+        title: 'Buka menu Donasi, lihat kampanye aktif',
         description:
-          'Klik menu Donasi di sebelah kiri, lalu tekan tombol Buat Baru untuk membuka formulirnya.',
-        image: '/assets/tutorials/donations-step-1.png',
-        alt: 'Gambar langkah membuka menu donasi dan formulir baru',
+          'Klik menu Donasi di sebelah kiri. Halaman menampilkan kampanye yang berjalan beserta ringkasan dana. Klik Buat Kampanye untuk membuat halaman donasi baru.',
+        image: '/assets/tutorials/admin-donations.png',
+        alt: 'Screenshot asli menu Donasi berisi daftar kampanye aktif',
       },
       {
-        title: 'Isi judul dan penjelasan',
+        title: 'Isi formulir kampanye donasi',
         description:
-          'Tulis judul donasinya dengan jelas, lalu tulis penjelasannya supaya calon donatur paham uangnya untuk apa.',
-        image: '/assets/tutorials/donations-step-2.png',
-        alt: 'Gambar langkah mengisi judul dan penjelasan donasi',
+          'Isi judul yang jelas, tulis penjelasan uangnya untuk apa, isi target uang (cukup angkanya saja), tanggal berakhir kalau ada, lalu pasang poster/gambar kampanye.',
+        image: '/assets/tutorials/admin-donations-add.png',
+        alt: 'Screenshot asli formulir membuat kampanye donasi',
       },
       {
-        title: 'Isi target, tanggal, poster, lalu tayangkan',
+        title: 'Periksa dan verifikasi donasi masuk',
         description:
-          'Isi target uangnya, tanggal berakhir (kalau ada), pasang poster, lalu klik Simpan/Tayangkan kalau sudah siap.',
-        image: '/assets/tutorials/donations-step-3.png',
-        alt: 'Gambar langkah mengisi target dan menayangkan donasi',
+          'Buka tab Log Transaksi untuk melihat donasi yang sudah masuk. Buka detailnya, cocokkan dengan bukti transfer, lalu klik Setujui. Total dana di halaman publik otomatis bertambah.',
+        image: '/assets/tutorials/admin-donations-log.png',
+        alt: 'Screenshot asli tab Log Transaksi donasi',
       },
     ],
-  },
   {
     id: 'payments',
     title: 'Pembayaran Santri (SPP)',
     category: 'Keuangan',
     href: '/admin/payments',
+    image: { src: '/assets/tutorials/admin-payments.png', alt: 'Tampilan Manajemen Pembayaran: tagihan SPP dan pembayaran manual' },
     summary:
-      'Catatan uang masuk dari santri (SPP, daftar ulang, dll). Di sini mencatat bayar manual dan memantau siapa yang sudah/belum bayar.',
+      'Catatan uang masuk dari santri (SPP, daftar ulang, dll). Di sini mencatat bayar manual, memantau siapa yang sudah/belum bayar, dan melihat tagihan bulan berjalan.',
     audience: ['Pimpinan', 'Bendahara'],
     quickActions: [
       'Catat pembayaran yang diterima tunai/transfer secara manual.',
       'Cari transaksi pakai kolom cari (nama, status).',
       'Lihat riwayat bayar tiap santri.',
+      'Mau tagihan dibuat otomatis tiap bulan? Lihat panduan Tagihan SPP Otomatis di bawah.',
     ],
     workflows: [
       {
@@ -458,10 +474,54 @@ export const adminDocSections: AdminDocSection[] = [
     ],
   },
   {
+  {
+    id: 'spp-auto',
+    title: 'Tagihan SPP Otomatis',
+    category: 'Keuangan',
+    href: '/admin-bs/tagihan-spp',
+    image: { src: '/assets/tutorials/admin-spp.png', alt: 'Tampilan menu Tagihan SPP: form Generate dan kartu Tagihan Otomatis' },
+    summary:
+      'Biar tagihan SPP tiap bulan dibuat sendiri oleh sistem. Aktifkan sekali, sistem membuatkan tagihan bulan berjalan untuk semua santri aktif tanpa perlu klik Generate manual.',
+    audience: ['Pimpinan', 'Bendahara'],
+    quickActions: [
+      'Aktifkan tagihan otomatis lewat satu saklar (toggle).',
+      'Atur besar SPP dan tanggal jatuh tempo yang dipakai sistem.',
+      'Opsional: kirim pengingat otomatis ke WhatsApp wali setiap tagihan dibuat.',
+      'Lihat hasilnya di menu yang sama: tagihan bulan berjalan dibuat untuk semua santri aktif.',
+    ],
+    workflows: [
+      {
+        title: 'Cara mengaktifkan tagihan otomatis',
+        steps: [
+          'Klik menu Tagihan SPP (mode Classic, di grup Operasional).',
+          'Cari kartu "Tagihan Otomatis" (tepat di bawah form Generate Tagihan).',
+          'Aktifkan saklar "Aktifkan tagihan otomatis".',
+          'Isi Besar SPP (nominal per santri per bulan) dan Jatuh Tempo (tanggal, contoh: 10).',
+          'Kalau wali mau dikirim pengingat otomatis, aktifkan juga "Kirim WA ke wali" (pastikan status WhatsApp Gateway sudah tersambung).',
+          'Klik Simpan Pengaturan.',
+        ],
+      },
+      {
+        title: 'Cara kerja tagihan otomatis',
+        steps: [
+          'Begitu disimpan, sistem langsung membuat tagihan bulan berjalan untuk semua santri aktif.',
+          'Kalau bulan itu sudah punya tagihan, sistem TIDAK membuat dobel (aman dari duplikat).',
+          'Setiap server di-restart, sistem mengecek lagi lalu membuat tagihan untuk bulan yang belum punya tagihan.',
+          'Nominal dan jatuh tempo mengikuti pengaturan ini, bukan dari form Generate biasa.',
+        ],
+      },
+    ],
+    tips: [
+      'Pilih SATU cara: manual (Generate Tagihan) atau otomatis. Kalau memakai otomatis, jangan klik Generate manual untuk bulan yang sama.',
+      'Nomor WA wali diambil otomatis dari data santri (parent/father/mother phone) dan harus dalam format 62.',
+      'Kalau nominal SPP naik, ubah pengaturannya lalu simpan lagi. Bulan berikutnya ikut nominal baru.',
+    ],
+  },
     id: 'facilities',
     title: 'Fasilitas Pondok',
     category: 'Isi Website',
     href: '/admin/facilities',
+    image: { src: '/assets/tutorials/admin-facilities.png', alt: 'Tampilan Fasilitas Pondok' },
     summary:
       'Daftar fasilitas yang tampil di website. Contoh: masjid, asrama, kelas, lapangan, kantin.',
     audience: ['Pimpinan', 'Tim Media'],
@@ -492,6 +552,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Pesan Masuk',
     category: 'Layanan',
     href: '/admin/messages',
+    image: { src: '/assets/tutorials/admin-messages.png', alt: 'Tampilan Kotak Masuk Publik: daftar pesan pengunjung' },
     summary:
       'Kotak surat dari website. Kalau ada pengunjung mengisi formulir Kontak, pesannya masuk ke sini.',
     audience: ['Pimpinan', 'Panitia PSB'],
@@ -521,6 +582,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Kirim WA (Notifikasi)',
     category: 'Sistem',
     href: '/admin/notifications',
+    image: { src: '/assets/tutorials/admin-notifications.png', alt: 'Tampilan WhatsApp Gateway: status dan tombol broadcast' },
     summary:
       'Kirim pesan WhatsApp ke wali/santri langsung dari sini. Bisa kirim 1 orang atau sekaligus banyak (broadcast). Contoh: tagihan, nilai, pengumuman lulus.',
     audience: ['Pimpinan', 'Bendahara'],
@@ -560,6 +622,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Akun Petugas',
     category: 'Sistem',
     href: '/admin/users',
+    image: { src: '/assets/tutorials/admin-users.png', alt: 'Tampilan Manajemen Pengguna: daftar akun dan hak akses' },
     summary:
       'Daftar akun orang-orang yang boleh masuk halaman admin. Hanya pimpinan yang boleh atur ini.',
     audience: ['Pimpinan'],
@@ -597,6 +660,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Riwayat Aktivitas (Log)',
     category: 'Sistem',
     href: '/admin/logs',
+    image: { src: '/assets/tutorials/admin-logs.png', alt: 'Tampilan Riwayat Aktivitas: daftar jejak log' },
     summary:
       'Catatan otomatis: siapa membuka apa, mengubah apa, dan kapan. Gunanya untuk melacak kalau ada data yang aneh/berubah sendiri.',
     audience: ['Pimpinan'],
@@ -625,6 +689,7 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Pengaturan Website',
     category: 'Sistem',
     href: '/admin/settings',
+    image: { src: '/assets/tutorials/admin-settings.png', alt: 'Tampilan Pengaturan Website beserta tab-tabnya' },
     summary:
       'Pengaturan besar website: nama pondok, logo, alamat, nomor WA, tampilan depan (homepage), dan lain-lain. Hati-hati, yang diubah di sini langsung terlihat pengunjung.',
     audience: ['Pimpinan'],

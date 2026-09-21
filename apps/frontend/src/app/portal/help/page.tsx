@@ -2,6 +2,7 @@
 
 import React, { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { ArrowRight, BookOpen, Check, CircleHelp, ExternalLink, LayoutList } from 'lucide-react';
 import { getPortalDocById, portalDocSections } from '@/lib/portalDocs';
@@ -130,6 +131,23 @@ function PortalHelpContent() {
                   {currentSection.title}
                 </h2>
                 <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">{currentSection.summary}</p>
+                {currentSection.image && (
+                  <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                    <p className="mb-2 px-1 text-[11px] font-black uppercase tracking-[0.22em] text-sky-700">
+                      Tampilan asli halamannya
+                    </p>
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                      <Image
+                        src={currentSection.image.src}
+                        alt={currentSection.image.alt}
+                        width={1440}
+                        height={1600}
+                        unoptimized
+                        className="h-auto w-full"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Link

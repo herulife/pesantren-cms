@@ -3,6 +3,10 @@ export interface PortalDocSection {
   title: string;
   href: string;
   summary: string;
+  image?: {
+    src: string;
+    alt: string;
+  };
   quickActions: string[];
   workflows: Array<{
     title: string;
@@ -16,6 +20,7 @@ export const portalDocSections: PortalDocSection[] = [
     id: 'dashboard',
     title: 'Halaman Depan Portal',
     href: '/portal',
+    image: { src: '/assets/tutorials/portal-dashboard.png', alt: 'Tampilan halaman depan portal wali santri' },
     summary: 'Halaman pertama setelah masuk. Menunjukkan pendaftaran sudah sampai mana dan apa yang masih kurang.',
     quickActions: [
       'Lihat status pendaftaran: kurang apa, sudah beres apa.',
@@ -41,6 +46,7 @@ export const portalDocSections: PortalDocSection[] = [
     id: 'biodata',
     title: 'Isi Biodata Anak & Wali',
     href: '/portal/biodata',
+    image: { src: '/assets/tutorials/portal-biodata.png', alt: 'Tampilan formulir biodata anak dan orang tua' },
     summary: 'Formulir data diri anak dan orang tua. Ini wajib diisi dulu sebelum bisa upload dokumen.',
     quickActions: [
       'Isi data anak: nama, NIK, alamat, program yang dipilih.',
@@ -67,6 +73,7 @@ export const portalDocSections: PortalDocSection[] = [
     id: 'documents',
     title: 'Upload Dokumen (KK, Raport, Foto)',
     href: '/portal/documents',
+    image: { src: '/assets/tutorials/portal-documents.png', alt: 'Tampilan halaman unggah dokumen (KK, raport, foto)' },
     summary: 'Tempat mengunggah foto dokumen: KK, raport/ijazah, dan pas foto anak.',
     quickActions: [
       'Foto/scan KK, raport/ijazah, dan pas foto anak.',
@@ -95,6 +102,7 @@ export const portalDocSections: PortalDocSection[] = [
     id: 'payment',
     title: 'Bayar Pendaftaran & Upload Bukti',
     href: '/portal/payment',
+    image: { src: '/assets/tutorials/portal-payment.png', alt: 'Tampilan halaman bayar pendaftaran dan unggah bukti transfer' },
     summary: 'Transfer biaya pendaftaran ke rekening pondok, lalu unggah buktinya di sini. Panitia akan memverifikasi.',
     quickActions: [
       'Salin nomor rekening dan nominal yang harus ditransfer.',
@@ -127,7 +135,8 @@ export const portalDocSections: PortalDocSection[] = [
     id: 'academics',
     title: 'Lihat Nilai & Raport Anak',
     href: '/portal/raport',
-    summary: 'Tempat wali melihat nilai, absen, dan hafalan anak. Datanya diisi guru/admin, wali tinggal melihat.',
+    image: { src: '/assets/tutorials/portal-raport.png', alt: 'Tampilan raport akademik santri (mode fokus)' },
+    summary: 'Tempat wali melihat nilai, absen, dan hafalan anak (mode fokus tanpa gangguan). Datanya diisi guru/admin, wali tinggal melihat.',
     quickActions: [
       'Lihat nilai tiap mata pelajaran.',
       'Lihat rekap absen: hadir, izin, sakit, alpha.',
@@ -138,7 +147,7 @@ export const portalDocSections: PortalDocSection[] = [
       {
         title: 'Cara melihat raport anak',
         steps: [
-          'Klik menu Raport di sebelah kiri.',
+          'Klik Raport di menu portal (halaman dibuka dalam mode fokus supaya lebih lega).',
           'Lihat ringkasan nilai dan tabel pelajarannya.',
           'Scroll untuk melihat absen dan hafalan.',
           'Kalau mau arsip, klik tombol Cetak lalu simpan sebagai PDF.',
