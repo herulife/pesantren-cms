@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getSppBills, generateSppBills, deleteSppByPeriod, deleteSppBySantri, verifySppBill, getSppSantri, SppBill, SppSantri } from '@/lib/api';
+import { getSppBills, generateSppBills, deleteSppByPeriod, deleteSppBySantri, verifySppBill, getSppSantri, SppBill, SppSantri, getSppAutoConfig, updateSppAutoConfig, SppAutoConfig } from '@/lib/api';
 import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
@@ -18,6 +18,7 @@ export default function BsTagihanSpp() {
   const [delSantri, setDelSantri] = useState('');
   const [msg, setMsg] = useState('');
   const [ok, setOk] = useState(true);
+  const [cfg, setCfg] = useState<SppAutoConfig>({ enabled: false, amount: 0, due_day: 10, wa_enabled: false });
 
   const load = async (p: string) => {
     const [b, s] = await Promise.all([getSppBills({ period: p }), getSppSantri()]);
@@ -27,6 +28,10 @@ export default function BsTagihanSpp() {
 
   useEffect(() => {
     load(period);
+    (async () => {
+      const c = await getSppAutoConfig();
+      if (c.success && c.data) setCfg(c.data);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -44,6 +49,13 @@ export default function BsTagihanSpp() {
     setOk(r.success);
     setMsg(r.message || '');
     if (r.success) load(period);
+  };
+
+  const saveCfg = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const r = await updateSppAutoConfig(cfg);
+    setOk(r.success);
+    setMsg(r.message || );
   };
 
   const doVerify = async (id: number, approve: boolean) => {
@@ -101,6 +113,29 @@ export default function BsTagihanSpp() {
               </select>
             </div>
             <div className="col-md-2 d-flex align-items-end"><button className="btn btn-primary btn-sm">Generate</button></div>
+          </div>
+        </form>
+      </div>
+      <div className="card card-primary">
+        <div className="card-header"><h3 className="card-title">Tagihan Otomatis</h3></div>
+        <form onSubmit={saveCfg}>
+          <div className="card-body row g-2 align-items-center">
+            <div className="col-md-3">
+              <div className="form-check form-switch">
+                <input className="form-check-input" type="checkbox" id="autoSPP" checked={cfg.enabled} onChange={(e) => setCfg({ ...cfg, enabled: e.target.checked })} />
+                <label className="form-check-label" htmlFor="autoSPP">Aktifkan tagihan otomatis</label>
+              </div>
+            </div>
+            <div className="col-md-2"><label className="form-label">Besar SPP</label><input type="number" min="1" step="1000" className="form-control" value={cfg.amount || } onChange={(e) => setCfg({ ...cfg, amount: Number(e.target.value) || 0 })} /></div>
+            <div className="col-md-2"><label className="form-label">Jatuh Tempo (tanggal)</label><input type="number" min="1" max="28" className="form-control" value={cfg.due_day || } onChange={(e) => setCfg({ ...cfg, due_day: Number(e.target.value) || 0 })} /></div>
+            <div className="col-md-2">
+              <div className="form-check form-switch">
+                <input className="form-check-input" type="checkbox" id="autoWA" checked={cfg.wa_enabled} onChange={(e) => setCfg({ ...cfg, wa_enabled: e.target.checked })} />
+                <label className="form-check-label" htmlFor="autoWA">Kirim WA ke wali</label>
+              </div>
+            </div>
+            <div className="col-md-3 d-flex align-items-end"><button className="btn btn-primary btn-sm w-100">Simpan Pengaturan</button></div>
+            <div className="col-12"><p className="text-muted small mb-0">Otomatis membuat tagihan SPP bulan berjalan untuk semua santri aktif bila bulan itu belum punya tagihan (termasuk setelah server di-restart). Nominal &amp; jatuh tempo dari pengaturan ini; nomor WA wali diambil dari data santri (parent/father/mother phone).</p></div>
           </div>
         </form>
       </div>
