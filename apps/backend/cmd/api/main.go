@@ -4,6 +4,7 @@ import (
 	"context"
 	"almaparung-api/internal/features/academics"
 	"almaparung-api/internal/features/agendas"
+	"almaparung-api/internal/features/autobilling"
 	"almaparung-api/internal/features/attendance"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/features/disciplines"
@@ -142,7 +143,8 @@ func main() {
 	paymentHandler := payments.NewHandler(paymentRepo)
 
 	sppRepo := spp.NewRepository(database.DB)
-	sppHandler := spp.NewHandler(sppRepo)
+	sppHandler := spp.NewHandler(sppRepo).WithConfigStore(settingRepo)
+	autobilling.New(settingRepo, sppRepo, 6*time.Hour).Start(context.Background())
 
 	iuranRepo := iuran.NewRepository(database.DB)
 	iuranHandler := iuran.NewHandler(iuranRepo)

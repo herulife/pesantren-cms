@@ -20,7 +20,8 @@ import (
 )
 
 type Handler struct {
-	repo IRepository
+	repo   IRepository
+	config ConfigStore
 }
 
 func sendJSONResponse(w http.ResponseWriter, status int, success bool, message string, data interface{}) {
@@ -86,6 +87,8 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/report", h.Report)
 	r.Get("/santri", h.ListSantri)
 	r.Post("/bills/generate", h.Generate)
+	r.Get("/auto-config", h.GetAutoConfig)
+	r.Put("/auto-config", h.PutAutoConfig)
 	r.Post("/bills", h.Create)
 	r.Put("/bills/{id}", h.Update)
 	r.Post("/bills/{id}/pay", h.Pay)
