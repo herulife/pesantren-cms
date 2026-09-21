@@ -55,3 +55,6 @@ backups/*.gz
 
 # DB backup sementara (autocommit)
 *.db.bak.*
+
+# Deploy env (secret)
+deploy/*.txt
