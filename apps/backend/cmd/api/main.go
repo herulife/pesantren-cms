@@ -232,6 +232,7 @@ func main() {
 		// Public Notes (pastebin tanpa login). GET publik; CREATE rate-limited per IP.
 		r.Route("/notes", func(r chi.Router) {
 			r.With(noteLimiter.Middleware).Post("/", noteHandler.Create)
+			r.Get("/mine", noteHandler.ListMine)
 			r.Get("/{urlID}", noteHandler.Get)
 			r.Delete("/{urlID}", noteHandler.Delete)
 		})
