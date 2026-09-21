@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   getIuranBills, getIuranSummary, getIuranSantri, generateIuranBills,
-  createIuranBill, updateIuranBill, payIuranBill, cancelIuranBill, deleteIuranBill, deleteIuranByPeriod, deleteIuranBySantri, verifyIuranBill,
+  createIuranBill, updateIuranBill, payIuranBill, cancelIuranBill, deleteIuranBill, verifyIuranBill,
   IuranBill, IuranSummary, IuranSantri,
 } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -81,21 +81,6 @@ export default function IuranBills() {
   const [payForm, setPayForm] = useState({ amount: '', method: 'manual', paid_at: new Date().toISOString().split('T')[0], notes: '' });
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [bulkTarget, setBulkTarget] = useState<'period' | 'santri' | null>(null);
-  const [bulkSantri, setBulkSantri] = useState('');
-  const [bulkName, setBulkName] = useState('');
-  const handleBulkDelete = async () => {
-    const res = bulkTarget === 'period'
-      ? await deleteIuranByPeriod(bulkName || nameFilter, period)
-      : await deleteIuranBySantri(parseInt(bulkSantri, 10), bulkName || nameFilter || undefined, period);
-    if (res.success) {
-      showToast('success', res.message || 'Tagihan dihapus.');
-      fetchData(period, nameFilter);
-    } else {
-      showToast('error', res.message || 'Gagal menghapus.');
-    }
-    setBulkTarget(null); setBulkSantri(''); setBulkName('');
-  };
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [isCancelOpen, setIsCancelOpen] = useState(false);
@@ -612,27 +597,6 @@ export default function IuranBills() {
         </div>
       )}
 
-      <div className="mt-8 rounded-xl border border-rose-200 bg-rose-50/50 p-6">
-        <h3 className="font-black text-rose-700 mb-1">Hapus Tagihan</h3>
-        <p className="text-xs text-rose-600 mb-4">Hanya tagihan yang belum dibayar yang ikut terhapus.</p>
-        <div className="flex flex-wrap gap-2 items-end">
-          <input value={bulkName} onChange={(e) => setBulkName(e.target.value)} placeholder="Nama iuran (kosong = filter aktif)" className="border border-rose-200 rounded-xl px-3 py-2 text-sm bg-white" />
-          <button onClick={() => setBulkTarget('period')} className="bg-white border border-rose-200 text-rose-700 px-4 py-2 rounded-xl text-sm font-bold">Hapus Semua Periode {period}</button>
-          <select value={bulkSantri} onChange={(e) => setBulkSantri(e.target.value)} className="border border-rose-200 rounded-xl px-3 py-2 text-sm bg-white">
-            <option value="">- Pilih santri -</option>
-            {santriList.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.nis})</option>)}
-          </select>
-          <button onClick={() => bulkSantri && setBulkTarget('santri')} disabled={!bulkSantri} className="bg-white border border-rose-200 text-rose-700 px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-50">Hapus Per Santri</button>
-        </div>
-      </div>
-      <ConfirmDialog
-        isOpen={bulkTarget !== null}
-        onClose={() => { setBulkTarget(null); setBulkSantri(''); setBulkName(''); }}
-        onConfirm={handleBulkDelete}
-        title="Hapus Tagihan?"
-        message={bulkTarget === 'period' ? `Hapus SEMUA tagihan iuran belum dibayar periode ${period}?` : 'Hapus SEMUA tagihan iuran belum dibayar santri ini?'}
-        confirmText="Hapus"
-      />
       <ConfirmDialog
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
