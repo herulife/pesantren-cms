@@ -475,7 +475,6 @@ export const adminDocSections: AdminDocSection[] = [
     ],
   },
   {
-  {
     id: 'spp-auto',
     title: 'Tagihan SPP Otomatis',
     category: 'Keuangan',
@@ -518,6 +517,7 @@ export const adminDocSections: AdminDocSection[] = [
       'Kalau nominal SPP naik, ubah pengaturannya lalu simpan lagi. Bulan berikutnya ikut nominal baru.',
     ],
   },
+  {
     id: 'facilities',
     title: 'Fasilitas Pondok',
     category: 'Isi Website',
