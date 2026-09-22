@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import { getNotificationStatus, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs, type ActivityLog } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { 
@@ -15,8 +14,10 @@ import {
   Users,
   BookOpen,
   ClipboardList,
+  Settings2,
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
+import WASettingsPanel from '@/components/WASettingsPanel';
 
 export default function NotificationsPage() {
   const { showToast } = useToast();
@@ -43,6 +44,8 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     void fetchData();
+    const t = window.setInterval(() => { void fetchData(); }, 15000);
+    return () => window.clearInterval(t);
   }, [fetchData]);
 
   const handleSendManual = async (e: React.FormEvent) => {
@@ -197,7 +200,7 @@ export default function NotificationsPage() {
             </div>
             {!status.configured && (
               <p className="text-xs text-rose-500 leading-relaxed bg-white/50 p-3 rounded-xl border border-rose-100">
-                Buka <Link href="/admin/settings" className="font-bold underline">Pengaturan → Notifikasi WA</Link> lalu tautkan nomor HP pondok (Scan QR / Kode 8 digit) untuk mengaktifkan fitur ini.
+                Nomor HP pondok belum ditautkan. Minta Superadmin menautkan lewat panel <b className="font-bold">Konfigurasi &amp; Template</b> di halaman ini (Scan QR / Kode 8 digit) untuk mengaktifkan semua fitur.
               </p>
             )}
             {status.configured && (
@@ -367,6 +370,21 @@ export default function NotificationsPage() {
         </div>
 
       </div>
+
+      {user?.role === 'superadmin' && (
+        <div className="mt-12">
+          <div className="mb-6 flex items-center gap-4">
+            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
+              <Settings2 size={24} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight font-outfit">Konfigurasi &amp; Template</h3>
+              <p className="text-slate-500 mt-1 text-sm font-medium">Pairing nomor HP pondok, kwitansi otomatis, dan template pesan — satu tempat.</p>
+            </div>
+          </div>
+          <WASettingsPanel />
+        </div>
+      )}
     </div>
   );
 }

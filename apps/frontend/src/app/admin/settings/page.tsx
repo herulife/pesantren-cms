@@ -15,7 +15,6 @@ import TabKontak from './tabs/TabKontak';
 import TabSosmed from './tabs/TabSosmed';
 import TabSambutan from './tabs/TabSambutan';
 import TabAIConfig from './tabs/TabAIConfig';
-import TabNotifikasiWA from './tabs/TabNotifikasiWA';
 import TabRekening from './tabs/TabRekening';
 import TabStafMengajar from './tabs/TabStafMengajar';
 
@@ -29,7 +28,6 @@ const TABS: TabDef[] = [
   { id: 'Sosmed', roles: ['superadmin'] },
   { id: 'Sambutan', roles: ['superadmin'] },
   { id: 'AI Config', roles: ['superadmin'] },
-  { id: 'Notifikasi WA', roles: ['superadmin'] },
   { id: 'No. Rekening', roles: ['superadmin'] },
   { id: 'Staf Mengajar', roles: ['superadmin', 'tim_media'] },
 ];
@@ -59,7 +57,6 @@ export default function SettingsAdminPage() {
       case 'Sosmed': return <TabSosmed />;
       case 'Sambutan': return <TabSambutan />;
       case 'AI Config': return <TabAIConfig />;
-      case 'Notifikasi WA': return <TabNotifikasiWA />;
       case 'No. Rekening': return <TabRekening />;
       case 'Staf Mengajar': return <TabStafMengajar />;
       default: return <TabUmum />;

@@ -30,7 +30,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Konten & Publikasi', label: 'Video Kegiatan', href: '/admin/videos', roles: ['tim_media'], docRef: 'videos' },
   { category: 'Layanan', label: 'Fasilitas Publik', href: '/admin/facilities', roles: ['tim_media'], docRef: 'facilities' },
   { category: 'Layanan', label: 'Pesan & Inbox', href: '/admin/messages', roles: ['panitia_psb'], docRef: 'messages' },
-  { category: 'Layanan', label: 'Notifikasi WA', href: '/admin/notifications', roles: ['bendahara'], docRef: 'notifications' },
+  { category: 'Layanan', label: 'WhatsApp Gateway', href: '/admin/notifications', roles: ['superadmin', 'bendahara', 'panitia_psb'], docRef: 'notifications' },
   { category: 'PSB', label: 'Data Santri (PSB)', href: '/admin/psb', roles: ['panitia_psb'], docRef: 'psb' },
   { category: 'PSB', label: 'Data Santri Aktif', href: '/admin/kesantrian', roles: ['superadmin', 'panitia_psb'], docRef: 'academics' },
   { category: 'PSB', label: 'Pengaturan PSB', href: '/admin/psb/pengaturan', roles: ['superadmin'], docRef: 'psb' },

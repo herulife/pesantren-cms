@@ -1,11 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getSettings, updateSetting, sendWhatsApp } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Save, RefreshCw, MessageCircle, Settings2, Info } from 'lucide-react';
 import WAGatewayCard from '@/components/WAGatewayCard';
 
-export default function TabNotifikasiWA() {
+export default function WASettingsPanel() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [testPhone, setTestPhone] = useState('');
   const [testing, setTesting] = useState(false);
@@ -126,11 +126,11 @@ export default function TabNotifikasiWA() {
                 <div className="text-sm text-amber-800 leading-relaxed">
                    <p className="font-bold mb-1">Variabel yang tersedia:</p>
                    <ul className="list-disc list-inside space-y-1 opacity-90">
-                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{"{{nama}}"}</code> : Nama Lengkap Santri</li>
-                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{"{{kategori}}"}</code> : Kategori Pelanggaran</li>
-                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{"{{detail}}"}</code> : Detail Kejadian</li>
-                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{"{{poin}}"}</code> : Poin yang dikurangi</li>
-                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{"{{sanksi}}"}</code> : Tindakan / Sanksi</li>
+                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{'{{nama}}'}</code> : Nama Lengkap Santri</li>
+                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{'{{kategori}}'}</code> : Kategori Pelanggaran</li>
+                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{'{{detail}}'}</code> : Detail Kejadian</li>
+                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{'{{poin}}'}</code> : Poin yang dikurangi</li>
+                      <li><code className="bg-amber-200/50 px-1 rounded text-xs font-bold">{'{{sanksi}}'}</code> : Tindakan / Sanksi</li>
                    </ul>
                 </div>
              </div>
@@ -164,9 +164,9 @@ export default function TabNotifikasiWA() {
                 <div className="text-sm text-sky-800 leading-relaxed">
                    <p className="font-bold mb-1">Variabel yang tersedia:</p>
                    <ul className="list-disc list-inside space-y-1 opacity-90">
-                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{"{{nama}}"}</code> : Nama Lengkap Santri</li>
-                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{"{{sisa}}"}</code> : Sisa Poin Saat Ini</li>
-                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{"{{status}}"}</code> : Status Sanksi (Aman, SP1, dsb)</li>
+                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{'{{nama}}'}</code> : Nama Lengkap Santri</li>
+                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{'{{sisa}}'}</code> : Sisa Poin Saat Ini</li>
+                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{'{{status}}'}</code> : Status Sanksi (Aman, SP1, dsb)</li>
                    </ul>
                 </div>
              </div>
