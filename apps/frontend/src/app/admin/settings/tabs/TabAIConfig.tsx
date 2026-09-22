@@ -10,7 +10,7 @@ export default function TabAIConfig() {
   const [isSaving, setIsSaving] = useState(false);
   const { showToast } = useToast();
 
-  const KEYS = ['ai_openai_key', 'ai_model', 'ai_temperature'];
+  const KEYS = ['ai_openai_key', 'ai_model', 'ai_temperature', 'ai_api_url'];
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -60,14 +60,14 @@ export default function TabAIConfig() {
           <div className="p-8 space-y-8">
              <div className="space-y-4">
                 <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Key size={12} /> OpenAI API Key (sk-...)
+                  <Key size={12} /> AI API Key (Token Harbor thk_... / OpenAI sk-...)
                 </label>
                 <input 
                    type="password"
                    value={formValues['ai_openai_key'] || ''}
                    onChange={(e) => handleChange('ai_openai_key', e.target.value)}
                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-widest text-slate-800"
-                   placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                   placeholder="thk_live_... atau sk-..."
                 />
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -78,9 +78,11 @@ export default function TabAIConfig() {
                       onChange={(e) => handleChange('ai_model', e.target.value)}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-sm"
                    >
-                     <option value="gpt-4o-mini">GPT-4o Mini (Cepat & Hemat)</option>
-                     <option value="gpt-4o">GPT-4o (Akurat & Pintar)</option>
-                     <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Legacy)</option>
+                     <option value="deepseek-v4.1-flash:free">DeepSeek V4.1 Flash (Free)</option>
+                     <option value="deepseek-v4-flash:free">DeepSeek V4 Flash (Free)</option>
+                     <option value="qwen3.8-flash:free">Qwen 3.8 Flash (Free)</option>
+                     <option value="gpt-4o-mini">GPT-4o Mini</option>
+                     <option value="gpt-4o">GPT-4o</option>
                    </select>
                 </div>
                 <div className="space-y-4">
@@ -93,6 +95,16 @@ export default function TabAIConfig() {
                    />
                 </div>
              </div>
+              <div className="space-y-4">
+                 <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">API URL (OpenAI-compatible)</label>
+                 <input 
+                    type="text"
+                    value={formValues['ai_api_url'] || ''}
+                    onChange={(e) => handleChange('ai_api_url', e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm text-slate-800"
+                    placeholder="https://tokenharbor.ai/v1"
+                 />
+              </div>
           </div>
        </section>
 

@@ -490,6 +490,10 @@ func (h *Handler) GenerateWAMessage(w http.ResponseWriter, r *http.Request) {
 	if model := h.getSetting("ai_model"); model != "" {
 		os.Setenv("AI_MODEL", model)
 	}
+	if apiURL := h.getSetting("ai_api_url"); apiURL != "" {
+		os.Setenv("XKIRO_API_URL", apiURL)
+		os.Setenv("OPENAI_API_URL", apiURL)
+	}
 
 	var prompt strings.Builder
 	prompt.WriteString("Tulis draft pesan WhatsApp bahasa Indonesia yang ramah dan santun dari admin Pesantren Al-Maa kepada wali santri. Format plain text (boleh *bold* singkat), pakai baris baru antar paragraf, maksimal 3-4 paragraf pendek. Jangan pakai markdown judul atau HTML.\n")

@@ -38,7 +38,8 @@ func isConfiguredGeminiKey(value string) bool {
 }
 
 func isXkiroKey(value string) bool {
-	return strings.HasPrefix(strings.TrimSpace(value), "sk-xt-") || strings.HasPrefix(strings.TrimSpace(value), "sk-")
+	v := strings.TrimSpace(value)
+	return strings.HasPrefix(v, "sk-xt-") || strings.HasPrefix(v, "sk-") || strings.HasPrefix(v, "thk_")
 }
 
 func generateWithXkiro(ctx context.Context, apiKey, topic string) (string, error) {
