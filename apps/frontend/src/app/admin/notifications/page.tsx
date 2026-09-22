@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getNotificationStatus, getWARecipients, generateWAMessage, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs, type ActivityLog, type WARecipient } from '@/lib/api';
+import { getNotificationStatus, getWARecipients, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs, type ActivityLog, type WARecipient } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { 
   Bell, 
@@ -17,7 +17,6 @@ import {
   Settings2,
   Search,
   User,
-  Sparkles,
   ReceiptText,
   ChevronDown,
 } from 'lucide-react';
@@ -41,9 +40,6 @@ export default function NotificationsPage() {
   const [q, setQ] = useState('');
   const [showQ, setShowQ] = useState(false);
   const [sel, setSel] = useState<WARecipient | null>(null);
-  const [aiTujuan, setAiTujuan] = useState('');
-  const [generating, setGenerating] = useState(false);
-
   const fetchData = useCallback(async () => {
     const [statusData, logsData] = await Promise.all([
       getNotificationStatus(),
@@ -108,26 +104,6 @@ export default function NotificationsPage() {
       "Kwitansi rekap dapat dilihat/diunduh di dashboard pembayaran:\nhttps://almaparung.com/portal/payment-spp\n\n" +
       "Jazakumullahu khairan.\n_Bendahara Al-Maa_"
     );
-  };
-
-  const handleAIGenerate = async () => {
-    if (!sel) return;
-    setGenerating(true);
-    try {
-      const msg = await generateWAMessage({
-        nama: sel.name,
-        wali: sel.parent_name || sel.father_name || sel.mother_name || '',
-        phone: target,
-        tujuan: aiTujuan,
-        kwitansi: kwitansiObj
-      });
-      if (msg) setMessage(msg);
-      else showToast('error', 'AI belum menghasilkan pesan. Isi API Key di Pengaturan → AI Config.');
-    } catch (e) {
-      showToast('error', e instanceof Error ? e.message : 'Gagal membuat pesan AI');
-    } finally {
-      setGenerating(false);
-    }
   };
 
   const filtered = recipients.filter(r => {
@@ -412,37 +388,24 @@ export default function NotificationsPage() {
                      </div>
                    </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                     <div className="space-y-1.5">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nomor WA Tujuan</label>
-                       <select
-                         value={target}
-                         onChange={(e) => setTarget(e.target.value)}
-                         className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none"
-                       >
-                         {phoneOptions.map((o, i) => (
-                           <option key={i} value={o.phone}>{o.label}</option>
-                         ))}
-                       </select>
-                       <input
-                         type="text"
-                         value={target}
-                         onChange={(e) => setTarget(e.target.value)}
-                         className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none font-mono"
-                         placeholder="Edit nomor jika perlu (628xxx)"
-                       />
-                     </div>
-                     <div className="space-y-1.5">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Konteks Pesan (untuk AI)</label>
-                       <input
-                         type="text"
-                         value={aiTujuan}
-                         onChange={(e) => setAiTujuan(e.target.value)}
-                         placeholder="cth: mengingatkan SPP bulan depan"
-                         className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none"
-                       />
-                       <p className="text-[10px] text-slate-400 italic">Kosongkan untuk pesan umum yang sopan.</p>
-                     </div>
+                   <div className="space-y-1.5">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nomor WA Tujuan</label>
+                     <select
+                       value={target}
+                       onChange={(e) => setTarget(e.target.value)}
+                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none"
+                     >
+                       {phoneOptions.map((o, i) => (
+                         <option key={i} value={o.phone}>{o.label}</option>
+                       ))}
+                     </select>
+                     <input
+                       type="text"
+                       value={target}
+                       onChange={(e) => setTarget(e.target.value)}
+                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none font-mono"
+                       placeholder="Edit nomor jika perlu (628xxx)"
+                     />
                    </div>
 
                    {kwitansiObj && (
@@ -495,7 +458,7 @@ export default function NotificationsPage() {
                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Isi Pesan</label>
                  <textarea
                    rows={4}
-                   placeholder="Tulis pesan Anda disini, atau klik 'Buat Pesan AI'..."
+                   placeholder="Tulis pesan Anda disini..."
                    value={message}
                    onChange={(e) => setMessage(e.target.value)}
                    className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl text-sm transition-all outline-none resize-none"
@@ -503,19 +466,6 @@ export default function NotificationsPage() {
                </div>
 
                <div className="flex flex-wrap items-center gap-3">
-                 <button
-                   type="button"
-                   onClick={handleAIGenerate}
-                   disabled={generating || !sel}
-                   className="px-5 py-3.5 bg-gradient-to-r from-violet-600 to-sky-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-violet-600/20 hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 disabled:shadow-none"
-                 >
-                   {generating ? (
-                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                   ) : (
-                     <Sparkles size={15} />
-                   )}
-                   {generating ? 'Menulis...' : 'Buat Pesan AI'}
-                 </button>
                  <button
                    type="submit"
                    disabled={sending || !target.trim() || !message.trim()}
