@@ -205,10 +205,7 @@ func GenerateWAMessage(prompt string) (string, error) {
 
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if !isConfiguredGeminiKey(apiKey) {
-		return strings.TrimSpace(prompt + "
-
-_Jazakumullahu khairan._
-_Admin Al-Maa_"), nil
+		return strings.TrimSpace(prompt + "\n\n_Jazakumullahu khairan._\n_Admin Al-Maa_"), nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
