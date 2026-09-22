@@ -94,7 +94,7 @@ export default function NotificationsPage() {
   const formatMoney = (n: number) => new Intl.NumberFormat('id-ID').format(n || 0);
 
   const kwitansiObj = sel?.receipt_no
-    ? { receipt_no: sel.receipt_no, period: sel.period, total: sel.receipt_total || 0, method: sel.method || '' }
+    ? { receipt_no: sel.receipt_no, period: sel.period || '\2 sel.receipt_total || 0, method: sel.method || '' }
     : null;
 
   const useKwitansi = () => {
