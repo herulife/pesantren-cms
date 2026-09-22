@@ -1,15 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ExternalLink, LayoutDashboard, LogIn, LogOut, UserPlus } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
-type Props = {
-  anchor?: 'left' | 'right';
+export type FloatingQuickMenuItem = {
+  href?: string;
+  label: string;
+  icon: ReactNode;
+  className?: string;
+  onClick?: () => void;
 };
 
-export default function FloatingQuickMenu({ anchor = 'right' }: Props) {
+type Props = {
+  anchor?: 'left' | 'right';
+  desktop?: boolean;
+  items?: FloatingQuickMenuItem[];
+};
+
+export default function FloatingQuickMenu({ anchor = 'right', desktop = false, items }: Props) {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -65,10 +75,51 @@ export default function FloatingQuickMenu({ anchor = 'right' }: Props) {
   const dashboardLabel = user?.role === 'user' ? 'Ke Portal' : 'Ke Admin';
   const pos = anchor === 'left' ? 'bottom-4 left-4 md:left-6' : 'bottom-4 right-4 md:right-6';
 
+  const defaultItems: FloatingQuickMenuItem[] = user
+    ? [
+        {
+          href: dashboardHref,
+          label: dashboardLabel,
+          icon: <LayoutDashboard size={17} />,
+          className: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+        },
+        {
+          href: '/',
+          label: 'Lihat Website',
+          icon: <ExternalLink size={17} />,
+          className: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+        },
+        {
+          label: 'Keluar',
+          icon: <LogOut size={17} />,
+          className: 'text-rose-600 hover:bg-rose-50',
+          onClick: () => {
+            setOpen(false);
+            logout();
+          },
+        },
+      ]
+    : [
+        {
+          href: '/login',
+          label: 'Login',
+          icon: <LogIn size={17} />,
+          className: 'text-sky-700 hover:bg-sky-50',
+        },
+        {
+          href: '/register',
+          label: 'Daftar Akun',
+          icon: <UserPlus size={17} />,
+          className: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+        },
+      ];
+
+  const navItems = items && items.length > 0 ? items : defaultItems;
+
   return (
     <div
       ref={ref}
-      className={`fixed z-40 flex flex-col lg:hidden ${pos} ${anchor === 'left' ? 'items-start' : 'items-end'} gap-3 transition-all duration-300 ${
+      className={`fixed z-40 flex flex-col ${desktop ? '' : 'lg:hidden'} ${pos} ${anchor === 'left' ? 'items-start' : 'items-end'} gap-3 transition-all duration-300 ${
         hidden && !open ? 'pointer-events-none translate-y-24 opacity-0' : ''
       }`}
     >
@@ -86,51 +137,28 @@ export default function FloatingQuickMenu({ anchor = 'right' }: Props) {
             </div>
           </div>
           <div className="flex flex-col p-1.5">
-            {user ? (
-              <>
-                <Link
-                  href={dashboardHref}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <LayoutDashboard size={17} />
-                  {dashboardLabel}
-                </Link>
-                <Link
-                  href="/"
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <ExternalLink size={17} />
-                  Lihat Website
-                </Link>
+            {navItems.map((item) =>
+              item.onClick ? (
                 <button
+                  key={item.label}
                   type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    logout();
-                  }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
+                  onClick={() => item.onClick?.()}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${item.className ?? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
                 >
-                  <LogOut size={17} />
-                  Keluar
+                  {item.icon}
+                  {item.label}
                 </button>
-              </>
-            ) : (
-              <>
+              ) : (
                 <Link
-                  href="/login"
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-50"
+                  key={item.label}
+                  href={item.href ?? '#'}
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${item.className ?? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
                 >
-                  <LogIn size={17} />
-                  Login
+                  {item.icon}
+                  {item.label}
                 </Link>
-                <Link
-                  href="/register"
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <UserPlus size={17} />
-                  Daftar Akun
-                </Link>
-              </>
+              ),
             )}
           </div>
         </div>

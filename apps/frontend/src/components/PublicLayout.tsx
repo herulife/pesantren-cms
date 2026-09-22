@@ -560,7 +560,7 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
       </footer>
 
       {/* ═══════════════════ FLOATING LOGIN/LOGOUT (mobile) ═══════════════════ */}
-      {!hideNavbar ? <FloatingQuickMenu anchor="left" /> : null}
+      {!hideNavbar ? <FloatingQuickMenu anchor="left" desktop={Boolean(user)} /> : null}
 
       {/* ═══════════════════ WHATSAPP FLOAT ═══════════════════ */}
       <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer"
