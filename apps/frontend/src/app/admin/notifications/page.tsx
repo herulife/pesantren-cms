@@ -89,18 +89,42 @@ export default function NotificationsPage() {
 
   const formatMoney = (n: number) => new Intl.NumberFormat('id-ID').format(n || 0);
 
-  const kwitansiObj = sel?.receipt_no
-    ? { receipt_no: sel.receipt_no, period: sel.period || '', total: sel.receipt_total || 0, method: sel.method || '' }
+  const lunasObj = sel?.lunas_receipt_no
+    ? { receipt_no: sel.lunas_receipt_no, period: sel.lunas_period || '', total: sel.lunas_total || 0, method: sel.lunas_method || '' }
     : null;
 
-  const useKwitansi = () => {
-    if (!sel || !kwitansiObj) return;
+  const tagihanObj = sel?.tagihan_period
+    ? {
+        period: sel.tagihan_period,
+        amount: sel.tagihan_amount || 0,
+        paid: sel.tagihan_paid || 0,
+        status: sel.tagihan_status || 'unpaid',
+        due: sel.tagihan_due || '',
+        kind: sel.tagihan_kind || 'SPP',
+      }
+    : null;
+
+  const useTagihan = () => {
+    if (!sel || !tagihanObj) return;
+    const sisa = tagihanObj.amount - tagihanObj.paid;
     setMessage(
       "Assalamu'alaikum Wr. Wb.\n\n" +
       `Yth. Wali Santri *${sel.name}*,\n` +
-      `Alhamdulillah, pembayaran periode *${kwitansiObj.period}* telah kami terima dengan rincian:\n\n` +
-      `No. Kwitansi: *${kwitansiObj.receipt_no}*\n` +
-      `Total: *Rp ${formatMoney(kwitansiObj.total)}*\n\n` +
+      (sisa > 0
+        ? `Kami mengingatkan bahwa tagihan *${tagihanObj.kind}* bulan *${tagihanObj.period}* sebesar *Rp ${formatMoney(sisa)}* belum terbayarkan.\n\nMohon segera melakukan pembayaran melalui portal atau transfer ke rekening pondok.\nLihat & bayar di dashboard:\nhttps://almaparung.com/portal/payment-spp\n\n`
+        : `Tagihan *${tagihanObj.kind}* bulan *${tagihanObj.period}* sebesar *Rp ${formatMoney(tagihanObj.amount)}* telah terbayar LUNAS. Terima kasih atas pembayarannya.\n\n`) +
+      "Jazakumullahu khairan.\n_Bendahara Al-Maa_"
+    );
+  };
+
+  const useLunas = () => {
+    if (!sel || !lunasObj) return;
+    setMessage(
+      "Assalamu'alaikum Wr. Wb.\n\n" +
+      `Yth. Wali Santri *${sel.name}*,\n` +
+      `Alhamdulillah, pembayaran periode *${lunasObj.period}* telah kami terima dengan rincian:\n\n` +
+      `No. Kwitansi: *${lunasObj.receipt_no}*\n` +
+      `Total: *Rp ${formatMoney(lunasObj.total)}*\n\n` +
       "Kwitansi rekap dapat dilihat/diunduh di dashboard pembayaran:\nhttps://almaparung.com/portal/payment-spp\n\n" +
       "Jazakumullahu khairan.\n_Bendahara Al-Maa_"
     );
@@ -360,11 +384,15 @@ export default function NotificationsPage() {
                                  Wali: {r.parent_name || '-'} · {r.parent_phone || r.father_phone || r.mother_phone || '-'}
                                </p>
                              </div>
-                             {r.receipt_no && (
+                             {r.lunas_receipt_no ? (
                                <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                 Kwitansi
+                                 Lunas
                                </span>
-                             )}
+                             ) : r.tagihan_period ? (
+                               <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
+                                 Tagihan
+                               </span>
+                             ) : null}
                            </div>
                          </button>
                        ))}
@@ -408,24 +436,49 @@ export default function NotificationsPage() {
                      />
                    </div>
 
-                   {kwitansiObj && (
-                     <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+                   {tagihanObj && (
+                     <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3">
                        <div className="flex items-start justify-between gap-3">
                          <div className="min-w-0">
-                           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1.5">
-                             <ReceiptText size={13} /> Kwitansi Terakhir Siap Kirim
+                           <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1 flex items-center gap-1.5">
+                             <ClipboardList size={13} /> Kwitansi Tagihan Siap Kirim
                            </p>
-                           <p className="text-sm font-bold text-slate-800 truncate">No. {kwitansiObj.receipt_no}</p>
+                           <p className="text-sm font-bold text-slate-800 truncate">{tagihanObj.kind} · Periode {tagihanObj.period}</p>
                            <p className="text-xs text-slate-500 truncate">
-                             Periode {kwitansiObj.period} · Total Rp {formatMoney(kwitansiObj.total)} · {kwitansiObj.method || '-'}
+                             {tagihanObj.status === 'paid'
+                               ? 'Sudah LUNAS'
+                               : `Sisa Rp ${formatMoney(tagihanObj.amount - tagihanObj.paid)}`}
+                             {tagihanObj.due ? ` · Jatuh tempo ${tagihanObj.due}` : ''}
                            </p>
                          </div>
                          <button
                            type="button"
-                           onClick={useKwitansi}
+                           onClick={useTagihan}
+                           className="shrink-0 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white rounded-xl hover:bg-amber-600"
+                         >
+                           Pakai Tagihan
+                         </button>
+                       </div>
+                     </div>
+                   )}
+                   {lunasObj && (
+                     <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+                       <div className="flex items-start justify-between gap-3">
+                         <div className="min-w-0">
+                           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1.5">
+                             <ReceiptText size={13} /> Kwitansi Lunas Siap Kirim
+                           </p>
+                           <p className="text-sm font-bold text-slate-800 truncate">No. {lunasObj.receipt_no}</p>
+                           <p className="text-xs text-slate-500 truncate">
+                             Periode {lunasObj.period} · Total Rp {formatMoney(lunasObj.total)} · {lunasObj.method || '-'}
+                           </p>
+                         </div>
+                         <button
+                           type="button"
+                           onClick={useLunas}
                            className="shrink-0 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"
                          >
-                           Pakai Kwitansi
+                           Pakai Lunas
                          </button>
                        </div>
                      </div>

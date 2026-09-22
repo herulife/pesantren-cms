@@ -36,13 +36,18 @@ type WARecipient struct {
 	ParentPhone  string `json:"parent_phone"`
 	FatherName   string `json:"father_name"`
 	FatherPhone  string `json:"father_phone"`
-	MotherName   string `json:"mother_name"`
-	MotherPhone  string `json:"mother_phone"`
-	ReceiptNo    string `json:"receipt_no"`
-	Period       string `json:"period"`
-	ReceiptTotal int    `json:"receipt_total"`
-	Method       string `json:"method"`
-	ReceiptDate  string `json:"receipt_date"`
+	MotherName    string `json:"mother_name"`
+	MotherPhone   string `json:"mother_phone"`
+	TagihanPeriod string `json:"tagihan_period"`
+	TagihanAmount int    `json:"tagihan_amount"`
+	TagihanPaid   int    `json:"tagihan_paid"`
+	TagihanStatus string `json:"tagihan_status"`
+	TagihanDue    string `json:"tagihan_due"`
+	TagihanKind   string `json:"tagihan_kind"`
+	LunasReceiptNo string `json:"lunas_receipt_no"`
+	LunasPeriod    string `json:"lunas_period"`
+	LunasTotal     int    `json:"lunas_total"`
+	LunasMethod    string `json:"lunas_method"`
 }
 
 type Repository interface {
@@ -168,10 +173,28 @@ func (r *repository) GetWARecipients() ([]WARecipient, error) {
 			COALESCE(NULLIF(TRIM(s.father_phone), ''), ''),
 			COALESCE(NULLIF(TRIM(s.mother_name), ''), ''),
 			COALESCE(NULLIF(TRIM(s.mother_phone), ''), ''),
-			COALESCE(r.receipt_no, ''), COALESCE(r.period, ''),
-			COALESCE(r.total, 0), COALESCE(r.method, ''), COALESCE(r.created_at, '')
+			COALESCE(t.period, ''), COALESCE(t.amount, 0), COALESCE(t.paid_amount, 0),
+			COALESCE(t.status, ''), COALESCE(t.due_date, ''), COALESCE(t.kind, ''),
+			COALESCE(l.receipt_no, ''), COALESCE(l.period, ''),
+			COALESCE(l.total, 0), COALESCE(l.method, '')
 		FROM santri s
-		LEFT JOIN receipts r ON r.id = (
+		LEFT JOIN (
+			SELECT b.santri_id, b.period, b.amount, b.paid_amount, b.status, b.due_date, b.kind
+			FROM (
+				SELECT santri_id, period, amount, paid_amount, status, due_date, 'SPP' AS kind, created_at FROM spp_bills
+				UNION ALL
+				SELECT santri_id, period, amount, paid_amount, status, due_date, name AS kind, created_at FROM iuran_bills
+			) b
+			JOIN (
+				SELECT santri_id, MAX(created_at) AS mct FROM (
+					SELECT santri_id, created_at FROM spp_bills
+					UNION ALL
+					SELECT santri_id, created_at FROM iuran_bills
+				) GROUP BY santri_id
+			) m ON m.santri_id = b.santri_id AND m.mct = b.created_at
+			GROUP BY b.santri_id
+		) t ON t.santri_id = s.id
+		LEFT JOIN receipts l ON l.id = (
 			SELECT r2.id FROM receipts r2 WHERE r2.santri_id = s.id ORDER BY r2.id DESC LIMIT 1
 		)
 		ORDER BY s.name
@@ -190,7 +213,8 @@ func (r *repository) GetWARecipients() ([]WARecipient, error) {
 			&it.ParentName, &it.ParentPhone,
 			&it.FatherName, &it.FatherPhone,
 			&it.MotherName, &it.MotherPhone,
-			&it.ReceiptNo, &it.Period, &it.ReceiptTotal, &it.Method, &it.ReceiptDate,
+			&it.TagihanPeriod, &it.TagihanAmount, &it.TagihanPaid, &it.TagihanStatus, &it.TagihanDue, &it.TagihanKind,
+			&it.LunasReceiptNo, &it.LunasPeriod, &it.LunasTotal, &it.LunasMethod,
 		); err == nil {
 			items = append(items, it)
 		}

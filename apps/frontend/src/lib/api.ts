@@ -2403,11 +2403,16 @@ export interface WARecipient {
 	father_phone?: string;
 	mother_name?: string;
 	mother_phone?: string;
-	receipt_no?: string;
-	period?: string;
-	receipt_total?: number;
-	method?: string;
-	receipt_date?: string;
+	tagihan_period?: string;
+	tagihan_amount?: number;
+	tagihan_paid?: number;
+	tagihan_status?: string;
+	tagihan_due?: string;
+	tagihan_kind?: string;
+	lunas_receipt_no?: string;
+	lunas_period?: string;
+	lunas_total?: number;
+	lunas_method?: string;
 }
 
 export interface WAKwitansiPayload {
