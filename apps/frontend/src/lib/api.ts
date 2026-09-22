@@ -2369,7 +2369,13 @@ export async function getNotificationStatus() {
 			headers: getAuthHeaders(),
 			cache: 'no-store'
 		});
-		return await parseResponse(res);
+		const result = await parseResponse(res);
+		return (result?.data || {}) as {
+			configured: boolean;
+			whatsapp_configured: boolean;
+			whatsapp_phone?: string;
+			telegram_configured?: boolean;
+		};
 	} catch (e) {
 		console.error(`[API] Fetch notification status error:`, e);
 		return { success: false, configured: false };

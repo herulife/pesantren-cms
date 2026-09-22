@@ -70,7 +70,7 @@ export default function NotificationsPage() {
   };
 
   const handleBroadcastTagihan = async () => {
-    if (!status.configured) { showToast('error', 'API Key Fonnte belum dikonfigurasi'); return; }
+    if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
     if (!confirm('Kirim pengingat tagihan SPP ke semua santri yang menunggak?')) return;
 
     setBroadcastingTagihan(true);
@@ -89,7 +89,7 @@ export default function NotificationsPage() {
   };
 
   const handleBroadcastNilai = async () => {
-    if (!status.configured) { showToast('error', 'API Key Fonnte belum dikonfigurasi'); return; }
+    if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
     if (!confirm('Kirim notifikasi nilai raport ke wali santri yang memiliki nomor WA?')) return;
 
     setBroadcastingNilai(true);
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
   };
 
   const handleBroadcastPSB = async () => {
-    if (!status.configured) { showToast('error', 'API Key Fonnte belum dikonfigurasi'); return; }
+    if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
     if (!confirm('Kirim status pendaftaran PSB ke semua wali calon santri?')) return;
 
     setBroadcastingPSB(true);
