@@ -22,7 +22,7 @@ import WASettingsPanel from '@/components/WASettingsPanel';
 export default function NotificationsPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
-  const [status, setStatus] = useState({ success: false, configured: false });
+  const [status, setStatus] = useState<{ success?: boolean; configured: boolean; whatsapp_configured: boolean; whatsapp_phone?: string; telegram_configured?: boolean }>({ success: false, configured: false, whatsapp_configured: false, telegram_configured: false });
   const [sending, setSending] = useState(false);
   const [broadcastingTagihan, setBroadcastingTagihan] = useState(false);
   const [broadcastingNilai, setBroadcastingNilai] = useState(false);
