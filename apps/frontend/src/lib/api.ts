@@ -2391,6 +2391,69 @@ export async function sendWhatsApp(target: string, message: string) {
 	return parseResponse(res);
 }
 
+export interface WARecipient {
+	santri_id: number;
+	name: string;
+	nickname?: string;
+	class?: string;
+	status?: string;
+	parent_name?: string;
+	parent_phone?: string;
+	father_name?: string;
+	father_phone?: string;
+	mother_name?: string;
+	mother_phone?: string;
+	receipt_no?: string;
+	period?: string;
+	receipt_total?: number;
+	method?: string;
+	receipt_date?: string;
+}
+
+export interface WAKwitansiPayload {
+	receipt_no: string;
+	period: string;
+	total: number;
+	method?: string;
+}
+
+export interface WAComposePayload {
+	nama: string;
+	wali?: string;
+	phone?: string;
+	tujuan?: string;
+	kwitansi?: WAKwitansiPayload | null;
+}
+
+export async function getWARecipients(): Promise<WARecipient[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa-recipients`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return Array.isArray(result?.data) ? (result.data as WARecipient[]) : [];
+	} catch (e) {
+		console.error(`[API] Fetch WA recipients error:`, e);
+		return [];
+	}
+}
+
+export async function generateWAMessage(payload: WAComposePayload): Promise<string> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa-ai-message`, {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload)
+		});
+		const result = await parseResponse(res);
+		return (result?.data?.message as string) || '';
+	} catch (e) {
+		console.error(`[API] Generate WA message error:`, e);
+		throw e;
+	}
+}
+
 export interface WAGatewayStatus {
 	connected: boolean;
 	phone?: string;
