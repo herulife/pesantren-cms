@@ -79,7 +79,9 @@ export default function NotificationsPage() {
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Gagal mengirim pesan';
       showToast('error', message);
-    setSending(false);
+    } finally {
+      setSending(false);
+    }
   };
 
   const selectRecipient = (r: WARecipient) => {
