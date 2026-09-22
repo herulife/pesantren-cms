@@ -289,8 +289,16 @@ export function NotePageContent() {
       } else {
         showToast('error', 'Gagal menyimpan catatan.');
       }
-    } catch {
-      showToast('error', 'Terjadi kesalahan sistem.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
+      const bentrokNamaLink = /nama link|sudah dipakai|sudah ada|409|conflict/i.test(msg);
+      if (bentrokNamaLink) {
+        setCustomUrl('');
+        setResult(null);
+        showToast('error', msg + ' — Kolom "Nama Link" dikosongkan otomatis, coba Simpan lagi.');
+      } else {
+        showToast('error', msg);
+      }
     } finally {
       setIsSubmitting(false);
     }

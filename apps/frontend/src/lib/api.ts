@@ -3645,7 +3645,8 @@ export async function createNote(payload: {
 		return result.data as CreateNoteResult;
 	} catch (e) {
 		console.error('[API] Create note error:', e);
-		return null;
+		// Bila betulan 409 (nama link dipakai) atau error lain, lempar agar UI tampilkan pesan server.
+		throw e;
 	}
 }
 
