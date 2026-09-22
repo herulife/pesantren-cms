@@ -589,16 +589,19 @@ export const adminDocSections: AdminDocSection[] = [
     audience: ['Pimpinan', 'Bendahara'],
     quickActions: [
       'Cek dulu: status WA harus Tersambung/Configured.',
-      'Kirim pesan ke 1 nomor.',
-      'Kirim ke banyak nomor sekaligus (misal semua yang nunggak).',
+      'Pilih santri lewat kolom cari — ketik nama santri, nama wali, atau nomor WA.',
+      'Badge Lunas = sudah bayar, Badge Tagihan = belum bayar.',
+      'Tombol Pakai Tagihan / Pakai Lunas mengisi pesan secara otomatis.',
     ],
     workflows: [
       {
-        title: 'Cara kirim pesan ke 1 orang',
+        title: 'Cara kirim WA ke 1 wali/santri (pakai kwitansi)',
         steps: [
           'Klik menu Notifikasi WA.',
-          'Ketik nomornya diawali 62 (contoh: 62812xxxx, bukan 0812xxxx).',
-          'Tulis pesannya dengan sopan dan jelas.',
+          'Ketik nama santri, nama wali, atau nomor WA di kolom pencarian, lalu pilih santrinya.',
+          'Periksa badge di daftar: Lunas (sudah bayar) atau Tagihan (belum bayar).',
+          'Kalau sudah bayar klik "Pakai Lunas"; kalau belum bayar klik "Pakai Tagihan" — pesannya langsung terisi otomatis.',
+          'Pilih nomor tujuannya (Wali / Ayah / Ibu) dan cek kembali isi pesannya (boleh diedit dulu).',
           'Klik Kirim, lalu lihat statusnya: terkirim atau gagal.',
         ],
       },
@@ -614,6 +617,9 @@ export const adminDocSections: AdminDocSection[] = [
     ],
     tips: [
       'Nomor selalu diawali 62. Nomor 08 tidak akan terkirim.',
+      'Nomor WA wali diambil otomatis dari data santri (parent/father/mother phone).',
+      'Kwitansi Tagihan: untuk santri yang masih punya sisa tagihan.',
+      'Kwitansi Lunas: untuk santri yang sudah membayar.',
       'Jangan broadcast tengah malam. Kirim jam kerja.',
       'Cek isi pesannya dulu sebelum kirim massal, salah kirim tidak bisa ditarik.',
     ],
