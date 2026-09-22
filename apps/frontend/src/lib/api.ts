@@ -1926,6 +1926,38 @@ export async function updatePSBStatus(id: number, payload: PSBStatusUpdatePayloa
 	return parseResponse(res);
 }
 
+export interface WAOutboxItem {
+	id: number;
+	registration_id: number | null;
+	kind: string;
+	phone: string;
+	message: string;
+	status: string;
+	error?: string;
+	attempts: number;
+	max_attempts: number;
+	next_retry_at?: string;
+	sent_at?: string;
+	last_attempt_at?: string;
+	created_at: string;
+}
+
+export async function getPSBWAOutbox(registrationId: number) {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa-log?registration_id=${registrationId}`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function retryPSBWAMessage(id: number) {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa-retry`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ id })
+	});
+	return parseResponse(res);
+}
+
 export async function acceptPSBToSantri(id: number) {
 	const res = await fetch(`${API_BASE_URL}/psb/${id}/accept-santri`, {
 		method: 'PUT',

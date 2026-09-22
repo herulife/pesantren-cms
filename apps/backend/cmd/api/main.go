@@ -40,6 +40,7 @@ import (
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/wagate"
+	"almaparung-api/internal/platform/wanotif"
 	appmiddleware "almaparung-api/internal/platform/middleware"
 	"fmt"
 	"net/http"
@@ -71,6 +72,9 @@ func main() {
 
 	// 1b. WhatsApp gateway mandiri (auto-connect bila sesi tersimpan ada)
 	go wagate.GetManager().Start(context.Background())
+
+	// 1c. Pengirim-ulang otomatis notifikasi WA (outbox wa_notifications).
+	wanotif.StartRetrier()
 
 	// 2. Setup Router
 	r := chi.NewRouter()
@@ -471,10 +475,12 @@ func main() {
 				r.Mount("/disciplines", disciplineHandler.Routes())
 			})
 
-			// Broadcast PSB: panitia boleh kirim pengumuman status (endpoint notifikasi lain tetap superadmin/bendahara).
+			// Broadcast PSB + log/retry WA PSB: panitia boleh akses (endpoint notifikasi lain tetap superadmin/bendahara).
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb"))
 				r.Post("/notifications/broadcast-psb", notificationHandler.BroadcastPSB)
+				r.Get("/notifications/wa-log", notificationHandler.GetWALog)
+				r.Post("/notifications/wa-retry", notificationHandler.PostWARetry)
 			})
 
 			// Academic & Notifications

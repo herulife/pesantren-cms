@@ -1082,6 +1082,33 @@ func runMigrations() {
 		name: "notes_expires_at_index",
 		sql:  `CREATE INDEX IF NOT EXISTS idx_notes_expires_at ON notes(expires_at);`,
 	},
+	{
+		name: "wa_notifications_table",
+		sql: `CREATE TABLE IF NOT EXISTS wa_notifications (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			registration_id INTEGER,
+			kind TEXT NOT NULL DEFAULT 'psb',
+			phone TEXT NOT NULL,
+			message TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			error TEXT,
+			attempts INTEGER NOT NULL DEFAULT 0,
+			max_attempts INTEGER NOT NULL DEFAULT 3,
+			next_retry_at TEXT,
+			sent_at TEXT,
+			last_attempt_at TEXT,
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);`,
+	},
+	{
+		name: "wa_notifications_registration_index",
+		sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_reg ON wa_notifications(registration_id);`,
+	},
+	{
+		name: "wa_notifications_status_index",
+		sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_status ON wa_notifications(status);`,
+	},
 	}
 
 	for _, migration := range migrations {

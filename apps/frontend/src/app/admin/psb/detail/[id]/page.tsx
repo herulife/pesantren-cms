@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, acceptPSBToSantri, getPublicSettingsMap, Registration, resolveDisplayImageUrl } from '@/lib/api';
+import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, acceptPSBToSantri, getPublicSettingsMap, Registration, resolveDisplayImageUrl, WAOutboxItem, getPSBWAOutbox, retryPSBWAMessage } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import ProofImage, { openProofInNewTab } from '@/components/ProofImage';
 import { 
@@ -17,7 +17,9 @@ import {
   FileText,
   Eye,
   Download,
-  CreditCard
+  CreditCard,
+  MessageSquare,
+  RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,6 +40,8 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const [testNote, setTestNote] = useState('');
   const [reRegDeadline, setReRegDeadline] = useState('');
   const [isSavingTest, setIsSavingTest] = useState(false);
+  const [waLog, setWALog] = useState<WAOutboxItem[]>([]);
+  const [waRetrying, setWARetrying] = useState<number | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -55,6 +59,9 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
         setTestScore(found?.test_score != null ? String(found.test_score) : '');
         setTestNote(found?.test_note || '');
         setReRegDeadline(found?.re_registration_deadline || '');
+        getPSBWAOutbox(Number(id)).then((res: any) => {
+          if (res.success && Array.isArray(res.data?.items)) setWALog(res.data.items);
+        }).catch(() => setWALog([]));
         setIsLoading(false);
       };
 
@@ -99,6 +106,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       if (res.success) {
         showToast('success', `Status pendaftaran berhasil diubah ${registration.status.toUpperCase()} → ${newStatus.toUpperCase()}`);
         setRegistration({ ...registration, status: newStatus });
+        reloadWALog();
         return;
       }
 
@@ -168,12 +176,46 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       if (res.success) {
         showToast('success', `Status pembayaran berhasil diubah.`);
         setRegistration({ ...registration, payment_status: newStatus, payment_note: paymentNote });
+        reloadWALog();
         return;
       }
 
       showToast('error', 'Gagal memperbarui status pembayaran.');
     } finally {
       setIsUpdatingPayment(false);
+    }
+  };
+
+  const getWAStyle = (status: string) => {
+    switch (status) {
+      case 'sent': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'failed': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'dead': return 'bg-rose-50 text-rose-700 border-rose-200';
+      default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+  };
+
+  const reloadWALog = async () => {
+    if (!registration) return;
+    try {
+      const res: any = await getPSBWAOutbox(registration.id);
+      if (res.success && Array.isArray(res.data?.items)) setWALog(res.data.items);
+    } catch {
+      setWALog([]);
+    }
+  };
+
+  const handleRetryWA = async (itemId: number) => {
+    if (waRetrying !== null) return;
+    setWARetrying(itemId);
+    try {
+      const res: any = await retryPSBWAMessage(itemId);
+      showToast(res.success ? 'success' : 'error', res.success ? 'Kirim ulang WhatsApp diproses.' : (res.message || 'Gagal kirim ulang WhatsApp.'));
+    } catch {
+      showToast('error', 'Gagal kirim ulang WhatsApp.');
+    } finally {
+      setWARetrying(null);
+      reloadWALog();
     }
   };
 
@@ -564,6 +606,44 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                 Simpan Catatan
               </button>
             </div>
+         </div>
+
+         <div className="mb-10 rounded-xl border border-slate-200 bg-slate-50 p-8">
+            <div className="mb-5 flex items-center justify-between">
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <MessageSquare size={16} />
+                  Notifikasi WhatsApp (Otomatis)
+               </label>
+            </div>
+            {waLog.length === 0 ? (
+               <p className="text-sm font-semibold text-slate-400">Belum ada riwayat pengiriman WhatsApp untuk pendaftaran ini.</p>
+            ) : (
+               <div className="space-y-3">
+                  {waLog.map((item) => (
+                     <div key={item.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border ${getWAStyle(item.status)}`}>
+                           {item.status === 'sent' ? <CheckCircle size={12} /> : item.status === 'dead' ? <XCircle size={12} /> : <Clock size={12} />}
+                           {item.status === 'sent' ? 'Terkirim' : item.status === 'failed' ? 'Gagal (menunggu retry)' : item.status === 'dead' ? 'Gagal Permanen (3x)' : 'Antrean'}
+                        </span>
+                        <span className="text-xs font-black text-slate-600">{item.phone}</span>
+                        <span className="text-xs text-slate-400">{item.kind === 'psb_payment' ? 'Notifikasi pembayaran' : 'Notifikasi status'}</span>
+                        <span className="text-xs text-slate-400">Percobaan {item.attempts}/{item.max_attempts}</span>
+                        {item.sent_at && <span className="text-xs text-emerald-600">Terkirim: {item.sent_at}</span>}
+                        {item.error && <span className="text-xs text-rose-600 max-w-full truncate">{item.error}</span>}
+                        {(item.status === 'failed' || item.status === 'dead' || item.status === 'pending') && (
+                           <button
+                              onClick={() => handleRetryWA(item.id)}
+                              disabled={waRetrying !== null}
+                              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-sky-700 disabled:opacity-50"
+                           >
+                              {waRetrying === item.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                              Retry
+                           </button>
+                        )}
+                     </div>
+                  ))}
+               </div>
+            )}
          </div>
 
          <div className="bg-slate-50 p-8 rounded-xl border border-slate-100">

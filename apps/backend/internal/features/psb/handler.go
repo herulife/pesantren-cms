@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/wanotif"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
 	"io"
@@ -500,14 +501,15 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 
-	// WA otomatis saat pembayaran dinyatakan lunas.
+	// WA otomatis saat pembayaran dinyatakan lunas (dicatat + dicoba kirim).
 	if req.PaymentStatus == "paid" {
 		if reg, err := h.repo.FindByID(r.Context(), id); err == nil {
 			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
 			if phone != "" {
 				msg := whatsapp.FormatPSBUpdate(reg.FullName, "Pembayaran pendaftaran telah terverifikasi (LUNAS)", "")
-				if err := whatsapp.SendMessage(phone, msg); err != nil {
-					logger.LogWarning("Gagal kirim WA PSB lunas ke %s: %v", phone, err)
+				regID := int64(id)
+				if _, err := wanotif.Enqueue(r.Context(), &regID, "psb_payment", phone, msg); err != nil {
+					logger.LogWarning("Gagal mencatat notifikasi WA PSB lunas ke %s: %v", phone, err)
 				}
 			}
 		}
@@ -778,9 +780,10 @@ func notifyPSBTransition(r *http.Request, repo PSBRepository, id int, status, no
 	if msg == "" {
 		return
 	}
-	if err := whatsapp.SendMessage(phone, msg); err != nil {
+	regID := int64(id)
+	if _, err := wanotif.Enqueue(r.Context(), &regID, "psb_status", phone, msg); err != nil {
 		logger := NewRequestLogger(r)
-		logger.LogWarning("Gagal mengirim notifikasi WA PSB ke %s: %v", phone, err)
+		logger.LogWarning("Gagal mencatat notifikasi WA PSB ke %s: %v", phone, err)
 	}
 }
 
