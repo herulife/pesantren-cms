@@ -2378,7 +2378,7 @@ export async function getNotificationStatus() {
 		};
 	} catch (e) {
 		console.error(`[API] Fetch notification status error:`, e);
-		return { success: false, configured: false };
+		return { configured: false, whatsapp_configured: false, telegram_configured: false, whatsapp_phone: undefined };
 	}
 }
 
