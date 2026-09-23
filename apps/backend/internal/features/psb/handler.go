@@ -441,7 +441,7 @@ func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
 
 	// WA otomatis saat berkas sudah lengkap: arahkan membayar & unggah bukti (sekali saja).
 	if documentsComplete(reg) && reg.PaymentStatus != "paid" {
-		exists, _ := wanotif.ExistsKind(r.Context(), reg.ID, "psb_registration_complete")
+		exists, _ := wanotif.ExistsKind(r.Context(), int64(reg.ID), "psb_registration_complete")
 		if !exists {
 			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
 			if phone != "" {
@@ -523,7 +523,7 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 	}
 	// WA otomatis saat bukti pembayaran dikirim lewat portal (sekali saja).
 	if reg.PaymentStatus != "paid" {
-		exists, _ := wanotif.ExistsKind(r.Context(), reg.ID, "psb_payment_submitted")
+		exists, _ := wanotif.ExistsKind(r.Context(), int64(reg.ID), "psb_payment_submitted")
 		if !exists {
 			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
 			if phone != "" {
