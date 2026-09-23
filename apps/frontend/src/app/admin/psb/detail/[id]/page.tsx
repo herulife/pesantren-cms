@@ -886,10 +886,14 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
               Berkas & Dokumen Pendaftar
             </label>
             <div className="space-y-4">
-              {[
+{[ 
                 { label: 'Kartu Keluarga', value: registration.kk_url },
-                { label: 'Ijazah/Surat Kelulusan', value: registration.ijazah_url },
+                { label: 'Akta Kelahiran', value: registration.akta_url },
+                { label: 'KTP Orang Tua', value: registration.ktp_ortu_url },
+                { label: 'Ijazah/Raport', value: registration.ijazah_url },
+                { label: 'Surat Kelulusan', value: registration.surat_kelulusan_url },
                 { label: 'Pas Foto', value: registration.pasfoto_url },
+                { label: 'Foto Pendaftaran', value: registration.foto_pendaftaran_url },
                 ...(registration.category === 'yatim' ? [{ label: 'Surat Keterangan Kematian', value: registration.yatim_doc_url }] : []),
                 ...(registration.category === 'dhuafa' ? [{ label: 'SKTM', value: registration.sktm_doc_url }] : []),
               ].map((doc) => {

@@ -6,7 +6,16 @@ import { ArrowLeft, ArrowRight, CheckCircle2, FileText, RefreshCw, ShieldCheck, 
 import { useToast } from '@/components/Toast';
 import { getMyPSBRegistration, saveMyPSBDocuments, uploadImage } from '@/lib/api';
 
-type DocumentKey = 'kk_url' | 'ijazah_url' | 'pasfoto_url' | 'yatim_doc_url' | 'sktm_doc_url';
+type DocumentKey =
+  | 'kk_url'
+  | 'ijazah_url'
+  | 'pasfoto_url'
+  | 'yatim_doc_url'
+  | 'sktm_doc_url'
+  | 'akta_url'
+  | 'ktp_ortu_url'
+  | 'surat_kelulusan_url'
+  | 'foto_pendaftaran_url';
 type DocumentStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function DocumentsPage() {
@@ -21,6 +30,10 @@ export default function DocumentsPage() {
     pasfoto_url: '',
     yatim_doc_url: '',
     sktm_doc_url: '',
+    akta_url: '',
+    ktp_ortu_url: '',
+    surat_kelulusan_url: '',
+    foto_pendaftaran_url: '',
   });
   const [documentStatus, setDocumentStatus] = useState<Record<DocumentKey, DocumentStatus>>({
     kk_url: 'idle',
@@ -28,6 +41,10 @@ export default function DocumentsPage() {
     pasfoto_url: 'idle',
     yatim_doc_url: 'idle',
     sktm_doc_url: 'idle',
+    akta_url: 'idle',
+    ktp_ortu_url: 'idle',
+    surat_kelulusan_url: 'idle',
+    foto_pendaftaran_url: 'idle',
   });
   const [documentNotes, setDocumentNotes] = useState<Record<DocumentKey, string>>({
     kk_url: '',
@@ -35,6 +52,10 @@ export default function DocumentsPage() {
     pasfoto_url: '',
     yatim_doc_url: '',
     sktm_doc_url: '',
+    akta_url: '',
+    ktp_ortu_url: '',
+    surat_kelulusan_url: '',
+    foto_pendaftaran_url: '',
   });
 
   useEffect(() => {
@@ -67,6 +88,10 @@ export default function DocumentsPage() {
           pasfoto_url: data?.pasfoto_url || '',
           yatim_doc_url: data?.yatim_doc_url || '',
           sktm_doc_url: data?.sktm_doc_url || '',
+          akta_url: data?.akta_url || '',
+          ktp_ortu_url: data?.ktp_ortu_url || '',
+          surat_kelulusan_url: data?.surat_kelulusan_url || '',
+          foto_pendaftaran_url: data?.foto_pendaftaran_url || '',
         });
         setDocumentStatus({
           kk_url: data?.kk_url ? 'success' : 'idle',
@@ -74,6 +99,10 @@ export default function DocumentsPage() {
           pasfoto_url: data?.pasfoto_url ? 'success' : 'idle',
           yatim_doc_url: data?.yatim_doc_url ? 'success' : 'idle',
           sktm_doc_url: data?.sktm_doc_url ? 'success' : 'idle',
+          akta_url: data?.akta_url ? 'success' : 'idle',
+          ktp_ortu_url: data?.ktp_ortu_url ? 'success' : 'idle',
+          surat_kelulusan_url: data?.surat_kelulusan_url ? 'success' : 'idle',
+          foto_pendaftaran_url: data?.foto_pendaftaran_url ? 'success' : 'idle',
         });
         setDocumentNotes({
           kk_url: data?.kk_url ? 'Dokumen sudah tersimpan di server.' : '',
@@ -81,6 +110,10 @@ export default function DocumentsPage() {
           pasfoto_url: data?.pasfoto_url ? 'Dokumen sudah tersimpan di server.' : '',
           yatim_doc_url: data?.yatim_doc_url ? 'Dokumen sudah tersimpan di server.' : '',
           sktm_doc_url: data?.sktm_doc_url ? 'Dokumen sudah tersimpan di server.' : '',
+          akta_url: data?.akta_url ? 'Dokumen sudah tersimpan di server.' : '',
+          ktp_ortu_url: data?.ktp_ortu_url ? 'Dokumen sudah tersimpan di server.' : '',
+          surat_kelulusan_url: data?.surat_kelulusan_url ? 'Dokumen sudah tersimpan di server.' : '',
+          foto_pendaftaran_url: data?.foto_pendaftaran_url ? 'Dokumen sudah tersimpan di server.' : '',
         });
       } finally {
         setIsLoading(false);
@@ -129,8 +162,12 @@ export default function DocumentsPage() {
 
   const baseDocs: Array<{ id: DocumentKey; title: string; desc: string }> = [
     { id: 'kk_url', title: 'Kartu Keluarga (KK)', desc: 'Scan asli berwarna, ukuran maksimal 2MB (JPG/PNG/PDF).' },
+    { id: 'akta_url', title: 'Akta Kelahiran', desc: 'Scan/akta kelahiran calon santri (JPG/PNG/PDF).' },
+    { id: 'ktp_ortu_url', title: 'KTP Orang Tua', desc: 'Scan KTP ayah/ibu atau wali (JPG/PNG/PDF).' },
     { id: 'ijazah_url', title: 'Ijazah / Raport Terakhir', desc: 'Scan asli ijazah, SKL, atau raport terbaru.' },
+    { id: 'surat_kelulusan_url', title: 'Surat Kelulusan', desc: 'Scan/surat keterangan lulus dari sekolah asal (JPG/PNG/PDF).' },
     { id: 'pasfoto_url', title: 'Pas Foto 3x4', desc: 'Latar belakang merah, ukuran maksimal 1MB.' },
+    { id: 'foto_pendaftaran_url', title: 'Foto Pendaftaran Siswa', desc: 'Foto calon santri saat pendaftaran (JPG/PNG).' },
   ];
   const categoryDocs: Array<{ id: DocumentKey; title: string; desc: string }> =
     category === 'yatim'

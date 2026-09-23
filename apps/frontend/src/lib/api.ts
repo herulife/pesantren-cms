@@ -490,6 +490,10 @@ export interface Registration {
 	kk_url?: string;
 	ijazah_url?: string;
 	pasfoto_url?: string;
+	akta_url?: string;
+	ktp_ortu_url?: string;
+	surat_kelulusan_url?: string;
+	foto_pendaftaran_url?: string;
 	payment_proof_url?: string;
 	payment_amount?: number;
 	payment_date?: string;
@@ -2037,6 +2041,10 @@ export async function saveMyPSBDocuments(payload: {
 	pasfoto_url?: string;
 	yatim_doc_url?: string;
 	sktm_doc_url?: string;
+	akta_url?: string;
+	ktp_ortu_url?: string;
+	surat_kelulusan_url?: string;
+	foto_pendaftaran_url?: string;
 }) {
 	const res = await fetch(`${API_BASE_URL}/psb/me/documents`, {
 		method: 'PUT',

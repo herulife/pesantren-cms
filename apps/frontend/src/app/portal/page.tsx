@@ -124,6 +124,8 @@ export default function PortalDashboard() {
 
     const documentFields = [
       registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url,
+      registration?.akta_url, registration?.ktp_ortu_url, registration?.surat_kelulusan_url,
+      registration?.foto_pendaftaran_url,
       ...(registration?.category === 'yatim' ? [registration?.yatim_doc_url] : []),
       ...(registration?.category === 'dhuafa' ? [registration?.sktm_doc_url] : []),
     ];
@@ -185,8 +187,8 @@ export default function PortalDashboard() {
         href: '/portal/documents',
         title: 'Unggah Dokumen',
         description: documentsCompleted
-          ? 'Dokumen KK, ijazah/raport, dan pas foto sudah tersimpan.'
-          : 'Unggah KK, ijazah atau raport terakhir, dan pas foto terbaru.',
+          ? 'Dokumen KK, akta, KTP orang tua, surat kelulusan, dan foto sudah tersimpan.'
+          : 'Unggah KK, akta kelahiran, KTP orang tua, surat kelulusan, dan foto pendaftaran.',
         completed: documentsCompleted,
         icon: <Upload size={24} />,
       },
@@ -289,8 +291,12 @@ export default function PortalDashboard() {
 
   const documentSummary = [
     { label: 'Kartu Keluarga', uploaded: isFilled(registration?.kk_url) },
+    { label: 'Akta Kelahiran', uploaded: isFilled(registration?.akta_url) },
+    { label: 'KTP Orang Tua', uploaded: isFilled(registration?.ktp_ortu_url) },
     { label: 'Ijazah / Raport', uploaded: isFilled(registration?.ijazah_url) },
+    { label: 'Surat Kelulusan', uploaded: isFilled(registration?.surat_kelulusan_url) },
     { label: 'Pas Foto', uploaded: isFilled(registration?.pasfoto_url) },
+    { label: 'Foto Pendaftaran', uploaded: isFilled(registration?.foto_pendaftaran_url) },
   ];
 
   const studentQuickMenus = [
@@ -324,7 +330,7 @@ export default function PortalDashboard() {
       case 'Kelengkapan Biodata':
         return portalState.biodataCompleted ? 'Data diri + orang tua lengkap' : 'Masih ada data yang belum diisi';
       case 'Unggah Dokumen':
-        return portalState.documentsCompleted ? 'KK • ijazah • pas foto lengkap' : 'Ada berkas yang belum diunggah';
+        return portalState.documentsCompleted ? 'KK • akta • KTP ortu • surat lulus • foto lengkap' : 'Ada berkas yang belum diunggah';
       case 'Bayar Pendaftaran':
         if (portalState.paymentCompleted) return 'Lunas dan terverifikasi panitia';
         if (portalState.paymentSubmitted) return 'Bukti terkirim • menunggu verifikasi';
