@@ -129,6 +129,7 @@ func chatRequest(ctx context.Context, apiKey, prompt, model string) (string, err
 		return "", fmt.Errorf("empty choices")
 	}
 	txt := strings.TrimSpace(out.Choices[0].Message.Content)
+	txt = stripReasoningBlock(txt)
 	txt = strings.TrimPrefix(txt, "```html")
 	txt = strings.TrimPrefix(txt, "```")
 	txt = strings.TrimSuffix(txt, "```")
@@ -154,11 +155,28 @@ func tryOpenAIModels(ctx context.Context, apiKey, prompt string) (string, error)
 	return "", fmt.Errorf("ai models exhausted")
 }
 
-// cleanupArticleHTML merapikan output model: buang fenced block markdown dan,
-// bila model mengembalikan dokumen HTML penuh (<!doctype>), ekstrak hanya blok
-// <h2>/<p> yang relevan.
+// stripReasoningBlock membuang blok reasoning model berformat <think>...</think>
+// yang dikeluarkan beberapa model OpenAI-compatible (mis. MiniMax-M2.7) agar
+// tidak bocor ke konten artikel maupun pesan WA.
+func stripReasoningBlock(txt string) string {
+	lower := strings.ToLower(txt)
+	start := strings.Index(lower, "<think>")
+	if start == -1 {
+		return txt
+	}
+	end := strings.Index(lower, "</think>")
+	if end == -1 || end < start {
+		return txt
+	}
+	return strings.TrimSpace(txt[end+len("</think>"):])
+}
+
+// cleanupArticleHTML merapikan output model: buang reasoning block, fenced
+// block markdown, dan bila model mengembalikan dokumen HTML penuh (<!doctype>),
+// ekstrak hanya blok <h2>/<p> yang relevan.
 func cleanupArticleHTML(raw string) string {
 	txt := strings.TrimSpace(raw)
+	txt = stripReasoningBlock(txt)
 	txt = strings.TrimPrefix(txt, "```html")
 	txt = strings.TrimPrefix(txt, "```")
 	txt = strings.TrimSuffix(txt, "```")
