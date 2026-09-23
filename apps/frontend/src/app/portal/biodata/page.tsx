@@ -67,7 +67,7 @@ const dataOrangTuaFields: Array<keyof BiodataForm> = [
   'mother_phone',
 ];
 
-const isFilled(value: string) {
+function isFilled(value: string) {
   return Boolean(value.trim());
 }
 
