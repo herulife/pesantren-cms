@@ -23,7 +23,7 @@ type PSBRepository interface {
 	FindByID(ctx context.Context, id int) (*Registration, error)
 	FindByUserID(ctx context.Context, userID int) (*Registration, error)
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
-	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL string) (*Registration, error)
+	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL, aktaURL, ktpOrtuURL, suratKelulusanURL, fotoPendaftaranURL string) (*Registration, error)
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
 	UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error
 	UpdateStatus(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error
@@ -77,6 +77,9 @@ func (h *Handler) paymentInstruction() psbPaymentInstruction {
 // documentsComplete menandai berkas wajib sudah diunggah sesuai kategori.
 func documentsComplete(reg *Registration) bool {
 	if strings.TrimSpace(reg.KKURL) == "" || strings.TrimSpace(reg.IjazahURL) == "" || strings.TrimSpace(reg.PasfotoURL) == "" {
+		return false
+	}
+	if strings.TrimSpace(reg.AktaURL) == "" || strings.TrimSpace(reg.KtpOrtuURL) == "" || strings.TrimSpace(reg.SuratKelulusanURL) == "" {
 		return false
 	}
 	if reg.Category == "yatim" && strings.TrimSpace(reg.YatimDocURL) == "" {
@@ -136,11 +139,15 @@ type portalRegistrationRequest struct {
 }
 
 type portalDocumentsRequest struct {
-	KKURL      string `json:"kk_url"`
-	IjazahURL  string `json:"ijazah_url"`
-	PasfotoURL string `json:"pasfoto_url"`
-	YatimDocURL string `json:"yatim_doc_url"`
-	SktmDocURL  string `json:"sktm_doc_url"`
+	KKURL              string `json:"kk_url"`
+	IjazahURL          string `json:"ijazah_url"`
+	PasfotoURL         string `json:"pasfoto_url"`
+	YatimDocURL        string `json:"yatim_doc_url"`
+	SktmDocURL         string `json:"sktm_doc_url"`
+	AktaURL            string `json:"akta_url"`
+	KtpOrtuURL         string `json:"ktp_ortu_url"`
+	SuratKelulusanURL  string `json:"surat_kelulusan_url"`
+	FotoPendaftaranURL string `json:"foto_pendaftaran_url"`
 }
 
 type portalPaymentRequest struct {
@@ -430,8 +437,24 @@ func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, http.StatusBadRequest, "URL SKTM tidak valid")
 		return
 	}
+	if req.AktaURL != "" && !validators.ValidateMediaURL(req.AktaURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL Akta Kelahiran tidak valid")
+		return
+	}
+	if req.KtpOrtuURL != "" && !validators.ValidateMediaURL(req.KtpOrtuURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL KTP Orang Tua tidak valid")
+		return
+	}
+	if req.SuratKelulusanURL != "" && !validators.ValidateMediaURL(req.SuratKelulusanURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL Surat Kelulusan tidak valid")
+		return
+	}
+	if req.FotoPendaftaranURL != "" && !validators.ValidateMediaURL(req.FotoPendaftaranURL) {
+		SendErrorResponse(w, http.StatusBadRequest, "URL Foto Pendaftaran tidak valid")
+		return
+	}
 
-	reg, err := h.repo.UpdateDocumentsByUserID(r.Context(), userID, req.KKURL, req.IjazahURL, req.PasfotoURL, req.YatimDocURL, req.SktmDocURL)
+	reg, err := h.repo.UpdateDocumentsByUserID(r.Context(), userID, req.KKURL, req.IjazahURL, req.PasfotoURL, req.YatimDocURL, req.SktmDocURL, req.AktaURL, req.KtpOrtuURL, req.SuratKelulusanURL, req.FotoPendaftaranURL)
 	if err != nil {
 		SendErrorResponse(w, http.StatusBadRequest, "Lengkapi biodata PSB terlebih dahulu sebelum unggah dokumen")
 		return
@@ -956,7 +979,7 @@ type IRepository interface {
 	FindByID(ctx context.Context, id int) (*Registration, error)
 	FindByUserID(ctx context.Context, userID int) (*Registration, error)
 	SaveByUserID(ctx context.Context, userID int, reg Registration) (*Registration, error)
-	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL string) (*Registration, error)
+	UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL, aktaURL, ktpOrtuURL, suratKelulusanURL, fotoPendaftaranURL string) (*Registration, error)
 	UpdatePaymentByUserID(ctx context.Context, userID int, proofURL string, amount int, paymentDate string) (*Registration, error)
 	UpdatePaymentStatus(ctx context.Context, id int, status string, note string, actorID int) error
 	UpdateStatus(ctx context.Context, id int, status string, note string, opts *StatusUpdateOptions) error

@@ -37,36 +37,58 @@ func isConfiguredGeminiKey(value string) bool {
 	return true
 }
 
-func isXkiroKey(value string) bool {
+// isOpenAICompatibleKey mengenali kunci API untuk endpoint OpenAI-compatible
+// (Token Harbor thk_..., OpenAI sk-..., Dahl API dahl_...).
+func isOpenAICompatibleKey(value string) bool {
 	v := strings.TrimSpace(value)
-	return strings.HasPrefix(v, "sk-xt-") || strings.HasPrefix(v, "sk-") || strings.HasPrefix(v, "thk_")
+	return strings.HasPrefix(v, "sk-") || strings.HasPrefix(v, "thk_") || strings.HasPrefix(v, "dahl_")
 }
 
-func generateWithXkiro(ctx context.Context, apiKey, topic string) (string, error) {
-	baseURL := os.Getenv("XKIRO_API_URL")
-	if baseURL == "" {
-		baseURL = os.Getenv("OPENAI_API_URL")
+// openAIKeyEnvPrefixes: urutan env yang dicek untuk kunci OpenAI-compatible.
+func openAIKey() string {
+	for _, key := range []string{"DAHL_API_KEY", "XKIRO_API_KEY", "OPENAI_API_KEY", "AI_OPENAI_KEY", "AI_API_KEY"} {
+		if v := strings.TrimSpace(os.Getenv(key)); v != "" && isConfiguredGeminiKey(v) {
+			return v
+		}
 	}
-	if baseURL == "" {
-		baseURL = "https://api.xkiro.com/v1"
+	return ""
+}
+
+// openAIBaseURL: urutan env untuk base URL OpenAI-compatible; fallback Dahl API.
+func openAIBaseURL() string {
+	for _, key := range []string{"DAHL_API_URL", "XKIRO_API_URL", "OPENAI_API_URL", "AI_API_URL"} {
+		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+			return v
+		}
 	}
+	return "https://inference.dahl.global/v1"
+}
+
+// openAIModel: model default Dahl (DeepSeek V4 Flash) atau AI_MODEL.
+func openAIModel() string {
+	if m := strings.TrimSpace(os.Getenv("AI_MODEL")); m != "" {
+		return m
+	}
+	return "deepseek-ai/DeepSeek-V4-Flash-0731"
+}
+
+func openAIChatURL() string {
+	baseURL := openAIBaseURL()
 	if !strings.HasSuffix(baseURL, "/v1") && !strings.Contains(baseURL, "/chat") {
 		baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
 	}
-	url := baseURL + "/chat/completions"
+	return baseURL + "/chat/completions"
+}
+
+func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, error) {
+	url := openAIChatURL()
 	prompt := "Tulis artikel HTML murni untuk Yayasan Pondok Pesantren Tahfidz Al-Maa tentang topik: " + topic + ". Hanya gunakan tag <h2> untuk subjudul (2-3 buah) dan <p> untuk paragraf (4-6 paragraf). Jangan pakai <!DOCTYPE>, <html>, <head>, <body>, markdown, atau ```. Langsung mulai dengan <h2>."
 	body := map[string]interface{}{
-		"model": os.Getenv("XKIRO_MODEL"),
-		"messages": []map[string]string{
+		"model":       openAIModel(),
+		"messages":    []map[string]string{
 			{"role": "user", "content": prompt},
 		},
 		"temperature": 0.7,
-	}
-	if body["model"] == "" || body["model"] == nil {
-		body["model"] = "deepseek/deepseek-v4-flash"
-	}
-	if m := os.Getenv("AI_MODEL"); m != "" {
-		body["model"] = m
 	}
 	b, _ := json.Marshal(body)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
@@ -75,8 +97,6 @@ func generateWithXkiro(ctx context.Context, apiKey, topic string) (string, error
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
-	req.Header.Set("Origin", "https://xkiro.com")
-	req.Header.Set("Referer", "https://xkiro.com/")
 	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -85,7 +105,7 @@ func generateWithXkiro(ctx context.Context, apiKey, topic string) (string, error
 	defer resp.Body.Close()
 	bb, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("xkiro api %d: %s", resp.StatusCode, string(bb))
+		return "", fmt.Errorf("openai-compatible api %d: %s", resp.StatusCode, string(bb))
 	}
 	var out struct {
 		Choices []struct {
@@ -108,17 +128,11 @@ func generateWithXkiro(ctx context.Context, apiKey, topic string) (string, error
 }
 
 func GenerateArticle(topic string) (string, error) {
-	xkiroKey := os.Getenv("XKIRO_API_KEY")
-	if xkiroKey == "" {
-		xkiroKey = os.Getenv("OPENAI_API_KEY")
-	}
-	if xkiroKey == "" {
-		xkiroKey = os.Getenv("AI_OPENAI_KEY")
-	}
-	if isConfiguredGeminiKey(xkiroKey) && isXkiroKey(xkiroKey) {
+	openAICompatibleKey := openAIKey()
+	if openAICompatibleKey != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
-		if txt, err := generateWithXkiro(ctx, xkiroKey, topic); err == nil && txt != "" {
+		if txt, err := generateWithOpenAI(ctx, openAICompatibleKey, topic); err == nil && txt != "" {
 			// bersihkan jika model mengembalikan full HTML document
 			if strings.Contains(strings.ToLower(txt), "<!doctype") {
 				// extract only <h2> and <p> blocks
@@ -147,7 +161,7 @@ func GenerateArticle(topic string) (string, error) {
 			}
 			return strings.TrimSpace(txt), nil
 		} else if err != nil {
-			logger.Error(ctx, "xkiro generate failed, fallback to gemini", logger.Field{"error": err.Error()})
+			logger.Error(ctx, "openai-compatible generate failed, fallback to gemini", logger.Field{"error": err.Error()})
 		}
 	}
 	apiKey := os.Getenv("GEMINI_API_KEY")
@@ -189,17 +203,11 @@ func GenerateArticle(topic string) (string, error) {
 // endpoint OpenAI-compatible (Xkiro) bila key tersedia; fallback Gemini;
 // terakhir template aman tanpa error agar UI tetap terisi.
 func GenerateWAMessage(prompt string) (string, error) {
-	xkiroKey := os.Getenv("XKIRO_API_KEY")
-	if xkiroKey == "" {
-		xkiroKey = os.Getenv("OPENAI_API_KEY")
-	}
-	if xkiroKey == "" {
-		xkiroKey = os.Getenv("AI_OPENAI_KEY")
-	}
-	if isConfiguredGeminiKey(xkiroKey) && isXkiroKey(xkiroKey) {
+	openAICompatibleKey := openAIKey()
+	if openAICompatibleKey != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
-		if txt, err := generateChatText(ctx, xkiroKey, prompt); err == nil && txt != "" {
+		if txt, err := generateChatText(ctx, openAICompatibleKey, prompt); err == nil && txt != "" {
 			return txt, nil
 		}
 	}
@@ -234,26 +242,13 @@ func GenerateWAMessage(prompt string) (string, error) {
 }
 
 func generateChatText(ctx context.Context, apiKey, prompt string) (string, error) {
-	baseURL := os.Getenv("XKIRO_API_URL")
-	if baseURL == "" {
-		baseURL = os.Getenv("OPENAI_API_URL")
-	}
-	if baseURL == "" {
-		baseURL = "https://api.xkiro.com/v1"
-	}
-	if !strings.HasSuffix(baseURL, "/v1") && !strings.Contains(baseURL, "/chat") {
-		baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
-	}
-	url := baseURL + "/chat/completions"
+	url := openAIChatURL()
 	body := map[string]interface{}{
-		"model": os.Getenv("AI_MODEL"),
-		"messages": []map[string]string{
+		"model":       openAIModel(),
+		"messages":    []map[string]string{
 			{"role": "user", "content": prompt},
 		},
 		"temperature": 0.7,
-	}
-	if body["model"] == "" || body["model"] == nil {
-		body["model"] = "deepseek/deepseek-v4-flash"
 	}
 	b, _ := json.Marshal(body)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
@@ -262,8 +257,6 @@ func generateChatText(ctx context.Context, apiKey, prompt string) (string, error
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
-	req.Header.Set("Origin", "https://xkiro.com")
-	req.Header.Set("Referer", "https://xkiro.com/")
 	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
