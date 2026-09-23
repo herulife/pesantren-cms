@@ -58,18 +58,26 @@ func openAIBaseURL() string {
 }
 
 // dahlModelChain: urutan model AI yang dicoba untuk endpoint OpenAI-compatible.
-// AI_MODEL (jika diset) jadi satu-satunya model yang dipakai; jika kosong,
-// coba model dahl berurutan sampai ada yang menerima request (menghindari 429
-// saat salah satu model sedang penuh).
+// AI_MODEL (jika diset) diprioritaskan paling depan, DIikuti model cadangan
+// dahl berurutan. Model utama yang sedang sibuk (HTTP 429 "model at concurrency
+// capacity") sering menyarankan pindah ke model lain — membatasi chain hanya ke
+// AI_MODEL membuat fallback tidak pernah jalan dan pengguna hanya dapat error.
 func dahlModelChain() []string {
-	if m := strings.TrimSpace(os.Getenv("AI_MODEL")); m != "" {
-		return []string{m}
-	}
-	return []string{
+	fallback := []string{
 		"deepseek-ai/DeepSeek-V4-Flash-0731",
 		"MiniMaxAI/MiniMax-M2.7",
 		"zai-org/GLM-5.3-Flash",
 	}
+	if m := strings.TrimSpace(os.Getenv("AI_MODEL")); m != "" {
+		chain := []string{m}
+		for _, model := range fallback {
+			if model != m {
+				chain = append(chain, model)
+			}
+		}
+		return chain
+	}
+	return fallback
 }
 
 func openAIChatURL() string {
@@ -146,13 +154,15 @@ func tryOpenAIModels(ctx context.Context, apiKey, prompt string) (string, error)
 	return "", fmt.Errorf("ai models exhausted")
 }
 
-func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, error) {
-	prompt := "Tulis artikel HTML murni untuk Yayasan Pondok Pesantren Tahfidz Al-Maa tentang topik: " + topic + ". Hanya gunakan tag <h2> untuk subjudul (2-3 buah) dan <p> untuk paragraf (4-6 paragraf). Jangan pakai <!DOCTYPE>, <html>, <head>, <body>, markdown, atau ```. Langsung mulai dengan <h2>."
-	txt, err := tryOpenAIModels(ctx, apiKey, prompt)
-	if err != nil {
-		return "", err
-	}
-	// bersihkan jika model mengembalikan full HTML document
+// cleanupArticleHTML merapikan output model: buang fenced block markdown dan,
+// bila model mengembalikan dokumen HTML penuh (<!doctype>), ekstrak hanya blok
+// <h2>/<p> yang relevan.
+func cleanupArticleHTML(raw string) string {
+	txt := strings.TrimSpace(raw)
+	txt = strings.TrimPrefix(txt, "```html")
+	txt = strings.TrimPrefix(txt, "```")
+	txt = strings.TrimSuffix(txt, "```")
+	txt = strings.TrimSpace(txt)
 	if strings.Contains(strings.ToLower(txt), "<!doctype") {
 		var parts []string
 		for _, tag := range []string{"<h2", "<p"} {
@@ -177,7 +187,16 @@ func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, erro
 			txt = strings.Join(parts, "\n")
 		}
 	}
-	return strings.TrimSpace(txt), nil
+	return strings.TrimSpace(txt)
+}
+
+func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, error) {
+	prompt := "Tulis artikel HTML murni untuk Yayasan Pondok Pesantren Tahfidz Al-Maa tentang topik: " + topic + ". Hanya gunakan tag <h2> untuk subjudul (2-3 buah) dan <p> untuk paragraf (4-6 paragraf). Jangan pakai <!DOCTYPE>, <html>, <head>, <body>, markdown, atau ```. Langsung mulai dengan <h2>."
+	txt, err := tryOpenAIModels(ctx, apiKey, prompt)
+	if err != nil {
+		return "", err
+	}
+	return cleanupArticleHTML(txt), nil
 }
 
 func GenerateArticle(topic string) (string, error) {
@@ -185,71 +204,57 @@ func GenerateArticle(topic string) (string, error) {
 	if openAICompatibleKey != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
-		if txt, err := generateWithOpenAI(ctx, openAICompatibleKey, topic); err == nil && txt != "" {
-			// bersihkan jika model mengembalikan full HTML document
-			if strings.Contains(strings.ToLower(txt), "<!doctype") {
-				// extract only <h2> and <p> blocks
-				var parts []string
-				for _, tag := range []string{"<h2", "<p"} {
-					idx := 0
-					for {
-						s := strings.Index(strings.ToLower(txt[idx:]), tag)
-						if s == -1 {
-							break
-						}
-						start := idx + s
-						endTag := "</" + strings.TrimPrefix(tag, "<")
-						e := strings.Index(strings.ToLower(txt[start:]), endTag)
-						if e == -1 {
-							break
-						}
-						end := start + e + len(endTag)
-						parts = append(parts, txt[start:end])
-						idx = end
-					}
-				}
-				if len(parts) > 0 {
-					txt = strings.Join(parts, "\n")
-				}
+		if txt, err := generateWithOpenAI(ctx, openAICompatibleKey, topic); err == nil {
+			if cleaned := cleanupArticleHTML(txt); cleaned != "" {
+				return cleaned, nil
 			}
-			return strings.TrimSpace(txt), nil
-		} else if err != nil {
+		} else {
 			logger.Error(ctx, "openai-compatible generate failed, fallback to gemini", logger.Field{"error": err.Error()})
 		}
 	}
 	apiKey := os.Getenv("GEMINI_API_KEY")
-	if !isConfiguredGeminiKey(apiKey) {
+	if isConfiguredGeminiKey(apiKey) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+		if err != nil {
+			logger.Error(ctx, "failed creating gemini client", logger.Field{"error": err.Error()})
+			return "", fmt.Errorf("layanan AI sedang bermasalah")
+		}
+		defer client.Close()
+		model := client.GenerativeModel("gemini-2.5-flash")
+		model.SetTemperature(0.7)
+		prompt := "Tulis sebuah artikel profesional dan rapi dalam format HTML murni tanpa awalan markdown bersarang untuk website Yayasan Pondok Pesantren Tahfidz Al-Maa tentang topik: " + topic + ". Artikel harus lengkap memiliki tag <h2> untuk subjudul dan <p> untuk paragraf. Hindari penggunaan \\n yang tidak wajib dan jangan berikan format markdown HTML."
+		resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+		if err != nil || len(resp.Candidates) == 0 {
+			if err != nil {
+				logger.Error(ctx, "failed generating ai article", logger.Field{"detail": fmt.Sprintf("topic=%s error=%v", topic, err)})
+			}
+			return "", fmt.Errorf("gagal membuat draft berita AI")
+		}
+		articleText := ""
+		if resp.Candidates[0].Content != nil && len(resp.Candidates[0].Content.Parts) > 0 {
+			if textPart, ok := resp.Candidates[0].Content.Parts[0].(genai.Text); ok {
+				articleText = string(textPart)
+			}
+		}
+		articleText = cleanupArticleHTML(articleText)
+		if articleText == "" {
+			return "", fmt.Errorf("gagal membuat draft berita AI")
+		}
+		return articleText, nil
+	}
+
+	// Tidak ada kunci AI apa pun yang dikonfigurasi sama sekali.
+	if openAICompatibleKey == "" {
 		mockArticle := "<h2>Pentingnya " + topic + "</h2><p>Artikel otomatis ini muncul karena API Key belum dikonfigurasi di server Anda.</p>"
 		return mockArticle, nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
-	if err != nil {
-		logger.Error(ctx, "failed creating gemini client", logger.Field{"error": err.Error()})
-		return "", fmt.Errorf("layanan AI sedang bermasalah")
-	}
-	defer client.Close()
-	model := client.GenerativeModel("gemini-2.5-flash")
-	model.SetTemperature(0.7)
-	prompt := "Tulis sebuah artikel profesional dan rapi dalam format HTML murni tanpa awalan markdown bersarang untuk website Yayasan Pondok Pesantren Tahfidz Al-Maa tentang topik: " + topic + ". Artikel harus lengkap memiliki tag <h2> untuk subjudul dan <p> untuk paragraf. Hindari penggunaan \\n yang tidak wajib dan jangan berikan format markdown HTML."
-	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
-	if err != nil || len(resp.Candidates) == 0 {
-		if err != nil {
-			logger.Error(ctx, "failed generating ai article", logger.Field{"detail": fmt.Sprintf("topic=%s error=%v", topic, err)})
-		}
-		return "", fmt.Errorf("gagal membuat draft berita AI")
-	}
-	articleText := ""
-	if resp.Candidates[0].Content != nil && len(resp.Candidates[0].Content.Parts) > 0 {
-		if textPart, ok := resp.Candidates[0].Content.Parts[0].(genai.Text); ok {
-			articleText = string(textPart)
-		}
-	}
-	articleText = strings.TrimPrefix(articleText, "```html")
-	articleText = strings.TrimPrefix(articleText, "```")
-	articleText = strings.TrimSuffix(articleText, "```")
-	return strings.TrimSpace(articleText), nil
+
+	// Ada kunci (mis. DAHL_API_KEY) tapi semua model/provider gagal, misal semua
+	// model sedang sibuk (429 concurrency capacity). Jangan sembunyikan dengan
+	// artikel mock agar pengguna tahu apa yang terjadi.
+	return "", fmt.Errorf("layanan AI sedang sibuk, mohon coba lagi beberapa saat")
 }
 
 // GenerateWAMessage menghasilkan draft pesan WhatsApp (plain text) via

@@ -214,7 +214,8 @@ export default function AddNewsPage() {
         showToast('error', 'Gagal menghasilkan konten AI.');
       }
     } catch (e) {
-      showToast('error', 'Terjadi kesalahan sistem AI.');
+      const message = e instanceof Error && e.message ? e.message : 'Terjadi kesalahan sistem AI.';
+      showToast('error', message);
     } finally {
       setIsGenerating(false);
     }
