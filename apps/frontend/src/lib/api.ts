@@ -1958,6 +1958,14 @@ export async function retryPSBWAMessage(id: number) {
 	return parseResponse(res);
 }
 
+export async function sendPSBAnnouncement(id: number) {
+	const res = await fetch(`${API_BASE_URL}/psb/${id}/announce`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function acceptPSBToSantri(id: number) {
 	const res = await fetch(`${API_BASE_URL}/psb/${id}/accept-santri`, {
 		method: 'PUT',

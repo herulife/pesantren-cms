@@ -33,6 +33,61 @@ type PSBRepository interface {
 	Delete(ctx context.Context, id int) error
 }
 
+// SettingsStore membaca pengaturan publik (biaya & rekening PSB).
+type SettingsStore interface {
+	GetByKey(key string) (string, error)
+}
+
+// WithSettingsStore menempelkan penyimpanan pengaturan ke handler PSB.
+func (h *Handler) WithSettingsStore(store SettingsStore) *Handler {
+	h.settings = store
+	return h
+}
+
+func (h *Handler) readSetting(key string) string {
+	if h.settings == nil {
+		return ""
+	}
+	v, err := h.settings.GetByKey(key)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(v)
+}
+
+type psbPaymentInstruction struct {
+	Amount      int
+	BankName    string
+	AccountNo   string
+	AccountName string
+	Note        string
+}
+
+func (h *Handler) paymentInstruction() psbPaymentInstruction {
+	amount, _ := strconv.Atoi(h.readSetting("psb_payment_amount"))
+	return psbPaymentInstruction{
+		Amount:      amount,
+		BankName:    h.readSetting("psb_payment_bank_name"),
+		AccountNo:   h.readSetting("psb_payment_account_number"),
+		AccountName: h.readSetting("psb_payment_account_name"),
+		Note:        h.readSetting("psb_payment_instructions"),
+	}
+}
+
+// documentsComplete menandai berkas wajib sudah diunggah sesuai kategori.
+func documentsComplete(reg *Registration) bool {
+	if strings.TrimSpace(reg.KKURL) == "" || strings.TrimSpace(reg.IjazahURL) == "" || strings.TrimSpace(reg.PasfotoURL) == "" {
+		return false
+	}
+	if reg.Category == "yatim" && strings.TrimSpace(reg.YatimDocURL) == "" {
+		return false
+	}
+	if reg.Category == "dhuafa" && strings.TrimSpace(reg.SktmDocURL) == "" {
+		return false
+	}
+	return true
+}
+
 // PublicPSBResult adalah data minimal pengumuman PSB yang boleh diakses
 // publik tanpa login, cukup dengan nomor pendaftaran (id registrasi).
 type PublicPSBResult struct {
@@ -48,7 +103,8 @@ type PublicPSBResult struct {
 }
 
 type Handler struct {
-	repo PSBRepository
+	repo     PSBRepository
+	settings SettingsStore
 }
 
 func NewHandler(repo PSBRepository) *Handler {
@@ -383,6 +439,23 @@ func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// WA otomatis saat berkas sudah lengkap: arahkan membayar & unggah bukti (sekali saja).
+	if documentsComplete(reg) && reg.PaymentStatus != "paid" {
+		exists, _ := wanotif.ExistsKind(r.Context(), reg.ID, "psb_registration_complete")
+		if !exists {
+			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
+			if phone != "" {
+				pi := h.paymentInstruction()
+				msg := whatsapp.FormatPSBRegistrationComplete(reg.FullName, pi.Amount, pi.BankName, pi.AccountNo, pi.AccountName, pi.Note)
+				regID := reg.ID
+				if _, err := wanotif.Enqueue(r.Context(), &regID, "psb_registration_complete", phone, msg); err != nil {
+					logger := NewRequestLogger(r)
+					logger.LogWarning("Gagal mencatat notifikasi info pembayaran ke %s: %v", phone, err)
+				}
+			}
+		}
+	}
+
 	SendSuccessResponse(w, http.StatusOK, reg, "Dokumen PSB berhasil diperbarui")
 }
 
@@ -448,6 +521,22 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 			msg = "Bukti diterima, tetapi nominal berbeda dari ketentuan. Panitia akan memverifikasi."
 		}
 	}
+	// WA otomatis saat bukti pembayaran dikirim lewat portal (sekali saja).
+	if reg.PaymentStatus != "paid" {
+		exists, _ := wanotif.ExistsKind(r.Context(), reg.ID, "psb_payment_submitted")
+		if !exists {
+			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
+			if phone != "" {
+				regID := reg.ID
+				wmsg := whatsapp.FormatPSBPaymentSubmitted(reg.FullName, reg.PaymentAmount)
+				if _, err := wanotif.Enqueue(r.Context(), &regID, "psb_payment_submitted", phone, wmsg); err != nil {
+					logger := NewRequestLogger(r)
+					logger.LogWarning("Gagal mencatat notifikasi bukti bayar ke %s: %v", phone, err)
+				}
+			}
+		}
+	}
+
 	SendSuccessResponse(w, http.StatusOK, reg, msg)
 }
 
@@ -819,8 +908,46 @@ func (h *Handler) Routes() chi.Router {
 	r.Put("/{id}/payment-status", h.UpdatePaymentStatus)
 	r.Put("/{id}/status", h.UpdateStatus)
 	r.Put("/{id}/accept-santri", h.AcceptToSantri)
+	r.Post("/{id}/announce", h.SendAnnouncement)
 	r.Delete("/{id}", h.Delete)
 	return r
+}
+
+
+// SendAnnouncement mengirim pengumuman status final via WA secara MANUAL dari
+// panel admin setelah verifikasi berkas (keputusan DITERIMA / DITOLAK).
+func (h *Handler) SendAnnouncement(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || id <= 0 {
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid ID format")
+		return
+	}
+	reg, err := h.repo.FindByID(r.Context(), id)
+	if err != nil {
+		SendErrorResponse(w, http.StatusNotFound, "Registrasi tidak ditemukan")
+		return
+	}
+	phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
+	if phone == "" {
+		SendErrorResponse(w, http.StatusBadRequest, "Tidak ada nomor WhatsApp wali pada pendaftaran ini.")
+		return
+	}
+	if reg.Status != "accepted" && reg.Status != "rejected" {
+		SendErrorResponse(w, http.StatusBadRequest, "Pengumuman hanya dapat dikirim saat status DITERIMA atau DITOLAK.")
+		return
+	}
+	detail := ""
+	if reg.Status == "rejected" {
+		detail = reg.RejectionNote
+	}
+	msg := whatsapp.FormatPSBUpdate(reg.FullName, psbStatusLabel(reg.Status), detail)
+	regID := int64(id)
+	rec, err := wanotif.Enqueue(r.Context(), &regID, "psb_announcement", phone, msg)
+	if err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, "Gagal mengirim pengumuman WhatsApp")
+		return
+	}
+	SendSuccessResponse(w, http.StatusOK, map[string]interface{}{"notification": rec}, "Pengumuman WhatsApp berhasil dikirim/diantrekan")
 }
 
 // Code generated by ifacemaker; DO NOT EDIT.

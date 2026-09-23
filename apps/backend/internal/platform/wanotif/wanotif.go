@@ -289,3 +289,16 @@ func truncate(s string, n int) string {
 	}
 	return string(runes[:n])
 }
+// ExistsKind mengecek apakah sudah ada catatan untuk satu registrasi & jenis
+// notifikasi (menghindari kirim ganda saat step portal disimpan berulang).
+func ExistsKind(ctx context.Context, registrationID int64, kind string) (bool, error) {
+	ensureTable()
+	var n int
+	err := database.DB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM wa_notifications WHERE registration_id = ? AND kind = ?`,
+		registrationID, kind).Scan(&n)
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}

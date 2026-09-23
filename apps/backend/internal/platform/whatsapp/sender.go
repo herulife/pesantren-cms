@@ -168,3 +168,48 @@ func FormatKwitansi(namaSantri, receiptNo, periode string, total int) string {
 			"_Bendahara Al-Maa_",
 		namaSantri, periode, receiptNo, formatRupiah(total))
 }
+
+// FormatPSBRegistrationComplete adalah notifikasi saat pendaftaran selesai &
+// wali diarahkan membayar biaya pendaftaran (instruksi transfer + unggah bukti).
+func FormatPSBRegistrationComplete(namaCalon string, amount int, bankName, accountNumber, accountName, note string) string {
+	var b strings.Builder
+	b.WriteString("Assalamu'alaikum Wr. Wb.\n\n")
+	b.WriteString("Kepada Yth. Wali dari *" + namaCalon + "*,\n\n")
+	b.WriteString("Pendaftaran santri baru Al-Maa Anda telah kami terima. Mohon selesaikan pembayaran biaya pendaftaran ")
+	if amount > 0 {
+		b.WriteString("sebesar *" + formatRupiah(amount) + "*")
+	} else {
+		b.WriteString("pendaftaran")
+	}
+	if bankName != "" && accountNumber != "" {
+		b.WriteString(" dengan transfer ke rekening *" + bankName + "*: *" + accountNumber + "*")
+		if accountName != "" {
+			b.WriteString(" a.n. " + accountName)
+		}
+	}
+	b.WriteString(".\n\n")
+	b.WriteString("Setelah transfer, mohon unggah bukti pembayaran (foto/scan bukti transfer) di Portal Wali Santri:\n" + PortalBaseURL() + "/portal/payment\n\n")
+	b.WriteString("Bukti akan diverifikasi panitia. Setelah pembayaran dinyatakan lunas, berkas pendaftaran Anda akan diperiksa.")
+	if strings.TrimSpace(note) != "" {
+		b.WriteString("\n\n" + strings.TrimSpace(note))
+	}
+	b.WriteString("\n\nJazakumullahu khairan.\n_Panitia PSB Al-Maa_")
+	return b.String()
+}
+
+// FormatPSBPaymentSubmitted adalah notifikasi saat wali mengunggah bukti
+// pembayaran lewat portal (menunggu verifikasi panitia).
+func FormatPSBPaymentSubmitted(namaCalon string, amount int) string {
+	var b strings.Builder
+	b.WriteString("Assalamu'alaikum Wr. Wb.\n\n")
+	b.WriteString("Yth. Wali dari *" + namaCalon + "*,\n")
+	if amount > 0 {
+		b.WriteString("Bukti pembayaran pendaftaran santri baru Al-Maa sebesar *" + formatRupiah(amount) + "* telah kami terima.\n")
+	} else {
+		b.WriteString("Bukti pembayaran pendaftaran santri baru Al-Maa telah kami terima.\n")
+	}
+	b.WriteString("Pembayaran Anda sedang diverifikasi panitia. Setelah dinyatakan lunas, berkas pendaftaran akan dilakukan verifikasi.\n\n")
+	b.WriteString("Pantau perkembangan status di Portal Wali Santri:\n" + PortalBaseURL() + "/portal/payment\n\n")
+	b.WriteString("Jazakumullahu khairan.\n_Panitia PSB Al-Maa_")
+	return b.String()
+}

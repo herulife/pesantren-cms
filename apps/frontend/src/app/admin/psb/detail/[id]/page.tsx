@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, acceptPSBToSantri, getPublicSettingsMap, Registration, resolveDisplayImageUrl, WAOutboxItem, getPSBWAOutbox, retryPSBWAMessage } from '@/lib/api';
+import { getRegistrations, updatePSBPaymentStatus, updatePSBStatus, acceptPSBToSantri, getPublicSettingsMap, Registration, resolveDisplayImageUrl, WAOutboxItem, getPSBWAOutbox, retryPSBWAMessage, sendPSBAnnouncement } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import ProofImage, { openProofInNewTab } from '@/components/ProofImage';
 import { 
@@ -42,6 +42,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const [isSavingTest, setIsSavingTest] = useState(false);
   const [waLog, setWALog] = useState<WAOutboxItem[]>([]);
   const [waRetrying, setWARetrying] = useState<number | null>(null);
+  const [isAnnouncing, setIsAnnouncing] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -215,6 +216,20 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
       showToast('error', 'Gagal kirim ulang WhatsApp.');
     } finally {
       setWARetrying(null);
+      reloadWALog();
+    }
+  };
+
+  const handleSendAnnouncement = async () => {
+    if (!registration || isAnnouncing) return;
+    setIsAnnouncing(true);
+    try {
+      const res: any = await sendPSBAnnouncement(registration.id);
+      showToast(res.success ? 'success' : 'error', res.success ? 'Pengumuman WhatsApp dikirim/diantrekan.' : (res.message || 'Gagal kirim pengumuman.'));
+    } catch {
+      showToast('error', 'Gagal kirim pengumuman WhatsApp.');
+    } finally {
+      setIsAnnouncing(false);
       reloadWALog();
     }
   };
@@ -626,7 +641,9 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                            {item.status === 'sent' ? 'Terkirim' : item.status === 'failed' ? 'Gagal (menunggu retry)' : item.status === 'dead' ? 'Gagal Permanen (3x)' : 'Antrean'}
                         </span>
                         <span className="text-xs font-black text-slate-600">{item.phone}</span>
-                        <span className="text-xs text-slate-400">{item.kind === 'psb_payment' ? 'Notifikasi pembayaran' : 'Notifikasi status'}</span>
+                        <span className="text-xs text-slate-400">
+                          {item.kind === 'psb_payment' ? 'Pembayaran lunas' : item.kind === 'psb_registration_complete' ? 'Info biaya & transfer' : item.kind === 'psb_payment_submitted' ? 'Bukti pembayaran diterima' : item.kind === 'psb_announcement' ? 'Pengumuman kelulusan' : 'Notifikasi status'}
+                        </span>
                         <span className="text-xs text-slate-400">Percobaan {item.attempts}/{item.max_attempts}</span>
                         {item.sent_at && <span className="text-xs text-emerald-600">Terkirim: {item.sent_at}</span>}
                         {item.error && <span className="text-xs text-rose-600 max-w-full truncate">{item.error}</span>}
@@ -653,9 +670,23 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
                Manajemen Status Pendaftaran
               </label>
 
-              <div className={`inline-flex items-center gap-2 self-start px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.18em] border shadow-sm ${getStatusStyle(registration.status)}`}>
-                {isUpdatingStatus ? <Loader2 size={15} className="animate-spin" /> : null}
-                Status saat ini: {statusLabel}
+              <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <div className={`inline-flex items-center gap-2 self-start px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.18em] border shadow-sm ${getStatusStyle(registration.status)}`}>
+                  {isUpdatingStatus ? <Loader2 size={15} className="animate-spin" /> : null}
+                  Status saat ini: {statusLabel}
+                </div>
+                {(registration.status === 'accepted' || registration.status === 'rejected') && (
+                  <button
+                    type="button"
+                    onClick={() => handleSendAnnouncement()}
+                    disabled={isAnnouncing || waRetrying !== null}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-sm hover:bg-rose-700 disabled:opacity-50"
+                    title="Kirim pengumuman DITERIMA/DITOLAK ke WhatsApp wali"
+                  >
+                    {isAnnouncing ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
+                    Kirim Pengumuman WA
+                  </button>
+                )}
               </div>
             </div>
 

@@ -107,7 +107,7 @@ func main() {
 	projectHandler := project.NewHandler(projectRepo)
 	raportRepo := raport.NewRepository(database.DB)
 	raportHandler := raport.NewHandler(raportRepo)
-	psbHandler := psb.NewHandler(psbRepo)
+	psbHandler := psb.NewHandler(psbRepo).WithSettingsStore(settingRepo)
 
 	teacherRepo := teachers.NewRepository(database.DB)
 	teacherHandler := teachers.NewHandler(teacherRepo)
