@@ -1,14 +1,14 @@
 package psb
 
 import (
-	"errors"
-	"context"
-	"database/sql"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/wanotif"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
+	"context"
+	"database/sql"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -100,7 +100,7 @@ type PublicPSBResult struct {
 	Status        string `json:"status"`
 	StatusLabel   string `json:"status_label"`
 	ProgramChoice string `json:"program_choice"`
-	Jenjang string `json:"jenjang"`
+	Jenjang       string `json:"jenjang"`
 	TestDate      string `json:"test_date"`
 	RejectionNote string `json:"rejection_note,omitempty"`
 }
@@ -134,8 +134,8 @@ type portalRegistrationRequest struct {
 	MotherPhone   string `json:"mother_phone"`
 	SchoolOrigin  string `json:"school_origin"`
 	ProgramChoice string `json:"program_choice"`
-	Jenjang string `json:"jenjang"`
-	Category string `json:"category"`
+	Jenjang       string `json:"jenjang"`
+	Category      string `json:"category"`
 }
 
 type portalDocumentsRequest struct {
@@ -184,7 +184,7 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 			case "laki-laki", "laki", "pria":
 				req.Gender = "L"
 			case "perempuan", "wanita":
-			req.Gender = "P"
+				req.Gender = "P"
 			default:
 				req.Gender = strings.ToUpper(lower)
 			}
@@ -608,7 +608,7 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 		ActorID: actorID, ActorRole: actorRole,
 		Action: "UPDATE_PSB_PAYMENT_STATUS", Entity: "registration", EntityID: strconv.Itoa(id),
 		After: map[string]interface{}{"payment_status": req.PaymentStatus},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 
 	// WA otomatis saat pembayaran dinyatakan lunas (dicatat + dicoba kirim).
@@ -933,7 +933,6 @@ func (h *Handler) Routes() chi.Router {
 	r.Delete("/{id}", h.Delete)
 	return r
 }
-
 
 // SendAnnouncement mengirim pengumuman status final via WA secara MANUAL dari
 // panel admin setelah verifikasi berkas (keputusan DITERIMA / DITOLAK).

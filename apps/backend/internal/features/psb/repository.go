@@ -1,12 +1,12 @@
 package psb
 
 import (
-	"errors"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 
 	"almaparung-api/internal/platform/audit"
@@ -14,50 +14,50 @@ import (
 )
 
 type Registration struct {
-	ID              int       `json:"id"`
-	UserID          int       `json:"user_id"`
-	FullName        string    `json:"full_name"`
-	Nickname        string    `json:"nickname"`
-	Gender          string    `json:"gender"`
-	NIK             string    `json:"nik"`
-	BirthPlace      string    `json:"birth_place"`
-	BirthDate       string    `json:"birth_date"`
-	Address         string    `json:"address"`
-	ParentName      string    `json:"parent_name"`
-	ParentPhone     string    `json:"parent_phone"`
-	FatherName      string    `json:"father_name"`
-	FatherJob       string    `json:"father_job"`
-	FatherPhone     string    `json:"father_phone"`
-	MotherName      string    `json:"mother_name"`
-	MotherJob       string    `json:"mother_job"`
-	MotherPhone     string    `json:"mother_phone"`
-	SchoolOrigin    string    `json:"school_origin"`
-	ProgramChoice   string    `json:"program_choice"`
-	Jenjang         string    `json:"jenjang"`
-	Category        string    `json:"category"`
-	YatimDocURL     string    `json:"yatim_doc_url"`
-	SktmDocURL      string    `json:"sktm_doc_url"`
-	KKURL           string    `json:"kk_url"`
-	IjazahURL       string    `json:"ijazah_url"`
-	PasfotoURL      string    `json:"pasfoto_url"`
-	AktaURL         string    `json:"akta_url"`
-	KtpOrtuURL      string    `json:"ktp_ortu_url"`
-	SuratKelulusanURL string  `json:"surat_kelulusan_url"`
-	FotoPendaftaranURL string `json:"foto_pendaftaran_url"`
-	PaymentProofURL string    `json:"payment_proof_url"`
-	PaymentAmount   int       `json:"payment_amount"`
-	PaymentDate     string    `json:"payment_date"`
-	PaymentStatus   string    `json:"payment_status"`
-	PaymentNote     string    `json:"payment_note"`
-	Status          string    `json:"status"`
-	RejectionNote   string    `json:"rejection_note"`
-	TestDate        string    `json:"test_date"`
-	TestLocation    string    `json:"test_location"`
-	TestScore       int       `json:"test_score"`
-	TestNote        string    `json:"test_note"`
-	ReRegDeadline   string    `json:"re_registration_deadline"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID                 int       `json:"id"`
+	UserID             int       `json:"user_id"`
+	FullName           string    `json:"full_name"`
+	Nickname           string    `json:"nickname"`
+	Gender             string    `json:"gender"`
+	NIK                string    `json:"nik"`
+	BirthPlace         string    `json:"birth_place"`
+	BirthDate          string    `json:"birth_date"`
+	Address            string    `json:"address"`
+	ParentName         string    `json:"parent_name"`
+	ParentPhone        string    `json:"parent_phone"`
+	FatherName         string    `json:"father_name"`
+	FatherJob          string    `json:"father_job"`
+	FatherPhone        string    `json:"father_phone"`
+	MotherName         string    `json:"mother_name"`
+	MotherJob          string    `json:"mother_job"`
+	MotherPhone        string    `json:"mother_phone"`
+	SchoolOrigin       string    `json:"school_origin"`
+	ProgramChoice      string    `json:"program_choice"`
+	Jenjang            string    `json:"jenjang"`
+	Category           string    `json:"category"`
+	YatimDocURL        string    `json:"yatim_doc_url"`
+	SktmDocURL         string    `json:"sktm_doc_url"`
+	KKURL              string    `json:"kk_url"`
+	IjazahURL          string    `json:"ijazah_url"`
+	PasfotoURL         string    `json:"pasfoto_url"`
+	AktaURL            string    `json:"akta_url"`
+	KtpOrtuURL         string    `json:"ktp_ortu_url"`
+	SuratKelulusanURL  string    `json:"surat_kelulusan_url"`
+	FotoPendaftaranURL string    `json:"foto_pendaftaran_url"`
+	PaymentProofURL    string    `json:"payment_proof_url"`
+	PaymentAmount      int       `json:"payment_amount"`
+	PaymentDate        string    `json:"payment_date"`
+	PaymentStatus      string    `json:"payment_status"`
+	PaymentNote        string    `json:"payment_note"`
+	Status             string    `json:"status"`
+	RejectionNote      string    `json:"rejection_note"`
+	TestDate           string    `json:"test_date"`
+	TestLocation       string    `json:"test_location"`
+	TestScore          int       `json:"test_score"`
+	TestNote           string    `json:"test_note"`
+	ReRegDeadline      string    `json:"re_registration_deadline"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // PsbPayment adalah entri ledger terpisah untuk biaya pendaftaran PSB yang
@@ -394,13 +394,13 @@ func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registrat
 		}
 	}
 	if reg.Category == "yatim" {
-	var yn int
-	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM registrations WHERE category = 'yatim' AND lower(status) != 'rejected' AND user_id != ?`, userID).Scan(&yn); err != nil {
-		return nil, err
-	}
-	if yn >= MaxYatimQuota {
-		return nil, ErrYatimQuotaFull
-	}
+		var yn int
+		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM registrations WHERE category = 'yatim' AND lower(status) != 'rejected' AND user_id != ?`, userID).Scan(&yn); err != nil {
+			return nil, err
+		}
+		if yn >= MaxYatimQuota {
+			return nil, ErrYatimQuotaFull
+		}
 	}
 
 	// PRD36: kunci edit biodata portal setelah status review/tes/accepted/re_registration.
@@ -499,17 +499,17 @@ func (r *Repository) UpdateDocumentsByUserID(ctx context.Context, userID int, kk
 }
 
 var (
-	ErrPaymentLocked = errors.New("pembayaran sudah lunas, unggahan baru ditolak")
+	ErrPaymentLocked     = errors.New("pembayaran sudah lunas, unggahan baru ditolak")
 	ErrInvalidTransition = errors.New("transisi status tidak diizinkan")
-	ErrDuplicateNIK = errors.New("NIK sudah terdaftar atas nama pendaftar lain")
-	ErrEditLocked = errors.New("biodata terkunci karena sudah masuk tahap verifikasi panitia")
-	ErrInvalidCategory = errors.New("kategori pendaftar tidak valid")
-	ErrInvalidJenjang = errors.New("jenjang harus SMP atau SMK")
-	ErrJenjangQuotaFull = errors.New("kuota jenjang sudah penuh")
-	ErrInvalidProgram = errors.New("program pilihan tidak valid")
-	ErrYatimQuotaFull = errors.New("kuota beasiswa yatim sudah penuh")
-	ErrYatimDocMissing = errors.New("surat keterangan kematian wajib diunggah untuk kategori yatim")
-	ErrDhuafaDocMissing = errors.New("SKTM wajib diunggah untuk kategori dhuafa")
+	ErrDuplicateNIK      = errors.New("NIK sudah terdaftar atas nama pendaftar lain")
+	ErrEditLocked        = errors.New("biodata terkunci karena sudah masuk tahap verifikasi panitia")
+	ErrInvalidCategory   = errors.New("kategori pendaftar tidak valid")
+	ErrInvalidJenjang    = errors.New("jenjang harus SMP atau SMK")
+	ErrJenjangQuotaFull  = errors.New("kuota jenjang sudah penuh")
+	ErrInvalidProgram    = errors.New("program pilihan tidak valid")
+	ErrYatimQuotaFull    = errors.New("kuota beasiswa yatim sudah penuh")
+	ErrYatimDocMissing   = errors.New("surat keterangan kematian wajib diunggah untuk kategori yatim")
+	ErrDhuafaDocMissing  = errors.New("SKTM wajib diunggah untuk kategori dhuafa")
 )
 
 // MaxYatimQuota: beasiswa yatim dibatasi 5 penerima aktif (non-rejected).
@@ -602,6 +602,7 @@ func (r *Repository) upsertPaymentProofLedger(ctx context.Context, tx *sql.Tx, r
 	`, registrationID, userID, code, amount, paidAt, proofURL, userID)
 	return err
 }
+
 // psbPaymentTransitions: paid terminal (lunas + tercatat di ledger). Regresi
 // diperbolehkan selama belum lunas (mis. rejected -> pending untuk upload ulang).
 var psbPaymentTransitions = map[string][]string{
@@ -628,12 +629,12 @@ func psbTransitionAllowed(cur, next string, table map[string][]string) bool {
 // psbStatusTransitions: accepted/re_registration boleh dikembalikan ke review
 // bila perlu; santri (acceptToSantri) tidak represent status registrasi lagi.
 var psbStatusTransitions = map[string][]string{
-	"":               {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
-	"pending":        {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
-	"review":         {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
-	"tes":            {"tes", "review", "accepted", "re_registration", "rejected"},
-	"rejected":       {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
-	"accepted":       {"accepted", "re_registration", "review", "rejected"},
+	"":                {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"pending":         {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"review":          {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"tes":             {"tes", "review", "accepted", "re_registration", "rejected"},
+	"rejected":        {"pending", "review", "tes", "accepted", "re_registration", "rejected"},
+	"accepted":        {"accepted", "re_registration", "review", "rejected"},
 	"re_registration": {"re_registration", "accepted", "rejected"},
 }
 
@@ -731,6 +732,7 @@ func (r *Repository) recordPsbLedgerTx(ctx context.Context, tx *sql.Tx, registra
 	`, registrationID, userID, code, amount, paidAt, proof, note, actorID)
 	return err
 }
+
 // GetMyReceipt mengembalikan entri ledger pembayaran PSB milik user (kwitansi
 // wali). Tersedia sejak bukti pembayaran dikirim (status pending) sampai lunas.
 // Error sql.ErrNoRows dibiarkan bila belum ada kwitansi sama sekali.
@@ -755,11 +757,11 @@ func (r *Repository) GetMyReceipt(ctx context.Context, userID int) (*PsbPayment,
 // StatusUpdateOptions membawa data pelengkap saat admin mengubah status
 // registrasi: jadwal/lokasi/nilai tes, batas daftar ulang, dst.
 type StatusUpdateOptions struct {
-	TestDate          string
-	TestLocation      string
-	TestScore         *int
-	TestNote          string
-	ReRegDeadline     string
+	TestDate      string
+	TestLocation  string
+	TestScore     *int
+	TestNote      string
+	ReRegDeadline string
 }
 
 // UpdateStatus mengubah status registrasi secara atomik (conditional UPDATE
@@ -922,20 +924,20 @@ func (r *Repository) AcceptToSantri(ctx context.Context, id int) (*SantriResult,
 			return ErrPaymentNotLunas
 		}
 		if strings.ToLower(strings.TrimSpace(reg.Category)) == "yatim" {
-		if strings.TrimSpace(reg.YatimDocURL) == "" {
-			return ErrYatimDocMissing
+			if strings.TrimSpace(reg.YatimDocURL) == "" {
+				return ErrYatimDocMissing
+			}
+			var yn int
+			if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM registrations WHERE category = 'yatim' AND lower(status) != 'rejected' AND id != ?`, id).Scan(&yn); err != nil {
+				return err
+			}
+			if yn >= MaxYatimQuota {
+				return ErrYatimQuotaFull
+			}
 		}
-		var yn int
-		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM registrations WHERE category = 'yatim' AND lower(status) != 'rejected' AND id != ?`, id).Scan(&yn); err != nil {
-			return err
+		if strings.ToLower(strings.TrimSpace(reg.Category)) == "dhuafa" && strings.TrimSpace(reg.SktmDocURL) == "" {
+			return ErrDhuafaDocMissing
 		}
-		if yn >= MaxYatimQuota {
-			return ErrYatimQuotaFull
-		}
-	}
-	if strings.ToLower(strings.TrimSpace(reg.Category)) == "dhuafa" && strings.TrimSpace(reg.SktmDocURL) == "" {
-		return ErrDhuafaDocMissing
-	}
 		st := strings.ToLower(strings.TrimSpace(reg.Status))
 		if st != "accepted" && st != "re_registration" {
 			return ErrNotAccepted

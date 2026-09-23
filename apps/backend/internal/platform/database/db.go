@@ -1044,9 +1044,9 @@ func runMigrations() {
 			name: "donations_idempotency_unique",
 			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_idem_unique ON donations(idempotency_key);`,
 		},
-	{
-		name: "audit_logs_table",
-		sql: `CREATE TABLE IF NOT EXISTS audit_logs (
+		{
+			name: "audit_logs_table",
+			sql: `CREATE TABLE IF NOT EXISTS audit_logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		request_id TEXT,
 		actor_id INTEGER,
@@ -1061,38 +1061,38 @@ func runMigrations() {
 		result TEXT DEFAULT 'ok',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`,
-	},
-	{
-		name: "audit_logs_actor_index",
-		sql: `CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id, created_at DESC);`,
-	},
-	{
-		name: "audit_logs_entity_index",
-		sql: `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);`,
-	},
-	{
-		name: "grades_cbt_unique",
-		sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_grades_unique ON grades(student_id, subject_id, semester, academic_year);`,
-	},
-	{
-		name: "exam_answers_unique",
-		sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_answers_unique ON exam_answers(session_id, question_id);`,
-	},
-	{
-		name: "notes_url_id_index",
-		sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_url_id ON notes(url_id);`,
-	},
-	{
-		name: "notes_owner_key_index",
-		sql:  `CREATE INDEX IF NOT EXISTS idx_notes_owner_key ON notes(owner_key);`,
-	},
-	{
-		name: "notes_expires_at_index",
-		sql:  `CREATE INDEX IF NOT EXISTS idx_notes_expires_at ON notes(expires_at);`,
-	},
-	{
-		name: "wa_notifications_table",
-		sql: `CREATE TABLE IF NOT EXISTS wa_notifications (
+		},
+		{
+			name: "audit_logs_actor_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id, created_at DESC);`,
+		},
+		{
+			name: "audit_logs_entity_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);`,
+		},
+		{
+			name: "grades_cbt_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_grades_unique ON grades(student_id, subject_id, semester, academic_year);`,
+		},
+		{
+			name: "exam_answers_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_answers_unique ON exam_answers(session_id, question_id);`,
+		},
+		{
+			name: "notes_url_id_index",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_url_id ON notes(url_id);`,
+		},
+		{
+			name: "notes_owner_key_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_notes_owner_key ON notes(owner_key);`,
+		},
+		{
+			name: "notes_expires_at_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_notes_expires_at ON notes(expires_at);`,
+		},
+		{
+			name: "wa_notifications_table",
+			sql: `CREATE TABLE IF NOT EXISTS wa_notifications (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			registration_id INTEGER,
 			kind TEXT NOT NULL DEFAULT 'psb',
@@ -1108,15 +1108,15 @@ func runMigrations() {
 			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 		);`,
-	},
-	{
-		name: "wa_notifications_registration_index",
-		sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_reg ON wa_notifications(registration_id);`,
-	},
-	{
-		name: "wa_notifications_status_index",
-		sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_status ON wa_notifications(status);`,
-	},
+		},
+		{
+			name: "wa_notifications_registration_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_reg ON wa_notifications(registration_id);`,
+		},
+		{
+			name: "wa_notifications_status_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_status ON wa_notifications(status);`,
+		},
 	}
 
 	for _, migration := range migrations {

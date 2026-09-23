@@ -1,9 +1,9 @@
 package ai
 
 import (
+	"almaparung-api/internal/platform/logger"
 	"bytes"
 	"context"
-	"almaparung-api/internal/platform/logger"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -84,8 +84,8 @@ func openAIChatURL() string {
 func chatRequest(ctx context.Context, apiKey, prompt, model string) (string, error) {
 	url := openAIChatURL()
 	body := map[string]interface{}{
-		"model":       model,
-		"messages":    []map[string]string{
+		"model": model,
+		"messages": []map[string]string{
 			{"role": "user", "content": prompt},
 		},
 		"temperature": 0.7,
