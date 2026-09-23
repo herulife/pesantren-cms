@@ -60,29 +60,27 @@ export default function TabAIConfig() {
           <div className="p-8 space-y-8">
              <div className="space-y-4">
                 <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Key size={12} /> AI API Key (Token Harbor thk_... / OpenAI sk-...)
+                  <Key size={12} /> AI API Key (Dahl dahl_... / OpenAI sk-...)
                 </label>
                 <input 
                    type="password"
                    value={formValues['ai_openai_key'] || ''}
                    onChange={(e) => handleChange('ai_openai_key', e.target.value)}
                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-widest text-slate-800"
-                   placeholder="thk_live_... atau sk-..."
+                   placeholder="dahl_... atau sk-..."
                 />
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                    <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">Model Preferensi</label>
                    <select 
-                      value={formValues['ai_model'] || 'gpt-4o-mini'}
+                      value={formValues['ai_model'] || 'deepseek-ai/DeepSeek-V4-Flash-0731'}
                       onChange={(e) => handleChange('ai_model', e.target.value)}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-sm"
                    >
-                     <option value="deepseek-v4.1-flash:free">DeepSeek V4.1 Flash (Free)</option>
-                     <option value="deepseek-v4-flash:free">DeepSeek V4 Flash (Free)</option>
-                     <option value="qwen3.8-flash:free">Qwen 3.8 Flash (Free)</option>
-                     <option value="gpt-4o-mini">GPT-4o Mini</option>
-                     <option value="gpt-4o">GPT-4o</option>
+                     <option value="deepseek-ai/DeepSeek-V4-Flash-0731">DeepSeek V4 Flash (Free)</option>
+                     <option value="MiniMaxAI/MiniMax-M2.7">MiniMax M2.7 (Free)</option>
+                     <option value="zai-org/GLM-5.3-Flash">GLM 5.3 Flash (Free)</option>
                    </select>
                 </div>
                 <div className="space-y-4">
@@ -96,13 +94,13 @@ export default function TabAIConfig() {
                 </div>
              </div>
               <div className="space-y-4">
-                 <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">API URL (OpenAI-compatible)</label>
+                 <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">API URL (OpenAI-compatible Dahl)</label>
                  <input 
                     type="text"
                     value={formValues['ai_api_url'] || ''}
                     onChange={(e) => handleChange('ai_api_url', e.target.value)}
                     className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm text-slate-800"
-                    placeholder="https://tokenharbor.ai/v1"
+                    placeholder="https://inference.dahl.global/v1"
                  />
               </div>
           </div>
