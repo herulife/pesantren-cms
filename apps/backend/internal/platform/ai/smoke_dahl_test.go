@@ -2,6 +2,7 @@ package ai
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -15,6 +16,9 @@ func TestSmokeDahlArticle(t *testing.T) {
 	}
 	if txt == "" {
 		t.Fatal("article kosong")
+	}
+	if strings.Contains(txt, "belum dikonfigurasi") {
+		t.Fatalf("masih mock fallback (semua model dahl ditolak): %s", txt)
 	}
 	short := txt
 	if len(short) > 300 {

@@ -37,14 +37,7 @@ func isConfiguredGeminiKey(value string) bool {
 	return true
 }
 
-// isOpenAICompatibleKey mengenali kunci API untuk endpoint OpenAI-compatible
-// (Token Harbor thk_..., OpenAI sk-..., Dahl API dahl_...).
-func isOpenAICompatibleKey(value string) bool {
-	v := strings.TrimSpace(value)
-	return strings.HasPrefix(v, "sk-") || strings.HasPrefix(v, "thk_") || strings.HasPrefix(v, "dahl_")
-}
-
-// openAIKeyEnvPrefixes: urutan env yang dicek untuk kunci OpenAI-compatible.
+// openAIKey: urutan env yang dicek untuk kunci OpenAI-compatible.
 func openAIKey() string {
 	for _, key := range []string{"DAHL_API_KEY", "XKIRO_API_KEY", "OPENAI_API_KEY", "AI_OPENAI_KEY", "AI_API_KEY"} {
 		if v := strings.TrimSpace(os.Getenv(key)); v != "" && isConfiguredGeminiKey(v) {
@@ -64,12 +57,19 @@ func openAIBaseURL() string {
 	return "https://inference.dahl.global/v1"
 }
 
-// openAIModel: model default Dahl (DeepSeek V4 Flash) atau AI_MODEL.
-func openAIModel() string {
+// dahlModelChain: urutan model AI yang dicoba untuk endpoint OpenAI-compatible.
+// AI_MODEL (jika diset) jadi satu-satunya model yang dipakai; jika kosong,
+// coba model dahl berurutan sampai ada yang menerima request (menghindari 429
+// saat salah satu model sedang penuh).
+func dahlModelChain() []string {
 	if m := strings.TrimSpace(os.Getenv("AI_MODEL")); m != "" {
-		return m
+		return []string{m}
 	}
-	return "deepseek-ai/DeepSeek-V4-Flash-0731"
+	return []string{
+		"deepseek-ai/DeepSeek-V4-Flash-0731",
+		"MiniMaxAI/MiniMax-M2.7",
+		"zai-org/GLM-5.3-Flash",
+	}
 }
 
 func openAIChatURL() string {
@@ -80,11 +80,11 @@ func openAIChatURL() string {
 	return baseURL + "/chat/completions"
 }
 
-func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, error) {
+// chatRequest: satu request chat ke endpoint OpenAI-compatible untuk model tertentu.
+func chatRequest(ctx context.Context, apiKey, prompt, model string) (string, error) {
 	url := openAIChatURL()
-	prompt := "Tulis artikel HTML murni untuk Yayasan Pondok Pesantren Tahfidz Al-Maa tentang topik: " + topic + ". Hanya gunakan tag <h2> untuk subjudul (2-3 buah) dan <p> untuk paragraf (4-6 paragraf). Jangan pakai <!DOCTYPE>, <html>, <head>, <body>, markdown, atau ```. Langsung mulai dengan <h2>."
 	body := map[string]interface{}{
-		"model":       openAIModel(),
+		"model":       model,
 		"messages":    []map[string]string{
 			{"role": "user", "content": prompt},
 		},
@@ -124,6 +124,59 @@ func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, erro
 	txt = strings.TrimPrefix(txt, "```html")
 	txt = strings.TrimPrefix(txt, "```")
 	txt = strings.TrimSuffix(txt, "```")
+	return strings.TrimSpace(txt), nil
+}
+
+// tryOpenAIModels: coba semua model pada dahlModelChain sampai ada yang berhasil.
+func tryOpenAIModels(ctx context.Context, apiKey, prompt string) (string, error) {
+	var lastErr error
+	for _, model := range dahlModelChain() {
+		txt, err := chatRequest(ctx, apiKey, prompt, model)
+		if err == nil && txt != "" {
+			return txt, nil
+		}
+		if err != nil {
+			lastErr = err
+			logger.Error(ctx, "openai-compatible generate failed, trying next model", logger.Field{"model": model, "error": err.Error()})
+		}
+	}
+	if lastErr != nil {
+		return "", lastErr
+	}
+	return "", fmt.Errorf("ai models exhausted")
+}
+
+func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, error) {
+	prompt := "Tulis artikel HTML murni untuk Yayasan Pondok Pesantren Tahfidz Al-Maa tentang topik: " + topic + ". Hanya gunakan tag <h2> untuk subjudul (2-3 buah) dan <p> untuk paragraf (4-6 paragraf). Jangan pakai <!DOCTYPE>, <html>, <head>, <body>, markdown, atau ```. Langsung mulai dengan <h2>."
+	txt, err := tryOpenAIModels(ctx, apiKey, prompt)
+	if err != nil {
+		return "", err
+	}
+	// bersihkan jika model mengembalikan full HTML document
+	if strings.Contains(strings.ToLower(txt), "<!doctype") {
+		var parts []string
+		for _, tag := range []string{"<h2", "<p"} {
+			idx := 0
+			for {
+				s := strings.Index(strings.ToLower(txt[idx:]), tag)
+				if s == -1 {
+					break
+				}
+				start := idx + s
+				endTag := "</" + strings.TrimPrefix(tag, "<")
+				e := strings.Index(strings.ToLower(txt[start:]), endTag)
+				if e == -1 {
+					break
+				}
+				end := start + e + len(endTag)
+				parts = append(parts, txt[start:end])
+				idx = end
+			}
+		}
+		if len(parts) > 0 {
+			txt = strings.Join(parts, "\n")
+		}
+	}
 	return strings.TrimSpace(txt), nil
 }
 
@@ -242,43 +295,5 @@ func GenerateWAMessage(prompt string) (string, error) {
 }
 
 func generateChatText(ctx context.Context, apiKey, prompt string) (string, error) {
-	url := openAIChatURL()
-	body := map[string]interface{}{
-		"model":       openAIModel(),
-		"messages":    []map[string]string{
-			{"role": "user", "content": prompt},
-		},
-		"temperature": 0.7,
-	}
-	b, _ := json.Marshal(body)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
-	client := &http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	bb, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("ai api %d: %s", resp.StatusCode, string(bb))
-	}
-	var out struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-	if err := json.Unmarshal(bb, &out); err != nil {
-		return "", err
-	}
-	if len(out.Choices) == 0 {
-		return "", fmt.Errorf("empty choices")
-	}
-	return strings.TrimSpace(out.Choices[0].Message.Content), nil
+	return tryOpenAIModels(ctx, apiKey, prompt)
 }
