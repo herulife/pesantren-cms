@@ -447,7 +447,7 @@ func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
 			if phone != "" {
 				pi := h.paymentInstruction()
 				msg := whatsapp.FormatPSBRegistrationComplete(reg.FullName, pi.Amount, pi.BankName, pi.AccountNo, pi.AccountName, pi.Note)
-				regID := reg.ID
+				regID := int64(reg.ID)
 				if _, err := wanotif.Enqueue(r.Context(), &regID, "psb_registration_complete", phone, msg); err != nil {
 					logger := NewRequestLogger(r)
 					logger.LogWarning("Gagal mencatat notifikasi info pembayaran ke %s: %v", phone, err)
@@ -527,7 +527,7 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 		if !exists {
 			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
 			if phone != "" {
-				regID := reg.ID
+				regID := int64(reg.ID)
 				wmsg := whatsapp.FormatPSBPaymentSubmitted(reg.FullName, reg.PaymentAmount)
 				if _, err := wanotif.Enqueue(r.Context(), &regID, "psb_payment_submitted", phone, wmsg); err != nil {
 					logger := NewRequestLogger(r)
