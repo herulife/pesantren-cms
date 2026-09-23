@@ -105,7 +105,7 @@ func chatRequest(ctx context.Context, apiKey, prompt, model string) (string, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
-	client := &http.Client{Timeout: 60 * time.Second}
+	client := &http.Client{Timeout: 85 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -136,17 +136,35 @@ func chatRequest(ctx context.Context, apiKey, prompt, model string) (string, err
 	return strings.TrimSpace(txt), nil
 }
 
-// tryOpenAIModels: coba semua model pada dahlModelChain sampai ada yang berhasil.
+// tryOpenAIModels: coba semua model pada dahlModelChain sampai ada yang
+// berhasil. Setiap model diberi batas waktu sendiri (perModelTimeout) agar satu
+// model yang lambat tidak menghabiskan jatah model lain. Bila seluruh model
+// gagal pada percobaan pertama, ulangi sekali setelah backoff singkat untuk
+// melewati kesibukan sesaat (HTTP 429 concurrency capacity).
 func tryOpenAIModels(ctx context.Context, apiKey, prompt string) (string, error) {
 	var lastErr error
-	for _, model := range dahlModelChain() {
-		txt, err := chatRequest(ctx, apiKey, prompt, model)
-		if err == nil && txt != "" {
-			return txt, nil
+	const perModelTimeout = 70 * time.Second
+	models := dahlModelChain()
+	for attempt := 0; attempt < 2; attempt++ {
+		for _, model := range models {
+			mCtx, cancel := context.WithTimeout(ctx, perModelTimeout)
+			txt, err := chatRequest(mCtx, apiKey, prompt, model)
+			cancel()
+			if err == nil && txt != "" {
+				return txt, nil
+			}
+			if err != nil {
+				lastErr = err
+				logger.Error(ctx, "openai-compatible generate failed, trying next model", logger.Field{"model": model, "error": err.Error()})
+			}
 		}
-		if err != nil {
-			lastErr = err
-			logger.Error(ctx, "openai-compatible generate failed, trying next model", logger.Field{"model": model, "error": err.Error()})
+		if attempt == 0 {
+			logger.Info(ctx, "all openai-compatible models failed, retrying once", logger.Field{"models": strings.Join(models, ",")})
+			select {
+			case <-ctx.Done():
+				return "", lastErr
+			case <-time.After(3 * time.Second):
+			}
 		}
 	}
 	if lastErr != nil {
@@ -220,7 +238,7 @@ func generateWithOpenAI(ctx context.Context, apiKey, topic string) (string, erro
 func GenerateArticle(topic string) (string, error) {
 	openAICompatibleKey := openAIKey()
 	if openAICompatibleKey != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 280*time.Second)
 		defer cancel()
 		if txt, err := generateWithOpenAI(ctx, openAICompatibleKey, topic); err == nil {
 			if cleaned := cleanupArticleHTML(txt); cleaned != "" {
