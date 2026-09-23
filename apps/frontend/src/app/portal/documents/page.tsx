@@ -295,10 +295,10 @@ export default function DocumentsPage() {
               </span>
               {allDocumentsUploaded ? (
                 <Link
-                  href="/portal/payment"
+                  href="/portal/review"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
                 >
-                  Lanjut ke Pembayaran <ArrowRight size={16} />
+                  Lanjut ke Review & Konfirmasi <ArrowRight size={16} />
                 </Link>
               ) : (
                 <span className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-200 px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">

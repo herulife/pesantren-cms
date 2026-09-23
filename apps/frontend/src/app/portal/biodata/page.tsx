@@ -56,9 +56,6 @@ const dataDiriFields: Array<keyof BiodataForm> = [
   'birth_date',
   'address',
   'school_origin',
-  'program_choice',
-  'jenjang',
-  'category',
 ];
 
 const dataOrangTuaFields: Array<keyof BiodataForm> = [
@@ -70,11 +67,7 @@ const dataOrangTuaFields: Array<keyof BiodataForm> = [
   'mother_phone',
 ];
 
-const categoryLabel = (c?: string) => c === 'yatim' ? 'Yatim' : c === 'dhuafa' ? 'Dhuafa' : 'Reguler';
-const jenjangLabel = (j?: string) => j === 'smk' ? 'SMK' : j === 'smp' ? 'SMP' : (j || '-');
-const programLabel = (p?: string) => p === 'bahasa' ? 'Bahasa Arab' : p === 'tahfidz' ? "Tahfidz Al-Qur'an" : (p || '-');
-
-function isFilled(value: string) {
+const isFilled(value: string) {
   return Boolean(value.trim());
 }
 
@@ -99,8 +92,6 @@ function validateDataDiri(form: BiodataForm): Partial<Record<keyof BiodataForm, 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.birth_date.trim())) e.birth_date = 'Tanggal lahir wajib YYYY-MM-DD';
   if (!isFilled(form.address)) e.address = 'Alamat wajib diisi';
   if (!isFilled(form.school_origin)) e.school_origin = 'Asal sekolah wajib diisi';
-  if (form.program_choice !== 'tahfidz' && form.program_choice !== 'bahasa') e.program_choice = 'Pilih program Tahfidz atau Bahasa';
-  if (form.jenjang !== 'smp' && form.jenjang !== 'smk') e.jenjang = 'Pilih jenjang SMP atau SMK';
   return e;
 }
 
@@ -249,8 +240,8 @@ function BiodataPageContent() {
         return;
       }
       if (shouldContinue && part === 2) {
-        showToast('success', 'Biodata berhasil disimpan. Lanjut ke unggah dokumen.');
-        router.push('/portal/documents');
+        showToast('success', 'Biodata berhasil disimpan. Lanjut memilih program & jenjang.');
+        router.push('/portal/program');
         return;
       }
       setSavedMessage('Biodata berhasil disimpan. Kamu bisa lanjut ke langkah berikutnya atau kembali edit kalau ada yang perlu diperbaiki.');
@@ -280,7 +271,7 @@ function BiodataPageContent() {
       <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h3 className="font-outfit text-2xl font-black uppercase tracking-tight text-slate-900 lg:text-3xl">
-            {part === 1 ? 'Data Diri Calon Santri' : 'Data Orang Tua / Wali'}
+            {part === 1 ? 'Data Siswa Calon Santri' : 'Data Orang Tua / Wali'}
           </h3>
           <p className="mt-1 text-sm leading-relaxed text-slate-500">
             {part === 1
@@ -289,7 +280,7 @@ function BiodataPageContent() {
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
-          Langkah 1 dari 2 {part === 1 ? '— Data Diri' : '— Data Orang Tua'}
+          Langkah 1 dari 2 {part === 1 ? '— Data Siswa' : '— Data Orang Tua'}
         </span>
       </div>
 
@@ -317,7 +308,7 @@ function BiodataPageContent() {
             {diriDoneNow && part !== 1 ? <CheckCircle2 size={16} /> : 1}
           </span>
           <span className="min-w-0">
-            <span className="block text-xs font-black uppercase tracking-widest">Data Diri</span>
+            <span className="block text-xs font-black uppercase tracking-widest">Data Siswa</span>
             <span className={`block truncate text-[11px] font-medium ${diriDoneNow || part === 1 ? 'opacity-80' : 'opacity-60'}`}>
               {diriDoneNow ? 'Selesai diisi' : 'Identitas calon santri'}
             </span>
@@ -379,7 +370,7 @@ function BiodataPageContent() {
                     {savedMessage || 'Biodata kamu sudah masuk ke database. Supaya tidak membingungkan dan tidak berubah tanpa sengaja, halaman ini sekarang tampil sebagai ringkasan dulu.'}
                   </p>
                   <p className="mt-3 text-sm leading-7 text-slate-500">
-                    Kalau ada data yang perlu diperbaiki, tinggal tekan <span className="font-bold text-slate-700">Edit Biodata</span>. Kalau sudah benar, lanjutkan ke langkah dokumen.
+                    Kalau ada data yang perlu diperbaiki, tinggal tekan <span className="font-bold text-slate-700">Edit Biodata</span>. Kalau sudah benar, lanjutkan memilih program & jenjang.
                   </p>
                 </div>
               </div>
@@ -388,17 +379,17 @@ function BiodataPageContent() {
             <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
               <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Langkah Berikutnya</p>
               <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
-                Lanjut ke Unggah Dokumen
+                Lanjut ke Program & Jenjang
               </h4>
               <p className="mt-3 text-sm leading-7 text-slate-500">
-                Setelah biodata aman, tahap berikutnya adalah mengunggah KK, ijazah atau raport terakhir, dan pas foto agar panitia bisa memeriksa berkas lengkapmu.
+                Setelah biodata aman, pilih jenjang (SMP/SMK) dan program unggulan (Tahfidz atau Bahasa) agar panitia bisa menempatkan santri di kelas yang tepat.
               </p>
               <div className="mt-6 flex flex-col gap-3">
                 <Link
-                  href="/portal/documents"
+                  href="/portal/program"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-500"
                 >
-                  Unggah Dokumen Sekarang <ArrowRight size={16} />
+                  Pilih Program & Jenjang <ArrowRight size={16} />
                 </Link>
                 <button
                   type="button"
@@ -424,9 +415,6 @@ function BiodataPageContent() {
                   { label: 'NIK', value: formData.nik || '-' },
                   { label: 'Tempat, Tanggal Lahir', value: [formData.birth_place, formData.birth_date].filter(Boolean).join(', ') || '-' },
                   { label: 'Asal Sekolah', value: formData.school_origin || '-' },
-                  { label: 'Kategori', value: categoryLabel(formData.category) },
-                  { label: 'Program Pilihan', value: programLabel(formData.program_choice) },
-                  { label: 'Jenjang', value: jenjangLabel(formData.jenjang) },
                   { label: 'Alamat Lengkap', value: formData.address || '-' },
                 ].map((item) => (
                   <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -569,59 +557,6 @@ function BiodataPageContent() {
                   />
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Kategori Pendaftar</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => handleChange('category', e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
-                    required
-                  >
-                    <option value="reguler">Reguler</option>
-                    <option value="yatim">Yatim (beasiswa, kuota 5)</option>
-                    <option value="dhuafa">Dhuafa (beasiswa)</option>
-                  </select>
-                  {formData.category === 'yatim' && (
-                    <p className="mt-1 text-xs font-semibold text-amber-700">Wajib unggah surat keterangan kematian di langkah Dokumen.</p>
-                  )}
-                  {formData.category === 'dhuafa' && (
-                    <p className="mt-1 text-xs font-semibold text-amber-700">Wajib unggah SKTM di langkah Dokumen.</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Jenjang</label>
-                  <select
-                    value={formData.jenjang}
-                    onChange={(e) => handleChange('jenjang', e.target.value)}
-                    aria-invalid={!!errors.jenjang}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
-                    required
-                  >
-                    <option value="">Pilih jenjang</option>
-                    <option value="smp">SMP</option>
-                    <option value="smk">SMK</option>
-                  </select>
-                  {errors.jenjang ? <p className="mt-1 text-xs font-bold text-rose-600">{errors.jenjang}</p> : null}
-                  <p className="mt-1 text-xs font-semibold text-slate-500">SMP dari SD/MI • SMK dari SMP/MTs • Kelas awal otomatis VII / X.</p>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Pilihan Program</label>
-                  <select
-                    value={formData.program_choice}
-                    onChange={(e) => handleChange('program_choice', e.target.value)}
-                    aria-invalid={!!errors.program_choice}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
-                    required
-                  >
-                    <option value="">Pilih program</option>
-                    <option value="tahfidz">Tahfidz Al-Qur&apos;an</option>
-                    <option value="bahasa">Bahasa Arab</option>
-                  </select>
-                  {errors.program_choice ? <p className="mt-1 text-xs font-bold text-rose-600">{errors.program_choice}</p> : null}
-                </div>
-
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">Alamat Lengkap</label>
                   <textarea
@@ -678,7 +613,7 @@ function BiodataPageContent() {
                   onClick={() => submitPart(1)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:w-auto"
                 >
-                  <ArrowLeft size={18} /> Kembali ke Data Diri
+                  <ArrowLeft size={18} /> Kembali ke Data Siswa
                 </button>
               ) : (
                 <span className="hidden md:block" />
@@ -703,7 +638,7 @@ function BiodataPageContent() {
                     ? 'Menyimpan...'
                     : part === 1
                       ? <>Simpan & Lanjut ke Data Orang Tua <ArrowRight size={18} /></>
-                      : <>Simpan & Lanjut ke Dokumen <ArrowRight size={18} /></>}
+                      : <>Simpan & Lanjut ke Program & Jenjang <ArrowRight size={18} /></>}
                 </button>
               </div>
             </div>

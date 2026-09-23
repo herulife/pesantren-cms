@@ -38,7 +38,7 @@ type PortalNavGroup = {
   locked?: boolean;
 };
 
-const ALLOWED_WIZARD_PATHS = ['/portal/biodata', '/portal/documents', '/portal/payment'];
+const ALLOWED_WIZARD_PATHS = ['/portal/biodata', '/portal/program', '/portal/documents', '/portal/review', '/portal/payment'];
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -91,7 +91,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   const hasStudentAccess = registrationStatus === 'accepted';
   const isServicePath = pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams');
   const paymentStatus = registration?.payment_status || 'unpaid';
-  const dataDiriCompleted = [
+  const dataSiswaCompleted = [
     registration?.full_name,
     registration?.gender,
     registration?.nik,
@@ -99,7 +99,6 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     registration?.birth_date,
     registration?.address,
     registration?.school_origin,
-    registration?.program_choice,
   ].every(isFilled);
   const dataOrangTuaCompleted = [
     registration?.father_name,
@@ -109,7 +108,8 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     registration?.mother_job,
     registration?.mother_phone,
   ].every(isFilled);
-  const biodataCompleted = dataDiriCompleted && dataOrangTuaCompleted;
+  const programCompleted = [registration?.program_choice, registration?.jenjang].every(isFilled);
+  const biodataCompleted = dataSiswaCompleted && dataOrangTuaCompleted && programCompleted;
   const requiredDocs = [
     registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url,
     ...(registration?.category === 'yatim' ? [registration?.yatim_doc_url] : []),
@@ -117,29 +117,30 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   ];
   const documentsCompleted = requiredDocs.every(isFilled);
   const paymentCompleted = paymentStatus === 'paid';
-  const wizardComplete = biodataCompleted && documentsCompleted && paymentCompleted;
+  const wizardComplete = biodataCompleted && documentsCompleted;
   const wizardMode = !hasStudentAccess && !wizardComplete;
   const showWizardShell = wizardMode && !isLoading;
 
   let activeWizardPath = '/portal/biodata';
-  if (dataDiriCompleted) activeWizardPath = '/portal/biodata?part=2';
-  if (dataDiriCompleted && dataOrangTuaCompleted) activeWizardPath = '/portal/documents';
-  if (dataDiriCompleted && dataOrangTuaCompleted && documentsCompleted) activeWizardPath = '/portal/payment';
+  if (dataSiswaCompleted) activeWizardPath = '/portal/biodata?part=2';
+  if (dataSiswaCompleted && dataOrangTuaCompleted) activeWizardPath = '/portal/program';
+  if (dataSiswaCompleted && dataOrangTuaCompleted && programCompleted) activeWizardPath = '/portal/documents';
+  if (dataSiswaCompleted && dataOrangTuaCompleted && programCompleted && documentsCompleted) activeWizardPath = '/portal/review';
 
   const isAllowedWizardPath = ALLOWED_WIZARD_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 
   const partParam = searchParams.get('part');
-  const biodataPart = partParam === '1' ? 1 : partParam === '2' ? 2 : dataDiriCompleted ? 2 : 1;
+  const biodataPart = partParam === '1' ? 1 : partParam === '2' ? 2 : dataSiswaCompleted ? 2 : 1;
 
   const wizardSteps = [
     {
       id: 1,
       href: '/portal/biodata?part=1',
-      label: 'Data Diri',
-      doneLabel: 'Data Diri Lengkap',
-      done: dataDiriCompleted,
+      label: 'Data Siswa',
+      doneLabel: 'Data Siswa Lengkap',
+      done: dataSiswaCompleted,
       active: pathname.startsWith('/portal/biodata') && biodataPart === 1,
       locked: false,
       unlockHint: '',
@@ -151,75 +152,90 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
       doneLabel: 'Orang Tua Lengkap',
       done: dataOrangTuaCompleted,
       active: pathname.startsWith('/portal/biodata') && biodataPart === 2,
-      locked: !dataDiriCompleted,
-      unlockHint: 'Langkah 1 (Data Diri) belum selesai — isi dulu sebelum melengkapi data orang tua.',
+      locked: !dataSiswaCompleted,
+      unlockHint: 'Langkah 1 (Data Siswa) belum selesai — isi dulu sebelum melengkapi data orang tua.',
     },
     {
       id: 3,
+      href: '/portal/program',
+      label: 'Program & Jenjang',
+      doneLabel: 'Program Dipilih',
+      done: programCompleted,
+      active: pathname.startsWith('/portal/program'),
+      locked: !(dataSiswaCompleted && dataOrangTuaCompleted),
+      unlockHint: 'Selesaikan Data Siswa & Data Orang Tua dulu sebelum memilih program.',
+    },
+    {
+      id: 4,
       href: '/portal/documents',
-      label: 'Dokumen',
+      label: 'Unggah Dokumen',
       doneLabel: 'Dokumen Lengkap',
       done: documentsCompleted,
       active: pathname.startsWith('/portal/documents'),
       locked: !biodataCompleted,
-      unlockHint: 'Langkah Biodata belum selesai — selesaikan Data Diri & Data Orang Tua dulu.',
+      unlockHint: 'Langkah Formulir belum selesai — selesaikan Data Siswa, Orang Tua, dan Program dulu.',
     },
     {
-      id: 4,
-      href: '/portal/payment',
-      label: 'Pembayaran',
-      doneLabel: 'Pembayaran Selesai',
-      done: paymentCompleted,
-      active: pathname.startsWith('/portal/payment'),
-      locked: !(biodataCompleted && documentsCompleted),
-      unlockHint: 'Upload dokumen (langkah 3) dulu sebelum pembayaran pendaftaran.',
+      id: 5,
+      href: '/portal/review',
+      label: 'Review & Konfirmasi',
+      doneLabel: 'Formulir Disetujui',
+      done: biodataCompleted && documentsCompleted,
+      active: pathname.startsWith('/portal/review'),
+      locked: !biodataCompleted || !documentsCompleted,
+      unlockHint: 'Upload dokumen (langkah 4) dulu sebelum review & konfirmasi.',
     },
   ];
   const activeWizardIdx = Math.max(0, wizardSteps.findIndex((step) => step.active));
   const wizardTitles = [
-    'Data Diri Calon Santri',
+    'Data Siswa Calon Santri',
     'Data Orang Tua / Wali',
+    'Program & Jenjang',
     'Unggah Dokumen Pendaftaran',
-    'Pembayaran Pendaftaran',
+    'Review & Konfirmasi',
   ];
   const wizardHints = [
-    'Isikan data pribadi calon santri: nama lengkap, jenis kelamin, NIK, tempat & tanggal lahir, alamat, asal sekolah, dan program pilihan.',
+    'Isikan data pribadi calon santri: nama lengkap, jenis kelamin, NIK, tempat & tanggal lahir, alamat, dan asal sekolah.',
     'Lengkapi data ayah dan ibu agar panitia bisa menghubungi wali santri dengan mudah.',
+    'Pilih jenjang (SMP atau SMK) dan program unggulan (Tahfidz Al-Qur\u2019an atau Bahasa Arab) untuk pendaftaran.',
     'Unggah KK, ijazah atau raport terakhir, dan pas foto 3x4. Semua dokumen wajib lengkap sebelum pembayaran.',
-    'Transfer biaya pendaftaran, isi nominal & tanggal, lalu unggah bukti transfer untuk menyelesaikan pendaftaran.',
+    'Periksa kembali seluruh data dan dokumen sebelum mengonfirmasi dan melanjutkan ke pembayaran.',
   ];
 
   useEffect(() => {
     if (hasStudentAccess || isLoading) return;
     if (wizardMode) {
-      if (biodataCompleted && documentsCompleted && !paymentCompleted) {
-        if (pathname !== '/portal/payment') {
-          showToast('info', 'Pembayaran pendaftaran belum selesai — semua halaman dialihkan ke halaman pembayaran.');
-          router.replace('/portal/payment');
-        }
-        return;
-      }
-
       if (isAllowedWizardPath) {
-        if (pathname.startsWith('/portal/documents') && !biodataCompleted) {
+        if (pathname.startsWith('/portal/program') && !(dataSiswaCompleted && dataOrangTuaCompleted)) {
           showToast(
             'info',
-            dataDiriCompleted && !dataOrangTuaCompleted
-              ? 'Data orang tua belum lengkap. Selesaikan Langkah 1b dulu agar langkah 2 terbuka.'
-              : 'Langkah 1 (Biodata) belum selesai. Isi dulu agar langkah 2 terbuka.',
+            dataSiswaCompleted && !dataOrangTuaCompleted
+              ? 'Data orang tua belum lengkap. Selesaikan Langkah 2 dulu agar pilihan program terbuka.'
+              : 'Langkah 1 (Data Siswa) belum selesai. Isi dulu agar pilihan program terbuka.',
           );
-          router.replace(dataDiriCompleted ? '/portal/biodata?part=2' : '/portal/biodata');
-        } else if (pathname.startsWith('/portal/payment') && !biodataCompleted) {
+          router.replace(dataSiswaCompleted ? '/portal/biodata?part=2' : '/portal/biodata');
+        } else if (pathname.startsWith('/portal/review') && (!biodataCompleted || !documentsCompleted)) {
+          showToast('info', 'Dokumen belum terupload. Selesaikan Langkah 4 dulu sebelum review & konfirmasi.');
+          router.replace(documentsCompleted && !biodataCompleted ? '/portal/program' : '/portal/documents');
+        } else if (pathname.startsWith('/portal/documents') && !biodataCompleted) {
           showToast(
             'info',
-            dataDiriCompleted && !dataOrangTuaCompleted
-              ? 'Data orang tua belum lengkap. Selesaikan Langkah 1b dulu sebelum pembayaran pendaftaran.'
-              : 'Biodata belum lengkap. Selesaikan Langkah 1 dulu sebelum pembayaran pendaftaran.',
+            dataSiswaCompleted && !dataOrangTuaCompleted
+              ? 'Data orang tua belum lengkap. Selesaikan Langkah 2 dulu.'
+              : dataSiswaCompleted && dataOrangTuaCompleted && !programCompleted
+                ? 'Program & jenjang belum dipilih. Selesaikan Langkah 3 dulu.'
+                : 'Langkah 1 (Data Siswa) belum selesai. Isi dulu agar dokumen terbuka.',
           );
-          router.replace(dataDiriCompleted ? '/portal/biodata?part=2' : '/portal/biodata');
-        } else if (pathname.startsWith('/portal/payment') && biodataCompleted && !documentsCompleted) {
-          showToast('info', 'Dokumen belum terupload. Selesaikan Langkah 2 dulu sebelum pembayaran.');
-          router.replace('/portal/documents');
+          router.replace(
+            !dataSiswaCompleted
+              ? '/portal/biodata'
+              : !dataOrangTuaCompleted
+                ? '/portal/biodata?part=2'
+                : '/portal/program',
+          );
+        } else if (pathname.startsWith('/portal/payment')) {
+          showToast('info', 'Selesaikan seluruh langkah pendaftaran dulu sebelum pembayaran.');
+          router.replace(activeWizardPath);
         }
       } else {
         showToast('info', 'Selesaikan langkah pendaftaran yang sedang aktif terlebih dahulu.');
@@ -233,10 +249,10 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     wizardMode,
     isAllowedWizardPath,
     biodataCompleted,
-    dataDiriCompleted,
+    dataSiswaCompleted,
     dataOrangTuaCompleted,
+    programCompleted,
     documentsCompleted,
-    paymentCompleted,
     activeWizardPath,
     router,
     showToast,
@@ -245,8 +261,8 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   const flowSteps = [
     {
       href: '/portal/biodata',
-      label: 'Biodata',
-      doneLabel: 'Biodata Lengkap',
+      label: 'Formulir',
+      doneLabel: 'Formulir Lengkap',
       done: biodataCompleted,
       active: pathname.startsWith('/portal/biodata'),
       locked: false,
@@ -254,14 +270,14 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
       icon: <User size={14} />,
     },
     {
-      href: '/portal/documents',
-      label: 'Dokumen',
-      doneLabel: 'Dokumen Sudah Terupload',
+      href: '/portal/review',
+      label: 'Review',
+      doneLabel: 'Review Selesai',
       done: documentsCompleted,
-      active: pathname.startsWith('/portal/documents'),
+      active: pathname.startsWith('/portal/review'),
       locked: !biodataCompleted,
-      unlockHint: 'Selesaikan langkah 1 (Biodata Lengkap) dulu sebelum mengunggah dokumen.',
-      icon: <Upload size={14} />,
+      unlockHint: 'Selesaikan langkah formulir dulu sebelum review & konfirmasi.',
+      icon: <Check size={14} />,
     },
     {
       href: '/portal/payment',
@@ -271,8 +287,8 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
       active: pathname.startsWith('/portal/payment'),
       locked: !(biodataCompleted && documentsCompleted),
       unlockHint: biodataCompleted
-        ? 'Upload dokumen (langkah 2) dulu sebelum pembayaran pendaftaran.'
-        : 'Selesaikan Biodata & Dokumen dulu sebelum pembayaran pendaftaran.',
+        ? 'Review formulir (langkah 2) dulu sebelum pembayaran pendaftaran.'
+        : 'Selesaikan Formulir & Dokumen dulu sebelum pembayaran pendaftaran.',
       icon: <CreditCard size={14} />,
     },
   ];
@@ -416,9 +432,12 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
         },
         {
           href: '/portal/biodata',
-          label: 'Biodata',
+          label: 'Formulir',
           icon: <User size={18} />,
-          active: pathname.startsWith('/portal/biodata'),
+          active:
+            pathname.startsWith('/portal/biodata') ||
+            pathname.startsWith('/portal/program') ||
+            pathname.startsWith('/portal/review'),
         },
         {
           href: '/portal/documents',
@@ -758,7 +777,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="ap-fade-in min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
               {!isLoading && !hasStudentAccess && !isRaportPage && (
                 <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online — 3 Langkah</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online</p>
                   <div className="mt-3 flex items-center gap-2">
                     {flowSteps.map((step, idx, arr) => (
                       <React.Fragment key={step.href}>
@@ -802,13 +821,9 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                     ))}
                   </div>
                   <p className="mt-2 text-[11px] font-medium text-slate-500">
-                    {biodataCompleted && documentsCompleted && paymentCompleted
+                    {paymentCompleted
                       ? 'Semua langkah selesai, termasuk pembayaran — pantau status dari Dashboard.'
-                      : !biodataCompleted
-                        ? 'Langkah 1 (Biodata) belum selesai — isi data dulu, lalu lanjut unggah dokumen.'
-                        : !documentsCompleted
-                          ? 'Biodata selesai. Dokumen belum terupload — lanjut ke langkah 2 (Unggah Dokumen).'
-                          : 'Biodata & dokumen selesai — masuk langkah 3 (Pembayaran) untuk menyelesaikan pendaftaran.'}
+                      : 'Formulir & dokumen sudah lengkap — lanjut ke Pembayaran untuk menyelesaikan pendaftaran.'}
                   </p>
                 </div>
               )}
