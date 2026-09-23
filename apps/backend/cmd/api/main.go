@@ -582,6 +582,8 @@ func loadAISettingsFromDB(settingRepo *settings.Repository) {
 		os.Setenv("XKIRO_API_URL", apiURL)
 		os.Setenv("OPENAI_API_URL", apiURL)
 	}
+	logger.Info(context.Background(), "ai settings loaded from db",
+		logger.Field{"ai_model": os.Getenv("AI_MODEL"), "ai_api_url": os.Getenv("XKIRO_API_URL"), "has_key": os.Getenv("AI_OPENAI_KEY") != ""})
 }
 
 func getAllowedOrigins() []string {
