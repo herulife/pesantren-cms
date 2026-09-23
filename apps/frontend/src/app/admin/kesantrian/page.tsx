@@ -11,6 +11,7 @@ import {
   getUsers,
   linkSantriUser,
   Santri,
+  normalizeApiAssetUrl,
 } from '@/lib/api';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import {
@@ -24,6 +25,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  User,
   UserPlus,
   Users,
   X,
@@ -117,6 +119,16 @@ export default function KesantrianPage() {
     if (g === 'l' || g === 'laki-laki') return 'L';
     if (g === 'p' || g === 'perempuan') return 'P';
     return g;
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
   };
 
   const statusColor = (s: string) => {
@@ -333,6 +345,7 @@ export default function KesantrianPage() {
                     className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                   />
                 </th>
+                <th className="px-4 py-3 font-bold">Foto</th>
                 <th className="px-4 py-3 font-bold">NIS</th>
                 <th className="px-4 py-3 font-bold">Nama</th>
                 <th className="px-4 py-3 font-bold">Kelamin</th>
@@ -346,7 +359,7 @@ export default function KesantrianPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-400">
+                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-slate-400">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw size={22} className="animate-spin text-sky-500" />
                       Memuat data santri...
@@ -355,7 +368,7 @@ export default function KesantrianPage() {
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-14 text-center">
+                  <td colSpan={10} className="px-4 py-14 text-center">
                     <Users className="mx-auto mb-3 h-10 w-10 text-slate-300" />
                     <p className="text-sm font-bold text-slate-500">Belum ada data santri</p>
                     <p className="text-xs text-slate-400">Tambahkan santri baru atau lakukan import massal.</p>
@@ -371,6 +384,20 @@ export default function KesantrianPage() {
                         onChange={() => toggleSelect(s.id)}
                         className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                       />
+                    </td>
+                    <td className="px-4 py-3">
+                      {s.photo_url ? (
+                        <img
+                          src={normalizeApiAssetUrl(s.photo_url)}
+                          alt={`Foto ${s.name}`}
+                          loading="lazy"
+                          className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-xs font-black text-sky-600 ring-1 ring-sky-100">
+                          {getInitials(s.name) || <User size={16} />}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">{s.nis}</td>
                     <td className="px-4 py-3">

@@ -6,7 +6,7 @@ import { Activity, AlertCircle, CheckCircle2, ChevronRight, CreditCard, FileText
 import { useAuth } from '@/components/AuthProvider';
 import StudentQRCard from '@/components/StudentQRCard';
 import WalletCard from '@/components/WalletCard';
-import { getMyPSBRegistration, type Registration } from '@/lib/api';
+import { getMyPSBRegistration, type Registration, normalizeApiAssetUrl } from '@/lib/api';
 
 type ChecklistItem = {
   href?: string;
@@ -405,15 +405,44 @@ export default function PortalDashboard() {
 
   return (
     <>
-      <div className="ap-fade-in mb-8">
-        <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
-          Ahlan Wa Sahlan, <br /> <span className="text-sky-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
-        </h3>
-        <p className="text-lg text-slate-500">
-          {hasStudentAccess
-            ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
-            : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
-        </p>
+      <div className="ap-fade-in mb-8 flex flex-col gap-5 sm:flex-row sm:items-center">
+        <div className="relative shrink-0">
+          {(() => {
+            const photo = normalizeApiAssetUrl(registration?.pasfoto_url || registration?.foto_pendaftaran_url);
+            const displayName = user?.name || registration?.full_name || 'Calon Santri';
+            const initials = displayName
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((p) => p[0])
+              .join('')
+              .toUpperCase();
+            if (photo) {
+              return (
+                <img
+                  src={photo}
+                  alt={`Foto ${displayName}`}
+                  className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-slate-200 ring-2 ring-sky-100"
+                />
+              );
+            }
+            return (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-lg font-black text-white shadow-lg shadow-sky-200 ring-2 ring-sky-100">
+                {initials || <User size={24} />}
+              </div>
+            );
+          })()}
+        </div>
+        <div>
+          <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
+            Ahlan Wa Sahlan, <br /> <span className="text-sky-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
+          </h3>
+          <p className="text-lg text-slate-500">
+            {hasStudentAccess
+              ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
+              : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
+          </p>
+        </div>
       </div>
 
       <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">

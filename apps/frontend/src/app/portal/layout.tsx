@@ -5,12 +5,37 @@ import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard, Check } from 'lucide-react';
-import { getMyPSBRegistration, type Registration } from '@/lib/api';
+import { getMyPSBRegistration, type Registration, normalizeApiAssetUrl } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/Toast';
 
 function isFilled(value?: string | null) {
   return Boolean(value && value.trim());
+}
+
+function UserAvatar({ name, photo }: { name?: string | null; photo?: string | null }) {
+  const src = normalizeApiAssetUrl(photo);
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={`Foto ${name || 'pengguna'}`}
+        className="h-8 w-8 rounded-full object-cover ring-2 ring-white"
+      />
+    );
+  }
+  const initials = (name || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase();
+  return (
+    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 text-[11px] font-black text-white">
+      {initials || 'P'}
+    </span>
+  );
 }
 
 type MobilePortalTab = {
@@ -52,7 +77,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { showToast } = useToast();
   const isRaportPage = pathname.startsWith('/portal/raport');
   const isPortalDashboard = pathname === '/portal';
@@ -473,9 +498,13 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                 Beranda
               </Link>
               <div className="flex items-center gap-2">
-                <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-600">
-                  Portal Wali Santri
-                </div>
+                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-4 text-xs font-bold text-slate-600 shadow-sm">
+                <UserAvatar
+                  name={registration?.full_name || user?.name}
+                  photo={registration?.pasfoto_url || registration?.foto_pendaftaran_url}
+                />
+                Portal Wali Santri
+              </div>
                 <button
                   type="button"
                   onClick={handleLogout}
