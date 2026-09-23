@@ -40,6 +40,10 @@ type Registration struct {
 	KKURL           string    `json:"kk_url"`
 	IjazahURL       string    `json:"ijazah_url"`
 	PasfotoURL      string    `json:"pasfoto_url"`
+	AktaURL         string    `json:"akta_url"`
+	KtpOrtuURL      string    `json:"ktp_ortu_url"`
+	SuratKelulusanURL string  `json:"surat_kelulusan_url"`
+	FotoPendaftaranURL string `json:"foto_pendaftaran_url"`
 	PaymentProofURL string    `json:"payment_proof_url"`
 	PaymentAmount   int       `json:"payment_amount"`
 	PaymentDate     string    `json:"payment_date"`
@@ -106,6 +110,10 @@ const registrationSelectColumns = `
 	COALESCE(kk_url, ''),
 	COALESCE(ijazah_url, ''),
 	COALESCE(pasfoto_url, ''),
+	COALESCE(akta_url, ''),
+	COALESCE(ktp_ortu_url, ''),
+	COALESCE(surat_kelulusan_url, ''),
+	COALESCE(foto_pendaftaran_url, ''),
 	COALESCE(payment_proof_url, ''),
 	COALESCE(payment_amount, 0),
 	COALESCE(payment_date, ''),
@@ -156,6 +164,10 @@ func scanRegistration(scanner interface {
 		&reg.KKURL,
 		&reg.IjazahURL,
 		&reg.PasfotoURL,
+		&reg.AktaURL,
+		&reg.KtpOrtuURL,
+		&reg.SuratKelulusanURL,
+		&reg.FotoPendaftaranURL,
 		&reg.PaymentProofURL,
 		&reg.PaymentAmount,
 		&reg.PaymentDate,
@@ -439,7 +451,7 @@ func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registrat
 	return r.FindByUserID(ctx, userID)
 }
 
-func (r *Repository) UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL string) (*Registration, error) {
+func (r *Repository) UpdateDocumentsByUserID(ctx context.Context, userID int, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL, aktaURL, ktpOrtuURL, suratKelulusanURL, fotoPendaftaranURL string) (*Registration, error) {
 	existing, err := r.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -460,12 +472,25 @@ func (r *Repository) UpdateDocumentsByUserID(ctx context.Context, userID int, kk
 	if sktmDocURL == "" {
 		sktmDocURL = existing.SktmDocURL
 	}
+	if aktaURL == "" {
+		aktaURL = existing.AktaURL
+	}
+	if ktpOrtuURL == "" {
+		ktpOrtuURL = existing.KtpOrtuURL
+	}
+	if suratKelulusanURL == "" {
+		suratKelulusanURL = existing.SuratKelulusanURL
+	}
+	if fotoPendaftaranURL == "" {
+		fotoPendaftaranURL = existing.FotoPendaftaranURL
+	}
 
 	_, err = r.db.ExecContext(ctx, `
 		UPDATE registrations
-		SET kk_url = ?, ijazah_url = ?, pasfoto_url = ?, yatim_doc_url = ?, sktm_doc_url = ?, updated_at = CURRENT_TIMESTAMP
+		SET kk_url = ?, ijazah_url = ?, pasfoto_url = ?, yatim_doc_url = ?, sktm_doc_url = ?,
+		    akta_url = ?, ktp_ortu_url = ?, surat_kelulusan_url = ?, foto_pendaftaran_url = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE user_id = ?
-	`, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL, userID)
+	`, kkURL, ijazahURL, pasfotoURL, yatimDocURL, sktmDocURL, aktaURL, ktpOrtuURL, suratKelulusanURL, fotoPendaftaranURL, userID)
 	if err != nil {
 		return nil, err
 	}

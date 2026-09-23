@@ -465,6 +465,10 @@ func createTables() {
 		kk_url TEXT,
 		ijazah_url TEXT,
 		pasfoto_url TEXT,
+		akta_url TEXT DEFAULT '',
+		ktp_ortu_url TEXT DEFAULT '',
+		surat_kelulusan_url TEXT DEFAULT '',
+		foto_pendaftaran_url TEXT DEFAULT '',
 		payment_proof_url TEXT DEFAULT '',
 		payment_amount INTEGER DEFAULT 0,
 		payment_date TEXT DEFAULT '',
@@ -866,6 +870,10 @@ func createTables() {
 	addColumnIfNotExists("registrations", "yatim_doc_url", "TEXT DEFAULT ''")
 	addColumnIfNotExists("notes", "owner_key", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "sktm_doc_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "akta_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "ktp_ortu_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "surat_kelulusan_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "foto_pendaftaran_url", "TEXT DEFAULT ''")
 	_, _ = DB.Exec("UPDATE registrations SET program_choice='tahfidz' WHERE lower(program_choice)='tahfidz'")
 	addColumnIfNotExists("employees", "photo_url", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "registration_id", "INTEGER DEFAULT 0")
