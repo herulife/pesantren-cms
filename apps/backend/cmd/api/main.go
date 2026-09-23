@@ -123,6 +123,9 @@ func main() {
 
 	settingRepo := settings.NewRepository(database.DB)
 	settingHandler := settings.NewHandler(settingRepo)
+	// AI Config dari tabel settings disuntikkan ke env runtime agar generator
+	// artikel & draf pesan memakai provider yang dikonfigurasi admin.
+	loadAISettingsFromDB(settingRepo)
 	// PSB memakai pengaturan publik (biaya & rekening) untuk notifikasi WA.
 	psbHandler = psbHandler.WithSettingsStore(settingRepo)
 
@@ -562,6 +565,24 @@ func getEnv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+// loadAISettingsFromDB menyuntikkan konfigurasi AI dari tabel settings ke env
+// runtime (mirip pola di handler notifications) agar dipakai oleh semua fitur
+// yang memanggil platform/ai, termasuk generator artikel berita.
+func loadAISettingsFromDB(settingRepo *settings.Repository) {
+	load := func(key, env string) {
+		if v, err := settingRepo.GetByKey(key); err == nil && strings.TrimSpace(v) != "" {
+			os.Setenv(env, strings.TrimSpace(v))
+		}
+	}
+	load("ai_openai_key", "AI_OPENAI_KEY")
+	load("ai_model", "AI_MODEL")
+	if v, err := settingRepo.GetByKey("ai_api_url"); err == nil && strings.TrimSpace(v) != "" {
+		apiURL := strings.TrimSpace(v)
+		os.Setenv("XKIRO_API_URL", apiURL)
+		os.Setenv("OPENAI_API_URL", apiURL)
+	}
 }
 
 func getAllowedOrigins() []string {

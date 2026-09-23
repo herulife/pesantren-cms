@@ -38,8 +38,10 @@ func isConfiguredGeminiKey(value string) bool {
 }
 
 // openAIKey: urutan env yang dicek untuk kunci OpenAI-compatible.
+// AI_OPENAI_KEY (dari tab AI Config admin, disuntikkan saat boot) diprioritaskan
+// agar provider yang dikonfigurasi admin menang atas fallback env Dahl.
 func openAIKey() string {
-	for _, key := range []string{"DAHL_API_KEY", "XKIRO_API_KEY", "OPENAI_API_KEY", "AI_OPENAI_KEY", "AI_API_KEY"} {
+	for _, key := range []string{"AI_OPENAI_KEY", "XKIRO_API_KEY", "OPENAI_API_KEY", "DAHL_API_KEY", "AI_API_KEY"} {
 		if v := strings.TrimSpace(os.Getenv(key)); v != "" && isConfiguredGeminiKey(v) {
 			return v
 		}
@@ -48,8 +50,10 @@ func openAIKey() string {
 }
 
 // openAIBaseURL: urutan env untuk base URL OpenAI-compatible; fallback Dahl API.
+// URL yang dipasangkan dengan AI Config admin (XKIRO_API_URL / OPENAI_API_URL,
+// keduanya diisi dari setting ai_api_url saat boot) diprioritaskan di atas Dahl.
 func openAIBaseURL() string {
-	for _, key := range []string{"DAHL_API_URL", "XKIRO_API_URL", "OPENAI_API_URL", "AI_API_URL"} {
+	for _, key := range []string{"XKIRO_API_URL", "OPENAI_API_URL", "DAHL_API_URL", "AI_API_URL"} {
 		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
 			return v
 		}
