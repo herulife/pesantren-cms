@@ -527,9 +527,9 @@ export default function PortalPaymentPage() {
               <button
                 type="button"
                 onClick={() => void loadReceipt()}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-sm transition hover:bg-sky-700"
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-sky-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-sky-600/35 active:translate-y-0"
               >
-                <Banknote size={15} /> Buka / Unduh Kwitansi
+                <Banknote size={15} className="transition-transform group-hover:scale-110" /> Buka / Unduh Kwitansi
               </button>
             </div>
           </div>
@@ -668,7 +668,7 @@ export default function PortalPaymentPage() {
                         <button
                           type="button"
                           onClick={() => void handleCopy(configuredAccountNumber, 'Nomor rekening')}
-                          className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black text-sky-700 shadow-sm transition hover:bg-sky-50"
+                          className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm transition hover:bg-sky-700"
                         >
                           <Copy size={11} /> Salin
                         </button>
@@ -683,7 +683,7 @@ export default function PortalPaymentPage() {
                         <button
                           type="button"
                           onClick={() => void handleCopy(configuredAccountName, 'Atas nama rekening')}
-                          className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black text-sky-700 shadow-sm transition hover:bg-sky-50"
+                          className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm transition hover:bg-sky-700"
                         >
                           <Copy size={11} /> Salin
                         </button>
@@ -724,9 +724,9 @@ export default function PortalPaymentPage() {
                 href={configuredWaHref}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-black text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
+                className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4 text-sm font-black text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/35"
               >
-                <MessageCircle size={16} />
+                <MessageCircle size={16} className="transition-transform group-hover:scale-110" />
                 Butuh bantuan? Chat Panitia PSB di WhatsApp
               </a>
             ) : null}
@@ -771,39 +771,72 @@ export default function PortalPaymentPage() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-5">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Bukti Transfer</p>
-                <h5 className="mt-2 font-bold text-slate-900">
-                  {selectedProofFile ? 'Bukti baru siap dikirim' : proofUrl ? 'Bukti pembayaran sudah tersimpan' : 'Pilih foto bukti pembayaran'}
-                </h5>
-                <p className="mt-2 text-xs leading-6 text-slate-500">
-                  Pilih file dulu, lalu klik Kirim Bukti Pembayaran. Format: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
-                </p>
-                {selectedProofFile ? (
-                  <p className="mt-3 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-sky-700">
-                    File dipilih: {selectedProofFile.name}
-                  </p>
-                ) : null}
-                {registration?.payment_amount ? (
-                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-400">
-                    Nominal tersimpan: {formatCurrency(registration.payment_amount)}
-                  </p>
-                ) : null}
+          <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-dashed border-sky-200 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 sm:p-8">
+            <div className="mx-auto flex max-w-xl flex-col items-center text-center">
+              <div className="relative">
+                <div
+                  className={`absolute inset-0 animate-pulse rounded-3xl opacity-60 blur-lg ${
+                    selectedProofFile || proofUrl ? 'bg-emerald-400' : 'bg-sky-500'
+                  }`}
+                />
+                <div
+                  className={`relative flex h-16 w-16 items-center justify-center rounded-3xl text-white shadow-xl ${
+                    isUploading
+                      ? 'bg-slate-400'
+                      : selectedProofFile || proofUrl
+                        ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/40'
+                        : 'bg-gradient-to-br from-sky-500 to-blue-700 shadow-sky-600/40'
+                  }`}
+                >
+                  {isUploading ? (
+                    <RefreshCw size={26} className="animate-spin" />
+                  ) : selectedProofFile || proofUrl ? (
+                    <CheckCircle2 size={26} />
+                  ) : (
+                    <UploadCloud size={26} />
+                  )}
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-              {proofDisplayUrl ? (
-                <button
-                  type="button"
-                  onClick={() => void openProofInNewTab(proofDisplayUrl, (m) => showToast('error', m))}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
-                >
-                  <Eye size={16} />
-                  Preview
-                </button>
+              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">Bukti Transfer</p>
+              <h5 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
+                {isUploading
+                  ? 'Mengunggah Bukti...'
+                  : selectedProofFile
+                    ? 'Bukti Siap Dikirim'
+                    : proofUrl
+                      ? 'Bukti Sudah Tersimpan'
+                      : 'Unggah Bukti Pembayaran'}
+              </h5>
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+                {selectedProofFile ? (
+                  <>
+                    File dipilih: <span className="font-black text-sky-700">{selectedProofFile.name}</span>
+                  </>
+                ) : proofUrl ? (
+                  'Bukti sebelumnya sudah tersimpan. Ganti bila perlu, lalu kirim ulang ke panitia.'
+                ) : (
+                  'Pilih foto bukti transfer, lalu klik tombol kirim agar status berubah menjadi menunggu verifikasi panitia.'
+                )}
+              </p>
+              <p className="mt-2 text-[11px] font-semibold text-slate-400">Format: JPG, PNG, GIF, WEBP • Maksimal 5MB</p>
+              {registration?.payment_amount ? (
+                <p className="mt-3 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                  Nominal tersimpan: {formatCurrency(registration.payment_amount)}
+                </p>
               ) : null}
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                {proofDisplayUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => void openProofInNewTab(proofDisplayUrl, (m) => showToast('error', m))}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 backdrop-blur transition hover:border-sky-200 hover:bg-white hover:text-sky-700"
+                  >
+                    <Eye size={16} />
+                    Preview
+                  </button>
+                ) : null}
                 <div className="relative">
                   <input
                     type="file"
@@ -814,16 +847,16 @@ export default function PortalPaymentPage() {
                   />
                   <button
                     type="button"
-                    className={`pointer-events-none inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-widest transition ${
+                    className={`pointer-events-none inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-xs font-black uppercase tracking-widest text-white transition-all duration-300 ${
                       !canUploadPayment || isLocked
-                        ? 'bg-slate-200 text-slate-400'
+                        ? 'bg-slate-300 text-slate-500 shadow-none'
                         : hasPaymentWarning
-                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                          : 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-xl shadow-amber-500/30'
+                          : 'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 shadow-xl shadow-sky-600/30'
                     }`}
                   >
                     <UploadCloud size={16} />
-                    {selectedProofFile ? 'Ganti Bukti' : proofUrl ? 'Ganti Bukti' : 'Pilih Bukti'}
+                    {selectedProofFile ? 'Ganti Bukti' : proofUrl ? 'Ganti Bukti' : 'Pilih Bukti Sekarang'}
                   </button>
                 </div>
               </div>
@@ -839,17 +872,30 @@ export default function PortalPaymentPage() {
                 type="button"
                 onClick={() => void handleSubmitPayment()}
                 disabled={!canSubmitPayment || isUploading}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+                className={`inline-flex items-center justify-center gap-3 rounded-full px-8 py-4 text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+                  !canSubmitPayment || isUploading
+                    ? 'cursor-not-allowed bg-slate-200 text-slate-400'
+                    : 'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white shadow-xl shadow-sky-600/30 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-sky-600/40 active:translate-y-0 active:scale-[0.98]'
+                }`}
               >
-                {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {isUploading ? 'Mengirim' : parsedAmount > 0 ? `Kirim Bukti ${formatCurrency(parsedAmount)}` : 'Kirim Bukti Pembayaran'}
+                {isUploading ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" /> Mengirim
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} />
+                    {parsedAmount > 0 ? `Kirim Bukti ${formatCurrency(parsedAmount)}` : 'Kirim Bukti Pembayaran'}
+                    <ArrowRight size={16} />
+                  </>
+                )}
               </button>
               {paymentStatus === 'paid' ? (
                 <Link
                   href="/portal"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-sky-600"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-7 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-emerald-500/40"
                 >
-                  Pantau Status di Dasbor <ArrowRight size={16} />
+                  Pantau Status di Dasbor <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </Link>
               ) : paymentStatus === 'pending' ? (
                 <span className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-50 px-5 py-3 text-xs font-black uppercase tracking-widest text-sky-700">
