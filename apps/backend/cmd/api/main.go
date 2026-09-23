@@ -1,53 +1,53 @@
 package main
 
 import (
-	"context"
 	"almaparung-api/internal/features/academics"
 	"almaparung-api/internal/features/agendas"
-	"almaparung-api/internal/features/autobilling"
 	"almaparung-api/internal/features/attendance"
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/features/autobilling"
 	"almaparung-api/internal/features/disciplines"
 	"almaparung-api/internal/features/donations"
 	"almaparung-api/internal/features/exams"
 	"almaparung-api/internal/features/facilities"
 	"almaparung-api/internal/features/faqs"
 	"almaparung-api/internal/features/gallery"
+	"almaparung-api/internal/features/hr"
+	"almaparung-api/internal/features/invoices"
+	"almaparung-api/internal/features/iuran"
+	"almaparung-api/internal/features/kas"
 	"almaparung-api/internal/features/logs"
 	"almaparung-api/internal/features/messages"
 	"almaparung-api/internal/features/news"
+	"almaparung-api/internal/features/notes"
 	"almaparung-api/internal/features/notifications"
 	"almaparung-api/internal/features/otp"
 	"almaparung-api/internal/features/payments"
 	"almaparung-api/internal/features/programs"
 	"almaparung-api/internal/features/project"
 	"almaparung-api/internal/features/psb"
-	"almaparung-api/internal/features/santri"
 	"almaparung-api/internal/features/raport"
+	"almaparung-api/internal/features/santri"
+	"almaparung-api/internal/features/school"
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/spp"
-	"almaparung-api/internal/features/iuran"
-	"almaparung-api/internal/features/invoices"
-	"almaparung-api/internal/features/school"
-	"almaparung-api/internal/features/kas"
-	"almaparung-api/internal/features/hr"
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
 	"almaparung-api/internal/features/wallet"
-	"almaparung-api/internal/features/notes"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	appmiddleware "almaparung-api/internal/platform/middleware"
 	"almaparung-api/internal/platform/wagate"
 	"almaparung-api/internal/platform/wanotif"
-	appmiddleware "almaparung-api/internal/platform/middleware"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -143,7 +143,6 @@ func main() {
 
 	programRepo := programs.NewRepository(database.DB)
 	programHandler := programs.NewHandler(programRepo)
-
 
 	messageRepo := messages.NewRepository(database.DB)
 	messageHandler := messages.NewHandler(messageRepo)
@@ -395,26 +394,26 @@ func main() {
 			// Bendahara Ops
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("bendahara"))
-			r.Mount("/payments", paymentHandler.Routes())
-			r.Mount("/spp", sppHandler.Routes())
-			r.Mount("/iuran", iuranHandler.Routes())
-			r.Mount("/donations", donationHandler.Routes())
-			r.Mount("/kas", kasHandler.Routes())
+				r.Mount("/payments", paymentHandler.Routes())
+				r.Mount("/spp", sppHandler.Routes())
+				r.Mount("/iuran", iuranHandler.Routes())
+				r.Mount("/donations", donationHandler.Routes())
+				r.Mount("/kas", kasHandler.Routes())
 			})
 
 			// Master Sekolah (kelas + tahun ajaran): dibaca semua role operasional
-		r.Group(func(r chi.Router) {
-			r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
-			r.Mount("/school", schoolHandler.Routes())
-		})
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
+				r.Mount("/school", schoolHandler.Routes())
+			})
 
-		// HR/pegawai: hanya superadmin + bendahara (panitia_psb over-broad).
-		r.Group(func(r chi.Router) {
-			r.Use(auth.RequireRole("superadmin", "bendahara"))
-			r.Mount("/hr", hrHandler.Routes())
-		})
+			// HR/pegawai: hanya superadmin + bendahara (panitia_psb over-broad).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Mount("/hr", hrHandler.Routes())
+			})
 
-		// Panitia PSB Ops
+			// Panitia PSB Ops
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("panitia_psb"))
 				r.Mount("/psb", psbHandler.Routes())
