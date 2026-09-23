@@ -632,7 +632,7 @@ function BiodataPageContent() {
                   type="submit"
                   value="continue"
                   disabled={isSaving}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-sky-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/20 transition-all hover:bg-sky-700 disabled:opacity-70 md:w-auto"
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-sky-600/35 disabled:opacity-70 md:w-auto"
                 >
                   {isSaving
                     ? 'Menyimpan...'

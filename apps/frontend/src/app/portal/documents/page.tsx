@@ -296,9 +296,9 @@ export default function DocumentsPage() {
               {allDocumentsUploaded ? (
                 <Link
                   href="/portal/review"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-7 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-sky-600/35"
                 >
-                  Lanjut ke Review & Konfirmasi <ArrowRight size={16} />
+                  Lanjut ke Review & Konfirmasi <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </Link>
               ) : (
                 <span className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-200 px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">
