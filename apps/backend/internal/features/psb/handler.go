@@ -200,15 +200,13 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 		req.ProgramChoice = "tahfidz"
 	} else if programLower == "bahasa" || programLower == "bahasa arab" {
 		req.ProgramChoice = "bahasa"
-	} else if req.ProgramChoice == "" {
-		errs.Add("program_choice", "Pilih program Tahfidz atau Bahasa")
-	} else {
+	} else if programLower != "" {
 		errs.Add("program_choice", "Program harus Tahfidz atau Bahasa")
 	}
 	jl := strings.ToLower(strings.TrimSpace(req.Jenjang))
 	if jl == "smp" || jl == "smk" {
 		req.Jenjang = jl
-	} else {
+	} else if jl != "" {
 		errs.Add("jenjang", "Jenjang harus SMP atau SMK")
 	}
 	if req.Category != "reguler" && req.Category != "yatim" && req.Category != "dhuafa" {

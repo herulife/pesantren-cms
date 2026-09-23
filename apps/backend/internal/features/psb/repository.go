@@ -367,16 +367,18 @@ func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registrat
 		return nil, ErrInvalidProgram
 	}
 	reg.Jenjang = strings.ToLower(strings.TrimSpace(reg.Jenjang))
-	if reg.Jenjang != "smp" && reg.Jenjang != "smk" {
+	if reg.Jenjang != "" && reg.Jenjang != "smp" && reg.Jenjang != "smk" {
 		return nil, ErrInvalidJenjang
 	}
-	if q := r.JenjangQuotaTx(ctx, tx, reg.Jenjang); q > 0 {
-		var jn int
-		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM registrations WHERE lower(jenjang) = ? AND lower(status) != 'rejected' AND user_id != ?`, reg.Jenjang, userID).Scan(&jn); err != nil {
-			return nil, err
-		}
-		if jn >= q {
-			return nil, ErrJenjangQuotaFull
+	if reg.Jenjang != "" {
+		if q := r.JenjangQuotaTx(ctx, tx, reg.Jenjang); q > 0 {
+			var jn int
+			if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM registrations WHERE lower(jenjang) = ? AND lower(status) != 'rejected' AND user_id != ?`, reg.Jenjang, userID).Scan(&jn); err != nil {
+				return nil, err
+			}
+			if jn >= q {
+				return nil, ErrJenjangQuotaFull
+			}
 		}
 	}
 	if reg.Category == "yatim" {
