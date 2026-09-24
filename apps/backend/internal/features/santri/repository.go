@@ -1,10 +1,14 @@
 package santri
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Repository struct {
@@ -88,16 +92,90 @@ func (r *Repository) Create(s *Santri) error {
 	if s.Status == "" {
 		s.Status = "aktif"
 	}
-	res, err := r.db.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 	id, _ := res.LastInsertId()
 	s.ID = int(id)
 	s.CreatedAt = now
 	s.UpdatedAt = now
-	return nil
+	if s.UserID == nil || *s.UserID == 0 {
+		uid, err := r.ensureUserAccount(tx, s)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+		s.UserID = &uid
+		if _, err := tx.Exec(`UPDATE santri SET user_id=? WHERE id=?`, uid, s.ID); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// ensureUserAccount menjamin santri terhubung ke akun users role='user' yang
+// dipakai seluruh sistem akademik (raport, nilai, presensi, exam). Jika santri
+// berasal dari registrasi PSB (registration_id), ikat ke user_id pendaftar.
+// Jika tidak, buat akun portal sintetis (email berbasis NIS + password acak)
+// agar santri manual tetap tampil & dapat dihitung di e-raport.
+func (r *Repository) ensureUserAccount(tx *sql.Tx, s *Santri) (int, error) {
+	if s.RegistrationID > 0 {
+		var uid sql.NullInt64
+		if err := tx.QueryRow(`SELECT user_id FROM registrations WHERE id=?`, s.RegistrationID).Scan(&uid); err == nil && uid.Valid && uid.Int64 > 0 {
+			return int(uid.Int64), nil
+		}
+	}
+	base := strings.TrimSpace(s.NIS)
+	if base == "" {
+		base = fmt.Sprintf("santri-%d", s.ID)
+	}
+	email := base + "@almaparung.local"
+
+	var existing sql.NullInt64
+	err := tx.QueryRow(`SELECT id FROM users WHERE email=?`, email).Scan(&existing)
+	if err == nil && existing.Valid {
+		return int(existing.Int64), nil
+	}
+
+	hash, err := randomPlaceholderHash()
+	if err != nil {
+		return 0, err
+	}
+	res, err := tx.Exec(`INSERT INTO users (email, password_hash, name, role) VALUES (?,?,?, 'user')`, email, hash, s.Name)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE") {
+			err = tx.QueryRow(`SELECT id FROM users WHERE email=?`, email).Scan(&existing)
+			if err == nil && existing.Valid {
+				return int(existing.Int64), nil
+			}
+		}
+		return 0, err
+	}
+	uid, _ := res.LastInsertId()
+	return int(uid), nil
+}
+
+// randomPlaceholderHash menghasilkan hash password placeholder acak supaya
+// akun sintetis tidak bisa dipakai login sembarangan (wal/i wajib reset
+// password atau dihubungkan ke akun wali yang sudah ada).
+func randomPlaceholderHash() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(raw)), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
 }
 
 func (r *Repository) BulkCreate(items []Santri) (int, error) {
@@ -119,17 +197,31 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 		if s.Status == "" {
 			s.Status = "aktif"
 		}
-		_, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
+		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				continue
 			}
-			tx.Rollback()
+			_ = tx.Rollback()
 			return inserted, err
 		}
-		inserted++
+		id, _ := res.LastInsertId()
+		s.ID = int(id)
 		s.CreatedAt = now
 		s.UpdatedAt = now
+		if s.UserID == nil || *s.UserID == 0 {
+			uid, err := r.ensureUserAccount(tx, s)
+			if err != nil {
+				_ = tx.Rollback()
+				return inserted, err
+			}
+			s.UserID = &uid
+			if _, err := tx.Exec(`UPDATE santri SET user_id=? WHERE id=?`, uid, s.ID); err != nil {
+				_ = tx.Rollback()
+				return inserted, err
+			}
+		}
+		inserted++
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, err

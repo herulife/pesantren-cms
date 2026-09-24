@@ -1,13 +1,16 @@
 package database
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
 
@@ -1117,6 +1120,10 @@ func runMigrations() {
 			name: "wa_notifications_status_index",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_status ON wa_notifications(status);`,
 		},
+		{
+			name: "santri_user_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_santri_user_unique ON santri(user_id);`,
+		},
 	}
 
 	for _, migration := range migrations {
@@ -1126,6 +1133,81 @@ func runMigrations() {
 		}
 		_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)", migration.name)
 	}
+
+	backfillSantriUserAccounts()
+}
+
+// backfillSantriUserAccounts menghubungkan santri yang diinput manual (tanpa
+// akun users) ke akun portal sintetis role='user', supaya sinkron dengan
+// e-raport (raports/grades/kesantrian semua berkunci users.id). Idempoten.
+func backfillSantriUserAccounts() {
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='santri_user_backfill'`).Scan(&done); err != nil {
+		return
+	}
+	if done > 0 {
+		return
+	}
+
+	rows, err := DB.Query(`SELECT id, nis, name, COALESCE(registration_id,0) FROM santri WHERE user_id IS NULL`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	linked := 0
+	for rows.Next() {
+		var id int
+		var nis, name string
+		var regID int
+		_ = rows.Scan(&id, &nis, &name, &regID)
+
+		uid, ok := backfillResolveUserID(id, nis, name, regID)
+		if !ok {
+			continue
+		}
+		if _, err := DB.Exec(`UPDATE santri SET user_id=? WHERE id=?`, uid, id); err == nil {
+			linked++
+		}
+	}
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('santri_user_backfill')")
+	log.Printf("[DB] Backfill sambungan dashboard-dan-santri: %d santri manual ditautkan ke akun users", linked)
+}
+
+func backfillResolveUserID(santriID int, nis, name string, regID int) (int, bool) {
+	if regID > 0 {
+		var uid sql.NullInt64
+		if err := DB.QueryRow(`SELECT user_id FROM registrations WHERE id=?`, regID).Scan(&uid); err == nil && uid.Valid && uid.Int64 > 0 {
+			return int(uid.Int64), true
+		}
+	}
+	base := strings.TrimSpace(nis)
+	if base == "" {
+		base = fmt.Sprintf("santri-%d", santriID)
+	}
+	email := base + "@almaparung.local"
+
+	var existing sql.NullInt64
+	err := DB.QueryRow(`SELECT id FROM users WHERE email=?`, email).Scan(&existing)
+	if err == nil && existing.Valid {
+		return int(existing.Int64), true
+	}
+
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return 0, false
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(raw)), bcrypt.DefaultCost)
+	if err != nil {
+		return 0, false
+	}
+	res, err := DB.Exec(`INSERT INTO users (email, password_hash, name, role) VALUES (?,?,?, 'user')`,
+		email, string(hash), name)
+	if err != nil {
+		return 0, false
+	}
+	uid, _ := res.LastInsertId()
+	return int(uid), true
 }
 
 func addColumnIfNotExists(table, column, colType string) {
