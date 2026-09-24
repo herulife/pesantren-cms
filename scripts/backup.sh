@@ -29,7 +29,8 @@ EOF
 
 tar -czf "backups/uploads-$TS.tar.gz" data/uploads
 tar -czf "backups/config-$TS.tar.gz" .env.example deploy \
-  apps/backend/Dockerfile apps/frontend/Dockerfile .dockerignore
+  apps/backend/Dockerfile apps/frontend/Dockerfile .dockerignore \
+  --exclude="*.env" 
 
 if [ "$MODE" = "daily" ]; then
   # shellcheck disable=SC2012
