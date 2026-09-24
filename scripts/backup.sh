@@ -15,7 +15,6 @@ import sqlite3, sys
 ts = sys.argv[1]
 for src, dst in [
     ("data/alma-parung.db", f"backups/alma-parung-{ts}.db"),
-    ("data/wagate/wa_session.db", f"backups/wa_session-{ts}.db"),
 ]:
     s = sqlite3.connect(f"file:{src}?mode=ro", uri=True)
     d = sqlite3.connect(dst)
@@ -29,18 +28,17 @@ for src, dst in [
 EOF
 
 tar -czf "backups/uploads-$TS.tar.gz" data/uploads
-tar -czf "backups/config-$TS.tar.gz" .env .env.example deploy \
+tar -czf "backups/config-$TS.tar.gz" .env.example deploy \
   apps/backend/Dockerfile apps/frontend/Dockerfile .dockerignore
 
 if [ "$MODE" = "daily" ]; then
   # shellcheck disable=SC2012
   ls -t backups/alma-parung-*.db 2>/dev/null | tail -n +$((KEEP_DAILY + 1)) | xargs -r rm -f
-  ls -t backups/wa_session-*.db 2>/dev/null | tail -n +$((KEEP_DAILY + 1)) | xargs -r rm -f
   ls -t backups/uploads-*.tar.gz 2>/dev/null | tail -n +$((KEEP_DAILY + 1)) | xargs -r rm -f
   ls -t backups/config-*.tar.gz 2>/dev/null | tail -n +$((KEEP_DAILY + 1)) | xargs -r rm -f
 fi
 if [ "$MODE" = "weekly" ]; then
-  for f in backups/alma-parung-"$TS".db backups/wa_session-"$TS".db \
+  for f in backups/alma-parung-"$TS".db \
            backups/uploads-"$TS".tar.gz backups/config-"$TS".tar.gz; do
     cp "$f" "${f%.*}-weekly.${f##*.}" 2>/dev/null || cp "$f" "$f-weekly"
   done
