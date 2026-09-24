@@ -3178,9 +3178,35 @@ export async function calculateRaport(params: { student_id: number; semester: st
 	} catch (e) { console.error('[Raport] calculate:', e); return null; }
 }
 
+// ---- Tahun ajaran aktif (satu sumber kebenaran di frontend) ----
+let _activeYearCache: string | null = null;
+
+// getActiveAcademicYear mengembalikan nama tahun ajaran aktif dari master
+// (academic_years.is_active). Jatuh tempo: hitung tahun berjalan (Juli-Juni).
+export async function getActiveAcademicYear(): Promise<string> {
+	if (_activeYearCache) return _activeYearCache;
+	const list = await getAcademicYears();
+	const active = list.find((y) => y.is_active === 1) || list[0];
+	if (active?.name) {
+		_activeYearCache = active.name;
+		return active.name;
+	}
+	const now = new Date();
+	let y = now.getFullYear();
+	if (now.getMonth() + 1 < 7) y--;
+	_activeYearCache = `${y}/${y + 1}`;
+	return _activeYearCache;
+}
+
+export function currentSemester(): string {
+	return new Date().getMonth() + 1 >= 7 ? '1' : '2';
+}
+
 export async function getRaportScores(stuId: number): Promise<ComputedRaport | null> {
 	try {
-		const r = await lmsFetch<ComputedRaport>(`/raport/santri/${stuId}?semester=1&academic_year=2025%2F2026`);
+		const [year, semester] = await Promise.all([getActiveAcademicYear(), Promise.resolve(currentSemester())]);
+		const q = new URLSearchParams({ semester, academic_year: year });
+		const r = await lmsFetch<ComputedRaport>(`/raport/santri/${stuId}?${q.toString()}`);
 		return r.success ? r.data : null;
 	} catch (e) { console.error('[Raport] get:', e); return null; }
 }
@@ -3229,9 +3255,11 @@ export async function updateSubjectWeights(items: { subject_id: number; weight: 
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal update bobot mapel' }; }
 }
 
-export async function getMyRaport(semester: string = '1', academicYear: string = '2025/2026'): Promise<ComputedRaport | null> {
+export async function getMyRaport(semester?: string, academicYear?: string): Promise<ComputedRaport | null> {
 	try {
-		const q = new URLSearchParams({ semester, academic_year: academicYear });
+		const year = academicYear || (await getActiveAcademicYear());
+		const sem = semester || currentSemester();
+		const q = new URLSearchParams({ semester: sem, academic_year: year });
 		const r = await lmsFetch<ComputedRaport>(`/portal/raport/me?${q.toString()}`);
 		return r.success ? r.data : null;
 	} catch (e) { console.error('[Raport] get my:', e); return null; }

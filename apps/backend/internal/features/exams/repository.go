@@ -1,10 +1,13 @@
 package exams
 
 import (
-	"errors"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"math"
 	"time"
+
+	"almaparung-api/internal/validators"
 )
 
 type Exam struct {
@@ -196,7 +199,22 @@ func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) err
 	return err
 }
 
-func (r *Repository) FinishSession(sessionID int) (float64, error) {
+func gradeLetter(final float64) string {
+	switch {
+	case final >= 85:
+		return "A"
+	case final >= 70:
+		return "B"
+	case final >= 55:
+		return "C"
+	case final >= 40:
+		return "D"
+	default:
+		return "E"
+	}
+}
+
+func (r *Repository) FinishSession(sessionID int, answersJSON string) (float64, error) {
 	var totalPoints, earnedPoints sql.NullInt64
 
 	// Sum points: total from all questions of the exam, earned from correct answers
@@ -251,11 +269,30 @@ func (r *Repository) FinishSession(sessionID int) (float64, error) {
 	var semester, year string
 	tx.QueryRow("SELECT subject_id, semester, academic_year FROM exams WHERE id = ?", examID).Scan(&subjectID, &semester, &year)
 
+	// Samakan semester dengan kanonik sistem nilai ("1"/"2") agar nilai CBT
+	// tidak terpisah dari nilai manual saat rapor dihitung.
+	semester = validators.NormalizeSemester(semester)
+
+	// CBT menulis komponen UAS. Ambil komponen UTS/tugas yang sudah ada (jika
+	// guru sudah mengisi manual) lalu hitung ulang final dengan formula yang
+	// SAMA seperti nilai manual: (UTS*30 + UAS*40 + Tugas*30)/100.
+	var uts, task float64
+	_ = tx.QueryRow(`SELECT COALESCE(uts_score,0), COALESCE(task_score,0) FROM grades
+		WHERE student_id=? AND subject_id=? AND semester=? AND academic_year=?`,
+		studentID, subjectID, semester, year).Scan(&uts, &task)
+	finalScore := (uts*30 + score*40 + task*30) / 100
+	finalScore = math.Round(finalScore*100) / 100
+	letter := gradeLetter(finalScore)
+
 	if _, err := tx.Exec(`
-		INSERT INTO grades (student_id, subject_id, semester, academic_year, uas_score, final_score, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(student_id, subject_id, semester, academic_year) DO UPDATE SET uas_score = excluded.uas_score, final_score = excluded.final_score
-	`, studentID, subjectID, semester, year, score, score, "Generated from CBT"); err != nil {
+		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, final_score, grade_letter, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(student_id, subject_id, semester, academic_year) DO UPDATE SET
+			uas_score = excluded.uas_score,
+			final_score = excluded.final_score,
+			grade_letter = excluded.grade_letter,
+			notes = excluded.notes
+	`, studentID, subjectID, semester, year, uts, score, task, finalScore, letter, "Generated from CBT"); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {

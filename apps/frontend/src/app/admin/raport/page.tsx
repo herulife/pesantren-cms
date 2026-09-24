@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { currentSemester } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import {
 	CompactUser,
@@ -8,6 +9,9 @@ import {
 	KesantrianAspect,
 	ExtendedSubject,
 	getAcademicStudents,
+	getActiveAcademicYear,
+	getAcademicYears,
+	AcademicYear,
 	calculateRaport,
 	getRaportScores,
 	listStoredRaports,
@@ -57,7 +61,8 @@ export default function ERaportPage() {
 	const [raport, setRaport] = useState<ComputedRaport | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [semester, setSemester] = useState('1');
-	const [year, setYear] = useState('2025/2026');
+	const [year, setYear] = useState('');
+	const [years, setYears] = useState<AcademicYear[]>([]);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [stored, setStored] = useState<Map<number, { score: number; predikat: string }>>(new Map());
 	const [subjectWeights, setSubjectWeights] = useState<Record<number, string>>({});
@@ -74,6 +79,15 @@ export default function ERaportPage() {
 		document.addEventListener('keydown', onKey);
 		return () => document.removeEventListener('keydown', onKey);
 	}, [showFormula]);
+
+	useEffect(() => {
+		(async () => {
+			const [active, list] = await Promise.all([getActiveAcademicYear(), getAcademicYears()]);
+			setYear(active);
+			setYears(list);
+			setSemester(currentSemester());
+		})();
+	}, []);
 
 	const loadStudents = useCallback(async () => {
 		const s = await getAcademicStudents();
@@ -246,9 +260,8 @@ export default function ERaportPage() {
 				<div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
 					<span className="text-xs font-bold text-slate-400">Tahun</span>
 					<select value={year} onChange={e => setYear(e.target.value)} className="bg-transparent text-sm font-bold text-slate-800 outline-none">
-						<option>2025/2026</option>
-						<option>2024/2025</option>
-						<option>2026/2027</option>
+						{years.length === 0 && <option value={year}>{year || 'Memuat...'}</option>}
+						{years.map(y => <option key={y.id} value={y.name}>{y.name}</option>)}
 					</select>
 				</div>
 				<button onClick={loadAll} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"><RefreshCw size={15} /> Muat Ulang</button>

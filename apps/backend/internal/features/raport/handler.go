@@ -2,10 +2,11 @@ package raport
 
 import (
 	"database/sql"
-	"errors"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -14,6 +15,7 @@ import (
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/weight"
+	"almaparung-api/internal/validators"
 )
 
 type Handler struct {
@@ -54,8 +56,8 @@ func (h *Handler) DefaultWeights(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Calculate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	studentID, _ := strconv.Atoi(r.URL.Query().Get("student_id"))
-	semester := r.URL.Query().Get("semester")
-	ay := r.URL.Query().Get("academic_year")
+	semester := validators.NormalizeSemester(r.URL.Query().Get("semester"))
+	ay := strings.TrimSpace(r.URL.Query().Get("academic_year"))
 	if studentID <= 0 || semester == "" || ay == "" {
 		writeJSON(w, 400, "student_id, semester, academic_year wajib diisi", nil)
 		return
@@ -135,8 +137,8 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Unlock(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	studentID, _ := strconv.Atoi(r.URL.Query().Get("student_id"))
-	semester := r.URL.Query().Get("semester")
-	ay := r.URL.Query().Get("academic_year")
+	semester := validators.NormalizeSemester(r.URL.Query().Get("semester"))
+	ay := strings.TrimSpace(r.URL.Query().Get("academic_year"))
 	if studentID <= 0 || semester == "" || ay == "" {
 		writeJSON(w, 400, "student_id, semester, academic_year wajib diisi", nil)
 		return
@@ -164,8 +166,8 @@ func (h *Handler) Unlock(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetByStudentID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	semester := r.URL.Query().Get("semester")
-	ay := r.URL.Query().Get("academic_year")
+	semester := validators.NormalizeSemester(r.URL.Query().Get("semester"))
+	ay := strings.TrimSpace(r.URL.Query().Get("academic_year"))
 	// Prefer stored; if none, compute on the fly
 	if s, err := h.repo.GetStored(ctx, id, semester, ay); err == nil {
 		writeJSON(w, 200, "Rapor santri", s)
@@ -181,8 +183,8 @@ func (h *Handler) GetByStudentID(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ListRaports(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	ay := r.URL.Query().Get("academic_year")
-	semester := r.URL.Query().Get("semester")
+	ay := strings.TrimSpace(r.URL.Query().Get("academic_year"))
+	semester := validators.NormalizeSemester(r.URL.Query().Get("semester"))
 	if ay == "" || semester == "" {
 		writeJSON(w, 400, "academic_year dan semester wajib", nil)
 		return

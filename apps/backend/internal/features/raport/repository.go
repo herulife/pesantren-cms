@@ -71,6 +71,21 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 // Compute builds the full E-Raport for a student in a semester.
+// ActiveAcademicYear mengembalikan nama tahun ajaran aktif dari tabel
+// academic_years; fallback ke tahun ajaran yang berjalan (Juli-Juni).
+func (r *Repository) ActiveAcademicYear(ctx context.Context) string {
+	var name string
+	if err := r.db.QueryRowContext(ctx, `SELECT name FROM academic_years WHERE is_active=1 ORDER BY id DESC LIMIT 1`).Scan(&name); err == nil && strings.TrimSpace(name) != "" {
+		return strings.TrimSpace(name)
+	}
+	now := time.Now()
+	y := now.Year()
+	if now.Month() < 7 {
+		y--
+	}
+	return fmt.Sprintf("%d/%d", y, y+1)
+}
+
 func (r *Repository) Compute(ctx context.Context, studentID int, semester, academicYear string, weights map[string]int) (*ComputedRaport, error) {
 	// Default weights: Mapel 50, Project 25, Kesantrian 25
 	if len(weights) == 0 {

@@ -40,6 +40,21 @@ func NormalizeEmail(value string) string {
 	return strings.ToLower(NormalizeText(value))
 }
 
+// NormalizeSemester memetakan penulisan semester ke bentuk kanonik "1"/"2".
+// Sistem lain (grades, raports, kesantrian_aspek) memakai "1"/"2", sedangkan
+// input UI bisa "ganjil"/"genap". Tanpa normalisasi, nilai CBT/grades tersimpan
+// sebagai string berbeda sehingga tidak saling ditemukan saat hitung rapor.
+func NormalizeSemester(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "ganjil", "semester 1", "satu":
+		return "1"
+	case "2", "genap", "semester 2", "dua":
+		return "2"
+	default:
+		return strings.TrimSpace(value)
+	}
+}
+
 func ValidateEmail(value string) bool {
 	if value == "" {
 		return false

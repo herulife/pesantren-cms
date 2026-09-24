@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Download, Eye, FileText, Info, Printer, RefreshCw, Sparkles, Target, TrendingUp, X } from 'lucide-react';
-import { getMyAcademicGrades, getMyAttendanceSummary, getMyTahfidz, getMyRaport, type Grade, type TahfidzProgress, type ComputedRaport } from '@/lib/api';
+import { getMyAcademicGrades, getMyAttendanceSummary, getMyTahfidz, getMyRaport, getActiveAcademicYear, currentSemester, type Grade, type TahfidzProgress, type ComputedRaport } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { downloadStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
 
@@ -69,11 +69,15 @@ export default function PortalRaportPage() {
     const fetchAcademicData = async () => {
       setIsLoading(true);
       try {
+        const [activeYear, activeSemester] = await Promise.all([
+          getActiveAcademicYear(),
+          Promise.resolve(currentSemester()),
+        ]);
         const [gradesData, attendanceData, tahfidzData, eraData] = await Promise.all([
           getMyAcademicGrades(),
           getMyAttendanceSummary(),
           getMyTahfidz(),
-          getMyRaport('1', '2025/2026'),
+          getMyRaport(activeSemester, activeYear),
         ]);
 
         setGrades(gradesData);

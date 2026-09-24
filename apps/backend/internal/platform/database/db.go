@@ -1124,6 +1124,38 @@ func runMigrations() {
 			name: "santri_user_unique",
 			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_santri_user_unique ON santri(user_id);`,
 		},
+		{
+			name: "normalize_semester_1",
+			sql:  `UPDATE grades SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_2",
+			sql:  `UPDATE grades SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
+		{
+			name: "normalize_semester_exams_1",
+			sql:  `UPDATE exams SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_exams_2",
+			sql:  `UPDATE exams SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
+		{
+			name: "normalize_semester_raports_1",
+			sql:  `UPDATE raports SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_raports_2",
+			sql:  `UPDATE raports SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
+		{
+			name: "normalize_semester_kesantrian_1",
+			sql:  `UPDATE kesantrian_aspek SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_kesantrian_2",
+			sql:  `UPDATE kesantrian_aspek SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
 	}
 
 	for _, migration := range migrations {

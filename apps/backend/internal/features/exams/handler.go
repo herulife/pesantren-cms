@@ -139,6 +139,7 @@ func (h *Handler) CreateExam(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
+	e.Semester = validators.NormalizeSemester(e.Semester)
 	if errs := validateExam(&e); len(errs) > 0 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -183,7 +184,7 @@ func validateExam(e *Exam) map[string]string {
 	if e.DurationMinutes <= 0 {
 		errs["duration"] = "Durasi harus >0 menit"
 	}
-	if e.Semester != "" && e.Semester != "ganjil" && e.Semester != "genap" {
+	if e.Semester != "" && e.Semester != "1" && e.Semester != "2" {
 		errs["semester"] = "Semester harus ganjil/genap"
 	}
 	if len(errs) == 0 {

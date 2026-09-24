@@ -2,8 +2,10 @@ package raport
 
 import (
 	"net/http"
+	"strings"
 
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/validators"
 )
 
 // GetMine returns the current authenticated user's (santri) E-Raport.
@@ -14,13 +16,13 @@ func (h *Handler) GetMine(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 401, "Akses belum diizinkan", nil)
 		return
 	}
-	semester := r.URL.Query().Get("semester")
+	semester := validators.NormalizeSemester(r.URL.Query().Get("semester"))
 	if semester == "" {
 		semester = "1"
 	}
-	ay := r.URL.Query().Get("academic_year")
+	ay := strings.TrimSpace(r.URL.Query().Get("academic_year"))
 	if ay == "" {
-		ay = "2025/2026"
+		ay = h.repo.ActiveAcademicYear(r.Context())
 	}
 	// Return stored raport first if locked; else compute live.
 	if stored, err := h.repo.GetStored(r.Context(), uid, semester, ay); err == nil {
