@@ -538,7 +538,7 @@ export interface Campaign {
 	description: string;
 	target_amount: number;
 	collected_amount: number;
-	donor_count: number;
+	donor_count?: number;
 	image_url: string;
 	is_active: number;
 	end_date: string | null;
