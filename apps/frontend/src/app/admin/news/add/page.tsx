@@ -72,6 +72,51 @@ function stripHtml(value: string) {
   return value.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Ubah file gambar besar/format tidak didukung menjadi WebP berukuran aman
+// (maksimal maxDim di sisi terpanjang) agar lolos batas 5MB API upload.
+async function resizeImageToWebp(file: File, maxDim: number): Promise<File> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('File read error'));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Image load error'));
+    image.src = dataUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  let width = img.width;
+  let height = img.height;
+
+  if (width > height && width > maxDim) {
+    height *= maxDim / width;
+    width = maxDim;
+  } else if (height > maxDim) {
+    width *= maxDim / height;
+    height = maxDim;
+  }
+
+  canvas.width = Math.round(width);
+  canvas.height = Math.round(height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.85));
+  if (!blob) throw new Error('Conversion failed');
+
+  const baseName = (file.name).replace(/\.[^/.]+$/, '') || 'image';
+  return new File([blob], baseName + '-original.webp', {
+    type: 'image/webp',
+    lastModified: Date.now()
+  });
+}
+
 export default function AddNewsPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -93,6 +138,7 @@ export default function AddNewsPage() {
   const [isEditorGalleryOpen, setIsEditorGalleryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<EditorInstance | null>(null);
+  const originalFileRef = useRef<File | null>(null);
 
   // States untuk Cropper Model
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
@@ -136,6 +182,7 @@ export default function AddNewsPage() {
     if (!file) return;
 
     setPendingFileName(file.name.replace(/\.[^/.]+$/, ""));
+    originalFileRef.current = file;
     const reader = new FileReader();
     reader.onload = () => {
       setSelectedImageStr(reader.result as string);
@@ -155,11 +202,36 @@ export default function AddNewsPage() {
       const webpFile = new File([croppedBlob], pendingFileName + ".webp", { type: 'image/webp' });
       const upRes = await uploadImage(webpFile);
       
-      if (upRes.success) {
-        setFormData(prev => ({ ...prev, image_url: { String: normalizeApiAssetUrl(upRes.url), Valid: true } }));
-        showToast('success', 'Gambar berhasil dipotong & diunggah!');
-      } else {
+      if (!upRes.success) {
         showToast('error', 'Gagal mengunggah gambar hasil crop.');
+      } else {
+        setFormData(prev => ({ ...prev, image_url: { String: normalizeApiAssetUrl(upRes.url), Valid: true } }));
+
+        // Terapkan juga gambar ORIGINAL (tanpa crop): unggah foto utuh lalu
+        // sisipkan di awal konten artikel. Thumbnail tetap memakai hasil crop.
+        const originalFile = originalFileRef.current;
+        if (originalFile) {
+          try {
+            let uploadFile = originalFile;
+            if (originalFile.size > 4 * 1024 * 1024) {
+              uploadFile = await resizeImageToWebp(originalFile, 1600);
+            }
+            const origRes = await uploadImage(uploadFile);
+            if (origRes.success && origRes.url) {
+              const origUrl = normalizeApiAssetUrl(origRes.url);
+              const imgTag = `<img src="${origUrl}" alt="Gambar Utuh" style="max-width:100%; border-radius: 1rem; margin: 1rem 0;" />`;
+              setFormData(prev => ({ ...prev, content: imgTag + prev.content }));
+              showToast('success', 'Gambar crop & original berhasil diunggah!');
+            } else {
+              showToast('info', 'Gambar crop tersimpan, gambar original gagal diunggah.');
+            }
+          } catch (err) {
+            console.error(err);
+            showToast('info', 'Gambar crop tersimpan, gambar original gagal diunggah.');
+          }
+        } else {
+          showToast('success', 'Gambar berhasil dipotong & diunggah!');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -167,6 +239,7 @@ export default function AddNewsPage() {
     } finally {
       setIsUploading(false);
       setSelectedImageStr(null);
+      originalFileRef.current = null;
     }
   };
 
