@@ -35,7 +35,6 @@ const initialForm = {
   status: 'aktif',
   parent_name: '',
   parent_phone: '',
-  nik: '',
   father_name: '',
   father_phone: '',
   mother_name: '',
@@ -80,7 +79,6 @@ function SantriFormContent() {
             status: s.status || 'aktif',
             parent_name: s.parent_name || '',
             parent_phone: s.parent_phone || '',
-            nik: s.nik || '',
             father_name: s.father_name || '',
             father_phone: s.father_phone || '',
             mother_name: s.mother_name || '',
@@ -117,7 +115,6 @@ function SantriFormContent() {
       status: form.status,
       parent_name: form.parent_name.trim(),
       parent_phone: form.parent_phone.trim(),
-      nik: form.nik.trim(),
       father_name: form.father_name.trim(),
       father_phone: form.father_phone.trim(),
       mother_name: form.mother_name.trim(),
@@ -164,7 +161,7 @@ function SantriFormContent() {
         </p>
         {isEdit && form.registration_id > 0 && (
           <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">
-            Asal PSB #{form.registration_id} — NIK & data ortu tersalin otomatis
+            Asal PSB #{form.registration_id} — data ortu tersalin otomatis
           </p>
         )}
 
@@ -306,21 +303,6 @@ function SantriFormContent() {
             <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Identitas & Orang Tua</p>
               <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">NIK</label>
-                  <input
-                    value={form.nik}
-                    onChange={set('nik')}
-                    inputMode="numeric"
-                    maxLength={16}
-                    placeholder="16 digit NIK"
-                    className={inputClass(errors.nik)}
-                  />
-                  {errors.nik && <p className="mt-1 text-xs font-semibold text-red-500">{errors.nik}</p>}
-                  {!errors.nik && (
-                    <p className="mt-1 text-xs text-slate-400">Otomatis terisi dari data PSB bila ada.</p>
-                  )}
-                </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Nama Ayah</label>
                   <input
