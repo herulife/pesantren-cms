@@ -14,6 +14,7 @@ type Campaign struct {
 	Description     string     `json:"description"`
 	TargetAmount    float64    `json:"target_amount"`
 	CollectedAmount float64    `json:"collected_amount"`
+	DonorCount      int        `json:"donor_count"`
 	ImageURL        string     `json:"image_url"`
 	IsActive        int        `json:"is_active"`
 	EndDate         *time.Time `json:"end_date"`
@@ -58,7 +59,9 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (r *Repository) FindAllCampaigns(activeOnly bool, search string) ([]Campaign, error) {
-	query := "SELECT id, title, description, target_amount, collected_amount, image_url, is_active, end_date, created_at, updated_at FROM donation_campaigns WHERE 1=1"
+	query := "SELECT id, title, description, target_amount, collected_amount, image_url, is_active, end_date, created_at, updated_at," +
+		"(SELECT COUNT(*) FROM donations d WHERE d.campaign_id = donation_campaigns.id AND d.status = 'verified') AS donor_count " +
+		"FROM donation_campaigns WHERE 1=1"
 	var args []interface{}
 
 	if activeOnly {
@@ -81,7 +84,7 @@ func (r *Repository) FindAllCampaigns(activeOnly bool, search string) ([]Campaig
 		var c Campaign
 		var endDate sql.NullString
 		var createdAt, updatedAt string
-		err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.TargetAmount, &c.CollectedAmount, &c.ImageURL, &c.IsActive, &endDate, &createdAt, &updatedAt)
+		err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.TargetAmount, &c.CollectedAmount, &c.ImageURL, &c.IsActive, &endDate, &createdAt, &updatedAt, &c.DonorCount)
 		if err != nil {
 			return nil, err
 		}
@@ -351,7 +354,10 @@ func (r *Repository) FindCampaignByID(id int) (*Campaign, error) {
 	var c Campaign
 	var endDate sql.NullString
 	var createdAt, updatedAt string
-	err := r.db.QueryRow("SELECT id, title, description, target_amount, collected_amount, image_url, is_active, end_date, created_at, updated_at FROM donation_campaigns WHERE id = ?", id).Scan(&c.ID, &c.Title, &c.Description, &c.TargetAmount, &c.CollectedAmount, &c.ImageURL, &c.IsActive, &endDate, &createdAt, &updatedAt)
+	query := "SELECT id, title, description, target_amount, collected_amount, image_url, is_active, end_date, created_at, updated_at," +
+		"(SELECT COUNT(*) FROM donations d WHERE d.campaign_id = donation_campaigns.id AND d.status = 'verified') AS donor_count " +
+		"FROM donation_campaigns WHERE id = ?"
+	err := r.db.QueryRow(query, id).Scan(&c.ID, &c.Title, &c.Description, &c.TargetAmount, &c.CollectedAmount, &c.ImageURL, &c.IsActive, &endDate, &createdAt, &updatedAt, &c.DonorCount)
 	if err != nil {
 		return nil, err
 	}
@@ -396,4 +402,23 @@ func (r *Repository) DeleteCampaign(id int) error {
 func (r *Repository) UpdateCampaignAmount(id int, amount float64) error {
 	_, err := r.db.Exec("UPDATE donation_campaigns SET collected_amount = collected_amount + ? WHERE id = ?", amount, id)
 	return err
+}
+
+type DonationStats struct {
+	TotalDonors         int     `json:"total_donors"`
+	TotalVerifiedAmount float64 `json:"total_verified_amount"`
+	TotalCampaigns      int     `json:"total_campaigns"`
+}
+
+func (r *Repository) GetDonationStats() (*DonationStats, error) {
+	var s DonationStats
+	q := `SELECT
+		(SELECT COUNT(DISTINCT CASE WHEN TRIM(COALESCE(donor_phone, '')) <> '' THEN donor_phone ELSE NULL END) FROM donations WHERE status = 'verified'),
+		(SELECT COALESCE(SUM(amount), 0) FROM donations WHERE status = 'verified'),
+		(SELECT COUNT(*) FROM donation_campaigns WHERE is_active = 1)`
+	err := r.db.QueryRow(q).Scan(&s.TotalDonors, &s.TotalVerifiedAmount, &s.TotalCampaigns)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
 }

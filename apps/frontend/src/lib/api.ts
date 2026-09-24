@@ -538,6 +538,7 @@ export interface Campaign {
 	description: string;
 	target_amount: number;
 	collected_amount: number;
+	donor_count: number;
 	image_url: string;
 	is_active: number;
 	end_date: string | null;
@@ -877,6 +878,26 @@ export async function getGallery(params: { category?: string, search?: string, l
 	} catch (e) {
 		console.error(`[API] Fetch gallery error:`, e);
 		return { data: [], pagination: { total: 0, limit: params.limit || 12, offset: params.offset || 0 } };
+	}
+}
+
+export type DonationStats = {
+	total_donors: number;
+	total_verified_amount: number;
+	total_campaigns: number;
+};
+
+export async function getDonationStats(): Promise<DonationStats> {
+	try {
+		const r = await lmsFetch('/donations/stats', { method: 'GET' });
+		const d = (r as { data?: Partial<DonationStats> })?.data;
+		return {
+			total_donors: d?.total_donors ?? 0,
+			total_verified_amount: d?.total_verified_amount ?? 0,
+			total_campaigns: d?.total_campaigns ?? 0,
+		};
+	} catch {
+		return { total_donors: 0, total_verified_amount: 0, total_campaigns: 0 };
 	}
 }
 

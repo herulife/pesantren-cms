@@ -361,6 +361,7 @@ func main() {
 		// ── Public Donasi ──────────
 		r.Get("/donations/campaigns", donationHandler.GetCampaigns)
 		r.Get("/donations", donationHandler.GetDonations)
+		r.Get("/donations/stats", donationHandler.GetStats)
 
 		// ── Other Authenticated Groups ──────────
 		r.Get("/settings/public", settingHandler.GetPublic)

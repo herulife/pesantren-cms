@@ -441,9 +441,20 @@ func (h *Handler) DeleteDonation(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Transaksi donasi berhasil dihapus", nil)
 }
 
+func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
+	stats, err := h.repo.GetDonationStats()
+	if err != nil {
+		logger.Error(r.Context(), "donation stats failed", logger.Field{"operation": "donations_stats", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses statistik donasi", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Statistik donasi berhasil dimuat", stats)
+}
+
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/campaigns", h.GetCampaigns)
+	r.Get("/stats", h.GetStats)
 	r.Get("/campaigns/{id}", h.GetCampaign)
 	r.Post("/campaigns", h.Create)
 	r.Put("/campaigns/{id}", h.Update)
@@ -481,4 +492,6 @@ type IRepository interface {
 	CreateDonor(d *Donor) error
 	UpdateDonor(d *Donor) error
 	DeleteDonor(id int) error
+
+	GetDonationStats() (*DonationStats, error)
 }

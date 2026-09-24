@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import PublicLayout from '@/components/PublicLayout';
-import { getCampaigns, Campaign, resolveDisplayImageUrl, getPublicSettingsMap, SettingsMap } from '@/lib/api';
+import { getCampaigns, Campaign, resolveDisplayImageUrl, getPublicSettingsMap, SettingsMap, getDonationStats, DonationStats } from '@/lib/api';
 import {
   buildCampaignDetailHref,
   featuredOpenDonation,
@@ -29,11 +29,15 @@ export default function DonationsPage() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsMap>({});
+	const [stats, setStats] = useState<DonationStats>({ total_donors: 0, total_verified_amount: 0, total_campaigns: 0 });
 
   useEffect(() => {
     async function fetchCampaigns() {
       try {
-        const [data, s] = await Promise.all([getCampaigns(), getPublicSettingsMap()]);
+        const [data, s, st] = await Promise.all([getCampaigns(), getPublicSettingsMap(), getDonationStats()]);
+        setCampaigns(data.filter((c) => c.is_active));
+        setSettings(s);
+        setStats(st);
         setCampaigns(data.filter((c) => c.is_active));
         setSettings(s);
         setError(null);
@@ -118,7 +122,7 @@ export default function DonationsPage() {
                   <div className="h-8 w-8 rounded-full border-2 border-white bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-black">+</div>
                 </div>
                 <div className="text-sm">
-                  <p className="font-black text-slate-900">500+ Donatur</p>
+                  <p className="font-black text-slate-900">{stats.total_donors > 0 ? `${stats.total_donors.toLocaleString('id-ID')} Donatur Terverifikasi` : 'Donatur Terverifikasi'}</p>
                   <p className="text-xs text-slate-500">Telah bergabung dalam kebaikan</p>
                 </div>
               </div>
@@ -184,7 +188,12 @@ export default function DonationsPage() {
                 const detailHref = buildCampaignDetailHref(campaign);
                 const isWakaf = campaign.title.toLowerCase().includes('wakaf');
                 const badgeColor = isWakaf ? 'bg-emerald-600' : 'bg-sky-600';
-                const sisaHari = 30;
+                const sisaHari = campaign.end_date
+                  ? Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - Date.now()) / 86400000))
+                  : 0;
+                const endDateLabel = campaign.end_date
+                  ? new Date(campaign.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : null;
 
                 return (
                   <article
@@ -226,13 +235,12 @@ export default function DonationsPage() {
                         <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress donasi ${progress} persen`}>
                           <div className="h-full rounded-full bg-emerald-600 transition-all duration-700" style={{ width: `${progress}%` }} />
                         </div>
-                        <p className="mt-2 text-xs text-slate-500">Target Rp {campaign.target_amount.toLocaleString('id-ID')} • {sisaHari} hari lagi</p>
+                        <p className="mt-2 text-xs text-slate-500">Target Rp {campaign.target_amount.toLocaleString('id-ID')}{campaign.end_date && <> • {sisaHari} hari lagi</>}</p>
                       </div>
 
                       <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                        <span className="inline-flex items-center gap-1"><Users size={12} /> {Math.max(3, Math.floor(progress / 8) + 5)} donatur</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-1"><Calendar size={12} /> Berakhir {new Date(Date.now() + 30 * 86400000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                        <span className="inline-flex items-center gap-1"><Users size={12} /> {campaign.donor_count || 0} donatur terverifikasi</span>
+                        {endDateLabel && <><span>•</span><span className="inline-flex items-center gap-1"><Calendar size={12} /> Berakhir {endDateLabel}</span></>}
                       </div>
 
                       <div className="mt-5 flex gap-3">
