@@ -1149,24 +1149,33 @@ func backfillSantriUserAccounts() {
 		return
 	}
 
-	rows, err := DB.Query(`SELECT id, nis, name, COALESCE(registration_id,0) FROM santri WHERE user_id IS NULL`)
-	if err != nil {
-		return
+	// Kumpulkan semua santri yatim dulu ke memori lalu tutup rows, karena
+	// menulis (INSERT/UPDATE users/santri) saat rows masih terbuka akan
+	// deadlock pada koneksi SQLite tunggal.
+	type orphan struct {
+		id    int
+		nis   string
+		name  string
+		regID int
 	}
-	defer rows.Close()
+	var orphans []orphan
+	rows, err := DB.Query(`SELECT id, nis, name, COALESCE(registration_id,0) FROM santri WHERE user_id IS NULL`)
+	if err == nil {
+		for rows.Next() {
+			var o orphan
+			_ = rows.Scan(&o.id, &o.nis, &o.name, &o.regID)
+			orphans = append(orphans, o)
+		}
+		rows.Close()
+	}
 
 	linked := 0
-	for rows.Next() {
-		var id int
-		var nis, name string
-		var regID int
-		_ = rows.Scan(&id, &nis, &name, &regID)
-
-		uid, ok := backfillResolveUserID(id, nis, name, regID)
+	for _, o := range orphans {
+		uid, ok := backfillResolveUserID(o.id, o.nis, o.name, o.regID)
 		if !ok {
 			continue
 		}
-		if _, err := DB.Exec(`UPDATE santri SET user_id=? WHERE id=?`, uid, id); err == nil {
+		if _, err := DB.Exec(`UPDATE santri SET user_id=? WHERE id=?`, uid, o.id); err == nil {
 			linked++
 		}
 	}
