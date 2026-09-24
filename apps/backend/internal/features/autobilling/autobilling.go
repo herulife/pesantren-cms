@@ -10,6 +10,7 @@ import (
 
 	"almaparung-api/internal/features/spp"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/wanotif"
 	"almaparung-api/internal/platform/whatsapp"
 )
 
@@ -72,6 +73,17 @@ func monthYearID(period string) string {
 	return period
 }
 
+// nowWIB mengembalikan waktu saat ini dalam zona waktu Asia/Jakarta (WIB).
+// Server bisa berjalan di UTC; seluruh penagihan menggunakan WIB agar
+// konsisten dengan zona waktu pengguna (frontend browser).
+func (rn *Runner) nowWIB() time.Time {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		return time.Now()
+	}
+	return time.Now().In(loc)
+}
+
 func (rn *Runner) stringSetting(key, fallback string) string {
 	v, err := rn.settings.GetByKey(key)
 	if err != nil {
@@ -111,14 +123,13 @@ func (rn *Runner) RunOnce() {
 	}
 	waEnabled := rn.boolSetting(keyWA)
 
-	period := time.Now().Format("2006-01")
-	count, err := rn.spp.CountBillsByPeriod(period)
-	if err != nil {
-		logger.Error(context.Background(), "AutoSPP count failed", logger.Field{"error": err.Error(), "period": period})
-		return
-	}
-	if count > 0 {
-		log.Printf("[AutoSPP] tagihan %s sudah ada (%d), skip", period, count)
+	now := rn.nowWIB()
+	period := now.Format("2006-01")
+	// Guard: jangan buat tagihan dengan jatuh tempo di masa lalu. Jika hari
+	// ini sudah lewat tanggal jatuh tempo bulan berjalan, lewati (admin bisa
+	// generate manual bila perlu).
+	if now.Day() > dueDay {
+		log.Printf("[AutoSPP] skip: jatuh tempo tgl %d periode %s sudah lewat (hari ini tgl %d)", dueDay, monthYearID(period), now.Day())
 		return
 	}
 
@@ -140,8 +151,8 @@ func (rn *Runner) RunOnce() {
 			continue
 		}
 		msg := whatsapp.FormatTagihanSPP(rc.Name, monthYearID(rc.Period), rc.Amount)
-		if err := whatsapp.SendMessage(phone, msg); err != nil {
-			log.Printf("[AutoSPP] WA gagal ke %s: %v", phone, err)
+		if _, err := wanotif.Enqueue(context.Background(), nil, "spp_auto", phone, msg); err != nil {
+			log.Printf("[AutoSPP] WA gagal diantre ke %s: %v", phone, err)
 			continue
 		}
 		logger.Info(context.Background(), "AutoSPP WA terkirim", logger.Field{"phone": phone, "period": rc.Period})

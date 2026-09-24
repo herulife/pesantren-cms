@@ -27,7 +27,10 @@ func (r *Repository) GenerateAutoBills(period string, amount int, dueDate string
 		       COALESCE(NULLIF(TRIM(parent_phone), ''), NULLIF(TRIM(father_phone), ''), NULLIF(TRIM(mother_phone), ''), '')
 		FROM santri
 		WHERE status = 'aktif'
-		ORDER BY id`)
+		  AND NOT EXISTS (
+		      SELECT 1 FROM spp_bills b WHERE b.santri_id = santri.id AND b.period = ?
+		  )
+		ORDER BY id`, period)
 	if err != nil {
 		return 0, nil, err
 	}
