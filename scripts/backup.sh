@@ -28,9 +28,8 @@ for src, dst in [
 EOF
 
 tar -czf "backups/uploads-$TS.tar.gz" data/uploads
-tar -czf "backups/config-$TS.tar.gz" .env.example deploy \
-  apps/backend/Dockerfile apps/frontend/Dockerfile .dockerignore \
-  --exclude="*.env" 
+tar -czf "backups/config-$TS.tar.gz" --exclude="*.env" \
+  .env.example deploy apps/backend/Dockerfile apps/frontend/Dockerfile .dockerignore
 
 if [ "$MODE" = "daily" ]; then
   # shellcheck disable=SC2012
