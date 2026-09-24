@@ -1,377 +1,476 @@
-'use client';
-
-import PublicLayout from '@/components/PublicLayout';
-import { ShieldCheck, AlertTriangle, FileSearch, Layers, Bug, Lock, Palette, CheckCircle2, XCircle, Info, Copy, Check, Server, LayoutDashboard, GraduationCap, HeartHandshake, Database, Globe, Zap, Accessibility, Search, Scale, Box } from 'lucide-react';
+import React from 'react';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import {
+  AlertTriangle, ArrowRight, CheckCircle2, Database, Download, ExternalLink,
+  FileCheck2, Lock, Search, ShieldCheck, XCircle, ArrowLeft, FileText, RefreshCcw,
+} from 'lucide-react';
+import PublicLayout from '@/components/PublicLayout';
 
-type Checkpoint = { id: string; title: string; status: 'PASS' | 'FAIL' | 'NA'; note?: string };
-type Finding = { id: string; severity: 'Critical' | 'High' | 'Medium' | 'Low' | 'Blocking' | 'Minor'; title: string; loc: string; impact: string; fix: string; skill: string };
+type Item = {
+  id: string;
+  label: string;
+  s: 'PASS' | 'FAIL' | 'N/A';
+  why: string;
+  fix?: string;
+};
 
-const fullStackCheckpoints: { cat: string; icon: React.ReactNode; checks: Checkpoint[] }[] = [
-  { cat: '1. Visual Design & Frontend', icon: <Palette size={16} />, checks: [
-    { id:'1.1', title:'Typography hierarchy (Outfit display + Inter body)', status:'PASS' },
-    { id:'1.2', title:'Colour system — DESIGN.md sky-500/emerald/slate tokens', status:'PASS' },
-    { id:'1.3', title:'Layout & composition — intentionally staged, not template', status:'PASS' },
-    { id:'1.4', title:'Backgrounds & depth — shadow hierarchy cards', status:'PASS' },
-    { id:'1.5', title:'Motion — hover/focus + prefers-reduced-motion', status:'FAIL', note:'Swiper autoplay + framer motion tanpa reduced-motion guard di page.tsx:900' },
-  ]},
-  { cat: '2. User Flow & UX', icon: <LayoutDashboard size={16} />, checks: [
-    { id:'2.1', title:'Hero clarity — value prop 5 detik + CTA di atas fold', status:'PASS' },
-    { id:'2.2', title:'Navigation — max 7 item + active state', status:'PASS' },
-    { id:'2.3', title:'CTA copy — deskriptif outcome, bukan Submit', status:'FAIL', note:'Beberapa admin form masih pakai Simpan generik — app/admin/*/form' },
-    { id:'2.4', title:'Journey completeness — loading/success/error state', status:'FAIL', note:'PSB wizard loading ada, tapi error masih raw api message di portal/payment:120' },
-    { id:'2.5', title:'Trust & social proof dekat CTA', status:'PASS' },
-  ]},
-  { cat: '3. Responsive & Mobile', icon: <Box size={16} />, checks: [
-    { id:'3.1', title:'Breakpoints — no horizontal scroll', status:'PASS' },
-    { id:'3.2', title:'Touch targets 44px', status:'FAIL', note:'Icon-only buttons di Sidebar.tsx:42 <44px pada mobile' },
-    { id:'3.3', title:'Mobile typography 14px min', status:'PASS' },
-    { id:'3.4', title:'Mobile navigation — hamburger functional', status:'PASS' },
-    { id:'3.5', title:'Mobile performance — lazy images', status:'FAIL', note:'Hero images unsplash tanpa priority/lazy optimal di page.tsx:240' },
-  ]},
-  { cat: '4. Performance & Web Vitals', icon: <Zap size={16} />, checks: [
-    { id:'4.1', title:'LCP — hero image optimized', status:'FAIL', note:'remote unsplash 1920w tanpa next/image priority preload' },
-    { id:'4.2', title:'INP — no long tasks blocking', status:'PASS' },
-    { id:'4.3', title:'CLS — no layout shift', status:'PASS' },
-    { id:'4.4', title:'Asset optimization — image domains whitelisted', status:'PASS', note:'next.config.ts remotePatterns lengkap' },
-    { id:'4.5', title:'Caching — rewrites /api & /uploads', status:'PASS' },
-  ]},
-  { cat: '5. Accessibility (WCAG)', icon: <Accessibility size={16} />, checks: [
-    { id:'5.1', title:'Semantic HTML & heading order', status:'PASS' },
-    { id:'5.2', title:'Keyboard nav & focus-visible ring', status:'FAIL', note:'Custom dropdown di PublicLayout:210 missing aria-expanded sync pada keyboard' },
-    { id:'5.3', title:'Screen reader — alt & aria-label', status:'PASS' },
-    { id:'5.4', title:'Colour contrast AA', status:'PASS', note:'sky-700 on white lulus AA' },
-    { id:'5.5', title:'Motion respect prefers-reduced-motion', status:'FAIL', note:'Sama dengan 1.5' },
-  ]},
-  { cat: '6. Security (10 checks)', icon: <Lock size={16} />, checks: [
-    { id:'6.1', title:'Secrets — no token/.env in repo', status:'PASS' },
-    { id:'6.2', title:'Client-side exposure — no NEXT_PUBLIC_ secrets', status:'PASS' },
-    { id:'6.3', title:'Input validation — validators/* + backend guard', status:'FAIL', note:'PSB validasi divergen frontend 14 field vs backend hanya full_name — psb/handler.go:70' },
-    { id:'6.4', title:'Paywall bypass — no DOM-gated paid content', status:'PASS', note:'Donasi/payment butuh bukti upload + verifikasi bendahara' },
-    { id:'6.5', title:'Payment replay — idempotency', status:'FAIL', note:'payments/handler.go tanpa idempotency key, replay bukti bayar bisa double' },
-    { id:'6.6', title:'DB access — no exposed SQLite RLS', status:'PASS' },
-    { id:'6.7', title:'HTTP headers — CSP/HSTS/X-Frame', status:'FAIL', note:'main.go CORS saja, tanpa helmet CSP/HSTS headers' },
-    { id:'6.8', title:'API protection — rate limit + auth', status:'PASS', note:'ratelimit.go sudah ada cleanup + path-scoped key' },
-    { id:'6.9', title:'Webhooks — HMAC verify', status:'FAIL', note:'telegram/webhook & payment tanpa HMAC signature verify' },
-    { id:'6.10', title:'Console cleanup — no debug log in prod', status:'PASS' },
-  ]},
-  { cat: '7. Backend & API', icon: <Server size={16} />, checks: [
-    { id:'7.1', title:'API design — REST consistent /api prefix', status:'PASS' },
-    { id:'7.2', title:'Rate limiting — global + per-IP eviction', status:'PASS', note:'Fixed 2026-04-30: map leak sudah ada cleanupExpiredClientsLocked' },
-    { id:'7.3', title:'Error handling — APIResponse envelope konsisten', status:'FAIL', note:'response.go SendValidationErrorResponse pakai errors key, tidak envelope APIResponse' },
-    { id:'7.4', title:'Data handling — time.Parse RFC3339', status:'FAIL', note:'psb/repository.go scanRegistration DateTime gagal untuk RFC3339 T' },
-    { id:'7.5', title:'Timeouts & MaxBytesReader', status:'PASS', note:'upload/handler.go MaxBytesReader 10MB ok' },
-  ]},
-  { cat: '8. SEO & Discoverability', icon: <Search size={16} />, checks: [
-    { id:'8.1', title:'Meta + OG + Twitter card', status:'PASS', note:'layout.tsx metadataBase + openGraph lengkap' },
-    { id:'8.2', title:'Structured data — EducationalOrganization JSON-LD', status:'PASS' },
-    { id:'8.3', title:'Technical SEO — canonical, sitemap, robots', status:'PASS', note:'sitemap.ts + robots.ts ada' },
-    { id:'8.4', title:'Headings — single H1 per page', status:'PASS' },
-    { id:'8.5', title:'Social presence — sameAs instagram', status:'PASS' },
-  ]},
-  { cat: '9. Privacy, Legal & Compliance', icon: <Scale size={16} />, checks: [
-    { id:'9.1', title:'Cookie consent', status:'FAIL', note:'Tidak ada banner consent — padahal pakai @react-oauth/google + analytics potensial' },
-    { id:'9.2', title:'Legal pages — privacy/terms', status:'FAIL', note:'Belum ada /privacy & /terms' },
-    { id:'9.3', title:'Data minimisation — santri NIK tidak public', status:'PASS' },
-    { id:'9.4', title:'Third-party scripts — preconnect google fonts ok', status:'PASS' },
-    { id:'9.5', title:'Data protection — log activity santri', status:'PASS', note:'activity_logs table ada' },
-  ]},
-  { cat: '10. Infrastructure & Polish', icon: <Globe size={16} />, checks: [
-    { id:'10.1', title:'Error pages — 404/500', status:'FAIL', note:'Belum ada app/not-found.tsx custom' },
-    { id:'10.2', title:'Favicon/manifest', status:'PASS', note:'favicon.ico + icons di layout.tsx' },
-    { id:'10.3', title:'Dark mode', status:'NA', note:'Design system tidak require dark mode' },
-    { id:'10.4', title:'Analytics', status:'NA' },
-    { id:'10.5', title:'Content quality — no lorem', status:'PASS' },
-  ]},
+type Cat = { id: string; title: string; score: string; denomination: number; denominator: number; items: Item[] };
+
+const FULL: Cat[] = [
+  {
+    id: '1',
+    title: 'Visual Design & Frontend',
+    score: '5/5',
+    denomination: 5,
+    denominator: 5,
+    items: [
+      { id: '1.1', label: 'Hirarki Tipografi', s: 'PASS', why: 'Hierarki heading (font-outfit) vs body (Inter) jelas; maksimal 2 keluarga font (globals.css:19).', fix: 'Daftarkan utility font-outfit di buatnya Tailwind config (minor, register/page.tsx:69).' },
+      { id: '1.2', label: 'Sistem Warna', s: 'PASS', why: 'Token CSS terpusat: primary sky #0ea5e9, success emerald #10b981, warning amber #facc15, slate (globals.css:3-9).' },
+      { id: '1.3', label: 'Layout & Komposisi', s: 'PASS', why: 'Homepage ber-section dengan grid/asimetri, hero above the fold; spacing konsisten (page.tsx).' },
+      { id: '1.4', label: 'Kedalaman & Surface', s: 'PASS', why: 'shadow-sm pada kartu, border, elevasi konsisten di public & admin baru.' },
+      { id: '1.5', label: 'Motion & Interaksi', s: 'PASS', why: 'Hover/focus states ada; prefers-reduced-motion dihormati (globals.css:332-339).' },
+    ],
+  },
+  {
+    id: '2',
+    title: 'User Flow & UX',
+    score: '4/5',
+    denomination: 4,
+    denominator: 5,
+    items: [
+      { id: '2.1', label: 'Hero & Kesan Pertama', s: 'PASS', why: 'Value proposition + CTA "Lihat PSB"/"Jelajahi profil" di atas fold + bagian alur (page.tsx:469,1065-1078).' },
+      { id: '2.2', label: 'Navigasi & IA', s: 'PASS', why: '5 item utama (Beranda, Profil, Program, PSB, Kontak) + dropdown; active state konsisten (PublicLayout.tsx:193-282).' },
+      { id: '2.3', label: 'CTA & Konversi', s: 'PASS', why: 'CTA outcome-driven ("Daftar Sekarang", "Simpan & Lanjut ke Data Orang Tua"); primary vs sekunder jelas.' },
+      { id: '2.4', label: 'Kelengkapan Journey', s: 'PASS', why: 'Loading (tombol disabled) + success toast + error bahasa Indonesia di semua form utama (login, register, kontak, PSB, wallet).' },
+      { id: '2.5', label: 'Trust & Social Proof', s: 'FAIL', why: '"500+ Donatur" & "Lembaga Amal Terpercaya" HARDCODED tanpa sumber data; TIDAK ada testimonial asli (donations/page.tsx:91,121).', fix: 'Baca jumlah donatur dari API (COUNT transactions), tambah 2-3 testimonial asli dengan nama & izin.' },
+    ],
+  },
+  {
+    id: '3',
+    title: 'Responsive & Mobile',
+    score: '4/5',
+    denomination: 4,
+    denominator: 5,
+    items: [
+      { id: '3.1', label: 'Breakpoint', s: 'PASS', why: 'Grid md:grid-cols-X adaptif di semua halaman; tidak ada horizontal scroll.' },
+      { id: '3.2', label: 'Touch Target', s: 'FAIL', why: 'Item navigasi mobile py-2 (< 40px) — di bawah standar 44px (PublicLayout.tsx:399).', fix: 'Perbesar padding touch area item menu mobile ke 44px.' },
+      { id: '3.3', label: 'Tipografi Mobile', s: 'PASS', why: 'Body text ≥14px; terbaca tanpa zoom.' },
+      { id: '3.4', label: 'Navigasi Mobile', s: 'PASS', why: 'Hamburger + tutup click-outside (PublicLayout.tsx:389-452); portal bottom-tab 5 item (portal/layout.tsx:896-947).' },
+      { id: '3.5', label: 'Kinerja Mobile', s: 'PASS', why: 'Switchablebanner, FAB, lazy; gambar publik dikompres.' },
+    ],
+  },
+  {
+    id: '4',
+    title: 'Performance & Web Vitals',
+    score: '4/5',
+    denomination: 4,
+    denominator: 5,
+    items: [
+      { id: '4.1', label: 'LCP', s: 'PASS', why: 'Prerendering + x-nextjs-cache HIT; CSS critical inline; Cloudflare.' },
+      { id: '4.2', label: 'INP', s: 'PASS', why: 'Tidak ada komputasi sinkron berat saat aksi; komponen kecil.' },
+      { id: '4.3', label: 'CLS', s: 'PASS', why: 'Gambar dengan dimensi / preview loading; prerender statis.' },
+      { id: '4.4', label: 'Optimasi Aset', s: 'FAIL', why: 'Ada PNG tutorial 1.05MB; banyak gambar remote Unsplash tanpa parameter optimasi (width/q) (public/).', fix: 'Optimasi gambar lokal (webp+resize) dan remote srcset.' },
+      { id: '4.5', label: 'Caching & CDN', s: 'PASS', why: 'Cloudflare + cache-control s-maxage=31536000 + x-nextjs-cache HIT.' },
+    ],
+  },
+  {
+    id: '5',
+    title: 'Aksesibilitas',
+    score: '4/5',
+    denomination: 4,
+    denominator: 5,
+    items: [
+      { id: '5.1', label: 'HTML Semantik', s: 'PASS', why: 'header/nav/main/footer, section/article; role aria-current aktif.' },
+      { id: '5.2', label: 'Navigasi Keyboard', s: 'PASS', why: 'Semua kontrol bisa di-Tab; :focus-visible style ada; tombol native.' },
+      { id: '5.3', label: 'Screen Reader', s: 'FAIL', why: 'Label form di register tanpa htmlFor/id (register/page.tsx:100-102); icon-only <i> tanpa aria-label di admin-bs (AdminBsShell.tsx:196).', fix: 'Tautkan label→input + beri aria-label pada icon buttons.' },
+      { id: '5.4', label: 'Kontras Warna', s: 'PASS', why: 'Kontras teks vs latar memenuhi WCAG AA; informasi tak hanya via warna.' },
+      { id: '5.5', label: 'Motion & Kognitif', s: 'PASS', why: 'prefers-reduced-motion active (globals.css:332); tidak ada media auto-play.' },
+    ],
+  },
+  {
+    id: '6',
+    title: 'Keamanan',
+    score: '7/10',
+    denomination: 7,
+    denominator: 10,
+    items: [
+      { id: '6.1', label: 'Manajemen Secret', s: 'FAIL', why: 'JWT_SECRET + AI key plaintext di .env:2 & deploy/backend_env_notes.txt:2; backup arsip menyertakan .env + wa_session.db (scripts/backup.sh:31-33).', fix: 'Rotasi JWT_SECRET & key AI; pindahkan ke env server saja; exclude .env & wa_session dari backup publik.' },
+      { id: '6.2', label: 'Eksposur Secret Klien', s: 'PASS', why: 'Tidak ada NEXT_PUBLIC_ rahasia; hanya base URL (api.ts:1-34); JWT hanya cookie HttpOnly, localStorage menyimpan role/name (auth-storage.ts:9-10).' },
+      { id: '6.3', label: 'Validasi & Sanitasi Input', s: 'PASS', why: 'Sanitasi XSS berlapis saat simpan & baca berita whitelist tag (news/sanitize.go:76-175); DecodeStrictJSON + DisallowUnknownFields.' },
+      { id: '6.4', label: 'Paywall Server-Side', s: 'PASS', why: 'Status diterima/daftar ulang WAJIB payment_status paid (psb/handler.go:668-678); AcceptToSantri tolak yang belum lunas (handler.go:754); kwitansi 404 sebelum lunas.' },
+      { id: '6.5', label: 'Anti-Replay Pembayaran', s: 'PASS', why: 'UNIQUE idempotency di payment_transactions/receipts/kas/donations (db.go:1032-1045); conditional UPDATE + RowsAffected + FindLedgerByKey (finance.go:103-116).' },
+      { id: '6.6', label: 'Keamanan Database', s: 'PASS', why: 'SQLite lokal dengan UNIQUE constraints ketat (email, spp_bills santri+period, invoice code, dll); CHECK role (db.go:85-909).' },
+      { id: '6.7', label: 'Security Headers', s: 'FAIL', why: 'X-Content-Type-Options, X-Frame-Options, HSTS, Referrer-Policy ada TAPI Content-Security-Policy TIDAK (verified live handle); admin-bs load CDN tanpa SRI.', fix: 'Tambahkan CSP + gunakan `frame-ancestors "none"` (sudah di middleware), pindah ke header proxy.' },
+      { id: '6.8', label: 'Proteksi API & Rate Limit', s: 'FAIL', why: 'Rate limit IP+path merata (ratelimit.go) & upload 30/jam, OTP 10-30/jam, notes 60/jam; TAPI /uploads/* FileServer masih publik (main.go:510-511) dan endpoint generate AI (news/generate) tanpa rate-limit khusus.', fix: 'Batasi akses /uploads/proofs/ (owner-only), tambahkan rate-limit untuk /news/generate.' },
+      { id: '6.9', label: 'Webhook Security', s: 'PASS', why: 'Invoices HMAC-SHA256 + hmac.Equal (invoices/handler.go:82-98); webhook Telegram via X-Telegram-Bot-Api-Secret-Token + whitelist chat (notifications:268-294).' },
+      { id: '6.10', label: 'Console Production', s: 'PASS', why: 'Log tidak berisi data sensitif; OTP hanya hash SHA-256 (otp.go:48-51,125-130); hanya login/email/nama-file/IP dicatat.' },
+    ],
+  },
+  {
+    id: '7',
+    title: 'Backend & API Quality',
+    score: '3/5',
+    denomination: 3,
+    denominator: 5,
+    items: [
+      { id: '7.1', label: 'Desain API', s: 'PASS', why: 'REST konsisten, status code tepat (422 transisi illegal, 401 sesi revoke, 409 duplikat).' },
+      { id: '7.2', label: 'Rate Limit Operasi Mahal', s: 'FAIL', why: 'Endpoint AI (news/generate, chat) dan upload hanya dibatasi role, tanpa rate-limit per IP khusus.', fix: 'Terapkan rate-limit terpisah untuk /news/generate & /api/project (mis. 10/jam/IP).' },
+      { id: '7.3', label: 'Penanganan Error', s: 'FAIL', why: 'Error provider AI diteruskan mentah ke client (news/handler.go:350, ai/gemini.go:134) — bisa bocorkan detail internal ke admin media.', fix: 'Log detail di server, kirim pesan generik ke client.' },
+      { id: '7.4', label: 'Penanganan Data', s: 'PASS', why: 'Body 1MB cap, upload decode+re-encode + dimensi 100-5000px (upload/handler.go:217-225); NIK/HP divalidasi.' },
+      { id: '7.5', label: 'Timeout', s: 'PASS', why: 'http.Client 85s, per-model 70s, total artikel 280s, Gemini 30s, gambar 15s (platform/ai).' },
+    ],
+  },
+  {
+    id: '8',
+    title: 'SEO & Discoverability',
+    score: '3/5',
+    denomination: 3,
+    denominator: 5,
+    items: [
+      { id: '8.1', label: 'Meta & OpenGraph', s: 'FAIL', why: 'Hanya layout global (layout.tsx:4-37); per-slug ([slug]) TIDAK ada generateMetadata → semua berita/donasi nama judul global.', fix: 'Tambah generateMetadata + canonical di news/[slug], donations/[slug], galeri/[slug], videos/[slug].' },
+      { id: '8.2', label: 'Structured Data', s: 'PASS', why: 'JSON-LD EducationalOrganization di global (layout.tsx:58-77); belum ada artikel/event schema (minor).' },
+      { id: '8.3', label: 'SEO Teknis', s: 'PASS', why: 'robots.ts disallow admin/portal/api; sitemap.ts 9 route (sitemap.xml 200); lang="id". Canonical per-slug belum ada (minor).' },
+      { id: '8.4', label: 'Struktur Heading', s: 'PASS', why: 'Satu H1 per halaman (78 h1 ditinjau); hierarki logis.' },
+      { id: '8.5', label: 'Kehadiran Sosial', s: 'PASS', why: 'Footer menampilkan IG, FB, YT, TikTok (PublicLayout:93-100).' },
+    ],
+  },
+  {
+    id: '9',
+    title: 'Privasi, Legal & Compliance',
+    score: '2/4',
+    denomination: 2,
+    denominator: 4,
+    items: [
+      { id: '9.1', label: 'Cookie Consent', s: 'PASS', why: 'CookieBanner dengan localStorage alma-cookie-consent; GA4 hanya aktif bila accept (AnalyticsLoader.tsx:33-36).' },
+      { id: '9.2', label: 'Halaman Legal', s: 'PASS', why: '/privasi dan /syarat berisi konten asli, terhubung dari footer (200 live).' },
+      { id: '9.3', label: 'Data Minimisation & Hapus Data', s: 'FAIL', why: 'Formumumnya minimal, TAPI mekanisme hapus data user (right-to-erasure) tidak ditemukan (tidak ada endpoint/UI penghapusan akun).', fix: 'Sediakan endpoint hapus akun & contps (permintaan via admin sudah ada untuk data operasional).' },
+      { id: '9.4', label: 'Audit Script Pihak Ketiga', s: 'FAIL', why: 'Google Fonts (manual <link>), GA4, dan AdminLTE/Bootstrap via CDN jsdelivr TANPA Subresource Integrity (layout.tsx:56, AdminBsShell.tsx:8-11).', fix: 'Tambah integrity SRI atau self-host bundle.' },
+      { id: '9.5', label: 'Registrasi Perlindungan Data', s: 'N/A', why: 'Pengguna utama di Indonesia (non-EU/UK), skala kecil — tidak wajib NDPC/EU threshold.' },
+    ],
+  },
+  {
+    id: '10',
+    title: 'Infrastruktur & Polish',
+    score: '2/4',
+    denomination: 2,
+    denominator: 4,
+    items: [
+      { id: '10.1', label: 'Error Pages', s: 'PASS', why: 'Custom not-found.tsx + error.tsx (404 "Halaman tidak ditemukan" live, 200-ok); 54 empty-state ditangani.' },
+      { id: '10.2', label: 'Favicon & Manifest', s: 'PASS', why: 'favicon.ico + manifest.webmanifest 200 + theme_color #0284c7 (manifest.ts).' },
+      { id: '10.3', label: 'Dark Mode', s: 'N/A', why: 'Single theme (light); tidak ada flash dark.' },
+      { id: '10.4', label: 'Analytics & Monitoring', s: 'FAIL', why: 'GA4 terpasang tapi hanya config pageviews; TIDAK ada event konversi & TIDAK ada error monitoring (Sentry dll).', fix: 'Tambah event register/payment/wallet; pasang error boundary reporter.' },
+      { id: '10.5', label: 'Kualitas Konten', s: 'FAIL', why: 'Foto pimpinan & profil memakai foto stock Unsplash; angka donasi sintetis (Math.max(floor(progress/8)+5) = donatur palsu, donations:187,233).', fix: 'Jadwalkan konten default; hitung donatur asli dari DB.' },
+    ],
+  },
 ];
 
-const uxCheckpoints: { cat: string; checks: Checkpoint[] }[] = [
-  { cat: '11. System Status & Feedback', checks: [
-    { id:'11.1', title:'Loading states setiap async action', status:'PASS' },
-    { id:'11.2', title:'Success confirmations', status:'PASS' },
-    { id:'11.3', title:'Error recovery — human readable ID', status:'FAIL', note:'Payment error masih teknikal, bukan ID plain' },
-    { id:'11.4', title:'Progress indicators — PSB stepper 3 langkah', status:'PASS' },
-    { id:'11.5', title:'Realtime validation', status:'PASS', note:'Biodata inline NIK 16 validation' },
-  ]},
-  { cat: '12. Navigation & IA', checks: [
-    { id:'12.1', title:'Primary nav konsisten', status:'PASS' },
-    { id:'12.2', title:'Mobile nav adaptive', status:'PASS' },
-    { id:'12.3', title:'Search', status:'NA', note:'Belum ada site search — roadmap' },
-    { id:'12.4', title:'Breadcrumbs', status:'FAIL', note:'Admin detail pages tanpa breadcrumb' },
-    { id:'12.5', title:'Footer informatif', status:'PASS' },
-  ]},
-  { cat: '13. User Control & Freedom', checks: [
-    { id:'13.1', title:'Undo/reversibility', status:'FAIL', note:'Delete galeri/berita tanpa undo, langsung hard delete' },
-    { id:'13.2', title:'Form preservation — back tidak hilang', status:'FAIL', note:'PSB wizard belum pakai PortalRegistrationContext, back = refetch' },
-    { id:'13.3', title:'Escape hatches — cancel/back', status:'PASS' },
-    { id:'13.4', title:'Settings persistence', status:'PASS' },
-    { id:'13.5', title:'Logout/session clear', status:'PASS' },
-  ]},
-  { cat: '14. Consistency & Standards', checks: [
-    { id:'14.1', title:'Visual consistency — DESIGN.md tokens', status:'PASS' },
-    { id:'14.2', title:'Language consistency — ID santri-friendly', status:'PASS' },
-    { id:'14.3', title:'Platform conventions — Next.js App Router', status:'PASS' },
-    { id:'14.4', title:'Icon usage — lucide konsisten', status:'PASS' },
-    { id:'14.5', title:'Responsive parity — admin vs public', status:'FAIL', note:'Admin table density tinggi, mobile scroll horizontal belum card view' },
-  ]},
+const UX: Cat[] = [
+  {
+    id: 'UX1',
+    title: 'System Status & Feedback',
+    score: '4/5',
+    denomination: 4,
+    denominator: 5,
+    items: [
+      { id: 'U1.1', label: 'Loading States', s: 'PASS', why: 'Semua async (login, kirim, biodata, payment) pakai isLoading/isSaving + disabled (login:129-136, biodata:626-641).' },
+      { id: 'U1.2', label: 'Sukses Konfirmasi', s: 'PASS', why: 'Toast global auto-dismiss 4s + bisa tutup manual (Toast.tsx:35-61).' },
+      { id: 'U1.3', label: 'Komunikasi Error', s: 'PASS', why: 'Bahasa Indonesia + recovery (donations:174 "Coba Lagi", psb/status:99-111).' },
+      { id: 'U1.4', label: 'Progress Indicator', s: 'PASS', why: 'Wizard PSB stepper 5 langkah sticky + mini 3-langkah (portal/layout:528-575,811-851).' },
+      { id: 'U1.5', label: 'Feedback Real-Time', s: 'FAIL', why: 'Validasi hanya saat submit, tidak onBlur/per-keystroke (biodata:219-229).', fix: 'Tambahkan validasi per-field saat blur untuk NIK, email, HP.' },
+    ],
+  },
+  {
+    id: 'UX2',
+    title: 'Navigasi & IA',
+    score: '3/5',
+    denomination: 3,
+    denominator: 5,
+    items: [
+      { id: 'U2.1', label: 'Navigasi Primer', s: 'PASS', why: 'Active state via aria-current + bar kiri (Sidebar:184-210) & highlight (portal/layout:751-780).' },
+      { id: 'U2.2', label: 'Navigasi Mobile', s: 'PASS', why: 'Hamburger grid (PublicLayout:376-462), overlay admin (DashboardLayout:16-33), bottom-tab portal.' },
+      { id: 'U2.3', label: 'Search', s: 'FAIL', why: 'TIDAK ada pencarian global meski 10+ item konten (news, galeri, videos, program, guru).', fix: 'Tambahkan search bar navbar yang query /api/search lintas konten.' },
+      { id: 'U2.4', label: 'Breadcrumb', s: 'FAIL', why: 'Tidak ada breadcrumb di public & admin baru (hanya admin-bs teks statis).', fix: 'Tambahkan komponen breadcrumb untuk halaman 2+ level (admin & detail konten).' },
+      { id: 'U2.5', label: 'Footer', s: 'PASS', why: 'Kontak, sosmed, link legal /privasi /syarat lengkap (PublicLayout:472-558).' },
+    ],
+  },
+  {
+    id: 'UX3',
+    title: 'User Control & Freedom',
+    score: '1/4',
+    denomination: 1,
+    denominator: 4,
+    items: [
+      { id: 'U3.1', label: 'Undo & Reversibility', s: 'FAIL', why: 'Dua sistem confirm: ConfirmDialog custom 52x (bagus) TAPI window.confirm native 19x di admin-bs/note/exams/notif — tidak seragam & tanpa konsekuensi jelas.', fix: 'Konsolidasi semua hapus ke ConfirmDialog; sebutkan nama barang.' },
+      { id: 'U3.2', label: 'Preservasi Form', s: 'FAIL', why: 'Wizard PSB tanpa beforeunload/autosave (hanya exams memiliki), data bisa hilang saat pindah tab.', fix: 'Tambah beforeunload + simpan draft di localStorage wizard.' },
+      { id: 'U3.3', label: 'Escape Hatches', s: 'PASS', why: 'Modal tertutup via X + backdrop (ConfirmDialog:47,58); FAB Escape (FloatingQuickMenu:35-37).' },
+      { id: 'U3.4', label: 'Persistensi Pengaturan', s: 'N/A', why: 'Sedikit pengaturan user; preferensi minor via localStorage.' },
+      { id: 'U3.5', label: 'Logout & Sesi', s: 'FAIL', why: 'Sesi expired diarahkan senyap tanpa toast "sesi berakhir" (AuthProvider:65-74).', fix: 'Tampilkan toast/notice saat 401 redirect.' },
+    ],
+  },
+  {
+    id: 'UX4',
+    title: 'Konsistensi & Standar',
+    score: '4/5',
+    denomination: 4,
+    denominator: 5,
+    items: [
+      { id: 'U4.1', label: 'Konsistensi Visual', s: 'PASS', why: 'Sky/emerald konsisten di public & admin baru (admin-bs Bootstrap terpisah — minor).' },
+      { id: 'U4.2', label: 'Konsistensi Bahasa', s: 'PASS', why: 'PSB, SPP, "Portal Wali Santri" konsisten; label tidak variatif.' },
+      { id: 'U4.3', label: 'Konvensi Platform', s: 'PASS', why: 'Focus states & border jelas; external link sebagian tandai ↗ (donations:290).' },
+      { id: 'U4.4', label: 'Penggunaan Icon', s: 'PASS', why: 'lucide-react konsisten; ikon ada label teks (admin-bs <i> generic — minor).' },
+      { id: 'U4.5', label: 'Konsistensi Responsif', s: 'PASS', why: 'Bottom-tab portal, hamburger admin — fitur desktop tetap di mobile.' },
+    ],
+  },
+  {
+    id: 'UX5',
+    title: 'Error Prevention & Forms',
+    score: '5/5',
+    denomination: 5,
+    denominator: 5,
+    items: [
+      { id: 'U5.1', label: 'Input Constraints', s: 'PASS', why: 'type=email/tel/number, dropdown utk pilihan, maxLength (kontak:234, biodata:585, payment:741).' },
+      { id: 'U5.2', label: 'Timing Validasi', s: 'PASS', why: 'Validasi saat submit + scroll-to-first-error via [aria-invalid] (biodata:223-227).' },
+      { id: 'U5.3', label: 'Error Recovery', s: 'PASS', why: 'Semua error tampil & field kosong ditandai; tidak ate firewall.' },
+      { id: 'U5.4', label: 'Cegah Aksi Destruktif', s: 'PASS', why: 'Konfirmasi + tombol hapus merah (bg-rose-500, ConfirmDialog:90).' },
+      { id: 'U5.5', label: 'Smart Default & Autofill', s: 'PASS', why: 'autocomplete lengkap (login, register, biodata); default category reguler.' },
+    ],
+  },
+  {
+    id: 'UX6',
+    title: 'Empty States & Onboarding',
+    score: '5/5',
+    denomination: 5,
+    denominator: 5,
+    items: [
+      { id: 'U6.1', label: 'Pengalaman Pertama', s: 'PASS', why: 'PublicEmptyState + langkah jelas; tidak ada layar kosong.' },
+      { id: 'U6.2', label: 'Empty Data States', s: 'PASS', why: 'Tabel admin "Belum ada data" + EmptyState admin-bs (ui.tsx:55).' },
+      { id: 'U6.3', label: 'Zero-Data Dashboard', s: 'N/A', why: 'Dashboard admin = quick-links (aman), tidak ada grafik koyak.' },
+      { id: 'U6.4', label: 'Onboarding', s: 'PASS', why: 'Wizard stepper 5 langkah dengan info-card (biodata:348-354).' },
+      { id: 'U6.5', label: 'Akses Bantuan', s: 'PASS', why: 'Halaman /kontak + tombol bantuan di beberapa titik.' },
+    ],
+  },
+  {
+    id: 'UX7',
+    title: 'Microcopy & Content UX',
+    score: '4/5',
+    denomination: 4,
+    denominator: 5,
+    items: [
+      { id: 'U7.1', label: 'Kejelasan CTA', s: 'PASS', why: '"Daftar Sekarang", "Simpan & Lanjut ke Data Orang Tua" — outcome-driven (biodata:640).' },
+      { id: 'U7.2', label: 'Label vs Placeholder', s: 'PASS', why: 'Label persistent konsisten; placeholder pelengkap.' },
+      { id: 'U7.3', label: 'Kualitas Pesan Error', s: 'PASS', why: 'Spesifik per-field ("NIK harus 16 digit angka", "No HP tidak valid").' },
+      { id: 'U7.4', label: 'Consequence Copy', s: 'PASS', why: 'Dialog menyebut konsekuensi ("Data yang dihapus tidak bisa dikembalikan" — kas:122).' },
+      { id: 'U7.5', label: 'Konsistensi Microcopy', s: 'PASS', why: 'Istilah satu-per-konsep; nada konsisten.' },
+    ],
+  },
+  {
+    id: 'UX8',
+    title: 'Trust & Credibility',
+    score: '1/4',
+    denomination: 1,
+    denominator: 4,
+    items: [
+      { id: 'U8.1', label: 'Social Proof', s: 'FAIL', why: 'NOL testimonial; angka donatur palsu (Math.max(...) di donations:233).', fix: 'Testimonial asli + SPT counter dari DB.' },
+      { id: 'U8.2', label: 'Transparansi', s: 'PASS', why: 'Profil pidato & identitas pondok; pricing PSB via jadwal gelombang (psb:48-57).' },
+      { id: 'U8.3', label: 'Security Signals', s: 'FAIL', why: 'Tidak ada badge enkripsi/SSL di titik pembayaran (hanya klaim "Aman & Transparan" donations:309).', fix: 'Tampilkan badge "Transaksi Terenkripsi SSL" di payment/wallet.' },
+      { id: 'U8.4', label: 'Professional Polish', s: 'FAIL', why: 'Banner internal "Login Google belum dikonfigurasi di server" tampil ke publik (login:159-161); foto pimpinan stock.', fix: 'Sembunyikan pesan dev saat production.' },
+      { id: 'U8.5', label: 'Konsistensi Brand', s: 'PASS', why: 'Logo, palet, tone konsisten lintas halaman.' },
+    ],
+  },
 ];
 
-const findings: Finding[] = [
-  { id:'F-01', severity:'Blocking', title:'Duplikasi isFilled + REQUIRED_BIODATA 14-field 4× & N+1 getMyPSBRegistration', loc:'portal/biodata:64 · portal/layout:11 · documents:38 · payment:30 · api.ts:1447', impact:'Tambah field harus edit 4 tempat; tiap navigasi 2× GET /psb/me boros; sudah divergen father_name vs ParentName', fix:'Buat lib/psb/completeness.ts (REQUIRED_BIODATA_KEYS + isFilled + isComplete) + PortalRegistrationContext di portal/layout.tsx single-fetch', skill:'audit code-quality + pesantren-ops' },
-  { id:'F-02', severity:'High', title:'Validasi PSB divergen frontend vs backend + gender dead branch', loc:'psb/handler.go:70-96 · repository.go:19 · validators/psb.go', impact:'Frontend wajib 14 field, backend hanya full_name — bisa submit incomplete; gender low==g dead, validasi izinkan Laki tapi UI hanya L/P', fix:'Samakan schema Zod shared; fix gender ke enum L/P saja, hapus low==g branch', skill:'backend-dev + pesantren-ops' },
-  { id:'F-03', severity:'High', title:'Payment replay tanpa idempotency key + webhook tanpa HMAC', loc:'payments/handler.go · notifications/handler.go:telegram/webhook · donations/handler.go', impact:'Bukti bayar bisa replay unlock ganda; webhook Telegram bisa diforge', fix:'Idempotency-Key header + simpan hash bukti; HMAC verify untuk webhook', skill:'full-stack-audit security 6.5/6.9' },
-  { id:'F-04', severity:'High', title:'Security headers hilang — tanpa CSP/HSTS/X-Frame', loc:'apps/backend/cmd/main.go · middleware', impact:'Clickjacking & downgrade risk, audit security FAIL 6.7', fix:'Tambah middleware helmet: CSP, HSTS, X-Frame-Options DENY, X-Content-Type-Options', skill:'full-stack-audit security' },
-  { id:'F-05', severity:'Medium', title:'Upload URL normalisasi duplikat + ADDRESS/MAP duplikat', loc:'portal/documents:94 · payment:243 · api.ts:1447 · psb/page:115 · PublicLayout:696', impact:'Maintenance debt, iframe maps beda URL bisa desync', fix:'Sentralisasi di api.ts normalizeUploadUrl + constants/contact.ts ADDRESS/MAP_EMBED_URL', skill:'audit duplication + cms' },
-  { id:'F-06', severity:'Medium', title:'Response envelope inkonsisten — APIResponse vs {errors}', loc:'platform/response.go:8 vs 37 · frontend localizeApiMessage', impact:'Frontend tidak tangani errors shape, toast error generik', fix:'Unifikasi ke APIResponse {success, message, errors} + update localizeApiMessage', skill:'backend-architect' },
-  { id:'F-07', severity:'Medium', title:'scanRegistration time.Parse DateTime gagal RFC3339', loc:'psb/repository.go:126 · raport/repository.go', impact:'created_at jadi zero time untuk ISO T', fix:'Coba time.RFC3339 fallback sebelum DateTime, atau pakai time.ParseInLocation', skill:'backend-dev' },
-  { id:'F-08', severity:'Medium', title:'Breadcrumbs hilang & admin table mobile tidak card view', loc:'app/admin/*/detail/[id] · app/admin/psb/page.tsx', impact:'Nielsen heuristic 12 & 14 FAIL — user lost di detail', fix:'Tambah Breadcrumbs component + responsive card view untuk table (list-page-patterns skill)', skill:'ux-heuristics + frontend-design' },
-  { id:'F-09', severity:'Medium', title:'Portal layout 609 LOC monolith + IRepository duplikat', loc:'app/portal/layout.tsx:564 · psb/handler.go:488', impact:'Over-abstraksi, susah test, dead code', fix:'Split lib/portal/navigation.ts + hook usePortalNav; hapus IRepository alias ke PSBRepository', skill:'audit dead code' },
-  { id:'F-10', severity:'Low', title:'Motion tanpa prefers-reduced-motion + hero LCP tidak priority', loc:'app/page.tsx:240 · Swiper autoplay', impact:'Aksesibilitas & Core Web Vital', fix:'Wrap motion di useReducedMotion; next/image priority untuk hero pertama', skill:'wcag-accessibility + frontend-design' },
-  { id:'F-11', severity:'Low', title:'Cookie consent & legal pages belum ada', loc:'app/layout.tsx · globals', impact:'Privacy compliance FAIL 9.1/9.2', fix:'Tambah CookieBanner + pages /privacy & /terms (ringkas, ID)', skill:'full-stack-audit privacy' },
-  { id:'F-12', severity:'Low', title:'Lint 78 warnings tersisa (no-img-element, unused vars)', loc:'apps/frontend — eslint', impact:'Noise, bukan blocking tapi hutang', fix:'Fase 5: ganti img→Image, hapus unused, atau eslint --fix bertahap', skill:'audit build & suite' },
+const FULLSCORE = { ok: 38, denom: 48 };
+const UXSCORE = { ok: 28, denom: 39 };
+
+const CRIT = [
+  { id: '6.1', t: 'JWT_SECRET & AI key produksi plaintext di repo (.env, deploy/backend_env_notes.txt) + backup arsip menyertakan .env & wa_session.db' },
+  { id: '6.8', t: 'FileServer publik /uploads/* masih menyajikan folder proofs (bukti pembayaran & dokumen PSB) bila route tak tertutup' },
+];
+const HIGH = [
+  { id: '6.7', t: 'Tidak ada Content-Security-Policy di header live; CDN (AdminLTE/GA/GFonts) tanpa SRI' },
+  { id: '7.2', t: 'Endpoint AI (/news/generate) tanpa rate-limit khusus — risiko biaya API & spam' },
+  { id: '8.1', t: 'Meta/description identik untuk SEMUA berita/donasi (per-slug metadata tidak ada)' },
+  { id: '2.5', t: 'Klaim "500+ Donatur" & jumlah donatur sintetis di /donations — data tidak dari DB (risiko hukum/kredibilitas)' },
+];
+const MED = [
+  { id: 'U3.2', t: 'Wizard PSB tanpa beforeunload/autosave — isian bisa hilang' },
+  { id: 'U3.5', t: 'Sesi expired redirect senyap tanpa notice' },
+  { id: 'U1.5', t: 'Validasi hanya saat submit, tidak onBlur' },
+  { id: '5.3', t: 'Label form tanpa htmlFor; icon button tanpa aria-label (admin-bs)' },
+  { id: '7.3', t: 'Raw error AI bocor ke klien (news/generate, chat)' },
+  { id: '9.3', t: 'Belum ada mekanisme hapus akun (right to erasure)' },
+  { id: '3.2', t: 'Touch target item menu mobile <44px' },
+  { id: '10.4', t: 'GA4 tanpa event konversi & tanpa error monitoring' },
+  { id: 'U3.1', t: 'Dua sistem konfirmasi hapus (custom vs window.confirm 19x)' },
 ];
 
-const passCount = [...fullStackCheckpoints, ...uxCheckpoints].flatMap(c=>c.checks).filter(c=>c.status==='PASS').length;
-const failCount = [...fullStackCheckpoints, ...uxCheckpoints].flatMap(c=>c.checks).filter(c=>c.status==='FAIL').length;
-const naCount = [...fullStackCheckpoints, ...uxCheckpoints].flatMap(c=>c.checks).filter(c=>c.status==='NA').length;
-const totalScored = passCount + failCount;
-const scorePct = Math.round((passCount/totalScored)*100);
+const TOP5 = [
+  'Rotasi & pindahkan JWT_SECRET + AI key keluar repo; kecualikan .env & wa_session.db dari backup.',
+  'Pagar /uploads/proofs/ (owner-only) + tutup listing publik; tambah rate-limit khusus endpoint AI.',
+  'Pasang Content-Security-Policy di header + SRI untuk semua CDN (AdminLTE, GA4, Google Fonts).',
+  'Jadikan angka donatur & testimoni asli dari database (hapus sintetis + hardcode).',
+  'Tambah per-slug SEO metadata (generateMetadata + canonical) untuk news/donasi/galeri/videos.',
+];
+
+function statusChip(s: Item['s']) {
+  if (s === 'PASS') return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-700"><CheckCircle2 size={12} /> PASS</span>;
+  if (s === 'FAIL') return <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-700"><XCircle size={12} /> FAIL</span>;
+  return <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-black text-slate-500">N/A</span>;
+}
+
+function CatCard({ cat }: { cat: Cat }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-black uppercase tracking-widest text-sky-700">
+          K{cat.id} · {cat.title}
+        </h2>
+        <span className="text-sm font-black text-slate-900">{cat.score}</span>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500"
+          style={{ width: `${(cat.denomination / cat.denominator) * 100}%` }}
+        />
+      </div>
+      <ul className="mt-4 divide-y divide-slate-100">
+        {cat.items.map((it) => (
+          <li key={it.id} className="py-2.5">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-bold text-slate-800">
+                <span className="font-mono text-xs text-slate-400">{it.id}</span> · {it.label}
+              </p>
+              {statusChip(it.s)}
+            </div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{it.why}</p>
+            {it.fix && (
+              <p className="mt-1 flex items-start gap-1.5 text-xs font-medium leading-5 text-amber-700">
+                <RefreshCcw size={12} className="mt-0.5 shrink-0" /> {it.fix}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function AuditPage() {
-  const [copied, setCopied] = useState(false);
-  const auditText = `# Audit Menyeluruh Alma Parung — 2026-09-07
-Verdict: Minor (1 Blocking, 3 High, 5 Medium, 3 Low) — skor ${scorePct}% (${passCount}/${totalScored} PASS, ${failCount} FAIL, ${naCount} N/A)
-Scope: apps/backend (Go 1.25, 26 fitur, SQLite WAL) + apps/frontend (Next.js 16.2, Tailwind 4, website-builder) + domain pesantren (PSB, santri, tahfidz, keuangan)
-Skills: audit (code-quality deep-dive), full-stack-audit (90 checkpoint), backend-architect, backend-dev, frontend-design, ux-heuristics, cms, pesantren-ops (custom)
-
-Blocking: F-01 duplikasi isFilled 4× & N+1 getMyPSBRegistration — fix lib/psb/completeness.ts + PortalRegistrationContext
-High: F-02 validasi divergen + gender dead branch | F-03 payment replay/HMAC | F-04 security headers CSP/HSTS
-Medium: F-05 upload/maps duplikat | F-06 envelope errors | F-07 scanRegistration RFC3339 | F-08 breadcrumbs+mobile table | F-09 layout monolith
-Low: F-10 motion reduced + LCP | F-11 cookie/legal | F-12 lint 78 warnings
-
-PRD: docs/PRD-AUDIT-ALMA-PARUNG.md — 5 fase: 1 PRD+skill → 2 audit paralel → 3 halaman /audit → 4 Blocking/Major fix → 5 polish & handover
-Lama: /audit ALMA (audit_page.tsx 208 LOC, PSB-only Minor) TELAH DIHAPUS — diganti halaman ini.
-`;
-  const handleCopy = async () => {
-    try { await navigator.clipboard.writeText(auditText); setCopied(true); setTimeout(()=>setCopied(false),2000); }
-    catch { const ta=document.createElement('textarea'); ta.value=auditText; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); setCopied(true); setTimeout(()=>setCopied(false),2000); }
-  };
+  const combined = FULLSCORE.ok + UXSCORE.ok;
   return (
     <PublicLayout>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-sky-900/80 bg-slate-950 py-16 text-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-sky-950/70" />
-        <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)', backgroundSize:'22px 22px'}} />
-        <div className="relative mx-auto max-w-6xl px-4">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-sky-100">
-            <FileSearch size={14} /> Audit Menyeluruh — 90 Checkpoint
-          </p>
-          <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-tight md:text-5xl">Audit Alma Parung <span className="text-sky-300">Menyeluruh</span></h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-sky-100/80">
-            Hasil audit 360° <span className="font-bold text-white">frontend + backend + CMS + UX + domain pesantren</span> menggunakan 7 skill: <span className="font-mono text-xs bg-white/15 px-1.5 py-0.5 rounded">audit</span> <span className="font-mono text-xs bg-white/15 px-1.5 py-0.5 rounded">full-stack-audit</span> <span className="font-mono text-xs bg-white/15 px-1.5 py-0.5 rounded">cms</span> <span className="font-mono text-xs bg-white/15 px-1.5 py-0.5 rounded">frontend-design</span> <span className="font-mono text-xs bg-white/15 px-1.5 py-0.5 rounded">backend-architect</span> <span className="font-mono text-xs bg-white/15 px-1.5 py-0.5 rounded">ux-heuristics</span> <span className="font-mono text-xs bg-white/15 px-1.5 py-0.5 rounded">pesantren-ops</span>. Menggantikan <span className="line-through decoration-rose-300">audit Alma lama (PSB-only)</span>.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <span className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-900">Tanggal: 2026-09-07</span>
-            <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black text-white">Skor: {passCount}/{totalScored} PASS · {scorePct}%</span>
-            <span className="rounded-full bg-amber-400 px-4 py-2 text-xs font-black text-slate-900">Verdict: Minor</span>
-            <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-black text-white">Blocking: 1</span>
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <ShieldCheck size={30} className="text-emerald-600" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-600">Full-Stack Audit</p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Audit Menyeluruh 90 Checkpoint</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              24 September 2026 · jilid 36 · ditarik dari kode & pengujian live (bukan klaim) · menggantikan halaman audit 19 September.
+            </p>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-emerald-500 px-3 py-1 font-bold">PASS {passCount}</span>
-            <span className="rounded-full bg-rose-500 px-3 py-1 font-bold">FAIL {failCount}</span>
-            <span className="rounded-full bg-slate-600 px-3 py-1 font-bold">N/A {naCount}</span>
-            <span className="rounded-full border border-white/20 px-3 py-1 text-sky-100">90 checkpoint (50 full-stack + 40 UX — 4 N/A)</span>
-          </div>
-          <div className="mt-3 h-2 w-full max-w-xl overflow-hidden rounded-full bg-white/15">
-            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400" style={{ width: `${scorePct}%` }} />
-          </div>
-          <button onClick={handleCopy} className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-black text-slate-900 shadow transition hover:bg-sky-50">
-            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-            {copied ? 'Tersalin!' : 'Copy Ringkas Audit'}
-          </button>
-          <p className="mt-3 text-xs text-sky-200/70">PRD: <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded">docs/PRD-AUDIT-ALMA-PARUNG.md</span> · Skill baru: <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded">full-stack-audit</span> + <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded">pesantren-ops</span> disimpan di <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded">.opencode/skills/*</span></p>
+          <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-sky-300">
+            <ArrowLeft size={14} /> Beranda
+          </Link>
         </div>
-      </section>
 
-      {/* Deletion notice OLD alma audit */}
-      <section className="bg-rose-50 py-6">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-white p-4">
-            <div className="rounded-xl bg-rose-100 p-2 text-rose-600"><XCircle size={18} /></div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-rose-600">Halaman lama dihapus</p>
-              <p className="mt-1 text-sm font-bold text-slate-900"><span className="line-through">audit_page.tsx</span> Alma (PSB-only, 208 LOC, Verdict Minor) — TELAH DIHAPUS</p>
-              <p className="mt-1 text-xs leading-6 text-slate-600">Sesuai permintaan: halaman <span className="font-mono bg-slate-100 px-1 rounded">/audit</span> lama milik Alma diganti halaman ini (audit menyeluruh 90 checkpoint). Backup tersimpan di <span className="font-mono bg-slate-100 px-1 rounded">audit_page.tsx.bak-2026-09-07</span> & <span className="font-mono bg-slate-100 px-1 rounded">/tmp/audit-heru-bak.tsx</span>.</p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Full-Stack</p>
+            <p className="mt-1 text-3xl font-black text-slate-900">{FULLSCORE.ok}<span className="text-lg text-slate-400">/{FULLSCORE.denom}</span></p>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-sky-500" style={{ width: `${(FULLSCORE.ok / FULLSCORE.denom) * 100}%` }} />
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Summary 4 cards */}
-      <section className="bg-white py-10">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="grid gap-6 md:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-              <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400"><Database size={14} /> Scope</p>
-              <p className="mt-2 text-sm font-bold text-slate-800">Monorepo penuh</p>
-              <p className="mt-2 text-xs leading-6 text-slate-500">Backend 26 fitur Go + frontend Next.js + website-builder 118k LOC + portal wali/santri + donasi</p>
-            </div>
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-              <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-amber-700"><AlertTriangle size={14} /> Verdict</p>
-              <p className="mt-2 text-lg font-black text-amber-900">Minor — 1 Blocking</p>
-              <p className="mt-2 text-xs leading-6 text-amber-800">Aman deploy, tapi Blocking F-01 wajib sebelum tambah fitur PSB. 3 High (security/payment) prioritas minggu ini.</p>
-            </div>
-            <div className="rounded-2xl border border-sky-100 bg-sky-50 p-6">
-              <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-sky-600"><ShieldCheck size={14} /> Skills</p>
-              <p className="mt-2 text-sm font-bold text-sky-900">7 skills aktif</p>
-              <p className="mt-2 text-xs leading-6 text-sky-700/80">audit · full-stack-audit (90) · backend-architect · frontend-design · ux-heuristics · cms · pesantren-ops (custom pesantren)</p>
-            </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6">
-              <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-700"><GraduationCap size={14} /> Pesantren</p>
-              <p className="mt-2 text-sm font-bold text-emerald-900">PPTQ Al-Maa Parung</p>
-              <p className="mt-2 text-xs leading-6 text-emerald-700">SMP–SMK · 30 Juz · 30 Ikhwan/30 Akhwat · SPP syahriah · tahfidz weight engine</p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">UX</p>
+            <p className="mt-1 text-3xl font-black text-slate-900">{UXSCORE.ok}<span className="text-lg text-slate-400">/{UXSCORE.denom}</span></p>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${(UXSCORE.ok / UXSCORE.denom) * 100}%` }} />
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Scorecard 90 checkpoints */}
-      <section className="bg-slate-50 py-10">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="flex items-center gap-2 text-xl font-black text-slate-900"><FileSearch size={20} className="text-sky-600" /> Scorecard 90 Checkpoint (full-stack-audit + UX)</h2>
-          <p className="mt-2 text-xs leading-6 text-slate-500">PASS hijau, FAIL rose, N/A slate. Klik FAIL untuk lihat fix di bawah (F-01 dst). Sumber skill: <span className="font-mono bg-white border px-1.5 py-0.5 rounded">jalaalrd/full-stack-audit</span> + <span className="font-mono bg-white border px-1.5 py-0.5 rounded">pesantren-ops</span>.</p>
-          <div className="mt-6 grid gap-6 md:grid-cols-2">
-            {[...fullStackCheckpoints, ...uxCheckpoints].map(group=>(
-              <div key={group.cat} className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
-                <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700">{group.icon} {group.cat}</p>
-                <div className="mt-3 space-y-2">
-                  {group.checks.map(ch=>(
-                    <div key={ch.id} className={`flex items-start justify-between gap-3 rounded-xl border px-3 py-2 text-xs ${ch.status==='PASS' ? 'border-emerald-100 bg-emerald-50' : ch.status==='FAIL' ? 'border-rose-100 bg-rose-50' : 'border-slate-100 bg-slate-50'}`}>
-                      <div className="min-w-0">
-                        <p className="font-bold"><span className="font-mono">{ch.id}</span> — {ch.title}</p>
-                        {ch.note && <p className="mt-1 leading-5 text-slate-500">{ch.note}</p>}
-                      </div>
-                      <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${ch.status==='PASS' ? 'bg-emerald-500 text-white' : ch.status==='FAIL' ? 'bg-rose-500 text-white' : 'bg-slate-400 text-white'}`}>{ch.status}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Gabungan</p>
+            <p className="mt-1 text-3xl font-black text-slate-900">{combined}<span className="text-lg text-slate-400">/{FULLSCORE.denom + UXSCORE.denom}</span></p>
+            <p className="mt-1 text-xs font-bold text-slate-500">{Math.round((combined / (FULLSCORE.denom + UXSCORE.denom)) * 100)}% — layak produksi, sisa perbaikan prioritas.{' '}</p>
           </div>
         </div>
-      </section>
 
-      {/* Findings 12 */}
-      <section className="bg-white py-10">
-        <div className="mx-auto max-w-6xl px-4 space-y-8">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-xl font-black text-slate-900"><Bug size={20} className="text-rose-600" /> Temuan Tervalidasi (12) — per skill</h2>
-            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-white">{failCount} FAIL → 12 findings</span>
-          </div>
-          <div className="grid gap-4">
-            {findings.map(f=>(
-              <div key={f.id} className={`rounded-[1.4rem] border p-5 md:p-6 ${f.severity==='Blocking' ? 'border-rose-200 bg-rose-50' : f.severity==='High' ? 'border-amber-200 bg-amber-50' : f.severity==='Medium' ? 'border-sky-200 bg-sky-50' : 'border-slate-200 bg-slate-50'}`}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest">
-                      <span className={`rounded-full px-2 py-1 text-white ${f.severity==='Blocking' ? 'bg-rose-600' : f.severity==='High' ? 'bg-amber-600' : f.severity==='Medium' ? 'bg-sky-600' : 'bg-slate-500'}`}>{f.severity}</span>
-                      <span className="font-mono bg-white border px-1.5 py-0.5 rounded text-slate-600">{f.id}</span>
-                      <span className="text-slate-400">{f.skill}</span>
-                    </p>
-                    <h3 className="mt-2 text-sm font-black text-slate-900 md:text-base">{f.title}</h3>
-                    <p className="mt-1 font-mono text-xs text-slate-500">{f.loc}</p>
-                  </div>
-                </div>
-                <div className="mt-3 grid gap-3 text-xs leading-6 md:grid-cols-2">
-                  <div className="rounded-xl bg-white p-3 border"><p className="font-black text-slate-800">Impact</p><p className="mt-1 text-slate-600">{f.impact}</p></div>
-                  <div className="rounded-xl bg-white p-3 border"><p className="font-black text-emerald-700">Fix</p><p className="mt-1 text-slate-700">{f.fix}</p></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CMS & Pesantren deep dive */}
-      <section className="bg-slate-50 py-10">
-        <div className="mx-auto max-w-6xl px-4 grid gap-6 md:grid-cols-2">
-          <div className="rounded-[1.4rem] border border-slate-200 bg-white p-6">
-            <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-sky-700"><Layers size={16} /> CMS Seam (skill cms)</p>
-            <h3 className="mt-2 text-base font-black text-slate-900">Theme vs Plugin vs Media pipeline</h3>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-6 text-slate-600 marker:text-slate-400">
-              <li>Template seam bersih: `PageBuilderEditor` + `HomePageRenderer` + `WebsiteBuilderLivePreview` — preview ↔ publish ok</li>
-              <li>Plugin seam: upload handler auth `RequireRole` ada, tapi gallery/videos belum rate-limit khusus</li>
-              <li>Media pipeline: `upload/handler.go:48 MaxBytesReader` + mime check ok, tapi `public/uploads` fallback `appURL` perlu env guard</li>
-              <li>Content model: settings `website_builder_state` JSON ok, tapi draft leakage perlu auth check di `settings/handler.go`</li>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-red-700"><AlertTriangle size={16} /> Kritis ({CRIT.length})</h2>
+            <ul className="mt-3 space-y-2">
+              {CRIT.map((c) => (
+                <li key={c.id} className="text-xs leading-5 text-slate-700"><b className="font-mono">{c.id}</b> · {c.t}</li>
+              ))}
             </ul>
           </div>
-          <div className="rounded-[1.4rem] border border-emerald-200 bg-white p-6">
-            <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-emerald-700"><HeartHandshake size={16} /> Pesantren Ops (skill pesantren-ops custom)</p>
-            <h3 className="mt-2 text-base font-black text-slate-900">PSB · Tahfidz · Keuangan</h3>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-6 text-slate-600 marker:text-slate-400">
-              <li>PSB wizard 3 langkah butuh `pesantren-ops` checklist — F-01/F-02 blocking</li>
-              <li>Tahfidz weight engine `platform/weight/engine.go` ada test `engine_test.go` — lulus, tapi butuh benchmark N santri besar</li>
-              <li>Keuangan: `payments` + `donations` + `wallet` terpisah, `buku kas` konsisten — minus idempotency (F-03)</li>
-              <li>Referensi pattern: Dibaliqaja laravel + PPMRJSKA Filament + SantriConnect geofencing — diserap ke skill</li>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-amber-700"><Database size={16} /> Tinggi ({HIGH.length})</h2>
+            <ul className="mt-3 space-y-2">
+              {HIGH.map((c) => (
+                <li key={c.id} className="text-xs leading-5 text-slate-700"><b className="font-mono">{c.id}</b> · {c.t}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-500"><FileText size={16} /> Sedang ({MED.length})</h2>
+            <ul className="mt-3 space-y-2">
+              {MED.map((c) => (
+                <li key={c.id} className="text-xs leading-5 text-slate-700"><b className="font-mono">{c.id}</b> · {c.t}</li>
+              ))}
             </ul>
           </div>
         </div>
-      </section>
 
-      {/* Branch audit 8 kategori */}
-      <section className="bg-white py-10">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="flex items-center gap-2 text-xl font-black text-slate-900"><ShieldCheck size={20} className="text-emerald-600" /> Branch Audit 8 Kategori (skill audit)</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-emerald-800"><CheckCircle2 size={14} /> Secrets</p><p className="mt-1 text-xs text-emerald-700">Clean — tidak ada token/.env di diff, JWT_SECRET via env</p></div>
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-emerald-800"><CheckCircle2 size={14} /> Debug</p><p className="mt-1 text-xs text-emerald-700">Clean — no console.log/TODO produk</p></div>
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-amber-800"><AlertTriangle size={14} /> Unintended</p><p className="mt-1 text-xs text-amber-700">Minor — audit ini sendiri ganti /audit, intentional</p></div>
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-amber-800"><AlertTriangle size={14} /> Test</p><p className="mt-1 text-xs text-amber-700">Minor — no test baru untuk F-01/F-02 (butuh vitest/go test)</p></div>
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-emerald-800"><CheckCircle2 size={14} /> Build & suite</p><p className="mt-1 text-xs text-emerald-700">Clean — Ratemimiter sudah fix + cleanup test lulus</p></div>
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-amber-800"><Info size={14} /> Commit hygiene</p><p className="mt-1 text-xs text-amber-700">Minor — PRD 1 commit, audit page 1 commit — atomic ok</p></div>
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-emerald-800"><CheckCircle2 size={14} /> Integration</p><p className="mt-1 text-xs text-emerald-700">Clean — /audit route ter-register, skill path .opencode/skills ok</p></div>
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4"><p className="flex items-center gap-2 text-xs font-black text-emerald-800"><CheckCircle2 size={14} /> Merge</p><p className="mt-1 text-xs text-emerald-700">Clean — no markers, base main</p></div>
+        <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-sky-700"><ArrowRight size={16} /> Top 5 Prioritas</h2>
+          <ol className="mt-3 space-y-2">
+            {TOP5.map((t, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm leading-6 text-slate-700">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[11px] font-black text-white">{i + 1}</span>
+                {t}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-10">
+          <h1 className="flex items-center gap-2 text-xl font-black text-slate-900"><Lock size={20} className="text-sky-600" /> Full-Stack Audit · {FULLSCORE.ok}/{FULLSCORE.denom} ({FULLSCORE.denom} item, 2 N/A)</h1>
+          <p className="mt-1 text-sm text-slate-500">10 kategori · 50 checkpoint (48 dinilai). Diuji dari kode backend Go & frontend Next.js + header/login live.</p>
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+            {FULL.map((c) => <CatCard key={c.id} cat={c} />)}
           </div>
         </div>
-      </section>
 
-      {/* Roadmap Fase 1-5 */}
-      <section className="bg-slate-950 py-10 text-white">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="flex items-center gap-2 text-xl font-black"><Zap size={20} className="text-amber-400" /> Roadmap Bertahap — 5 Fase (PRD)</h2>
-          <p className="mt-2 text-xs leading-6 text-slate-400">PRD lengkap: <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded">docs/PRD-AUDIT-ALMA-PARUNG.md</span> + staging <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded">/home/alma/PRD-AUDIT-ALMA-PARUNG.md</span></p>
-          <div className="mt-6 grid gap-4 md:grid-cols-5">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-[11px] font-black uppercase tracking-widest text-emerald-300">Fase 1 — DONE</p><p className="mt-1 text-sm font-bold">PRD & Skill</p><p className="mt-2 text-xs leading-6 text-slate-300">Eksplorasi monorepo, 32 skill inventaris, clone full-stack-audit, buat pesantren-ops custom. PRD 220 baris.</p><p className="mt-2 text-xs font-mono text-emerald-300">✓ 2026-09-07</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-[11px] font-black uppercase tracking-widest text-amber-300">Fase 2 — DONE (di halaman ini)</p><p className="mt-1 text-sm font-bold">Audit Paralel</p><p className="mt-2 text-xs leading-6 text-slate-300">7 skill paralel, 90 checkpoint scoring {scorePct}% + 12 findings tervalidasi.</p><p className="mt-2 text-xs font-mono text-amber-300">→ halaman ini adalah laporan Fase 2</p></div>
-            <div className="rounded-2xl border border-sky-400 bg-sky-500 p-4 text-slate-900"><p className="text-[11px] font-black uppercase tracking-widest">Fase 3 — DONE (halaman ini)</p><p className="mt-1 text-sm font-black">Halaman /audit Baru</p><p className="mt-2 text-xs leading-6 text-slate-800">Hapus audit_page.tsx Alma lama, ganti halaman menyeluruh ini. Backup .bak tersimpan.</p><p className="mt-2 text-xs font-mono font-bold">✓ /audit live</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-[11px] font-black uppercase tracking-widest text-white">Fase 4 — NEXT</p><p className="mt-1 text-sm font-bold">Blocking & High fix</p><p className="mt-2 text-xs leading-6 text-slate-300">F-01 PortalContext, F-02 validasi, F-03 idempotency/HMAC, F-04 helmet headers. Target 1 minggu.</p><p className="mt-2 text-xs font-mono text-slate-400">estim. 4 PR</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Fase 5 — POLISH</p><p className="mt-1 text-sm font-bold">Minor & Handover</p><p className="mt-2 text-xs leading-6 text-slate-300">F-05 s/d F-12, lint 78→0, breadcrumbs, cookie/legal, reduced-motion, handover.</p><p className="mt-2 text-xs font-mono text-slate-400">estim. 2 minggu</p></div>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/psb" className="rounded-full bg-white px-6 py-3 text-sm font-black text-slate-900">Ke PSB</Link>
-            <Link href="/portal/biodata" className="rounded-full bg-sky-500 px-6 py-3 text-sm font-black text-white">Portal Daftar</Link>
-            <Link href="/" className="rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-black text-white">Beranda</Link>
-            <button onClick={handleCopy} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-black text-white">
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? 'Tersalin!' : 'Copy Audit'}
-            </button>
+        <div className="mt-10">
+          <h1 className="flex items-center gap-2 text-xl font-black text-slate-900"><FileCheck2 size={20} className="text-emerald-600" /> UX Audit · {UXSCORE.ok}/{UXSCORE.denom}</h1>
+          <p className="mt-1 text-sm text-slate-500">8 kategori · 40 checkpoint (39 dinilai). Fokus pengalaman nyata wali santri & admin.</p>
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+            {UX.map((c) => <CatCard key={c.id} cat={c} />)}
           </div>
         </div>
-      </section>
 
-      {/* Skill inventory footer */}
-      <section className="bg-white py-8">
-        <div className="mx-auto max-w-6xl px-4">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Skill inventory — tersimpan di projek</p>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full border bg-slate-50 px-3 py-1 font-mono">.opencode/skills/audit — 14 tipe</span>
-            <span className="rounded-full border bg-sky-50 px-3 py-1 font-mono">.opencode/skills/full-stack-audit — 90 checkpoint (baru, dari github jalaalrd)</span>
-            <span className="rounded-full border bg-emerald-50 px-3 py-1 font-mono">.opencode/skills/pesantren-ops — custom pesantren (baru)</span>
-            <span className="rounded-full border bg-slate-50 px-3 py-1">+ 29 skill lokal (cms, frontend-design, backend-dev, ux-heuristics, wcag, dll)</span>
-          </div>
-          <p className="mt-3 text-xs leading-6 text-slate-500">Skill pesantren-ops + full-stack-audit disimpan di <span className="font-mono bg-slate-100 px-1 rounded">/home/alma/.opencode/skills/*</span> (staging alma). Untuk deploy ke <span className="font-mono bg-slate-100 px-1 rounded">/home/heru/alma-parung/.opencode/skills/*</span> jalankan sebagai <span className="font-mono bg-slate-100 px-1 rounded">heru</span>: <span className="font-mono bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">cp -r /home/alma/.opencode/skills/full-stack-audit /home/heru/alma-parung/.opencode/skills/ && cp -r /home/alma/.opencode/skills/pesantren-ops /home/heru/alma-parung/.opencode/skills/</span></p>
-          <p className="mt-3 text-xs text-slate-400">Generated 2026-09-07 · PRD: PRD-AUDIT-ALMA-PARUNG.md · Verdict Minor · Skor {scorePct}% · Halaman ini menggantikan audit Alma — siap untuk Fase 4 perbaikan bertahap.</p>
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-600"><Download size={16} /> Catatan Metodologi</h2>
+          <ul className="mt-3 space-y-1.5 text-xs leading-5 text-slate-500">
+            <li>· Skor didasarkan kode repo (apps/backend + apps/frontend) dengan bukti path:line, bukan hanya klaim.</li>
+            <li>· Header HTTP, robots, sitemap, manifest, 404, & halaman legal diverifikasi langsung via live situs (24 Sep 2026).</li>
+            <li>· Checkpoint N/A (9.5 perlindungan data, 10.3 dark mode, U3.4/U6.3) tidak dimasukkan penyebut — sifat aplikasi memang tidak butuh.</li>
+            <li>· Item PASS bisa menyertakan catatan minor non-blokir dalam teks penjelasan.</li>
+          </ul>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/psb" className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-sky-700">
+            <ExternalLink size={16} /> Info PSB
+          </Link>
+          <Link href="/portal" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-sky-300">
+            <Search size={16} /> Buka Portal Wali
+          </Link>
+          <Link href="/donations" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-sky-300">
+            <AlertTriangle size={16} /> Halaman Donasi
+          </Link>
         </div>
       </section>
     </PublicLayout>
