@@ -62,26 +62,40 @@ func openAIBaseURL() string {
 }
 
 // dahlModelChain: urutan model AI yang dicoba untuk endpoint OpenAI-compatible.
-// AI_MODEL (jika diset) diprioritaskan paling depan, DIikuti model cadangan
-// dahl berurutan. Model utama yang sedang sibuk (HTTP 429 "model at concurrency
-// capacity") sering menyarankan pindah ke model lain — membatasi chain hanya ke
-// AI_MODEL membuat fallback tidak pernah jalan dan pengguna hanya dapat error.
+// Nama model cadangan (deepseek-ai/..., MiniMaxAI/..., zai-org/...) adalah
+// alamat internal routing provider Dahl (inference.dahl.global) — TIDAK valid
+// di provider OpenAI-compatible lain (mis. tokenharbor.ai) dan langsung ditolak
+// 404 "model_not_found" di sana.
+//
+// Karena itu fallback Dahl hanya dipasang bila base URL memang Dahl. Untuk
+// provider non-Dahl, chain cukup berisi AI_MODEL yang dikonfigurasi admin agar
+// request tidak membuang waktu mencoba model yang pasti ditolak (begitu pula
+// retry kedua tidak lagi berputar sia-sia hingga menit-menit).
 func dahlModelChain() []string {
+	base := strings.ToLower(openAIBaseURL())
+	isDahl := strings.Contains(base, "inference.dahl") || strings.Contains(base, "dahl.global")
 	fallback := []string{
 		"deepseek-ai/DeepSeek-V4-Flash-0731",
 		"MiniMaxAI/MiniMax-M2.7",
 		"zai-org/GLM-5.3-Flash",
 	}
-	if m := strings.TrimSpace(os.Getenv("AI_MODEL")); m != "" {
-		chain := []string{m}
-		for _, model := range fallback {
-			if model != m {
-				chain = append(chain, model)
-			}
+	m := strings.TrimSpace(os.Getenv("AI_MODEL"))
+	if m == "" {
+		if isDahl {
+			return fallback
 		}
-		return chain
+		return nil
 	}
-	return fallback
+	if !isDahl {
+		return []string{m}
+	}
+	chain := []string{m}
+	for _, model := range fallback {
+		if model != m {
+			chain = append(chain, model)
+		}
+	}
+	return chain
 }
 
 func openAIChatURL() string {
