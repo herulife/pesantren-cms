@@ -204,6 +204,7 @@ func main() {
 	// (portal butuh upload bukti), dibatasi 30/jam. Webhook Telegram 120/menit.
 	uploadLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 	webhookLimiter := appmiddleware.NewRateLimiter(120, time.Minute)
+	newsGenLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
 	noteLimiter := appmiddleware.NewRateLimiter(60, time.Hour)
 	otpRequestLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
 	otpVerifyLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
@@ -313,7 +314,7 @@ func main() {
 				r.Put("/{id}/restore", newsHandler.Restore)
 				r.Put("/{id}/pin", newsHandler.SetPinned)
 				r.Delete("/{id}/force", newsHandler.ForceDelete)
-				r.Post("/generate", newsHandler.GenerateArticle) // AI Generation
+				r.With(newsGenLimiter.Middleware).Post("/generate", newsHandler.GenerateArticle) // AI Generation
 			})
 		})
 

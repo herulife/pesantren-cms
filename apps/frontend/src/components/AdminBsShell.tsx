@@ -8,7 +8,12 @@ import { useAuth } from '@/components/AuthProvider';
 const LTE_CSS = 'https://cdn.jsdelivr.net/npm/admin-lte@4.9.1/dist/css/adminlte.min.css';
 const BS_CSS = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css';
 const BS_ICONS = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css';
-const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+
+const CSS_SRI: Record<string, string> = {
+  [BS_CSS]: 'sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH',
+  [LTE_CSS]: 'sha384-ahs537gFpGEVQSckCyotnKzKsJA6QUAY93NFH92NmQnGksNhU2KSj1cvVWZhBhmK',
+  [BS_ICONS]: 'sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+',
+};
 
 export function LteCss() {
   useEffect(() => {
@@ -18,12 +23,16 @@ export function LteCss() {
         link.id = id;
         link.rel = 'stylesheet';
         link.href = href;
+        const sri = CSS_SRI[href];
+        if (sri) {
+          link.integrity = sri;
+          link.crossOrigin = 'anonymous';
+        }
         document.head.appendChild(link);
       }
     };
     add('admin-bs-css', BS_CSS);
     add('admin-bs-icons', BS_ICONS);
-    add('admin-bs-font', FONT_CSS);
     add('admin-lte-css', LTE_CSS);
     document.body.classList.add('admin-bs', 'layout-fixed', 'sidebar-expand-lg', 'sidebar-mini', 'text-sm');
     return () => {
