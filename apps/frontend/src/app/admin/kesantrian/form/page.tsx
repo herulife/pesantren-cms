@@ -39,6 +39,8 @@ const initialForm = {
   father_phone: '',
   mother_name: '',
   mother_phone: '',
+  father_occupation: '',
+  mother_occupation: '',
   registration_id: 0,
 };
 
@@ -83,6 +85,8 @@ function SantriFormContent() {
             father_phone: s.father_phone || '',
             mother_name: s.mother_name || '',
             mother_phone: s.mother_phone || '',
+            father_occupation: s.father_occupation || '',
+            mother_occupation: s.mother_occupation || '',
             registration_id: s.registration_id || 0,
           });
         } else {
@@ -119,6 +123,8 @@ function SantriFormContent() {
       father_phone: form.father_phone.trim(),
       mother_name: form.mother_name.trim(),
       mother_phone: form.mother_phone.trim(),
+      father_occupation: form.father_occupation.trim(),
+      mother_occupation: form.mother_occupation.trim(),
     };
 
     let res;
@@ -324,6 +330,24 @@ function SantriFormContent() {
                   {errors.father_phone && <p className="mt-1 text-xs font-semibold text-red-500">{errors.father_phone}</p>}
                 </div>
                 <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Pekerjaan Ayah</label>
+                  <input
+                    value={form.father_occupation}
+                    onChange={set('father_occupation')}
+                    placeholder="Contoh: Wiraswasta, Petani"
+                    className={inputClass()}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Pekerjaan Ibu</label>
+                  <input
+                    value={form.mother_occupation}
+                    onChange={set('mother_occupation')}
+                    placeholder="Contoh: Ibu Rumah Tangga"
+                    className={inputClass()}
+                  />
+                </div>
+                <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Nama Ibu</label>
                   <input
                     value={form.mother_name}
@@ -332,7 +356,7 @@ function SantriFormContent() {
                     className={inputClass()}
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-600">No. HP Ibu</label>
                   <input
                     value={form.mother_phone}

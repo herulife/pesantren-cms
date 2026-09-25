@@ -3287,6 +3287,8 @@ export interface Santri {
 	father_phone: string;
 	mother_name: string;
 	mother_phone: string;
+	father_occupation?: string;
+	mother_occupation?: string;
 	registration_id: number;
 	photo_url: string;
 	user_id?: number | null;

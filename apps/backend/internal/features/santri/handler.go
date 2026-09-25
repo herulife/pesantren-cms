@@ -33,6 +33,8 @@ type Santri struct {
 	FatherPhone string `json:"father_phone"`
 	MotherName  string `json:"mother_name"`
 	MotherPhone string `json:"mother_phone"`
+	FatherOccupation string `json:"father_occupation"`
+	MotherOccupation string `json:"mother_occupation"`
 	RegistrationID int   `json:"registration_id"`
 	PhotoURL    string `json:"photo_url"`
 	UserID      *int   `json:"user_id,omitempty"`
@@ -60,6 +62,8 @@ type SantriInput struct {
 	FatherPhone string `json:"father_phone"`
 	MotherName  string `json:"mother_name"`
 	MotherPhone string `json:"mother_phone"`
+	FatherOccupation string `json:"father_occupation"`
+	MotherOccupation string `json:"mother_occupation"`
 	RegistrationID int   `json:"registration_id"`
 	PhotoURL    string `json:"photo_url"`
 }
@@ -69,7 +73,7 @@ func (in *SantriInput) toSantri() *Santri {
 		NIS: in.NIS, Name: in.Name, Nickname: in.Nickname, Gender: in.Gender,
 		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
 		Class: in.Class, Angkatan: in.Angkatan, Status: in.Status,
-		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
+		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
 	}
 }
 
