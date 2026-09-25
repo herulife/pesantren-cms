@@ -224,6 +224,9 @@ export default function ERaportPage() {
 		window.print();
 	};
 
+	const weightSum = subjects.reduce((a, s) => a + (Number(subjectWeights[s.id]) || 0), 0);
+	const weightOkLive = Math.abs(weightSum - 100) < 0.01;
+
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -412,35 +415,62 @@ export default function ERaportPage() {
 
 			{tab === 'maps' && (
 				<div className="rounded-3xl border border-slate-200 bg-white p-6">
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<div>
-							<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Scale size={19} className="text-sky-600" /> Bobot Mata Pelajaran</h3>
-							<p className="mt-1 text-sm text-slate-500">Total bobot aktif harus 100% agar nilai mata pelajaran dapat dihitung.</p>
+					<div>
+						<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Scale size={19} className="text-sky-600" /> Bobot Mata Pelajaran</h3>
+						<p className="mt-1 text-sm text-slate-500">Atur seberapa besar pengaruh setiap mapel terhadap <strong>Nilai Mapel</strong> di raport. Total bobot harus <strong>100%</strong>.</p>
+					</div>
+
+					<div className="mt-4 grid gap-3 sm:grid-cols-3">
+						<div className="rounded-2xl bg-sky-50 p-4 text-sm">
+							<p className="text-[11px] font-black uppercase tracking-widest text-sky-600">KKM (nilai lulus)</p>
+							<p className="mt-1 text-slate-600">KKM <strong>75</strong> berarti santri dianggap <strong>tuntas</strong> jika nilai mapelnya ≥ 75. Ini ambang batas lulus, <strong>bukan</strong> bobot.</p>
 						</div>
-						<div className={`rounded-2xl px-4 py-2 text-sm font-black ring-1 ${weightOk ? 'bg-sky-50 text-sky-700 ring-sky-200' : 'bg-rose-50 text-rose-700 ring-rose-200'}`}>
-							{weightOk ? '✓ Total 100%' : '✗ Total belum 100%'}
+						<div className="rounded-2xl bg-emerald-50 p-4 text-sm">
+							<p className="text-[11px] font-black uppercase tracking-widest text-emerald-600">Bobot</p>
+							<p className="mt-1 text-slate-600">Persentase pengaruh mapel terhadap Nilai Mapel. Contoh bobot <strong>12.5%</strong> → mapel itu menyumbang <strong>12.5%</strong> dari rata-rata Nilai Mapel.</p>
+						</div>
+						<div className="rounded-2xl bg-amber-50 p-4 text-sm">
+							<p className="text-[11px] font-black uppercase tracking-widest text-amber-600">Komposisi Nilai Akhir</p>
+							<p className="mt-1 text-slate-600">(Nilai Mapel × <strong>50%</strong>) + (Nilai Project × <strong>25%</strong>) + (Nilai Kesantrian × <strong>25%</strong>).</p>
 						</div>
 					</div>
-					<div className="mt-5 divide-y divide-slate-100">
-						{subjects.map(s => (
-							<div key={s.id} className="flex items-center gap-4 py-3">
-								<div className="min-w-0 flex-1">
-									<p className="text-sm font-bold text-slate-800">{s.name}</p>
-									<p className="text-[11px] text-slate-400">KKM {s.kkm}</p>
+
+					<div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+						<div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-5 py-3">
+							<span className="text-[11px] font-black uppercase tracking-widest text-slate-500">Mata Pelajaran</span>
+							<span className="text-[11px] font-black uppercase tracking-widest text-slate-500">Bobot (%)</span>
+						</div>
+						<div className="divide-y divide-slate-100">
+							{subjects.map(s => (
+								<div key={s.id} className="flex items-center gap-4 px-5 py-3">
+									<div className="min-w-0 flex-1">
+										<p className="text-sm font-bold text-slate-800">{s.name}</p>
+										<span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+											KKM {s.kkm} <span className="font-medium text-slate-400">(min. lulus)</span>
+										</span>
+									</div>
+									<div className="flex w-40 items-center gap-1">
+										<input
+											type="number"
+											value={subjectWeights[s.id] ?? ''}
+											onChange={e => setSubjectWeights(prev => ({ ...prev, [s.id]: e.target.value }))}
+											className="w-full rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-bold text-slate-800 outline-none focus:border-sky-500"
+										/>
+										<span className="font-black text-slate-400">%</span>
+									</div>
 								</div>
-								<div className="w-32">
-									<input
-										type="number"
-										value={subjectWeights[s.id] ?? ''}
-										onChange={e => setSubjectWeights(prev => ({ ...prev, [s.id]: e.target.value }))}
-										className="w-full rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-bold text-slate-800 outline-none focus:border-sky-500"
-									/>
-									<span className="mt-0.5 block text-center text-[10px] font-bold text-slate-400">% bobot</span>
-								</div>
-							</div>
-						))}
+							))}
+						</div>
 					</div>
-					<div className="mt-2 flex justify-end border-t border-slate-100 pt-4">
+
+					<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3">
+						<p className="text-sm font-semibold text-slate-600">
+							Total bobot: <strong className={weightOkLive ? 'text-emerald-600' : 'text-rose-600'}>{weightSum}%</strong>
+							<span className="hidden sm:inline"> &nbsp;•&nbsp; </span>
+							<span className={weightOkLive ? 'text-emerald-600' : 'text-slate-500'}>
+								{weightOkLive ? 'Sudah 100% — siap dihitung.' : 'Harus 100% agar nilai mapel dapat dihitung.'}
+							</span>
+						</p>
 						<button onClick={handleSaveWeights} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white hover:bg-sky-700">
 							<Save size={16} /> Simpan Bobot Mapel
 						</button>
