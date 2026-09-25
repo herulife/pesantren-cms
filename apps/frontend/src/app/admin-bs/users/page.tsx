@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getUsers, createUser, updateUserRole, resetUserPassword, deleteUser } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
-import { BsTitle, BsAlert, PageHeader } from '../ui';
+import { PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
 type U = { id: number; name: string; email: string; role: string; created_at: string; last_login_at?: string | null };
@@ -39,6 +39,16 @@ function RowActions({ canDelete, isSelf, onPassword, onDelete }: { canDelete: bo
   );
 }
 
+function CompactAlert({ msg, ok, onClose }: { msg: string; ok: boolean; onClose: () => void }) {
+  if (!msg) return null;
+  return (
+    <div className={`alert ${ok ? 'alert-success' : 'alert-danger'} alert-dismissible py-1 px-3 mb-2 d-flex align-items-center`} role="alert" style={{ fontSize: '0.8rem' }}>
+      <span className="me-2">{msg}</span>
+      <button type="button" className="btn-close ms-auto" style={{ width: '0.55rem', height: '0.55rem' }} onClick={onClose} aria-label="Tutup" />
+    </div>
+  );
+}
+
 export default function BsUsers() {
   const { user } = useAuth();
   const isSuper = user?.role === 'superadmin';
@@ -56,6 +66,12 @@ export default function BsUsers() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load('');
   }, []);
+
+  useEffect(() => {
+    if (!msg) return;
+    const t = setTimeout(() => setMsg(''), 4000);
+    return () => clearTimeout(t);
+  }, [msg]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +116,7 @@ export default function BsUsers() {
           <button type="button" className="alma-btn alma-btn-success alma-btn-sm" onClick={() => exportToExcel('Data User', ['Nama', 'Email', 'Role', 'Login Terakhir'], rows.map((r) => [r.name, r.email, r.role, (r.last_login_at || '').slice(0, 16).replace('T', ' ') || '-']), 'data_user')}>Export Excel</button>
         }
       />
-      <BsAlert msg={msg} ok={ok} />
+      <CompactAlert msg={msg} ok={ok} onClose={() => setMsg('')} />
       <div className="card card-primary">
         <div className="card-header"><h3 className="card-title">Tambah User</h3></div>
         <form onSubmit={submit}>
