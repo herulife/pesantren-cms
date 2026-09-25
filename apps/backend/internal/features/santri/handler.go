@@ -93,6 +93,7 @@ type IRepository interface {
 	Update(s *Santri) error
 	Delete(id int) error
 	BulkDelete(ids []int) (int, error)
+	PurgeSantri(id int) (map[string]int64, error)
 	SetClassBulk(items map[int]string) (int, error)
 	LinkUser(santriID, userID int) error
 	UnlinkUser(santriID int) error
@@ -135,6 +136,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Put("/{id}/link-user", h.LinkUser)
 	r.Put("/{id}/unlink-user", h.UnlinkUser)
 	r.Delete("/{id}", h.Delete)
+	r.Delete("/{id}/purge", h.Purge)
 	r.Delete("/bulk", h.BulkDelete)
 	return r
 }

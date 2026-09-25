@@ -3509,6 +3509,15 @@ export async function deleteSantri(id: number): Promise<boolean> {
 	} catch (e) { console.error('[Kesantrian] delete:', e); return false; }
 }
 
+// purgeSantri = HAPUS TOTAL: santri + seluruh tagihan (termasuk lunas),
+// kwitansi, nilai, rapor, presensi, tahfidz, wallet, akun portal. Superadmin only.
+export async function purgeSantri(id: number): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}/purge`, { method: 'DELETE' });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus total santri' }; }
+}
+
 export async function bulkCreateSantri(items: Partial<Santri>[]): Promise<{ ok: boolean; message: string; inserted?: number }> {
 	try {
 		const r = await lmsFetch('/santri/bulk', { method: 'POST', body: JSON.stringify({ items }) });

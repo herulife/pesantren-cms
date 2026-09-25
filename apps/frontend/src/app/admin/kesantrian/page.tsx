@@ -8,6 +8,7 @@ import {
   getSantriList,
   deleteSantri,
   bulkDeleteSantri,
+  purgeSantri,
   getSantriPortalUsers,
   linkSantriUser,
   Santri,
@@ -55,6 +56,8 @@ export default function KesantrianPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState<null | { mode: 'single' | 'bulk'; id?: number }>(null);
+  const [confirmPurge, setConfirmPurge] = useState<Santri | null>(null);
+  const [purging, setPurging] = useState(false);
   const [linkTarget, setLinkTarget] = useState<Santri | null>(null);
   const [userOptions, setUserOptions] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
   const [linkUserId, setLinkUserId] = useState('');
@@ -432,6 +435,13 @@ export default function KesantrianPage() {
                           <Trash2 size={16} />
                         </button>
                         <button
+                          onClick={() => setConfirmPurge(s)}
+                          className="rounded-lg p-2 font-black text-red-700 transition hover:bg-red-100"
+                          title="Hapus TOTAL: santri + seluruh tagihan (termasuk lunas), nilai, rapor, akun portal"
+                        >
+                          <Trash2 size={16} strokeWidth={2.5} />
+                        </button>
+                        <button
                           onClick={() => openLinkModal(s)}
                           className="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-50"
                           title={s.user_id ? 'Akun wali terhubung — klik untuk ganti' : 'Hubungkan akun wali'}
@@ -522,6 +532,29 @@ export default function KesantrianPage() {
         </div>
       </div>
 
+      <ConfirmDialog
+        isOpen={!!confirmPurge}
+        onClose={() => setConfirmPurge(null)}
+        onConfirm={async () => {
+          if (!confirmPurge) return;
+          setPurging(true);
+          const res = await purgeSantri(confirmPurge.id);
+          setPurging(false);
+          if (res.ok) showToast('success', res.message || 'Santri dihapus total');
+          else showToast('error', res.message || 'Gagal menghapus total santri');
+          setConfirmPurge(null);
+          load({ offset: 0 });
+          setOffset(0);
+        }}
+        title="Hapus TOTAL Santri"
+        message={
+          `HAPUS TOTAL ${confirmPurge?.name || ''} (NIS ${confirmPurge?.nis || '-'})? ` +
+          'Seluruh data ikut terhapus permanen: tagihan SPP/iuran (TERMASUK yang sudah dibayar/lunas), ' +
+          'kwitansi, nilai, rapor, presensi, tahfidz, wallet, dan akun portal. Tindakan ini TIDAK dapat dibatalkan.'
+        }
+        confirmText="Ya, Hapus Total"
+        isLoading={purging}
+      />
       <ConfirmDialog
         isOpen={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
