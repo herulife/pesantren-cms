@@ -59,6 +59,30 @@ func TestValidateRegisterRequest_Invalid(t *testing.T) {
 	}
 }
 
+func TestValidateCreateUserRequest_RejectsPortalRoles(t *testing.T) {
+	for _, role := range []string{"user", "admin"} {
+		req := &CreateUserRequest{
+			Name:     "Staff User",
+			Email:    "staff@example.com",
+			Password: "12345678",
+			Role:     role,
+		}
+		errs := ValidateCreateUserRequest(req)
+		if _, ok := errs["role"]; !ok {
+			t.Fatalf("expected role %q to be rejected", role)
+		}
+	}
+}
+
+func TestValidateRoleUpdateRequest_RejectsPortalRoles(t *testing.T) {
+	for _, role := range []string{"user", "admin"} {
+		errs := ValidateRoleUpdateRequest(&RoleUpdateRequest{Role: role})
+		if _, ok := errs["role"]; !ok {
+			t.Fatalf("expected role %q to be rejected", role)
+		}
+	}
+}
+
 func TestValidateNewsRequest_AutoSlug(t *testing.T) {
 	req := &NewsRequest{
 		Title:   "Berita Pondok Baru",

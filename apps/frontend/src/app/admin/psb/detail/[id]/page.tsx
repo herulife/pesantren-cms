@@ -60,7 +60,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
         setTestScore(found?.test_score != null ? String(found.test_score) : '');
         setTestNote(found?.test_note || '');
         setReRegDeadline(found?.re_registration_deadline || '');
-        getPSBWAOutbox(Number(id)).then((res: any) => {
+        getPSBWAOutbox(Number(id)).then((res) => {
           if (res.success && Array.isArray(res.data?.items)) setWALog(res.data.items);
         }).catch(() => setWALog([]));
         setIsLoading(false);
@@ -199,7 +199,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
   const reloadWALog = async () => {
     if (!registration) return;
     try {
-      const res: any = await getPSBWAOutbox(registration.id);
+      const res = await getPSBWAOutbox(registration.id);
       if (res.success && Array.isArray(res.data?.items)) setWALog(res.data.items);
     } catch {
       setWALog([]);
@@ -210,7 +210,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     if (waRetrying !== null) return;
     setWARetrying(itemId);
     try {
-      const res: any = await retryPSBWAMessage(itemId);
+      const res = await retryPSBWAMessage(itemId);
       showToast(res.success ? 'success' : 'error', res.success ? 'Kirim ulang WhatsApp diproses.' : (res.message || 'Gagal kirim ulang WhatsApp.'));
     } catch {
       showToast('error', 'Gagal kirim ulang WhatsApp.');
@@ -224,7 +224,7 @@ export default function PSBDetailPage({ params }: { params: Promise<{ id: string
     if (!registration || isAnnouncing) return;
     setIsAnnouncing(true);
     try {
-      const res: any = await sendPSBAnnouncement(registration.id);
+      const res = await sendPSBAnnouncement(registration.id);
       showToast(res.success ? 'success' : 'error', res.success ? 'Pengumuman WhatsApp dikirim/diantrekan.' : (res.message || 'Gagal kirim pengumuman.'));
     } catch {
       showToast('error', 'Gagal kirim pengumuman WhatsApp.');

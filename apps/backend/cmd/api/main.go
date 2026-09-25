@@ -374,10 +374,10 @@ func main() {
 			r.Get("/settings/role-permissions", settingHandler.GetRolePermissions)
 			r.With(uploadLimiter.Middleware).Post("/upload", upload.HandleUpload)
 
-			// Manajemen user: superadmin/admin/bendahara boleh kelola (lihat,
-			// tambah, ubah role, reset password). HAPUS user tetap HANYA superadmin.
+			// Manajemen user: superadmin/bendahara boleh kelola (lihat,
+			// tambah, ubah role, reset password). Hapus user tetap hanya superadmin.
 			r.Group(func(r chi.Router) {
-				r.Use(auth.RequireRole("superadmin", "admin", "bendahara"))
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
 				r.Get("/users", authHandler.GetAllUsers)
 				r.Post("/users", authHandler.CreateUser)
 				r.Put("/users/{id}/password", authHandler.ResetUserPassword)

@@ -7,7 +7,8 @@ user (wali/portal). JANGAN buat role baru tanpa alasan (keputusan: finalisasi
 
 | Modul | superadmin | bendahara | panitia_psb | tim_media | admin(zombie) | user |
 |---|---|---|---|---|---|---|
-| users/settings/logs | FULL | - | - | - | disebut route | - |
+| users | FULL | manage staf (tanpa delete/role-menu) | - | - | - | - |
+| settings/logs | FULL | - | - | - | - | - |
 | exams create/questions | FULL | - | - | - | - | ikut ujian saja |
 | wallet topup | FULL | - | - | - | - | my/history/pin/spend |
 | payments/spp/iuran/donations/kas | FULL (bypass) | FULL | - | - | - | proof + my-bills/ledger/receipt |

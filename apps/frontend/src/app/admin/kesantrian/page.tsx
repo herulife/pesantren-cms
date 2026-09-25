@@ -8,7 +8,7 @@ import {
   getSantriList,
   deleteSantri,
   bulkDeleteSantri,
-  getUsers,
+  getSantriPortalUsers,
   linkSantriUser,
   Santri,
   normalizeApiAssetUrl,
@@ -181,8 +181,8 @@ export default function KesantrianPage() {
     setLinkTarget(s);
     setLinkUserId(s.user_id ? String(s.user_id) : '');
     try {
-      const users = await getUsers('');
-      setUserOptions(users.filter((u) => u.role === 'user'));
+      const users = await getSantriPortalUsers('');
+      setUserOptions(users);
     } catch {
       showToast('error', 'Gagal memuat daftar akun.');
     }

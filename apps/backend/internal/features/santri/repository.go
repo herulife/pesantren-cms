@@ -70,6 +70,34 @@ func (r *Repository) FindAll(search, class, status string, limit, offset int) ([
 	return list, total, nil
 }
 
+func (r *Repository) FindPortalUsers(search string) ([]PortalUser, error) {
+	query := `SELECT id, name, email FROM users WHERE role = 'user'`
+	args := []interface{}{}
+	if search != "" {
+		query += " AND (name LIKE ? OR email LIKE ?)"
+		like := "%" + search + "%"
+		args = append(args, like, like)
+	}
+	query += " ORDER BY name ASC, id ASC"
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []PortalUser{}
+	for rows.Next() {
+		var user PortalUser
+		if err := rows.Scan(&user.ID, &user.Name, &user.Email); err != nil {
+			return nil, err
+		}
+		user.Role = "user"
+		users = append(users, user)
+	}
+	return users, rows.Err()
+}
+
 func (r *Repository) FindByID(id int) (*Santri, error) {
 	var s Santri
 	var userID sql.NullInt64
@@ -243,7 +271,7 @@ func (r *Repository) Delete(id int) error {
 
 func (r *Repository) LinkUser(santriID, userID int) error {
 	var exists int
-	if err := r.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, userID).Scan(&exists); err != nil {
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ? AND role = 'user'`, userID).Scan(&exists); err != nil {
 		return err
 	}
 	if exists == 0 {

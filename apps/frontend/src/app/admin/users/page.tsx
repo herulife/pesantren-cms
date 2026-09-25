@@ -16,7 +16,6 @@ import {
   Wallet,
   GraduationCap,
   Camera,
-  User,
   AlertCircle,
   Clock,
   Trash2,
@@ -42,7 +41,6 @@ const ROLE_OPTIONS = [
   { value: 'bendahara', label: 'Bendahara', icon: Wallet, color: 'text-sky-600', bg: 'bg-sky-50', ring: 'ring-sky-200' },
   { value: 'panitia_psb', label: 'Panitia PSB', icon: GraduationCap, color: 'text-sky-600', bg: 'bg-sky-50', ring: 'ring-sky-200' },
   { value: 'tim_media', label: 'Tim Media', icon: Camera, color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200' },
-  { value: 'user', label: 'User Biasa', icon: User, color: 'text-slate-600', bg: 'bg-slate-50', ring: 'ring-slate-200' },
 ];
 
 function getRoleConfig(role: string) {
@@ -76,6 +74,8 @@ function getUsageStatus(user: UserRow, currentUserId?: number | null) {
 export default function UsersPage() {
   const { showToast } = useToast();
   const { user: currentUser } = useAuth();
+  const isSuper = currentUser?.role === 'superadmin';
+  const manageableRoleOptions = isSuper ? ROLE_OPTIONS : ROLE_OPTIONS.filter((role) => role.value !== 'superadmin');
   
   const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,7 +90,7 @@ export default function UsersPage() {
     name: '',
     email: '',
     password: '',
-    role: 'user',
+    role: 'bendahara',
   });
   
   // Modal states
@@ -121,8 +121,8 @@ export default function UsersPage() {
   }, []);
 
   useEffect(() => {
-    void fetchRolePerms();
-  }, [fetchRolePerms]);
+    if (isSuper) void fetchRolePerms();
+  }, [isSuper, fetchRolePerms]);
 
   const fetchUsers = useCallback(async (search = searchQuery) => {
     setIsLoading(true);
@@ -154,7 +154,7 @@ export default function UsersPage() {
           name: '',
           email: '',
           password: '',
-          role: 'user',
+          role: 'bendahara',
         });
         setShowCreateForm(false);
         await fetchUsers('');
@@ -282,7 +282,7 @@ export default function UsersPage() {
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Bootstrap Akun</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Tambah User Dari Dashboard</h2>
             <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-              Superadmin bisa membuat akun baru langsung dari panel tanpa menunggu pendaftaran publik. Cocok untuk staf internal seperti bendahara, panitia PSB, dan tim media.
+              Superadmin atau bendahara bisa membuat akun staf baru langsung dari panel tanpa menunggu pendaftaran publik. Akun wali (role user) tidak ditampilkan di sini.
             </p>
           </div>
           <button
@@ -348,7 +348,7 @@ export default function UsersPage() {
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               >
-                {ROLE_OPTIONS.map((role) => (
+                {manageableRoleOptions.map((role) => (
                   <option key={role.value} value={role.value}>
                     {role.label}
                   </option>
@@ -374,7 +374,7 @@ export default function UsersPage() {
       </div>
 
       {/* Role Distribution Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5 mb-10">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 mb-10">
         {ROLE_OPTIONS.map(role => {
           const RoleIcon = role.icon;
           const count = roleCounts[role.value] || 0;
@@ -398,8 +398,10 @@ export default function UsersPage() {
         })}
       </div>
 
-      {/* Hak Akses Menu per Role */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-10">
+      {isSuper ? (
+        <>
+          {/* Hak Akses Menu per Role */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-10">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 border border-sky-100"><Shield size={18} /></div>
@@ -410,10 +412,15 @@ export default function UsersPage() {
           </div>
           <button
             onClick={async () => {
-              const perms = standardRolePermissions();
-              await updateSetting('role_menu_permissions', JSON.stringify(perms));
-              setRolePerms(perms);
-              showToast('success','Hak akses direset ke standar role');
+              try {
+                const perms = standardRolePermissions();
+                await updateSetting('role_menu_permissions', JSON.stringify(perms));
+                setRolePerms(perms);
+                showToast('success','Hak akses direset ke standar role');
+              } catch (error) {
+                const message = error instanceof Error ? error.message : 'Gagal menyimpan hak akses.';
+                showToast('error', message);
+              }
             }}
             className="text-xs font-bold text-slate-500 hover:text-slate-700 underline"
           >
@@ -421,7 +428,7 @@ export default function UsersPage() {
           </button>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
-          {ROLE_OPTIONS.filter(r=>r.value!=='user' && r.value!=='superadmin').map(role => {
+           {ROLE_OPTIONS.filter(r=>r.value!=='superadmin').map(role => {
             const RoleIcon = role.icon;
             const saved = rolePerms[role.value];
             // Daftar yang tampil = standar role ini (tersimpan di DB, atau bawaan bila belum ada).
@@ -490,7 +497,9 @@ export default function UsersPage() {
           })}
         </div>
         <p className="mt-4 text-xs text-slate-500">Standar tersimpan di database (<span className="font-mono">role_menu_permissions</span>) dan tetap sama setelah logout. Contoh: Bendahara uncheck <b>Notifikasi WA</b> → user bendahara tidak lihat menu itu di Sidebar.</p>
-      </div>
+          </div>
+        </>
+      ) : null}
 
       {/* Search & Filter Bar */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-10 flex flex-col md:flex-row items-stretch md:items-center gap-6">
@@ -587,7 +596,7 @@ export default function UsersPage() {
                       </td>
                       <td className="pr-10 pl-6 py-8 text-right">
                         <div className="flex justify-end items-center gap-3">
-                          {!isSelf && (
+                          {!isSelf && (isSuper || u.role !== 'superadmin') && (
                             <div className="relative group/select">
                               <select
                                 value={u.role}
@@ -599,9 +608,9 @@ export default function UsersPage() {
                                     : 'bg-white border-slate-100 text-slate-600 hover:border-sky-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10'
                                 }`}
                               >
-                                {ROLE_OPTIONS.map(r => (
-                                  <option key={r.value} value={r.value}>{r.label}</option>
-                                ))}
+                                 {manageableRoleOptions.map(r => (
+                                   <option key={r.value} value={r.value}>{r.label}</option>
+                                 ))}
                               </select>
                               <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover/select:text-sky-600 transition-colors" />
                             </div>
@@ -611,7 +620,7 @@ export default function UsersPage() {
                              <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin"></div>
                           )}
 
-                          {!isSelf && (
+                          {!isSelf && (isSuper || u.role !== 'superadmin') && (
                             <button
                               onClick={() => openResetPasswordDialog(u)}
                               className="p-3 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
@@ -621,7 +630,7 @@ export default function UsersPage() {
                             </button>
                           )}
 
-                          {!isSelf && (
+                          {isSuper && !isSelf && (
                             <button 
                               onClick={() => { setSelectedId(u.id); setIsDeleteOpen(true); }}
                               className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"

@@ -28,6 +28,17 @@ type RoleUpdateRequest struct {
 	Role string `json:"role"`
 }
 
+var manageableRoles = map[string]bool{
+	"superadmin":  true,
+	"bendahara":   true,
+	"panitia_psb": true,
+	"tim_media":   true,
+}
+
+func IsManageableRole(role string) bool {
+	return manageableRoles[role]
+}
+
 func ValidateLoginRequest(req *LoginRequest) ValidationErrors {
 	errs := ValidationErrors{}
 	req.Email = NormalizeEmail(req.Email)
@@ -77,15 +88,7 @@ func ValidateCreateUserRequest(req *CreateUserRequest) ValidationErrors {
 		errs.Add("password", "Password minimal 8 karakter")
 	}
 
-	validRoles := map[string]bool{
-		"superadmin":  true,
-		"bendahara":   true,
-		"panitia_psb": true,
-		"tim_media":   true,
-		"admin":       true,
-		"user":        true,
-	}
-	if !validRoles[req.Role] {
+	if !IsManageableRole(req.Role) {
 		errs.Add("role", "Role tidak valid")
 	}
 
@@ -108,6 +111,8 @@ func ValidateRoleUpdateRequest(req *RoleUpdateRequest) ValidationErrors {
 	req.Role = strings.TrimSpace(req.Role)
 	if req.Role == "" {
 		errs.Add("role", "Role wajib diisi")
+	} else if !IsManageableRole(req.Role) {
+		errs.Add("role", "Role tidak valid")
 	}
 	return errs
 }

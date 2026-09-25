@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"almaparung-api/internal/validators"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -154,11 +155,11 @@ func (r *Repository) CreateUser(user *User) error {
 }
 
 func (r *Repository) GetAllUsers(search string) ([]User, error) {
-	query := `SELECT id, email, COALESCE(password_hash,''), name, role, created_at, last_login_at FROM users`
-	var args []interface{}
+	query := `SELECT id, email, COALESCE(password_hash,''), name, role, created_at, last_login_at FROM users WHERE role IN (?, ?, ?, ?)`
+	args := []interface{}{"superadmin", "bendahara", "panitia_psb", "tim_media"}
 
 	if search != "" {
-		query += " WHERE email LIKE ? OR name LIKE ?"
+		query += " AND (email LIKE ? OR name LIKE ?)"
 		args = append(args, "%"+search+"%", "%"+search+"%")
 	}
 
@@ -184,10 +185,10 @@ func (r *Repository) GetAllUsers(search string) ([]User, error) {
 				u.LastLoginAt = &parsed
 			}
 		}
-		u.PasswordHash = "" // never expose
+		u.PasswordHash = ""
 		users = append(users, u)
 	}
-	return users, nil
+	return users, rows.Err()
 }
 
 func (r *Repository) UpdateLastLogin(id int) error {
@@ -263,10 +264,7 @@ func isMissingTableError(err error) bool {
 }
 
 func (r *Repository) UpdateRole(userID int, role string) error {
-	validRoles := map[string]bool{
-		"superadmin": true, "bendahara": true, "panitia_psb": true, "tim_media": true, "admin": true, "user": true,
-	}
-	if !validRoles[role] {
+	if !validators.IsManageableRole(role) {
 		return errors.New("invalid role: " + role)
 	}
 	_, err := r.db.Exec("UPDATE users SET role = ? WHERE id = ?", role, userID)

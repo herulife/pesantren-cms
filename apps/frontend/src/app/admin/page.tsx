@@ -33,7 +33,7 @@ const quickLinks = [
     label: 'Manajemen User',
     description: 'Atur akun, role, dan akses admin.',
     icon: Users,
-    roles: ['superadmin'],
+    roles: ['superadmin', 'bendahara'],
   },
   {
     href: '/admin/wallet/topup',

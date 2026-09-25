@@ -14,58 +14,65 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type PortalUser struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}
+
 type Santri struct {
-	ID          int    `json:"id"`
-	NIS         string `json:"nis"`
-	Name        string `json:"name"`
-	Nickname    string `json:"nickname"`
-	Gender      string `json:"gender"`
-	BirthPlace  string `json:"birth_place"`
-	BirthDate   string `json:"birth_date"`
-	Address     string `json:"address"`
-	Class       string `json:"class"`
-	Angkatan    string `json:"angkatan"`
-	Status      string `json:"status"`
-	ParentName  string `json:"parent_name"`
-	ParentPhone string `json:"parent_phone"`
-	NIK         string `json:"nik"`
-	FatherName  string `json:"father_name"`
-	FatherPhone string `json:"father_phone"`
-	MotherName  string `json:"mother_name"`
-	MotherPhone string `json:"mother_phone"`
+	ID               int    `json:"id"`
+	NIS              string `json:"nis"`
+	Name             string `json:"name"`
+	Nickname         string `json:"nickname"`
+	Gender           string `json:"gender"`
+	BirthPlace       string `json:"birth_place"`
+	BirthDate        string `json:"birth_date"`
+	Address          string `json:"address"`
+	Class            string `json:"class"`
+	Angkatan         string `json:"angkatan"`
+	Status           string `json:"status"`
+	ParentName       string `json:"parent_name"`
+	ParentPhone      string `json:"parent_phone"`
+	NIK              string `json:"nik"`
+	FatherName       string `json:"father_name"`
+	FatherPhone      string `json:"father_phone"`
+	MotherName       string `json:"mother_name"`
+	MotherPhone      string `json:"mother_phone"`
 	FatherOccupation string `json:"father_occupation"`
 	MotherOccupation string `json:"mother_occupation"`
-	RegistrationID int   `json:"registration_id"`
-	PhotoURL    string `json:"photo_url"`
-	UserID      *int   `json:"user_id,omitempty"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	RegistrationID   int    `json:"registration_id"`
+	PhotoURL         string `json:"photo_url"`
+	UserID           *int   `json:"user_id,omitempty"`
+	CreatedAt        string `json:"created_at"`
+	UpdatedAt        string `json:"updated_at"`
 }
 
 // SantriInput adalah DTO tulis (whitelist). ID, user_id, dan timestamp TIDAK
 // bisa diubah via create/update (user_id hanya via link-user).
 type SantriInput struct {
-	NIS         string `json:"nis"`
-	Name        string `json:"name"`
-	Nickname    string `json:"nickname"`
-	Gender      string `json:"gender"`
-	BirthPlace  string `json:"birth_place"`
-	BirthDate   string `json:"birth_date"`
-	Address     string `json:"address"`
-	Class       string `json:"class"`
-	Angkatan    string `json:"angkatan"`
-	Status      string `json:"status"`
-	ParentName  string `json:"parent_name"`
-	ParentPhone string `json:"parent_phone"`
-	NIK         string `json:"nik"`
-	FatherName  string `json:"father_name"`
-	FatherPhone string `json:"father_phone"`
-	MotherName  string `json:"mother_name"`
-	MotherPhone string `json:"mother_phone"`
+	NIS              string `json:"nis"`
+	Name             string `json:"name"`
+	Nickname         string `json:"nickname"`
+	Gender           string `json:"gender"`
+	BirthPlace       string `json:"birth_place"`
+	BirthDate        string `json:"birth_date"`
+	Address          string `json:"address"`
+	Class            string `json:"class"`
+	Angkatan         string `json:"angkatan"`
+	Status           string `json:"status"`
+	ParentName       string `json:"parent_name"`
+	ParentPhone      string `json:"parent_phone"`
+	NIK              string `json:"nik"`
+	FatherName       string `json:"father_name"`
+	FatherPhone      string `json:"father_phone"`
+	MotherName       string `json:"mother_name"`
+	MotherPhone      string `json:"mother_phone"`
 	FatherOccupation string `json:"father_occupation"`
 	MotherOccupation string `json:"mother_occupation"`
-	RegistrationID int   `json:"registration_id"`
-	PhotoURL    string `json:"photo_url"`
+	RegistrationID   int    `json:"registration_id"`
+	PhotoURL         string `json:"photo_url"`
 }
 
 func (in *SantriInput) toSantri() *Santri {
@@ -79,6 +86,7 @@ func (in *SantriInput) toSantri() *Santri {
 
 type IRepository interface {
 	FindAll(search, class, status string, limit, offset int) ([]Santri, int, error)
+	FindPortalUsers(search string) ([]PortalUser, error)
 	FindByID(id int) (*Santri, error)
 	Create(s *Santri) error
 	BulkCreate(items []Santri) (int, error)
@@ -117,6 +125,7 @@ func NewHandler(repo IRepository) *Handler {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/my-santri", h.GetMySantri)
+	r.Get("/portal-users", h.GetPortalUsers)
 	r.Get("/", h.GetAll)
 	r.Get("/{id}", h.GetByID)
 	r.Post("/", h.Create)
@@ -224,6 +233,20 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Daftar santri berhasil dimuat", map[string]interface{}{"items": list, "total": total, "limit": limit, "offset": offset})
 }
 
+func (h *Handler) GetPortalUsers(w http.ResponseWriter, r *http.Request) {
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	users, err := h.repo.FindPortalUsers(search)
+	if err != nil {
+		logger.Error(r.Context(), "portal user list failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat akun portal", nil)
+		return
+	}
+	if users == nil {
+		users = []PortalUser{}
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Daftar akun portal berhasil dimuat", users)
+}
+
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	santri, err := h.repo.FindByID(id)
@@ -260,7 +283,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "CREATE_SANTRI", Entity: "santri", EntityID: strconv.Itoa(s.ID),
 		After: map[string]interface{}{"nis": s.NIS, "name": s.Name},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusCreated, true, "Santri berhasil ditambahkan", s)
 }
@@ -304,7 +327,7 @@ func (h *Handler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "BULK_CREATE_SANTRI", Entity: "santri",
 		After: map[string]interface{}{"inserted": inserted},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusCreated, true, strconv.Itoa(inserted)+" santri berhasil ditambahkan", map[string]interface{}{"inserted": inserted})
 }
@@ -369,7 +392,7 @@ func (h *Handler) LinkUser(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "LINK_SANTRI_USER", Entity: "santri", EntityID: strconv.Itoa(id),
 		After: map[string]interface{}{"user_id": req.UserID},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, "Akun wali berhasil dihubungkan", nil)
 }
@@ -462,7 +485,7 @@ func (h *Handler) SetClass(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "SET_CLASS_SANTRI", Entity: "santri",
 		After: map[string]interface{}{"updated": n},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, strconv.Itoa(n)+" santri berhasil diset kelasnya", map[string]interface{}{"updated": n})
 }
@@ -491,7 +514,7 @@ func (h *Handler) BulkDelete(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "BULK_DELETE_SANTRI", Entity: "santri",
 		After: map[string]interface{}{"deleted": deleted, "ids": req.IDs},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, strconv.Itoa(deleted)+" santri berhasil dihapus", map[string]interface{}{"deleted": deleted})
 }

@@ -50,10 +50,10 @@ const MENU: MenuGroup[] = [
   {
     heading: 'Data Master',
     items: [
-      { label: 'Data Pegawai', href: '/admin-bs/pegawai', icon: 'bi-person-badge', roles: ['superadmin', 'admin'] },
-      { label: 'Data Kelas', href: '/admin-bs/kelas', icon: 'bi-collection', roles: ['superadmin', 'admin', 'panitia_psb'] },
-      { label: 'Data Siswa', href: '/admin-bs/siswa', icon: 'bi-people', roles: ['superadmin', 'admin', 'panitia_psb'] },
-      { label: 'Set Kelas', href: '/admin-bs/set-kelas', icon: 'bi-arrow-left-right', roles: ['superadmin', 'admin', 'panitia_psb'] },
+      { label: 'Data Pegawai', href: '/admin-bs/pegawai', icon: 'bi-person-badge', roles: ['superadmin', 'bendahara'] },
+      { label: 'Data Kelas', href: '/admin-bs/kelas', icon: 'bi-collection', roles: ['superadmin', 'bendahara', 'panitia_psb'] },
+      { label: 'Data Siswa', href: '/admin-bs/siswa', icon: 'bi-people', roles: ['superadmin', 'panitia_psb'] },
+      { label: 'Set Kelas', href: '/admin-bs/set-kelas', icon: 'bi-arrow-left-right', roles: ['superadmin', 'bendahara', 'panitia_psb'] },
     ],
   },
   {
@@ -83,7 +83,7 @@ const MENU: MenuGroup[] = [
   {
     heading: 'Tools',
     items: [
-      { label: 'Manajemen User', href: '/admin-bs/users', icon: 'bi-people-fill', roles: ['superadmin', 'admin', 'bendahara'] },
+      { label: 'Manajemen User', href: '/admin-bs/users', icon: 'bi-people-fill', roles: ['superadmin', 'bendahara'] },
       { label: 'Tahun Ajaran', href: '/admin-bs/tahun-ajaran', icon: 'bi-calendar-range', roles: ['superadmin', 'admin'] },
       { label: 'Notifikasi WA', href: '/admin-bs/notifikasi', icon: 'bi-whatsapp', roles: ['superadmin', 'admin'] },
       { label: 'Pengaturan', href: '/admin/settings', icon: 'bi-gear' },

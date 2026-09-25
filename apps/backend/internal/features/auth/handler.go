@@ -39,6 +39,18 @@ func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
 
+func isManageableUser(target *User) bool {
+	return target != nil && validators.IsManageableRole(target.Role)
+}
+
+func rejectUnmanageableUser(w http.ResponseWriter, r *http.Request, target *User) bool {
+	if isManageableUser(target) {
+		return false
+	}
+	writeAPIError(w, http.StatusForbidden, logger.CorrelationID(r), "Akun portal tidak dapat dikelola melalui Manajemen Pengguna", nil)
+	return true
+}
+
 func (h *Handler) issueToken(user *User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":            user.ID,
@@ -356,7 +368,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GET /api/users — list all users (superadmin only)
+// GET /api/users — list staff users (superadmin/bendahara)
 func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
 	users, err := h.repo.GetAllUsers(search)
@@ -372,7 +384,7 @@ func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// POST /api/users — create user (superadmin only)
+// POST /api/users — create staff user (superadmin/bendahara)
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	correlationID := logger.CorrelationID(r)
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
@@ -447,7 +459,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PUT /api/users/{id}/password — reset user password (superadmin only)
+// PUT /api/users/{id}/password — reset staff password (superadmin/bendahara)
 func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 	correlationID := logger.CorrelationID(r)
 	idStr := r.PathValue("id")
@@ -480,6 +492,9 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 	target, err := h.repo.FindByID(id)
 	if err != nil {
 		writeAPIError(w, http.StatusNotFound, correlationID, "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
 		return
 	}
 	if target.Role == "superadmin" {
@@ -539,6 +554,15 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
+		return
+	}
+
 	if err := h.repo.DeleteUser(id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
@@ -571,7 +595,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PUT /api/users/{id}/role — update user role (superadmin only)
+// PUT /api/users/{id}/role — update staff role (superadmin/bendahara)
 func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	if idStr == "" {
@@ -605,6 +629,9 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	target, err := h.repo.FindByID(id)
 	if err != nil {
 		writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
 		return
 	}
 	if target.Role == "superadmin" || req.Role == "superadmin" {
@@ -661,9 +688,9 @@ func (h *Handler) Routes() chi.Router {
 		r.Use(AuthMiddleware)
 		r.Get("/me", h.GetMe)
 
-		// Manajemen user: kelola (lihat/tambah/edit/reset) utk superadmin/admin/bendahara.
+		// Manajemen user: kelola (lihat/tambah/edit/reset) untuk superadmin/bendahara.
 		r.Group(func(r chi.Router) {
-			r.Use(RequireRole("superadmin", "admin", "bendahara"))
+			r.Use(RequireRole("superadmin", "bendahara"))
 			r.Post("/users", h.CreateUser)
 			r.Get("/users", h.GetAllUsers)
 			r.Put("/users/{id}/password", h.ResetUserPassword)

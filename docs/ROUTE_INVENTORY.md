@@ -21,12 +21,13 @@ Legenda Risk: P0 kritis, P1 tinggi, P2 sedang. Ownership: JWT-scoped / staff-onl
 | GET | /api/settings/public | tidak | - | - | setting.GetPublic | P1 | pastikan tanpa secret |
 | GET | /api/me, /api/settings/role-permissions | auth | semua | JWT-scoped | auth/setting | P2 | ok |
 | POST | /api/upload (30/jam) | auth | semua | - | upload.Handle | **P0** | MIME+magic+ext, re-encode webp, nama acak, proofs private |
-| CRUD | /api/users* | auth | superadmin | - | auth.* | P0 | + revokasi saat role/password/hapus, audit |
+| CRUD | /api/users* | auth | superadmin,bendahara | staff only | auth.* | P0 | role portal tersaring; delete superadmin; + revokasi/audit |
 | /api/settings,/api/logs | mount | auth | superadmin | - | setting/log | P1 | audit permission-changes |
 | POST | /api/exams,/exams/questions | auth | superadmin | - | exam.* | P1 | ok + audit |
 | POST | /api/wallet/topup | auth | superadmin | arbitrary user_id+amount | wallet.TopUp | P0 | cap+validasi+audit+idempoten |
 | MOUNT | /api/payments,/spp,/iuran,/donations,/kas | auth | bendahara | staff | masing2 Routes() | **P0** | engine atomik+idempoten+audit (PHASE 6/10/11/12) |
-| MOUNT | /api/school,/api/hr | auth | superadmin,bendahara?,panitia_psb,admin(zombie) | staff | school/hr | P1 | panitia_psb kelola pegawai = over-broad -> batasi |
+| MOUNT | /api/school | auth | superadmin,bendahara,panitia_psb | staff | school | P1 | akses kelas/tahun ajaran |
+| MOUNT | /api/hr | auth | superadmin,bendahara | staff | hr | P1 | panitia_psb tidak boleh mengelola HR |
 | MOUNT | /api/psb,/api/contact | auth | panitia_psb(+superadmin/bendahara/admin?) | staff | psb/message | P1 | state machine, hapus duplikat /psb/me |
 | MOUNT | /api/santri | auth | superadmin,panitia_psb | staff | santri | P1 | ownership per-rekod, link-user |
 | MOUNT | /api/project,/api/raport | auth | superadmin,bendahara,tim_media | staff | project/raport | P1 | lock enforce, engine tunggal |
@@ -36,6 +37,6 @@ Legenda Risk: P0 kritis, P1 tinggi, P2 sedang. Ownership: JWT-scoped / staff-onl
 | HANDLE | /uploads/* | **TIDAK** | - | - | FileServer | **P0** | authed serve / signed-URL untuk proofs |
 
 Dead `Routes()` tak ter-mount (drift): news/gallery/videos/teachers/programs/
-facilities/agendas/faqs + auth.Routes (versi users TANPA RequireRole — privesc
-laten bila di-mount). Tindakan: KEEP sambil tak ter-mount, hapus hanya via
-DEPRECATE tercatat (PHASE 19/22).
+facilities/agendas/faqs + auth.Routes (builder lama tidak di-mount; route users
+aktif memakai guard superadmin,bendahara). Tindakan: KEEP sambil tak ter-mount,
+hapus hanya via DEPRECATE tercatat (PHASE 19/22).

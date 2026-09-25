@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getSantriList, bulkCreateSantri, getUsers, linkSantriUser, Santri } from '@/lib/api';
+import { getSantriList, bulkCreateSantri, getSantriPortalUsers, linkSantriUser, Santri } from '@/lib/api';
 import { PageHeader, Pagination, EmptyState, ImportModal, Toast, useToastState } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
@@ -81,8 +81,8 @@ export default function BsSiswa() {
     setLinkTarget(x);
     setLinkUserId(x.user_id ? String(x.user_id) : '');
     try {
-      const users = await getUsers('');
-      setUserOptions(users.filter((u) => u.role === 'user'));
+      const users = await getSantriPortalUsers('');
+      setUserOptions(users);
     } catch {
       show(false, 'Gagal memuat daftar akun.');
     }

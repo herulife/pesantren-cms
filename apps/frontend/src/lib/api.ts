@@ -1882,6 +1882,24 @@ export async function getMe() {
 	}
 }
 
+export interface SantriPortalUser {
+	id: number;
+	name: string;
+	email: string;
+	role: string;
+}
+
+export async function getSantriPortalUsers(search: string = ''): Promise<SantriPortalUser[]> {
+	try {
+		const query = search ? `?search=${encodeURIComponent(search)}` : '';
+		const result = await lmsFetch<SantriPortalUser[]>(`/santri/portal-users${query}`);
+		return result.data || [];
+	} catch (e) {
+		console.error('[API] Fetch Santri portal users error:', e);
+		return [];
+	}
+}
+
 export async function getUsers(search: string = '') {
 	try {
         const url = search ? `${API_BASE_URL}/users?search=${encodeURIComponent(search)}` : `${API_BASE_URL}/users`;
@@ -1967,14 +1985,25 @@ export interface WAOutboxItem {
 	created_at: string;
 }
 
-export async function getPSBWAOutbox(registrationId: number) {
+export interface PSBWAOutboxResponse {
+	success?: boolean;
+	message?: string;
+	data?: { items?: WAOutboxItem[] };
+}
+
+export interface PSBActionResponse {
+	success?: boolean;
+	message?: string;
+}
+
+export async function getPSBWAOutbox(registrationId: number): Promise<PSBWAOutboxResponse> {
 	const res = await fetch(`${API_BASE_URL}/notifications/wa-log?registration_id=${registrationId}`, {
 		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
 }
 
-export async function retryPSBWAMessage(id: number) {
+export async function retryPSBWAMessage(id: number): Promise<PSBActionResponse> {
 	const res = await fetch(`${API_BASE_URL}/notifications/wa-retry`, {
 		method: 'POST',
 		headers: getAuthHeaders(),
@@ -1983,7 +2012,7 @@ export async function retryPSBWAMessage(id: number) {
 	return parseResponse(res);
 }
 
-export async function sendPSBAnnouncement(id: number) {
+export async function sendPSBAnnouncement(id: number): Promise<PSBActionResponse> {
 	const res = await fetch(`${API_BASE_URL}/psb/${id}/announce`, {
 		method: 'POST',
 		headers: getAuthHeaders()

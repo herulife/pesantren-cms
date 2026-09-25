@@ -631,11 +631,11 @@ export const adminDocSections: AdminDocSection[] = [
     href: '/admin/users',
     image: { src: '/assets/tutorials/admin-users.png', alt: 'Tampilan Manajemen Pengguna: daftar akun dan hak akses' },
     summary:
-      'Daftar akun orang-orang yang boleh masuk halaman admin. Hanya pimpinan yang boleh atur ini.',
-    audience: ['Pimpinan'],
+      'Daftar akun staf yang boleh masuk halaman admin. Akun wali/santri (role user) dikelola terpisah dan tidak tampil di sini.',
+    audience: ['Superadmin', 'Bendahara'],
     quickActions: [
       'Bikin akun baru untuk petugas baru.',
-      'Atur hak aksesnya (bagian apa saja yang boleh dibuka).',
+      'Superadmin dapat mengatur hak akses menu dan menghapus akun.',
       'Ganti password yang lupa. Hapus akun yang sudah tidak dipakai.',
     ],
     workflows: [
@@ -773,7 +773,15 @@ export const roleAccessMatrix: RoleAccessRow[] = [
     user: 'Tidak',
   },
   {
-    module: 'Akun Petugas, Riwayat, Pengaturan',
+    module: 'Akun Petugas',
+    superadmin: 'Ya',
+    tim_media: 'Tidak',
+    bendahara: 'Ya',
+    panitia_psb: 'Tidak',
+    user: 'Tidak',
+  },
+  {
+    module: 'Riwayat, Pengaturan',
     superadmin: 'Ya',
     tim_media: 'Tidak',
     bendahara: 'Tidak',

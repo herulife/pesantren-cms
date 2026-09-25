@@ -7,18 +7,16 @@ import { PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
 
 type U = { id: number; name: string; email: string; role: string; created_at: string; last_login_at?: string | null };
-const ROLES = ['superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user'];
+const ROLES = ['superadmin', 'bendahara', 'panitia_psb', 'tim_media'];
 
 const ROLE_BADGE: Record<string, string> = {
   superadmin: 'bg-danger',
   bendahara: 'bg-warning text-dark',
   panitia_psb: 'bg-info text-dark',
   tim_media: 'bg-secondary',
-  admin: 'bg-primary',
-  user: 'bg-light text-dark border',
 };
 
-function RowActions({ canDelete, isSelf, onPassword, onDelete }: { canDelete: boolean; isSelf: boolean; onPassword: () => void; onDelete: () => void }) {
+function RowActions({ canReset, canDelete, isSelf, onPassword, onDelete }: { canReset: boolean; canDelete: boolean; isSelf: boolean; onPassword: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="d-inline-block position-relative">
@@ -27,7 +25,9 @@ function RowActions({ canDelete, isSelf, onPassword, onDelete }: { canDelete: bo
       </button>
       {open && (
         <div className="dropdown-menu show position-absolute end-0 mt-1 shadow rounded border bg-white p-0" onClick={() => setOpen(false)}>
-          <button className="dropdown-item btn-sm py-1" onClick={onPassword}>Reset Password</button>
+           {canReset && (
+             <button className="dropdown-item btn-sm py-1" onClick={onPassword}>Reset Password</button>
+           )}
           {canDelete && (
             <button className="dropdown-item btn-sm py-1 text-danger" onClick={onDelete} disabled={isSelf} title={isSelf ? 'Tidak bisa menghapus akun sendiri' : ''}>
               Hapus User
@@ -56,7 +56,7 @@ export default function BsUsers() {
 
   const [rows, setRows] = useState<U[]>([]);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'admin' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'bendahara' });
   const [msg, setMsg] = useState('');
   const [ok, setOk] = useState(true);
 
@@ -79,7 +79,7 @@ export default function BsUsers() {
     setOk(r.success);
     setMsg(r.message || '');
     if (r.success) {
-      setForm({ name: '', email: '', password: '', role: roleOptions.includes('admin') ? 'admin' : roleOptions[0] });
+      setForm({ name: '', email: '', password: '', role: roleOptions[0] });
       load(search);
     }
   };
@@ -168,9 +168,10 @@ export default function BsUsers() {
                   </td>
                   <td>{(r.last_login_at || '').slice(0, 16).replace('T', ' ') || '-'}</td>
                   <td>
-                    <RowActions
-                      canDelete={isSuper}
-                      isSelf={r.id === user?.id}
+                     <RowActions
+                       canReset={isSuper || r.role !== 'superadmin'}
+                       canDelete={isSuper}
+                       isSelf={r.id === user?.id}
                       onPassword={() => resetPass(r.id)}
                       onDelete={() => hapus(r.id, r.name)}
                     />

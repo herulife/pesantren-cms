@@ -25,7 +25,7 @@ func TestValidatePortalRegistrationGender(t *testing.T) {
 }
 
 func TestValidatePortalRegistrationJenjang(t *testing.T) {
-	valid := []string{"smp", "smk", "SMP", "SMK", " Smp "}
+	valid := []string{"", "smp", "smk", "SMP", "SMK", " Smp "}
 	for _, j := range valid {
 		req := &portalRegistrationRequest{FullName: "Test", Gender: "L", Jenjang: j, ProgramChoice: "tahfidz"}
 		if errs := validatePortalRegistration(req); len(errs) != 0 {
@@ -33,7 +33,7 @@ func TestValidatePortalRegistrationJenjang(t *testing.T) {
 		}
 	}
 
-	invalid := []string{"", "sltp", "MAN", "sd"}
+	invalid := []string{"sltp", "MAN", "sd"}
 	for _, j := range invalid {
 		req := &portalRegistrationRequest{FullName: "Test", Gender: "L", Jenjang: j, ProgramChoice: "tahfidz"}
 		if errs := validatePortalRegistration(req); len(errs) == 0 {
