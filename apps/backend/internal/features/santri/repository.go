@@ -43,7 +43,7 @@ func (r *Repository) FindAll(search, class, status string, limit, offset int) ([
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
+	query := fmt.Sprintf(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -102,7 +102,7 @@ func (r *Repository) FindByID(id int) (*Santri, error) {
 	var s Santri
 	var userID sql.NullInt64
 	var createdAt, updatedAt sql.NullString
-	err := r.db.QueryRow(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt)
+	err := r.db.QueryRow(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func (r *Repository) UnlinkUser(santriID int) error {
 }
 
 func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
-	rows, err := r.db.Query(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
+	rows, err := r.db.Query(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
 	if err != nil {
 		return nil, err
 	}
