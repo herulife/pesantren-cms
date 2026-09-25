@@ -806,12 +806,17 @@ export default function AcademicsPage() {
           ) : (
             <div id="report-print-area" className="space-y-6 print:space-y-4">
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white print:rounded-none print:border-slate-300">
-                <div className="border-b-4 border-sky-600 px-8 py-7 print:px-0">
-                  <div className="text-center">
-                    <p className="text-[11px] font-black uppercase tracking-[0.35em] text-sky-700">e-Raport Santri</p>
-                    <h4 className="mt-3 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">Pondok Pesantren Al-Maa</h4>
-                    <p className="mt-2 text-sm font-medium text-slate-500">Tahun Pelajaran {reportGrades[0]?.academic_year || '-'} - Semester {reportGrades[0]?.semester || '-'}</p>
+                <div className="border-b-4 border-sky-600 px-8 py-6 print:px-0">
+                  <div className="flex items-center gap-4">
+                    <img src="/assets/img/logo-alama.jpg" alt="Logo Pesantren Alamparung" className="h-16 w-16 shrink-0 object-contain" />
+                    <div className="flex-1 text-center">
+                      <p className="text-[11px] font-black uppercase tracking-[0.35em] text-sky-700">e-Raport Santri</p>
+                      <h4 className="mt-1 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">PESANTREN ALAMPARUNG</h4>
+                      <p className="mt-2 text-sm font-medium text-slate-600">Jl. Haji Mawi Gang Omega, Desa Waru, Parung, Bogor, Jawa Barat</p>
+                      <p className="mt-1 text-xs font-medium text-slate-500">Telp/WA: +62 877-8442-3282 &nbsp;•&nbsp; ponpesalmaaparung@gmail.com &nbsp;•&nbsp; almaparung.com</p>
+                    </div>
                   </div>
+                  <p className="mt-3 text-center text-sm font-medium text-slate-500">Tahun Pelajaran {reportGrades[0]?.academic_year || '-'} - Semester {reportGrades[0]?.semester || '-'}</p>
                 </div>
                 <div className="grid grid-cols-1 gap-4 border-b border-slate-200 bg-slate-50 px-8 py-5 md:grid-cols-2 print:px-0">
                   <div className="space-y-2 text-sm">
@@ -927,12 +932,14 @@ export default function AcademicsPage() {
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Pengesahan</p>
                   <div className="mt-6 grid grid-cols-2 gap-6 text-center text-sm text-slate-500">
                     <div>
-                      <p>Wali Kelas / Musyrif</p>
+                      <p className="font-black uppercase text-slate-600">Guru Kelas</p>
                       <div className="mt-16 border-b border-slate-300" />
+                      <p className="mt-1 text-xs text-slate-400">(........................................)</p>
                     </div>
                     <div>
-                      <p>Pimpinan Pondok</p>
+                      <p className="font-black uppercase text-slate-600">Wali Santri</p>
                       <div className="mt-16 border-b border-slate-300" />
+                      <p className="mt-1 text-xs text-slate-400">(........................................)</p>
                     </div>
                   </div>
                 </div>
