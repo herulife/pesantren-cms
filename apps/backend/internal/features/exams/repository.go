@@ -214,7 +214,7 @@ func gradeLetter(final float64) string {
 	}
 }
 
-func (r *Repository) FinishSession(sessionID int, answersJSON string) (float64, error) {
+func (r *Repository) FinishSession(sessionID int) (float64, error) {
 	var totalPoints, earnedPoints sql.NullInt64
 
 	// Sum points: total from all questions of the exam, earned from correct answers
