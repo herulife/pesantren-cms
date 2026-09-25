@@ -77,9 +77,14 @@ for e in (EA, EB):
         for (rid,) in c.execute("SELECT id FROM registrations WHERE user_id=?", (uid,)).fetchall():
             c.execute("DELETE FROM psb_payments WHERE registration_id=?", (rid,))
             c.execute("DELETE FROM registrations WHERE id=?", (rid,))
-        for tbl in ("audit_logs", "activity_logs"):
-            try: c.execute("DELETE FROM %s WHERE actor_id=?" % tbl, (uid,))
-            except sqlite3.OperationalError: pass
+        try:
+            c.execute("UPDATE activity_logs SET user_id=NULL WHERE user_id=?", (uid,))
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute("DELETE FROM audit_logs WHERE actor_id=?", (uid,))
+        except sqlite3.OperationalError:
+            pass
         c.execute("DELETE FROM users WHERE id=?", (uid,))
 c.commit(); c.close()
 
