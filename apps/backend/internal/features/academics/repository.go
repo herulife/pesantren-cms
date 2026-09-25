@@ -380,7 +380,7 @@ func (r *Repository) GetStudents() ([]struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }, error) {
-	query := "SELECT id, name, email FROM users WHERE role = 'user' ORDER BY name ASC"
+	query := "SELECT u.id, u.name, u.email FROM santri s JOIN users u ON u.id = s.user_id WHERE u.role = 'user' ORDER BY u.name ASC"
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
