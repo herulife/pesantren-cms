@@ -99,6 +99,9 @@ type IRepository interface {
 	SetClassBulk(items map[int]string) (int, error)
 	LinkUser(santriID, userID int) error
 	UnlinkUser(santriID int) error
+	FindAvailablePortalUsers(search string, includeID int) ([]PortalUser, error)
+	LinkUserExclusive(santriID, userID int) error
+	ResetLinkedPassword(santriID int, newPassword string) (int, error)
 	FindByUserID(userID int) ([]Santri, error)
 }
 
@@ -137,6 +140,9 @@ func (h *Handler) Routes() chi.Router {
 	r.Put("/{id}", h.Update)
 	r.Put("/{id}/link-user", h.LinkUser)
 	r.Put("/{id}/unlink-user", h.UnlinkUser)
+	r.Get("/portal-users-available", h.GetAvailablePortalUsers)
+	r.Put("/{id}/link-user-exclusive", h.LinkUserExclusiveHandler)
+	r.Post("/{id}/reset-password", h.ResetSantriPassword)
 	r.Delete("/{id}", h.Delete)
 	r.Delete("/{id}/purge", h.Purge)
 	r.Delete("/bulk", h.BulkDelete)

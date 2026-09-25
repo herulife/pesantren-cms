@@ -11,6 +11,9 @@ import {
   purgeSantri,
   getSantriPortalUsers,
   linkSantriUser,
+  getAvailableSantriAccounts,
+  linkSantriAccount,
+  resetSantriPassword,
   Santri,
   normalizeApiAssetUrl,
 } from '@/lib/api';
@@ -62,6 +65,8 @@ export default function KesantrianPage() {
   const [userOptions, setUserOptions] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
   const [linkUserId, setLinkUserId] = useState('');
   const [linking, setLinking] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async (opts?: { search?: string; class?: string; status?: string; offset?: number }) => {
@@ -183,8 +188,9 @@ export default function KesantrianPage() {
   const openLinkModal = async (s: Santri) => {
     setLinkTarget(s);
     setLinkUserId(s.user_id ? String(s.user_id) : '');
+    setNewPassword('');
     try {
-      const users = await getSantriPortalUsers('');
+      const users = await getAvailableSantriAccounts('', s.user_id || 0);
       setUserOptions(users);
     } catch {
       showToast('error', 'Gagal memuat daftar akun.');
@@ -195,9 +201,9 @@ export default function KesantrianPage() {
     if (!linkTarget || !linkUserId) return;
     setLinking(true);
     try {
-      const res = await linkSantriUser(linkTarget.id, Number(linkUserId));
+      const res = await linkSantriAccount(linkTarget.id, Number(linkUserId));
       if (res.success) {
-        showToast('success', 'Akun wali berhasil dihubungkan.');
+        showToast('success', res.message || 'Akun santri berhasil ditautkan.');
         setLinkTarget(null);
         load({ offset });
       } else {
@@ -444,7 +450,7 @@ export default function KesantrianPage() {
                         <button
                           onClick={() => openLinkModal(s)}
                           className="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-50"
-                          title={s.user_id ? 'Akun wali terhubung — klik untuk ganti' : 'Hubungkan akun wali'}
+                          title={s.user_id ? 'Akun santri tertaut — klik untuk kelola' : 'Tautkan akun santri (untuk login wali)'}
                         >
                           <UserPlus size={16} />
                         </button>
@@ -461,7 +467,7 @@ export default function KesantrianPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setLinkTarget(null)}>
             <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-base font-black text-slate-900">Hubungkan Akun Wali</h3>
+                <h3 className="text-base font-black text-slate-900">Akun Santri</h3>
                 <button onClick={() => setLinkTarget(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Tutup">
                   <X size={18} />
                 </button>
@@ -471,13 +477,14 @@ export default function KesantrianPage() {
               </p>
               {linkTarget.user_id ? (
                 <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-                  Saat ini terhubung ke user ID {linkTarget.user_id}. Memilih akun lain akan menggantikannya.
+                  Santri ini login memakai akun di bawah. Wali memakai akun yang sama untuk masuk portal.
+                  Memilih akun lain akan menggantikannya. Satu akun hanya untuk satu santri.
                 </p>
               ) : (
-                <p className="mb-3 text-xs text-slate-500">Pilih akun portal (role user) milik wali santri ini.</p>
+                <p className="mb-3 text-xs text-slate-500">Pilih satu akun login untuk santri ini. Akun inilah yang dipakai wali untuk masuk portal.</p>
               )}
               <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="link-user-select">
-                Akun wali
+                Akun santri
               </label>
               <select
                 id="link-user-select"
@@ -497,9 +504,38 @@ export default function KesantrianPage() {
                   Batal
                 </button>
                 <button onClick={submitLink} disabled={!linkUserId || linking} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
-                  {linking ? 'Menyimpan…' : 'Hubungkan'}
+                  {linking ? 'Menyimpan…' : 'Tautkan'}
                 </button>
               </div>
+              {linkTarget.user_id ? (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Reset password akun ini</p>
+                  <p className="mb-2 text-xs text-slate-500">Buat password baru untuk wali (minimal 6 karakter), lalu sampaikan ke wali.</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Password baru"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (newPassword.length < 6) { showToast('error', 'Password minimal 6 karakter'); return; }
+                        setResetting(true);
+                        const r = await resetSantriPassword(linkTarget.id, newPassword);
+                        setResetting(false);
+                        if (r.ok) { showToast('success', r.message); setNewPassword(''); }
+                        else showToast('error', r.message);
+                      }}
+                      disabled={resetting || newPassword.length < 6}
+                      className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-700 disabled:opacity-50"
+                    >
+                      {resetting ? '…' : 'Reset'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         )}

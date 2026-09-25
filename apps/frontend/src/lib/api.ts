@@ -1891,13 +1891,41 @@ export interface SantriPortalUser {
 
 export async function getSantriPortalUsers(search: string = ''): Promise<SantriPortalUser[]> {
 	try {
-		const query = search ? `?search=${encodeURIComponent(search)}` : '';
 		const result = await lmsFetch<SantriPortalUser[]>(`/santri/portal-users${query}`);
 		return result.data || [];
 	} catch (e) {
 		console.error('[API] Fetch Santri portal users error:', e);
 		return [];
 	}
+}
+
+// Akun santri yang belum dipakai santri lain (+ akun yang sedang tertaut).
+export async function getAvailableSantriAccounts(search: string = '', includeId: number = 0): Promise<SantriPortalUser[]> {
+	try {
+		const q = new URLSearchParams();
+		if (search) q.set('search', search);
+		if (includeId) q.set('include_id', String(includeId));
+		const qs = q.toString() ? `?${q.toString()}` : '';
+		const result = await lmsFetch<SantriPortalUser[]>(`/santri/portal-users-available${qs}`);
+		return result.data || [];
+	} catch (e) {
+		console.error('[API] Fetch available santri accounts error:', e);
+		return [];
+	}
+}
+
+export async function linkSantriAccount(id: number, user_id: number): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}/link-user-exclusive`, { method: 'PUT', body: JSON.stringify({ user_id }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menautkan akun santri' }; }
+}
+
+export async function resetSantriPassword(id: number, password: string): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ password }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal mereset password' }; }
 }
 
 export async function getUsers(search: string = '') {
