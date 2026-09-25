@@ -202,7 +202,7 @@ export default function KesantrianPage() {
     setLinking(true);
     try {
       const res = await linkSantriAccount(linkTarget.id, Number(linkUserId));
-      if (res.success) {
+      if (res.ok) {
         showToast('success', res.message || 'Akun santri berhasil ditautkan.');
         setLinkTarget(null);
         load({ offset });

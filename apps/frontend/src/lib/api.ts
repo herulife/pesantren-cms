@@ -1891,6 +1891,7 @@ export interface SantriPortalUser {
 
 export async function getSantriPortalUsers(search: string = ''): Promise<SantriPortalUser[]> {
 	try {
+		const query = search ? `?search=${encodeURIComponent(search)}` : '';
 		const result = await lmsFetch<SantriPortalUser[]>(`/santri/portal-users${query}`);
 		return result.data || [];
 	} catch (e) {
