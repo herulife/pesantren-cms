@@ -31,6 +31,7 @@ type Santri struct {
 	BirthDate        string `json:"birth_date"`
 	Address          string `json:"address"`
 	Class            string `json:"class"`
+	Jenjang          string `json:"jenjang"`
 	Angkatan         string `json:"angkatan"`
 	Status           string `json:"status"`
 	ParentName       string `json:"parent_name"`
@@ -60,6 +61,7 @@ type SantriInput struct {
 	BirthDate        string `json:"birth_date"`
 	Address          string `json:"address"`
 	Class            string `json:"class"`
+	Jenjang          string `json:"jenjang"`
 	Angkatan         string `json:"angkatan"`
 	Status           string `json:"status"`
 	ParentName       string `json:"parent_name"`
@@ -79,7 +81,7 @@ func (in *SantriInput) toSantri() *Santri {
 	return &Santri{
 		NIS: in.NIS, Name: in.Name, Nickname: in.Nickname, Gender: in.Gender,
 		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
-		Class: in.Class, Angkatan: in.Angkatan, Status: in.Status,
+		Class: in.Class, Jenjang: in.Jenjang, Angkatan: in.Angkatan, Status: in.Status,
 		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
 	}
 }
@@ -167,6 +169,7 @@ func validateSantri(s *Santri) map[string]string {
 	s.Name = strings.TrimSpace(s.Name)
 	s.Gender = strings.ToLower(strings.TrimSpace(s.Gender))
 	s.Status = strings.ToLower(strings.TrimSpace(s.Status))
+	s.Jenjang = strings.ToLower(strings.TrimSpace(s.Jenjang))
 	if s.NIS == "" {
 		errs["nis"] = "NIS wajib diisi"
 	} else if len(s.NIS) < 4 || len(s.NIS) > 20 {
@@ -182,6 +185,9 @@ func validateSantri(s *Santri) map[string]string {
 	}
 	if s.Class == "" {
 		errs["class"] = "Kelas wajib diisi"
+	}
+	if s.Jenjang != "" && s.Jenjang != "smp" && s.Jenjang != "smk" {
+		errs["jenjang"] = "Jenjang harus SMP/SMK"
 	}
 	validStatus := map[string]bool{"aktif": true, "lulus": true, "pindah": true, "cuti": true}
 	if s.Status != "" && !validStatus[s.Status] {

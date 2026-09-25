@@ -3307,6 +3307,7 @@ export interface Santri {
 	birth_date: string;
 	address: string;
 	class: string;
+	jenjang?: string;
 	angkatan: string;
 	status: string;
 	parent_name: string;

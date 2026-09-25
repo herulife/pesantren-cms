@@ -43,7 +43,7 @@ func (r *Repository) FindAll(search, class, status string, limit, offset int) ([
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
+	query := fmt.Sprintf(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, COALESCE(jenjang,'') AS jenjang, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -56,7 +56,7 @@ func (r *Repository) FindAll(search, class, status string, limit, offset int) ([
 		var s Santri
 		var userID sql.NullInt64
 		var createdAt, updatedAt sql.NullString
-		if err := rows.Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
 			return nil, 0, err
 		}
 		if userID.Valid {
@@ -102,7 +102,7 @@ func (r *Repository) FindByID(id int) (*Santri, error) {
 	var s Santri
 	var userID sql.NullInt64
 	var createdAt, updatedAt sql.NullString
-	err := r.db.QueryRow(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt)
+	err := r.db.QueryRow(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, COALESCE(jenjang,'') AS jenjang, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +124,8 @@ func (r *Repository) Create(s *Santri) error {
 	if err != nil {
 		return err
 	}
-	res, err := tx.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
+	res, err := tx.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
@@ -212,7 +212,7 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	stmt, err := tx.Prepare(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := tx.Prepare(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -225,7 +225,7 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 		if s.Status == "" {
 			s.Status = "aktif"
 		}
-		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
+		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				continue
@@ -259,8 +259,8 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 
 func (r *Repository) Update(s *Santri) error {
 	now := time.Now().Format("2006-01-02 15:04:05")
-	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, angkatan=?, status=?, parent_name=?, parent_phone=?, nik=?, father_name=?, father_phone=?, mother_name=?, mother_phone=?, father_occupation=?, mother_occupation=?, registration_id=?, photo_url=?, updated_at=? WHERE id=?`,
-		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, now, s.ID)
+	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, jenjang=?, angkatan=?, status=?, parent_name=?, parent_phone=?, nik=?, father_name=?, father_phone=?, mother_name=?, mother_phone=?, father_occupation=?, mother_occupation=?, registration_id=?, photo_url=?, updated_at=? WHERE id=?`,
+		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, now, s.ID)
 	return err
 }
 
@@ -293,7 +293,7 @@ func (r *Repository) UnlinkUser(santriID int) error {
 }
 
 func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
-	rows, err := r.db.Query(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
+	rows, err := r.db.Query(`SELECT id, nis, name, nickname, gender, birth_place, birth_date, address, class, COALESCE(jenjang,'') AS jenjang, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, photo_url, user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
 		var x Santri
 		var userID sql.NullInt64
 		var createdAt, updatedAt string
-		if err := rows.Scan(&x.ID, &x.NIS, &x.Name, &x.Nickname, &x.Gender, &x.BirthPlace, &x.BirthDate, &x.Address, &x.Class, &x.Angkatan, &x.Status, &x.ParentName, &x.ParentPhone, &x.NIK, &x.FatherName, &x.FatherPhone, &x.MotherName, &x.MotherPhone, &x.FatherOccupation, &x.MotherOccupation, &x.RegistrationID, &x.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&x.ID, &x.NIS, &x.Name, &x.Nickname, &x.Gender, &x.BirthPlace, &x.BirthDate, &x.Address, &x.Class, &x.Jenjang, &x.Angkatan, &x.Status, &x.ParentName, &x.ParentPhone, &x.NIK, &x.FatherName, &x.FatherPhone, &x.MotherName, &x.MotherPhone, &x.FatherOccupation, &x.MotherOccupation, &x.RegistrationID, &x.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		if userID.Valid {

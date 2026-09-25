@@ -31,6 +31,7 @@ const initialForm = {
   birth_date: '',
   address: '',
   class: '',
+  jenjang: '',
   angkatan: '',
   status: 'aktif',
   parent_name: '',
@@ -77,6 +78,7 @@ function SantriFormContent() {
             birth_date: s.birth_date || '',
             address: s.address || '',
             class: s.class,
+            jenjang: (s as { jenjang?: string }).jenjang || '', 
             angkatan: s.angkatan || '',
             status: s.status || 'aktif',
             parent_name: s.parent_name || '',
@@ -115,6 +117,7 @@ function SantriFormContent() {
       birth_date: form.birth_date,
       address: form.address.trim(),
       class: form.class.trim(),
+      jenjang: form.jenjang,
       angkatan: form.angkatan.trim(),
       status: form.status,
       parent_name: form.parent_name.trim(),
@@ -251,6 +254,17 @@ function SantriFormContent() {
                 placeholder="Alamat lengkap"
                 className={inputClass()}
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                Jenjang
+              </label>
+              <select value={form.jenjang} onChange={set('jenjang')} className={inputClass()}>
+                <option value="">-- Pilih Jenjang --</option>
+                <option value="smp">SMP</option>
+                <option value="smk">SMK</option>
+              </select>
             </div>
 
             <div>
