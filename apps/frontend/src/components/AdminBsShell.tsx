@@ -83,7 +83,7 @@ const MENU: MenuGroup[] = [
   {
     heading: 'Tools',
     items: [
-      { label: 'Manajemen User', href: '/admin-bs/users', icon: 'bi-people-fill', roles: ['superadmin'] },
+      { label: 'Manajemen User', href: '/admin-bs/users', icon: 'bi-people-fill', roles: ['superadmin', 'admin', 'bendahara'] },
       { label: 'Tahun Ajaran', href: '/admin-bs/tahun-ajaran', icon: 'bi-calendar-range', roles: ['superadmin', 'admin'] },
       { label: 'Notifikasi WA', href: '/admin-bs/notifikasi', icon: 'bi-whatsapp', roles: ['superadmin', 'admin'] },
       { label: 'Pengaturan', href: '/admin/settings', icon: 'bi-gear' },

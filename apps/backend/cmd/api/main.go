@@ -374,13 +374,19 @@ func main() {
 			r.Get("/settings/role-permissions", settingHandler.GetRolePermissions)
 			r.With(uploadLimiter.Middleware).Post("/upload", upload.HandleUpload)
 
+			// Manajemen user: superadmin/admin/bendahara boleh kelola (lihat,
+			// tambah, ubah role, reset password). HAPUS user tetap HANYA superadmin.
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "admin", "bendahara"))
+				r.Get("/users", authHandler.GetAllUsers)
+				r.Post("/users", authHandler.CreateUser)
+				r.Put("/users/{id}/password", authHandler.ResetUserPassword)
+				r.Put("/users/{id}/role", authHandler.UpdateUserRole)
+			})
+
 			// Superadmin Only
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("superadmin"))
-				r.Post("/users", authHandler.CreateUser)
-				r.Get("/users", authHandler.GetAllUsers)
-				r.Put("/users/{id}/password", authHandler.ResetUserPassword)
-				r.Put("/users/{id}/role", authHandler.UpdateUserRole)
 				r.Delete("/users/{id}", authHandler.DeleteUser)
 				r.Mount("/settings", settingHandler.Routes())
 				r.Mount("/logs", logHandler.Routes())

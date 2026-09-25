@@ -397,6 +397,14 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hanya superadmin yang boleh membuat akun superadmin (cegah eskalasi).
+	if req.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, correlationID, "Hanya super admin yang dapat membuat akun super admin", nil)
+			return
+		}
+	}
+
 	newUser := User{
 		Name:         req.Name,
 		Email:        req.Email,
@@ -468,6 +476,19 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Non-superadmin tidak boleh mereset password akun superadmin.
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, correlationID, "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if target.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, correlationID, "Hanya super admin yang dapat mereset password super admin", nil)
+			return
+		}
+	}
+
 	if err := h.repo.UpdatePassword(id, req.Password); err != nil {
 		logger.Error(r.Context(), "failed resetting user password", logger.Field{
 			"user_id": id,
@@ -507,7 +528,13 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if me, ok := GetAuthenticatedUser(r); ok && me.ID == id {
+	// Defense in depth: hapus user HANYA boleh dilakukan superadmin.
+	me, ok := GetAuthenticatedUser(r)
+	if !ok || me.Role != "superadmin" {
+		writeAPIError(w, http.StatusForbidden, logger.CorrelationID(r), "Hanya super admin yang dapat menghapus user", nil)
+		return
+	}
+	if me.ID == id {
 		writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Tidak diizinkan menghapus akun yang sedang dipakai", nil)
 		return
 	}
@@ -573,6 +600,20 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hanya superadmin yang bisa mengubah role user superadmin, atau
+	// mengangkat/menurunkan user menjadi/ dari superadmin (cegah eskalasi).
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if target.Role == "superadmin" || req.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, logger.CorrelationID(r), "Hanya super admin yang dapat mengubah role super admin", nil)
+			return
+		}
+	}
+
 	if err := h.repo.UpdateRole(id, req.Role); err != nil {
 		logger.Warn(r.Context(), "failed updating user role", logger.Field{
 			"user_id": id,
@@ -620,12 +661,18 @@ func (h *Handler) Routes() chi.Router {
 		r.Use(AuthMiddleware)
 		r.Get("/me", h.GetMe)
 
-		// Admin/Superadmin only
+		// Manajemen user: kelola (lihat/tambah/edit/reset) utk superadmin/admin/bendahara.
 		r.Group(func(r chi.Router) {
+			r.Use(RequireRole("superadmin", "admin", "bendahara"))
 			r.Post("/users", h.CreateUser)
 			r.Get("/users", h.GetAllUsers)
 			r.Put("/users/{id}/password", h.ResetUserPassword)
 			r.Put("/users/{id}/role", h.UpdateUserRole)
+		})
+
+		// Hapus user: HANYA superadmin.
+		r.Group(func(r chi.Router) {
+			r.Use(RequireRole("superadmin"))
 			r.Delete("/users/{id}", h.DeleteUser)
 		})
 	})
