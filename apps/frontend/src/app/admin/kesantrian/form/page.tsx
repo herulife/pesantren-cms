@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
-import { createSantri, getSantri, updateSantri } from '@/lib/api';
+import { createSantri, getSantri, updateSantri, getClasses } from '@/lib/api';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
 const genderOptions = [
@@ -64,6 +64,14 @@ function SantriFormContent() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [classOptions, setClassOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getClasses(true).then((list) => {
+      const names = list.map((c) => c.name).filter(Boolean);
+      setClassOptions(Array.from(new Set(names)));
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -271,12 +279,22 @@ function SantriFormContent() {
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
                 Kelas <span className="text-red-500">*</span>
               </label>
-              <input
-                value={form.class}
-                onChange={set('class')}
-                placeholder="Contoh: VII, VIII, IX"
+              <select
+                value={classOptions.includes(form.class) || form.class === '' ? form.class : '__custom__'}
+                onChange={(e) => {
+                  if (e.target.value !== '__custom__') setForm((prev) => ({ ...prev, class: e.target.value }));
+                  setErrors((prev) => ({ ...prev, class: '' }));
+                }}
                 className={inputClass(errors.class)}
-              />
+              >
+                <option value="">-- Pilih Kelas --</option>
+                {classOptions.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+                {form.class !== '' && !classOptions.includes(form.class) && (
+                  <option value="__custom__">{form.class} (saat ini)</option>
+                )}
+              </select>
               {errors.class && <p className="mt-1 text-xs font-semibold text-red-500">{errors.class}</p>}
             </div>
 
