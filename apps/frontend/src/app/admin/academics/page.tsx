@@ -806,18 +806,16 @@ export default function AcademicsPage() {
           ) : (
             <div id="report-print-area" className="space-y-6 print:space-y-4">
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white print:rounded-none print:border-slate-300">
-                <div className="border-b-4 border-sky-600 px-8 py-6 print:px-0">
-                  <div className="flex items-center gap-4">
-                    <img src="/assets/img/logo-alama.jpg" alt="Logo Pesantren Alamparung" className="h-16 w-16 shrink-0 object-contain" />
-                    <div className="flex-1 text-center">
-                      <p className="text-[11px] font-black uppercase tracking-[0.35em] text-sky-700">e-Raport Santri</p>
-                      <h4 className="mt-1 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">PESANTREN ALAMPARUNG</h4>
-                      <p className="mt-2 text-sm font-medium text-slate-600">Jl. Haji Mawi Gang Omega, Desa Waru, Parung, Bogor, Jawa Barat</p>
-                      <p className="mt-1 text-xs font-medium text-slate-500">Telp/WA: +62 877-8442-3282 &nbsp;•&nbsp; ponpesalmaaparung@gmail.com &nbsp;•&nbsp; almaparung.com</p>
-                    </div>
+                <div className="border-b-4 border-sky-600 px-8 pt-8 pb-5 text-center print:px-0">
+                    <img src="/assets/img/logo-alama.jpg" alt="Logo Pesantren Alamparung" className="mx-auto h-20 w-20 shrink-0 object-contain" />
+                    <h4 className="mt-3 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">PESANTREN ALAMPARUNG</h4>
+                    <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.3em] text-sky-700">Pendidikan Tahfidz, Talents dan AI</p>
+                    <div className="mx-auto mt-3 h-0.5 w-2/3 bg-sky-600" />
+                    <p className="mt-3 text-sm font-medium text-slate-600">Jl. Haji Mawi Gang Omega, Desa Waru, Kec. Parung, Kab. Bogor, Jawa Barat</p>
+                    <p className="mt-1 text-xs font-medium text-slate-500">Telp/WA: +62 877-8442-3282 &nbsp;•&nbsp; ponpesalmaaparung@gmail.com &nbsp;•&nbsp; almaparung.com</p>
+                    <p className="mt-4 inline-block rounded-md bg-sky-50 px-4 py-1 text-[11px] font-black uppercase tracking-[0.35em] text-sky-700">e-Raport Santri</p>
+                    <p className="mt-2 text-sm font-medium text-slate-500">Tahun Pelajaran {reportGrades[0]?.academic_year || '-'} - Semester {reportGrades[0]?.semester || '-'}</p>
                   </div>
-                  <p className="mt-3 text-center text-sm font-medium text-slate-500">Tahun Pelajaran {reportGrades[0]?.academic_year || '-'} - Semester {reportGrades[0]?.semester || '-'}</p>
-                </div>
                 <div className="grid grid-cols-1 gap-4 border-b border-slate-200 bg-slate-50 px-8 py-5 md:grid-cols-2 print:px-0">
                   <div className="space-y-2 text-sm">
                     <p><span className="font-black text-slate-700">Nama Santri:</span> <span className="font-semibold text-slate-600">{selectedReportStudent?.name || 'Santri'}</span></p>
@@ -928,18 +926,18 @@ export default function AcademicsPage() {
                     Secara umum santri menunjukkan perkembangan akademik dan adab yang baik. Area ini dapat digunakan untuk catatan evaluasi akhir, penguatan karakter, dan saran pembinaan.
                   </div>
                 </div>
-                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 print:rounded-none print:border-slate-300 print:bg-white">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Pengesahan</p>
-                  <div className="mt-6 grid grid-cols-2 gap-6 text-center text-sm text-slate-500">
-                    <div>
-                      <p className="font-black uppercase text-slate-600">Guru Kelas</p>
-                      <div className="mt-16 border-b border-slate-300" />
-                      <p className="mt-1 text-xs text-slate-400">(........................................)</p>
+
+                <div className="pt-4">
+                  <div className="grid grid-cols-1 gap-8 print:grid-cols-2 print:gap-12">
+                    <div className="text-center">
+                      <p className="font-black uppercase tracking-widest text-slate-600">Guru Kelas</p>
+                      <div className="mt-24 border-b border-slate-400" />
+                      <p className="mt-2 text-xs text-slate-400">( Nama &amp; Tanda Tangan )</p>
                     </div>
-                    <div>
-                      <p className="font-black uppercase text-slate-600">Wali Santri</p>
-                      <div className="mt-16 border-b border-slate-300" />
-                      <p className="mt-1 text-xs text-slate-400">(........................................)</p>
+                    <div className="text-center">
+                      <p className="font-black uppercase tracking-widest text-slate-600">Wali Murid</p>
+                      <div className="mt-24 border-b border-slate-400" />
+                      <p className="mt-2 text-xs text-slate-400">( Nama &amp; Tanda Tangan )</p>
                     </div>
                   </div>
                 </div>
