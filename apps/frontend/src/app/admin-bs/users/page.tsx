@@ -157,7 +157,7 @@ export default function BsUsers() {
                   <td>
                     <div className="d-flex align-items-center gap-2">
                       <span className={`badge ${ROLE_BADGE[r.role] || 'bg-light text-dark'}`}>{r.role}</span>
-                      {isSuper || r.role !== 'superadmin' ? (
+                      {r.id !== user?.id && (isSuper || r.role !== 'superadmin') ? (
                         <select className="form-select form-select-sm w-auto" value={r.role} onChange={(e) => gantiRole(r.id, e.target.value)}>
                           {roleOptions.map((x) => <option key={x}>{x}</option>)}
                         </select>
@@ -169,7 +169,8 @@ export default function BsUsers() {
                   <td>{(r.last_login_at || '').slice(0, 16).replace('T', ' ') || '-'}</td>
                   <td>
                      <RowActions
-                       canReset={isSuper || r.role !== 'superadmin'}
+                        canReset={r.id !== user?.id && (isSuper || r.role !== 'superadmin')}
+
                        canDelete={isSuper}
                        isSelf={r.id === user?.id}
                       onPassword={() => resetPass(r.id)}

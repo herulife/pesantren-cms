@@ -171,6 +171,34 @@ export const adminDocSections: AdminDocSection[] = [
     ],
   },
   {
+    id: 'faqs',
+    title: 'FAQ',
+    category: 'Isi Website',
+    href: '/admin/faqs',
+    summary: 'Kelola pertanyaan dan jawaban yang sering dicari pengunjung website.',
+    audience: ['Pimpinan', 'Tim Media'],
+    quickActions: [
+      'Tambah pertanyaan baru beserta jawabannya.',
+      'Ubah isi FAQ yang sudah tidak sesuai.',
+      'Atur status tampil dan urutan FAQ.',
+    ],
+    workflows: [
+      {
+        title: 'Cara manages FAQ',
+        steps: [
+          'Buka menu FAQ.',
+          'Klik tambah atau edit FAQ yang sudah ada.',
+          'Isi pertanyaan dan jawaban, lalu simpan.',
+          'Periksa urutan dan status tampil di website.',
+        ],
+      },
+    ],
+    tips: [
+      'Gunakan pertanyaan yang sama dengan cara pengunjung menanyakannya.',
+      'Jawab singkat dan arahkan ke informasi yang mudah ditemukan.',
+    ],
+  },
+  {
     id: 'gallery',
     title: 'Galeri Foto',
     category: 'Isi Website',
@@ -741,7 +769,7 @@ export const roleAccessMatrix: RoleAccessRow[] = [
     user: 'Tidak',
   },
   {
-    module: 'Berita, Program, Galeri, Video, Pengajar, Fasilitas',
+    module: 'Berita, Program, Galeri, Video, Pengajar, Fasilitas, FAQ, Agenda',
     superadmin: 'Ya',
     tim_media: 'Ya',
     bendahara: 'Tidak',
@@ -760,6 +788,14 @@ export const roleAccessMatrix: RoleAccessRow[] = [
     module: 'Nilai & Raport, Donasi, Pembayaran, Kirim WA',
     superadmin: 'Ya',
     tim_media: 'Tidak',
+    bendahara: 'Ya',
+    panitia_psb: 'Tidak',
+    user: 'Tidak',
+  },
+  {
+    module: 'Project',
+    superadmin: 'Ya',
+    tim_media: 'Ya',
     bendahara: 'Ya',
     panitia_psb: 'Tidak',
     user: 'Tidak',

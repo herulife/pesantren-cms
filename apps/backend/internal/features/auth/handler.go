@@ -51,6 +51,34 @@ func rejectUnmanageableUser(w http.ResponseWriter, r *http.Request, target *User
 	return true
 }
 
+func rejectSelfUserAction(w http.ResponseWriter, r *http.Request, id int) bool {
+	me, ok := GetAuthenticatedUser(r)
+	if !ok {
+		writeAPIError(w, http.StatusUnauthorized, logger.CorrelationID(r), "Sesi login tidak ditemukan", nil)
+		return true
+	}
+	if me.ID == id {
+		writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Tidak diizinkan mengubah akun sendiri", nil)
+		return true
+	}
+	return false
+}
+
+func (h *Handler) rejectLastSuperadmin(w http.ResponseWriter, r *http.Request, id int) bool {
+	users, err := h.repo.GetAllUsers("")
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, logger.CorrelationID(r), "Gagal memverifikasi akun super admin", nil)
+		return true
+	}
+	for _, user := range users {
+		if user.Role == "superadmin" && user.ID != id {
+			return false
+		}
+	}
+	writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Super admin terakhir tidak dapat dihapus atau diturunkan", nil)
+	return true
+}
+
 func (h *Handler) issueToken(user *User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":            user.ID,
@@ -497,6 +525,9 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 	if rejectUnmanageableUser(w, r, target) {
 		return
 	}
+	if rejectSelfUserAction(w, r, id) {
+		return
+	}
 	if target.Role == "superadmin" {
 		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
 			writeAPIError(w, http.StatusForbidden, correlationID, "Hanya super admin yang dapat mereset password super admin", nil)
@@ -562,8 +593,15 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if rejectUnmanageableUser(w, r, target) {
 		return
 	}
+	if target.Role == "superadmin" && h.rejectLastSuperadmin(w, r, id) {
+		return
+	}
 
 	if err := h.repo.DeleteUser(id); err != nil {
+		if errors.Is(err, ErrLastSuperadmin) {
+			writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Super admin terakhir tidak dapat dihapus", nil)
+			return
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
 			return
@@ -640,8 +678,18 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if rejectSelfUserAction(w, r, id) {
+		return
+	}
+	if target.Role == "superadmin" && req.Role != "superadmin" && h.rejectLastSuperadmin(w, r, id) {
+		return
+	}
 
 	if err := h.repo.UpdateRole(id, req.Role); err != nil {
+		if errors.Is(err, ErrLastSuperadmin) {
+			writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Super admin terakhir tidak dapat diturunkan", nil)
+			return
+		}
 		logger.Warn(r.Context(), "failed updating user role", logger.Field{
 			"user_id": id,
 			"role":    req.Role,

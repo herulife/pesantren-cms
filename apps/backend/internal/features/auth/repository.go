@@ -42,6 +42,8 @@ type Repository struct {
 	db *sql.DB
 }
 
+var ErrLastSuperadmin = errors.New("cannot remove the last superadmin")
+
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
@@ -196,7 +198,7 @@ func (r *Repository) UpdateLastLogin(id int) error {
 	return err
 }
 
-func (r *Repository) DeleteUser(id int) error {
+func (r *Repository) DeleteUser(id int) (err error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -242,7 +244,11 @@ func (r *Repository) DeleteUser(id int) error {
 		}
 	}
 
-	result, err := tx.Exec("DELETE FROM users WHERE id = ?", id)
+	result, err := tx.Exec(`DELETE FROM users
+		WHERE id = ?
+		  AND (role <> 'superadmin' OR EXISTS (
+			SELECT 1 FROM users WHERE role = 'superadmin' AND id <> ?
+		))`, id, id)
 	if err != nil {
 		return err
 	}
@@ -252,6 +258,11 @@ func (r *Repository) DeleteUser(id int) error {
 		return err
 	}
 	if rowsAffected == 0 {
+		var role string
+		lookupErr := tx.QueryRow("SELECT role FROM users WHERE id = ?", id).Scan(&role)
+		if lookupErr == nil && role == "superadmin" {
+			return ErrLastSuperadmin
+		}
 		return sql.ErrNoRows
 	}
 
@@ -267,6 +278,29 @@ func (r *Repository) UpdateRole(userID int, role string) error {
 	if !validators.IsManageableRole(role) {
 		return errors.New("invalid role: " + role)
 	}
-	_, err := r.db.Exec("UPDATE users SET role = ? WHERE id = ?", role, userID)
-	return err
+	if role == "superadmin" {
+		_, err := r.db.Exec("UPDATE users SET role = ? WHERE id = ?", role, userID)
+		return err
+	}
+	result, err := r.db.Exec(`UPDATE users SET role = ?
+		WHERE id = ?
+		  AND (role <> 'superadmin' OR EXISTS (
+			SELECT 1 FROM users WHERE role = 'superadmin' AND id <> ?
+		))`, role, userID, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		var currentRole string
+		lookupErr := r.db.QueryRow("SELECT role FROM users WHERE id = ?", userID).Scan(&currentRole)
+		if lookupErr == nil && currentRole == "superadmin" {
+			return ErrLastSuperadmin
+		}
+		return sql.ErrNoRows
+	}
+	return nil
 }

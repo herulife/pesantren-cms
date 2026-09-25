@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/Toast';
+import { useAuth } from '@/components/AuthProvider';
 import {
   CreateViolationPayload,
   StudentDisciplinePoint,
@@ -86,6 +87,8 @@ const formInit: CreateViolationPayload = {
 
 export default function DisciplinesPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const role = user?.role || '';
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +100,10 @@ export default function DisciplinesPage() {
   const [templates, setTemplates] = useState<Record<string, string>>({});
 
   const loadTemplates = useCallback(async () => {
+    if (role !== 'superadmin') {
+      setTemplates({});
+      return;
+    }
     try {
       const sData = await getSettings();
       const mapped: Record<string, string> = {};
@@ -105,7 +112,7 @@ export default function DisciplinesPage() {
     } catch (e) {
       console.error('Failed to load WA templates', e);
     }
-  }, []);
+  }, [role]);
 
   const loadPoints = useCallback(async () => {
     setIsLoading(true);

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSantriList, getSppSummary, getKasSummary, getCampaigns } from '@/lib/api';
+import { useAuth } from '@/components/AuthProvider';
 import { fmtRp, BsTitle } from './ui';
 
 function nowPeriod() {
@@ -11,22 +12,34 @@ function nowPeriod() {
 }
 
 export default function BsDashboard() {
+  const { user } = useAuth();
+  const role = user?.role || '';
   const [santri, setSantri] = useState(0);
   const [tagihan, setTagihan] = useState(0);
   const [kas, setKas] = useState(0);
   const [campaigns, setCampaigns] = useState(0);
 
   useEffect(() => {
-    getSantriList({ limit: 1 }).then((r) => setSantri(r.total)).catch(() => {});
-    getSppSummary(nowPeriod()).then((s) => setTagihan(s?.outstanding || 0)).catch(() => {});
-    getKasSummary().then((s) => setKas(s?.balance || 0)).catch(() => {});
+    if (role === 'superadmin' || role === 'panitia_psb') {
+      getSantriList({ limit: 1 }).then((r) => setSantri(r.total)).catch(() => {});
+    }
+    if (role === 'superadmin' || role === 'bendahara') {
+      getSppSummary(nowPeriod()).then((s) => setTagihan(s?.outstanding || 0)).catch(() => {});
+      getKasSummary().then((s) => setKas(s?.balance || 0)).catch(() => {});
+    }
     getCampaigns().then((c) => setCampaigns(Array.isArray(c) ? c.length : 0)).catch(() => {});
-  }, []);
+  }, [role]);
 
   const boxes = [
-    { label: 'Santri', value: String(santri), color: 'bg-info', icon: 'bi-people', href: '/admin-bs/siswa' },
-    { label: 'Tunggakan Bulan Ini', value: fmtRp(tagihan), color: 'bg-warning', icon: 'bi-receipt', href: '/admin-bs/lap-tagihan' },
-    { label: 'Saldo Kas', value: fmtRp(kas), color: 'bg-success', icon: 'bi-wallet2', href: '/admin-bs/kas' },
+    ...(role === 'superadmin' || role === 'panitia_psb'
+      ? [{ label: 'Santri', value: String(santri), color: 'bg-info', icon: 'bi-people', href: '/admin-bs/siswa' }]
+      : []),
+    ...(role === 'superadmin' || role === 'bendahara'
+      ? [
+          { label: 'Tunggakan Bulan Ini', value: fmtRp(tagihan), color: 'bg-warning', icon: 'bi-receipt', href: '/admin-bs/lap-tagihan' },
+          { label: 'Saldo Kas', value: fmtRp(kas), color: 'bg-success', icon: 'bi-wallet2', href: '/admin-bs/kas' },
+        ]
+      : []),
     { label: 'Campaign Donasi', value: String(campaigns), color: 'bg-danger', icon: 'bi-gift', href: '/admin-bs/donasi' },
   ];
 
