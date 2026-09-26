@@ -304,7 +304,6 @@ export type ERaportPDFPayload = {
 	kesantrianScore: number;
 	finalScore: number;
 	predikat: string;
-	weights: { mapel: number; project: number; kesantrian: number };
 	mapel: { subject: string; score: number; weight: number }[];
 	project: { name: string; score: number; weight: number }[];
 	kesantrian: { aspek: string; score: number }[];
@@ -339,20 +338,20 @@ export function exportERaportPDF(payload: ERaportPDFPayload) {
 	doc.text(`Predikat: ${payload.predikat}`, 20, 65);
 	doc.setFont('helvetica', 'normal');
 
-	// Component weights
+	// Components (rata-rata biasa, tanpa bobot)
 	doc.setFontSize(10);
 	doc.setTextColor(71, 85, 105);
-	doc.text(`Komponen: Mapel ${payload.weights.mapel}% · Project ${payload.weights.project}% · Kesantrian ${payload.weights.kesantrian}%`, 14, 78);
+	doc.text('Nilai Akhir = rata-rata Nilai Mapel, Nilai Project, dan Nilai Kesantrian', 14, 78);
 
 	// Table: components summary
 	let y = 84;
 	autoTable(doc, {
 		startY: y,
-		head: [['Komponen', 'Nilai', 'Bobot']],
+		head: [['Komponen', 'Nilai']],
 		body: [
-			['Mata Pelajaran', payload.mapelScore.toFixed(2), `${payload.weights.mapel}%`],
-			['Project (Qurani-Mandiri-Peduli)', payload.projectScore.toFixed(2), `${payload.weights.project}%`],
-			['Kesantrian', payload.kesantrianScore.toFixed(2), `${payload.weights.kesantrian}%`],
+			['Mata Pelajaran', payload.mapelScore.toFixed(2)],
+			['Project', payload.projectScore.toFixed(2)],
+			['Kesantrian', payload.kesantrianScore.toFixed(2)],
 		],
 		styles: { fontSize: 10 },
 		headStyles: { fillColor: [15, 118, 110], textColor: 255 },

@@ -3082,7 +3082,8 @@ export interface ComputedRaport {
 	kesantrian_score: number;
 	final_score: number;
 	predikat: string;
-	weights: Record<string, number>;
+	is_complete: boolean;
+	missing?: string[];
 	mapel_details?: SubjectScoreDetail[];
 	project_details?: ProjectDetailScore[];
 	kesantrian_detail?: Record<string, number>;
@@ -3221,16 +3222,13 @@ export async function validateWeights(): Promise<{ ok: boolean; weights?: Record
 	} catch (e) { return { ok: false, message: 'Gagal memvalidasi bobot' }; }
 }
 
-export async function calculateRaport(params: { student_id: number; semester: string; academic_year: string; mapel_weight?: number; project_weight?: number; kesantrian_weight?: number }): Promise<ComputedRaport | null> {
+export async function calculateRaport(params: { student_id: number; semester: string; academic_year: string }): Promise<ComputedRaport | null> {
 	try {
 		const qs = new URLSearchParams({
 			student_id: String(params.student_id),
 			semester: params.semester,
 			academic_year: params.academic_year
 		});
-		if (params.mapel_weight) qs.append('mapel_weight', String(params.mapel_weight));
-		if (params.project_weight) qs.append('project_weight', String(params.project_weight));
-		if (params.kesantrian_weight) qs.append('kesantrian_weight', String(params.kesantrian_weight));
 		const r = await lmsFetch<ComputedRaport>(`/raport/calculate?${qs.toString()}`);
 		return r.success ? r.data : null;
 	} catch (e) { console.error('[Raport] calculate:', e); return null; }
@@ -3277,11 +3275,28 @@ export async function listStoredRaports(academicYear: string, semester: string):
 	} catch (e) { console.error('[Raport] list:', e); return []; }
 }
 
-export async function saveRaport(payload: Partial<StoredRaport>): Promise<boolean> {
+export async function saveRaport(payload: Partial<StoredRaport>): Promise<{ ok: boolean; message: string }> {
 	try {
 		const r = await lmsFetch('/raport/save', { method: 'POST', body: JSON.stringify(payload) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal mengunci rapor' }; }
+}
+
+export interface ProjectAssessmentMap { [activityId: number]: number }
+
+export async function listProjectAssessments(studentId: number, semester: string, academicYear: string): Promise<ProjectAssessmentMap> {
+	try {
+		const q = new URLSearchParams({ student_id: String(studentId), semester, academic_year: academicYear });
+		const r = await lmsFetch<ProjectAssessmentMap>(`/project/assessments?${q.toString()}`);
+		return r.data || {};
+	} catch (e) { console.error('[Raport] project assessments get:', e); return {}; }
+}
+
+export async function setProjectAssessment(payload: { student_id: number; activity_id: number; semester: string; academic_year: string; score: number }): Promise<boolean> {
+	try {
+		const r = await lmsFetch('/project/assessments', { method: 'POST', body: JSON.stringify(payload) });
 		return r.success;
-	} catch (e) { console.error('[Raport] save:', e); return false; }
+	} catch (e) { console.error('[Raport] project assessment set:', e); return false; }
 }
 
 export async function getKesantrianAspects(studentId: number, semester: string, academicYear: string): Promise<KesantrianAspect[]> {
