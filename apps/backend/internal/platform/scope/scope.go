@@ -115,6 +115,16 @@ func GradeSubjectID(db *sql.DB, gradeID int) (int, error) {
 	return subjectID, nil
 }
 
+// ExamSubjectID mengembalikan subject_id sebuah ujian.
+func ExamSubjectID(db *sql.DB, examID int) (int, error) {
+	var subjectID int
+	err := db.QueryRow(`SELECT subject_id FROM exams WHERE id = ?`, examID).Scan(&subjectID)
+	if err != nil {
+		return 0, err
+	}
+	return subjectID, nil
+}
+
 // TahfidzStudentID mengembalikan student_id sebuah baris tahfidz.
 func TahfidzStudentID(db *sql.DB, tahfidzID int) (int, error) {
 	var studentID int

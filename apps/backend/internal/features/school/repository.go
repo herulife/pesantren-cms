@@ -12,6 +12,7 @@ type Class struct {
 	Name      string    `json:"name"`
 	Jenjang   string    `json:"jenjang"`
 	WaliName  string    `json:"wali_name"`
+	WaliUserID int      `json:"wali_user_id"`
 	Year      string    `json:"academic_year"`
 	IsActive  int       `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
@@ -33,7 +34,7 @@ type Repository struct{ db *sql.DB }
 func NewRepository(db *sql.DB) *Repository { return &Repository{db: db} }
 
 func (r *Repository) ListClasses(activeOnly bool) ([]Class, error) {
-	q := `SELECT id, code, name, jenjang, wali_name, academic_year, is_active, created_at, updated_at FROM classes`
+	q := `SELECT id, code, name, jenjang, wali_name, COALESCE(wali_user_id,0), academic_year, is_active, created_at, updated_at FROM classes`
 	if activeOnly {
 		q += ` WHERE is_active=1`
 	}
@@ -46,7 +47,7 @@ func (r *Repository) ListClasses(activeOnly bool) ([]Class, error) {
 	out := []Class{}
 	for rows.Next() {
 		var c Class
-		if err := rows.Scan(&c.ID, &c.Code, &c.Name, &c.Jenjang, &c.WaliName, &c.Year, &c.IsActive, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Code, &c.Name, &c.Jenjang, &c.WaliName, &c.WaliUserID, &c.Year, &c.IsActive, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -54,8 +55,8 @@ func (r *Repository) ListClasses(activeOnly bool) ([]Class, error) {
 	return out, rows.Err()
 }
 
-func (r *Repository) CreateClass(name, jenjang, wali, year string) (int64, error) {
-	res, err := r.db.Exec(`INSERT INTO classes (name, jenjang, wali_name, academic_year) VALUES (?, ?, ?, ?)`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), strings.TrimSpace(year))
+func (r *Repository) CreateClass(name, jenjang, wali, year string, waliUserID int) (int64, error) {
+	res, err := r.db.Exec(`INSERT INTO classes (name, jenjang, wali_name, wali_user_id, academic_year) VALUES (?, ?, ?, ?, ?)`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), waliUserID, strings.TrimSpace(year))
 	if err != nil {
 		return 0, err
 	}
@@ -79,9 +80,19 @@ func padClass(id int64) string {
 	return n
 }
 
-func (r *Repository) UpdateClass(id int, name, jenjang, wali, year string, active int) error {
-	_, err := r.db.Exec(`UPDATE classes SET name=?, jenjang=?, wali_name=?, academic_year=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), strings.TrimSpace(year), active, id)
+func (r *Repository) UpdateClass(id int, name, jenjang, wali, year string, waliUserID, active int) error {
+	_, err := r.db.Exec(`UPDATE classes SET name=?, jenjang=?, wali_name=?, wali_user_id=?, academic_year=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), waliUserID, strings.TrimSpace(year), active, id)
 	return err
+}
+
+// GetUserRole mengembalikan role sebuah users.id (untuk validasi penugasan).
+func (r *Repository) GetUserRole(userID int) (string, error) {
+	var role string
+	err := r.db.QueryRow(`SELECT role FROM users WHERE id = ?`, userID).Scan(&role)
+	if err != nil {
+		return "", err
+	}
+	return role, nil
 }
 
 func (r *Repository) DeleteClass(id int) error {

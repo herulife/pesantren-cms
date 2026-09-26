@@ -13,6 +13,7 @@ import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/scope"
 	"almaparung-api/internal/validators"
 )
 
@@ -92,6 +93,11 @@ func (r *Repository) ResetLinkedPassword(santriID int, newPassword string) (int,
 
 // GetAvailablePortalUsers: GET /santri/portal-users?search=&include_id=
 func (h *Handler) GetAvailablePortalUsers(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "guru" || role == "ustadz" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang melihat daftar akun", nil)
+		return
+	}
 	search := strings.TrimSpace(r.URL.Query().Get("search"))
 	includeID, _ := strconv.Atoi(r.URL.Query().Get("include_id"))
 	users, err := h.repo.FindAvailablePortalUsers(search, includeID)
@@ -108,6 +114,11 @@ func (h *Handler) GetAvailablePortalUsers(w http.ResponseWriter, r *http.Request
 
 // LinkUserExclusiveHandler: PUT /santri/{id}/link-user-exclusive {user_id}
 func (h *Handler) LinkUserExclusiveHandler(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSONResponse(w, http.StatusForbidden, false, "Hanya admin yang dapat menautkan akun", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var req struct {
 		UserID int `json:"user_id"`
@@ -146,6 +157,11 @@ func (h *Handler) LinkUserExclusiveHandler(w http.ResponseWriter, r *http.Reques
 
 // ResetSantriPassword: POST /santri/{id}/reset-password {password}
 func (h *Handler) ResetSantriPassword(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSONResponse(w, http.StatusForbidden, false, "Hanya admin yang dapat mereset password", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var req struct {
 		Password string `json:"password"`

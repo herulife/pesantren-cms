@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
-
+	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/database"
+	"almaparung-api/internal/platform/scope"
 	"almaparung-api/internal/validators"
 )
 
@@ -93,6 +95,20 @@ func (h *Handler) SetAssessment(w http.ResponseWriter, r *http.Request) {
 		sendJSON(w, 404, false, "Kegiatan tidak ditemukan/aktif", nil)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "guru" || role == "ustadz" {
+		sendJSON(w, 403, false, "Penilaian project hanya oleh wali kelas", nil)
+		return
+	}
+	if role == "wali_kelas" {
+		className, scErr := scope.StudentClass(database.DB, req.StudentID)
+		sc, resErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || resErr != nil || !sc.HasClass(className) {
+			sendJSON(w, 403, false, "Hanya dapat menilai project santri kelas sendiri", nil)
+			return
+		}
+	}
 	if err := h.repo.UpsertAssessment(req.StudentID, req.ActivityID, req.Semester, req.AcademicYear, req.Score); err != nil {
 		sendJSON(w, 500, false, "Gagal menyimpan nilai project", nil)
 		return
@@ -109,6 +125,20 @@ func (h *Handler) ListAssessments(w http.ResponseWriter, r *http.Request) {
 	if studentID <= 0 || semester == "" || ay == "" {
 		sendJSON(w, 400, false, "student_id, semester, academic_year wajib diisi", nil)
 		return
+	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if role == "guru" || role == "ustadz" {
+		sendJSON(w, 403, false, "Tidak berwenang melihat nilai project", nil)
+		return
+	}
+	if role == "wali_kelas" {
+		className, scErr := scope.StudentClass(database.DB, studentID)
+		sc, resErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || resErr != nil || !sc.HasClass(className) {
+			sendJSON(w, 403, false, "Hanya dapat melihat nilai project santri kelas sendiri", nil)
+			return
+		}
 	}
 	m, err := h.repo.ListAssessments(studentID, semester, ay)
 	if err != nil {

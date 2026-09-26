@@ -2,6 +2,8 @@ package exams
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/database"
+	"almaparung-api/internal/platform/scope"
 	"almaparung-api/internal/validators"
 	"encoding/json"
 	"errors"
@@ -146,6 +148,19 @@ func (h *Handler) CreateExam(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Pembuatan ujian hanya oleh guru", nil)
+		return
+	}
+	if role == "guru" {
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || !sc.HasSubject(e.SubjectID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat membuat ujian mapel yang diampu", nil)
+			return
+		}
+	}
 	if err := h.repo.CreateExam(&e); err != nil {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal membuat ujian", nil)
 		return
@@ -166,6 +181,24 @@ func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Penambahan soal hanya oleh guru", nil)
+		return
+	}
+	if role == "guru" {
+		subjID, subjErr := scope.ExamSubjectID(database.DB, q.ExamID)
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if subjErr != nil {
+			writeJSONResponse(w, http.StatusNotFound, false, "Ujian tidak ditemukan", nil)
+			return
+		}
+		if scErr != nil || !sc.HasSubject(subjID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat menambah soal mapel yang diampu", nil)
+			return
+		}
+	}
 	if err := h.repo.AddQuestion(&q); err != nil {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal menambahkan soal", nil)
 		return

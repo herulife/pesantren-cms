@@ -391,12 +391,16 @@ func main() {
 				r.Mount("/settings", settingHandler.Routes())
 				r.Mount("/logs", logHandler.Routes())
 
-				// CBT Admin
-				r.Post("/exams", examHandler.CreateExam)
-				r.Post("/exams/questions", examHandler.CreateQuestion)
 
 				// Wallet Admin
 				r.Post("/wallet/topup", walletHandler.TopUp)
+			})
+
+			// CBT Admin: superadmin + guru (mapel sendiri dicek di handler)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "guru"))
+				r.Post("/exams", examHandler.CreateExam)
+				r.Post("/exams/questions", examHandler.CreateQuestion)
 			})
 
 			// Bendahara Ops
@@ -430,13 +434,13 @@ func main() {
 
 			// Kesantrian (Data Santri)
 			r.Group(func(r chi.Router) {
-				r.Use(auth.RequireRole("superadmin", "panitia_psb"))
+				r.Use(auth.RequireRole("superadmin", "panitia_psb", "wali_kelas", "pimpinan"))
 				r.Mount("/santri", santriHandler.Routes())
 			})
 
 			// Academics Ops (LMS ALMAA: Project & E-Raport)
 			r.Group(func(r chi.Router) {
-				r.Use(auth.RequireRole("bendahara", "tim_media", "superadmin"))
+				r.Use(auth.RequireRole("superadmin", "admin", "pimpinan", "wali_kelas", "ustadz"))
 				r.Mount("/project", projectHandler.Routes())
 				r.Mount("/raport", raportHandler.Routes())
 			})
@@ -497,7 +501,7 @@ func main() {
 
 			// Academic & Notifications
 			r.Group(func(r chi.Router) {
-				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Use(auth.RequireRole("superadmin", "admin", "pimpinan", "wali_kelas", "guru", "ustadz"))
 				r.Mount("/academics", academicHandler.Routes())
 				r.Mount("/notifications", notificationHandler.Routes())
 				r.Post("/attendance/scan", attendanceHandler.Scan)

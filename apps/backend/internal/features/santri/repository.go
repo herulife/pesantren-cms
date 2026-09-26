@@ -269,6 +269,68 @@ func (r *Repository) Delete(id int) error {
 	return err
 }
 
+// FindAllScoped = FindAll yang dibatasi ke daftar kelas (untuk wali kelas).
+func (r *Repository) FindAllScoped(search string, classes []string, status string, limit, offset int) ([]Santri, int, error) {
+	if len(classes) == 0 {
+		return []Santri{}, 0, nil
+	}
+	where := []string{"s.class IN (" + placeholders(len(classes)) + ")"}
+	args := []interface{}{}
+	for _, c := range classes {
+		args = append(args, c)
+	}
+	if search != "" {
+		where = append(where, "(s.nis LIKE ? OR s.name LIKE ? OR s.nickname LIKE ?)")
+		like := "%" + search + "%"
+		args = append(args, like, like, like)
+	}
+	if status != "" {
+		where = append(where, "s.status = ?")
+		args = append(args, status)
+	}
+	whereStr := strings.Join(where, " AND ")
+
+	var total int
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM santri s WHERE %s", whereStr)
+	if err := r.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	query := fmt.Sprintf(`SELECT s.id, s.nis, s.name, s.nickname, s.gender, s.birth_place, s.birth_date, s.address, s.class, COALESCE(s.jenjang,''), s.angkatan, s.status, s.parent_name, s.parent_phone, s.nik, s.father_name, s.father_phone, s.mother_name, s.mother_phone, COALESCE(s.father_occupation,''), COALESCE(s.mother_occupation,''), s.registration_id, s.photo_url, s.user_id, s.created_at, s.updated_at FROM santri s WHERE %s ORDER BY s.created_at DESC LIMIT ? OFFSET ?`, whereStr)
+	args = append(args, limit, offset)
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var list []Santri
+	for rows.Next() {
+		var s Santri
+		var userID sql.NullInt64
+		var createdAt, updatedAt sql.NullString
+		if err := rows.Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
+			return nil, 0, err
+		}
+		if userID.Valid {
+			uid := int(userID.Int64)
+			s.UserID = &uid
+		}
+		s.CreatedAt = createdAt.String
+		s.UpdatedAt = updatedAt.String
+		list = append(list, s)
+	}
+	return list, total, nil
+}
+
+func placeholders(n int) string {
+	ph := make([]string, n)
+	for i := range ph {
+		ph[i] = "?"
+	}
+	return strings.Join(ph, ",")
+}
+
 func (r *Repository) LinkUser(santriID, userID int) error {
 	var exists int
 	if err := r.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ? AND role = 'user'`, userID).Scan(&exists); err != nil {

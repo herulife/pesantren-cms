@@ -13,7 +13,9 @@ import (
 
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/scope"
 	"almaparung-api/internal/platform/weight"
 	"almaparung-api/internal/validators"
 )
@@ -56,6 +58,20 @@ func (h *Handler) Calculate(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, "student_id, semester, academic_year wajib diisi", nil)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(ctx)
+	uid, _ := auth.GetAuthenticatedUserID(ctx)
+	if role == "guru" || role == "ustadz" {
+		writeJSON(w, 403, "Tidak berwenang melihat rapor", nil)
+		return
+	}
+	if role == "wali_kelas" {
+		className, scErr := scope.StudentClass(database.DB, studentID)
+		sc, resErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || resErr != nil || !sc.HasClass(className) {
+			writeJSON(w, 403, "Hanya dapat melihat rapor santri kelas sendiri", nil)
+			return
+		}
+	}
 	res, err := h.repo.Compute(ctx, studentID, semester, ay)
 	if err != nil {
 		writeJSON(w, 500, "Gagal menghitung rapor: "+err.Error(), nil)
@@ -82,6 +98,20 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSON(w, 500, "Gagal menghitung rapor: "+err.Error(), nil)
 		return
+	}
+	role, _ := auth.GetAuthenticatedRole(ctx)
+	uid, _ := auth.GetAuthenticatedUserID(ctx)
+	if scope.ReadOnly(role) || role == "guru" || role == "ustadz" {
+		writeJSON(w, 403, "Tidak berwenang mengunci rapor", nil)
+		return
+	}
+	if role == "wali_kelas" {
+		className, scErr := scope.StudentClass(database.DB, s.StudentID)
+		sc, resErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || resErr != nil || !sc.HasClass(className) {
+			writeJSON(w, 403, "Hanya dapat mengunci rapor santri kelas sendiri", nil)
+			return
+		}
 	}
 	if !res.IsComplete {
 		writeJSON(w, 422, "Rapor belum lengkap, tidak dapat dikunci. Kurang: "+strings.Join(res.Missing, ", "), res)
@@ -127,6 +157,20 @@ func (h *Handler) Unlock(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, "student_id, semester, academic_year wajib diisi", nil)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(ctx)
+	uid, _ := auth.GetAuthenticatedUserID(ctx)
+	if scope.ReadOnly(role) || role == "guru" || role == "ustadz" {
+		writeJSON(w, 403, "Tidak berwenang membuka rapor", nil)
+		return
+	}
+	if role == "wali_kelas" {
+		className, scErr := scope.StudentClass(database.DB, studentID)
+		sc, resErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || resErr != nil || !sc.HasClass(className) {
+			writeJSON(w, 403, "Hanya dapat membuka rapor santri kelas sendiri", nil)
+			return
+		}
+	}
 	if err := h.repo.Unlock(ctx, studentID, semester, ay); err != nil {
 		if err == sql.ErrNoRows {
 			writeJSON(w, 404, "Rapor terkunci tidak ditemukan", nil)
@@ -152,6 +196,20 @@ func (h *Handler) GetByStudentID(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	semester := validators.NormalizeSemester(r.URL.Query().Get("semester"))
 	ay := strings.TrimSpace(r.URL.Query().Get("academic_year"))
+	role, _ := auth.GetAuthenticatedRole(ctx)
+	uid, _ := auth.GetAuthenticatedUserID(ctx)
+	if role == "guru" || role == "ustadz" {
+		writeJSON(w, 403, "Tidak berwenang melihat rapor", nil)
+		return
+	}
+	if role == "wali_kelas" {
+		className, scErr := scope.StudentClass(database.DB, id)
+		sc, resErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || resErr != nil || !sc.HasClass(className) {
+			writeJSON(w, 403, "Hanya dapat melihat rapor santri kelas sendiri", nil)
+			return
+		}
+	}
 	// Prefer stored; if none, compute on the fly
 	if s, err := h.repo.GetStored(ctx, id, semester, ay); err == nil {
 		writeJSON(w, 200, "Rapor santri", s)
@@ -177,6 +235,27 @@ func (h *Handler) ListRaports(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSON(w, 500, "Gagal memuat daftar rapor: "+err.Error(), nil)
 		return
+	}
+	role, _ := auth.GetAuthenticatedRole(ctx)
+	uid, _ := auth.GetAuthenticatedUserID(ctx)
+	if role == "guru" || role == "ustadz" {
+		writeJSON(w, 403, "Tidak berwenang melihat daftar rapor", nil)
+		return
+	}
+	if role == "wali_kelas" {
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil {
+			writeJSON(w, 500, "Gagal memuat daftar rapor: "+scErr.Error(), nil)
+			return
+		}
+		filtered := make([]StoredRaport, 0, len(list))
+		for _, s := range list {
+			className, scErr := scope.StudentClass(database.DB, s.StudentID)
+			if scErr == nil && sc.HasClass(className) {
+				filtered = append(filtered, s)
+			}
+		}
+		list = filtered
 	}
 	if list == nil {
 		list = []StoredRaport{}

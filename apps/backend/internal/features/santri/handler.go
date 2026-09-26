@@ -3,7 +3,9 @@ package santri
 import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/scope"
 	"almaparung-api/internal/validators"
 	"database/sql"
 	"encoding/json"
@@ -88,6 +90,7 @@ func (in *SantriInput) toSantri() *Santri {
 
 type IRepository interface {
 	FindAll(search, class, status string, limit, offset int) ([]Santri, int, error)
+	FindAllScoped(search string, classes []string, status string, limit, offset int) ([]Santri, int, error)
 	FindPortalUsers(search string) ([]PortalUser, error)
 	FindByID(id int) (*Santri, error)
 	Create(s *Santri) error
@@ -234,7 +237,20 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	class := r.URL.Query().Get("class")
 	status := r.URL.Query().Get("status")
 	limit, offset := parsePagination(r)
-	list, total, err := h.repo.FindAll(search, class, status, limit, offset)
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	var list []Santri
+	var total int
+	var err error
+	if role == "wali_kelas" {
+		var sc *scope.Scope
+		sc, err = scope.Resolve(database.DB, uid, role)
+		if err == nil {
+			list, total, err = h.repo.FindAllScoped(search, sc.Classes, status, limit, offset)
+		}
+	} else {
+		list, total, err = h.repo.FindAll(search, class, status, limit, offset)
+	}
 	if err != nil {
 		logger.Error(r.Context(), "santri list failed", logger.Field{"error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat data santri", nil)
@@ -268,10 +284,24 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusNotFound, false, "Santri tidak ditemukan", nil)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if role == "wali_kelas" {
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || !sc.HasClass(santri.Class) {
+			sendJSONResponse(w, http.StatusForbidden, false, "Hanya dapat melihat santri kelas sendiri", nil)
+			return
+		}
+	}
 	sendJSONResponse(w, http.StatusOK, true, "Detail santri", santri)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	var in SantriInput
 	if err := validators.DecodeJSON(w, r, &in); err != nil {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid: "+err.Error(), nil)
@@ -303,6 +333,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) BulkCreate(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	var req struct {
 		Items []SantriInput `json:"items"`
 	}
@@ -347,6 +382,11 @@ func (h *Handler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var in SantriInput
 	if err := validators.DecodeJSON(w, r, &in); err != nil {
@@ -379,6 +419,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) LinkUser(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var req struct {
 		UserID int `json:"user_id"`
@@ -412,6 +457,11 @@ func (h *Handler) LinkUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UnlinkUser(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	if err := h.repo.UnlinkUser(id); err != nil {
 		if err == sql.ErrNoRows {
@@ -451,6 +501,11 @@ func (h *Handler) GetMySantri(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	if err := h.repo.Delete(id); err != nil {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menghapus santri", nil)
@@ -467,6 +522,11 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SetClass(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	var req struct {
 		Items []struct {
 			ID    int    `json:"id"`
@@ -505,6 +565,11 @@ func (h *Handler) SetClass(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) BulkDelete(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if role == "wali_kelas" || role == "pimpinan" {
+		sendJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah data santri", nil)
+		return
+	}
 	var req struct {
 		IDs []int `json:"ids"`
 	}

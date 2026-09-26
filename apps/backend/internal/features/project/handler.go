@@ -3,6 +3,7 @@ package project
 import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/scope"
 	"almaparung-api/internal/platform/weight"
 	"almaparung-api/internal/validators"
 	"encoding/json"
@@ -71,6 +72,11 @@ func (h *Handler) ListSubProjects(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateSubProject(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
 	var s SubProject
 	if err := validators.DecodeJSON(w, r, &s); err != nil {
 		sendJSON(w, 400, false, "Payload tidak valid: "+err.Error(), nil)
@@ -110,6 +116,11 @@ func (h *Handler) CreateSubProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateSubProject(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var s SubProject
 	if err := validators.DecodeJSON(w, r, &s); err != nil {
@@ -145,6 +156,11 @@ func (h *Handler) UpdateSubProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteSubProject(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	if err := h.repo.DeleteSubProject(id); err != nil {
 		sendJSON(w, 500, false, "Gagal hapus sub project", nil)
@@ -169,6 +185,11 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
 	var a Activity
 	if err := validators.DecodeJSON(w, r, &a); err != nil {
 		sendJSON(w, 400, false, "Payload tidak valid: "+err.Error(), nil)
@@ -200,6 +221,11 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var a Activity
 	if err := validators.DecodeJSON(w, r, &a); err != nil {
@@ -227,6 +253,11 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteActivity(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	h.repo.DeleteActivity(id)
 	sendJSON(w, 200, true, "Kegiatan dihapus", nil)
@@ -242,6 +273,12 @@ func (h *Handler) ListIndicators(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateIndicator(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
+
 	var ind Indicator
 	if err := validators.DecodeJSON(w, r, &ind); err != nil {
 		sendJSON(w, 400, false, "Payload tidak valid", nil)
@@ -266,6 +303,12 @@ func (h *Handler) CreateIndicator(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteIndicator(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSON(w, 403, false, "Hanya admin yang dapat mengelola master project", nil)
+		return
+	}
+
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	h.repo.DeleteIndicator(id)
 	sendJSON(w, 200, true, "Indikator dihapus", nil)

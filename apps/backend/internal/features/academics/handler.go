@@ -2,7 +2,9 @@ package academics
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/scope"
 	"almaparung-api/internal/validators"
 	"encoding/json"
 	"net/http"
@@ -219,6 +221,11 @@ func (h *Handler) CreateSubject(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Hanya admin yang dapat mengelola mapel", nil)
+		return
+	}
 	if err := h.repo.CreateSubject(&s); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -229,6 +236,11 @@ func (h *Handler) CreateSubject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteSubject(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Hanya admin yang dapat mengelola mapel", nil)
+		return
+	}
 	if err := h.repo.DeleteSubject(id); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -241,7 +253,23 @@ func (h *Handler) GetGrades(w http.ResponseWriter, r *http.Request) {
 	semester := r.URL.Query().Get("semester")
 	year := r.URL.Query().Get("year")
 	limit, offset := parsePagination(r)
-	gs, err := h.repo.GetAllGrades(semester, year, limit, offset)
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Ustadz tidak berwenang melihat nilai mapel", nil)
+		return
+	}
+	var gs []Grade
+	var err error
+	if scope.FullAccess(role) || scope.ReadOnly(role) {
+		gs, err = h.repo.GetAllGrades(semester, year, limit, offset)
+	} else {
+		var sc *scope.Scope
+		sc, err = scope.Resolve(database.DB, uid, role)
+		if err == nil {
+			gs, err = h.repo.GetScopedGrades(semester, year, sc.SubjectIDs, sc.Classes, limit, offset)
+		}
+	}
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -253,7 +281,19 @@ func (h *Handler) GetGrades(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ReportPerGuru(w http.ResponseWriter, r *http.Request) {
 	semester := r.URL.Query().Get("semester")
 	year := r.URL.Query().Get("year")
-	rows, err := h.repo.ReportPerGuru(semester, year)
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang melihat laporan ini", nil)
+		return
+	}
+	var rows []PerGuruRow
+	var err error
+	if role == "guru" {
+		rows, err = h.repo.ReportPerGuruFor(semester, year, uid)
+	} else {
+		rows, err = h.repo.ReportPerGuru(semester, year)
+	}
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -264,11 +304,38 @@ func (h *Handler) ReportPerGuru(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetGradesByStudent(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Ustadz tidak berwenang melihat nilai mapel", nil)
+		return
+	}
 	gs, err := h.repo.GetGradesByStudent(id)
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
+	}
+	if role == "guru" {
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil {
+			writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+			return
+		}
+		var out []Grade
+		for _, g := range gs {
+			if sc.HasSubject(g.SubjectID) {
+				out = append(out, g)
+			}
+		}
+		gs = out
+	} else if role == "wali_kelas" {
+		className, scErr := scope.StudentClass(database.DB, id)
+		sc, resErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || resErr != nil || !sc.HasClass(className) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat melihat nilai santri kelas sendiri", nil)
+			return
+		}
 	}
 	writeJSONResponse(w, http.StatusOK, true, "Data nilai santri berhasil dimuat", gs)
 }
@@ -300,6 +367,19 @@ func (h *Handler) CreateGrade(w http.ResponseWriter, r *http.Request) {
 		writeJSONValidationError(w, errs)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang menambah nilai", nil)
+		return
+	}
+	if role == "guru" {
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || !sc.HasSubject(g.SubjectID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat mengisi nilai mapel yang diampu", nil)
+			return
+		}
+	}
 	if err := h.repo.CreateGrade(&g); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -320,6 +400,24 @@ func (h *Handler) UpdateGrade(w http.ResponseWriter, r *http.Request) {
 		writeJSONValidationError(w, errs)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang mengubah nilai", nil)
+		return
+	}
+	if role == "guru" {
+		subjID, subjErr := scope.GradeSubjectID(database.DB, id)
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if subjErr != nil {
+			writeJSONResponse(w, http.StatusNotFound, false, "Nilai tidak ditemukan", nil)
+			return
+		}
+		if scErr != nil || !sc.HasSubject(subjID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat mengubah nilai mapel yang diampu", nil)
+			return
+		}
+	}
 	if err := h.repo.UpdateGrade(id, &g); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -330,6 +428,24 @@ func (h *Handler) UpdateGrade(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteGrade(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Tidak berwenang menghapus nilai", nil)
+		return
+	}
+	if role == "guru" {
+		subjID, subjErr := scope.GradeSubjectID(database.DB, id)
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if subjErr != nil {
+			writeJSONResponse(w, http.StatusNotFound, false, "Nilai tidak ditemukan", nil)
+			return
+		}
+		if scErr != nil || !sc.HasSubject(subjID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat menghapus nilai mapel yang diampu", nil)
+			return
+		}
+	}
 	if err := h.repo.DeleteGrade(id); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -425,7 +541,23 @@ func (h *Handler) GetMyAttendanceSummary(w http.ResponseWriter, r *http.Request)
 
 func (h *Handler) GetTahfidz(w http.ResponseWriter, r *http.Request) {
 	limit, offset := parsePagination(r)
-	ts, err := h.repo.GetAllTahfidz(limit, offset)
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if role == "guru" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Guru tidak berwenang melihat tahfidz", nil)
+		return
+	}
+	var ts []TahfidzProgress
+	var err error
+	if role == "wali_kelas" {
+		var sc *scope.Scope
+		sc, err = scope.Resolve(database.DB, uid, role)
+		if err == nil {
+			ts, err = h.repo.GetScopedTahfidz(sc.Classes, limit, offset)
+		}
+	} else {
+		ts, err = h.repo.GetAllTahfidz(limit, offset)
+	}
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -460,6 +592,11 @@ func (h *Handler) CreateTahfidz(w http.ResponseWriter, r *http.Request) {
 		writeJSONValidationError(w, errs)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) && role != "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Penilaian tahfidz hanya oleh ustadz", nil)
+		return
+	}
 	if err := h.repo.CreateTahfidz(&t); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -479,6 +616,11 @@ func (h *Handler) UpdateTahfidz(w http.ResponseWriter, r *http.Request) {
 		writeJSONValidationError(w, errs)
 		return
 	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) && role != "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Penilaian tahfidz hanya oleh ustadz", nil)
+		return
+	}
 	if err := h.repo.UpdateTahfidz(id, &t); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -489,6 +631,11 @@ func (h *Handler) UpdateTahfidz(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteTahfidz(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) && role != "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Penilaian tahfidz hanya oleh ustadz", nil)
+		return
+	}
 	if err := h.repo.DeleteTahfidz(id); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -498,7 +645,19 @@ func (h *Handler) DeleteTahfidz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetStudents(w http.ResponseWriter, r *http.Request) {
-	students, err := h.repo.GetStudents()
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	var students interface{}
+	var err error
+	if role == "wali_kelas" {
+		var sc *scope.Scope
+		sc, err = scope.Resolve(database.DB, uid, role)
+		if err == nil {
+			students, err = h.repo.GetStudentsByClasses(sc.Classes)
+		}
+	} else {
+		students, err = h.repo.GetStudents()
+	}
 	if err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -522,6 +681,9 @@ type IRepository interface {
 	UpdateGrade(id int, g *Grade) error
 	DeleteGrade(id int) error
 	ReportPerGuru(semester, year string) ([]PerGuruRow, error)
+	GetScopedGrades(semester, year string, subjectIDs []int, classes []string, limit, offset int) ([]Grade, error)
+	ReportPerGuruFor(semester, year string, teacherID int) ([]PerGuruRow, error)
+	GetScopedTahfidz(classes []string, limit, offset int) ([]TahfidzProgress, error)
 	// Attendance
 	GetAttendance(date string) ([]Attendance, error)
 	CreateAttendance(a *Attendance) error
@@ -535,6 +697,11 @@ type IRepository interface {
 	UpdateTahfidz(id int, t *TahfidzProgress) error
 	DeleteTahfidz(id int) error
 	GetStudents() ([]struct {
+		ID    int    `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}, error)
+	GetStudentsByClasses(classes []string) ([]struct {
 		ID    int    `json:"id"`
 		Name  string `json:"name"`
 		Email string `json:"email"`

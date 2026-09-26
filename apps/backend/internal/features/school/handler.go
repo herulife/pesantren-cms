@@ -45,10 +45,11 @@ func (h *Handler) ListClasses(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateClass(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name    string `json:"name"`
-		Jenjang string `json:"jenjang"`
-		Wali    string `json:"wali_name"`
-		Year    string `json:"academic_year"`
+		Name       string `json:"name"`
+		Jenjang    string `json:"jenjang"`
+		Wali       string `json:"wali_name"`
+		WaliUserID int    `json:"wali_user_id"`
+		Year       string `json:"academic_year"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, 400, false, "Permintaan tidak valid", nil)
@@ -59,7 +60,14 @@ func (h *Handler) CreateClass(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 422, false, "Validasi gagal", map[string][]string{"name": {"Nama kelas wajib 1-50 karakter"}})
 		return
 	}
-	id, err := h.repo.CreateClass(req.Name, req.Jenjang, req.Wali, req.Year)
+	if req.WaliUserID > 0 {
+		role, err := h.repo.GetUserRole(req.WaliUserID)
+		if err != nil || role != "wali_kelas" {
+			writeJSON(w, 422, false, "Validasi gagal", map[string][]string{"wali_user_id": {"Akun wali kelas tidak valid"}})
+			return
+		}
+	}
+	id, err := h.repo.CreateClass(req.Name, req.Jenjang, req.Wali, req.Year, req.WaliUserID)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			writeJSON(w, 409, false, "Nama kelas sudah ada", nil)
@@ -74,11 +82,12 @@ func (h *Handler) CreateClass(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateClass(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var req struct {
-		Name     string `json:"name"`
-		Jenjang  string `json:"jenjang"`
-		Wali     string `json:"wali_name"`
-		Year     string `json:"academic_year"`
-		IsActive int    `json:"is_active"`
+		Name       string `json:"name"`
+		Jenjang    string `json:"jenjang"`
+		Wali       string `json:"wali_name"`
+		WaliUserID int    `json:"wali_user_id"`
+		Year       string `json:"academic_year"`
+		IsActive   int    `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, 400, false, "Permintaan tidak valid", nil)
@@ -88,7 +97,14 @@ func (h *Handler) UpdateClass(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 422, false, "Validasi gagal", map[string][]string{"name": {"Nama kelas wajib diisi"}})
 		return
 	}
-	if err := h.repo.UpdateClass(id, req.Name, req.Jenjang, req.Wali, req.Year, req.IsActive); err != nil {
+	if req.WaliUserID > 0 {
+		role, err := h.repo.GetUserRole(req.WaliUserID)
+		if err != nil || role != "wali_kelas" {
+			writeJSON(w, 422, false, "Validasi gagal", map[string][]string{"wali_user_id": {"Akun wali kelas tidak valid"}})
+			return
+		}
+	}
+	if err := h.repo.UpdateClass(id, req.Name, req.Jenjang, req.Wali, req.Year, req.WaliUserID, req.IsActive); err != nil {
 		writeJSON(w, 500, false, "Gagal mengubah kelas", nil)
 		return
 	}
