@@ -133,7 +133,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     registration?.mother_job,
     registration?.mother_phone,
   ].every(isFilled);
-  const programCompleted = [registration?.program_choice, registration?.jenjang].every(isFilled);
+  const programCompleted = [registration?.jenjang].every(isFilled);
   const biodataCompleted = dataSiswaCompleted && dataOrangTuaCompleted && programCompleted;
   const requiredDocs = [
     registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url,
@@ -183,12 +183,12 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     {
       id: 3,
       href: '/portal/program',
-      label: 'Program & Jenjang',
-      doneLabel: 'Program Dipilih',
+      label: 'Jenjang',
+      doneLabel: 'Jenjang Dipilih',
       done: programCompleted,
       active: pathname.startsWith('/portal/program'),
       locked: !(dataSiswaCompleted && dataOrangTuaCompleted),
-      unlockHint: 'Selesaikan Data Siswa & Data Orang Tua dulu sebelum memilih program.',
+      unlockHint: 'Selesaikan Data Siswa & Data Orang Tua dulu sebelum memilih jenjang.',
     },
     {
       id: 4,

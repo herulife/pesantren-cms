@@ -81,7 +81,7 @@ function ReviewPageContent() {
 
   const siswaDone = [reg?.full_name, reg?.gender, reg?.nik, reg?.birth_place, reg?.birth_date, reg?.address, reg?.school_origin].every(isFilled);
   const ortuDone = [reg?.father_name, reg?.father_job, reg?.father_phone, reg?.mother_name, reg?.mother_job, reg?.mother_phone].every(isFilled);
-  const programDone = [reg?.program_choice, reg?.jenjang].every(isFilled);
+  const programDone = [reg?.jenjang].every(isFilled);
   const docsDone = requiredDocs.every((doc) => isFilled(doc.url));
   const allComplete = siswaDone && ortuDone && programDone && docsDone;
 
@@ -116,12 +116,11 @@ function ReviewPageContent() {
     },
     {
       icon: <BookOpenCheck size={18} />,
-      title: 'Program & Jenjang',
+      title: 'Jenjang',
       done: programDone,
       href: '/portal/program',
       fields: [
         { label: 'Jenjang', value: jenjangLabel(reg?.jenjang) },
-        { label: 'Program', value: programLabel(reg?.program_choice) },
         { label: 'Kategori', value: categoryLabel(reg?.category) },
       ],
     },
