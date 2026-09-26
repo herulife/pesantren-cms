@@ -90,6 +90,7 @@ func (r *Repository) PurgeSantri(id int) (map[string]int64, error) {
 			"psb_payments":     `DELETE FROM psb_payments WHERE user_id=?`,
 			"user_qr_tokens":   `DELETE FROM user_qr_tokens WHERE user_id=?`,
 			"activity_logs":    `DELETE FROM activity_logs WHERE user_id=?`,
+			"project_assess":   `DELETE FROM project_assessments WHERE student_id=?`,
 		} {
 			if err := execCount(key, q, uid); err != nil {
 				return nil, err

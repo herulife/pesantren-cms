@@ -39,6 +39,9 @@ func (h *Handler) Routes() chi.Router {
 	r.Delete("/indicators/{id}", h.DeleteIndicator)
 	// Weight validation
 	r.Get("/weights/validate", h.ValidateWeights)
+	// Penilaian project per santri per kegiatan
+	r.Get("/assessments", h.ListAssessments)
+	r.Post("/assessments", h.SetAssessment)
 	return r
 }
 

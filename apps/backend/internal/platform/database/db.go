@@ -1156,6 +1156,24 @@ func runMigrations() {
 			name: "normalize_semester_kesantrian_2",
 			sql:  `UPDATE kesantrian_aspek SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
 		},
+		{
+			name: "project_assessments_table",
+			sql: `CREATE TABLE IF NOT EXISTS project_assessments (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				activity_id INTEGER NOT NULL REFERENCES project_activities(id) ON DELETE CASCADE,
+				semester TEXT NOT NULL,
+				academic_year TEXT NOT NULL,
+				score REAL NOT NULL,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				UNIQUE(student_id, activity_id, semester, academic_year)
+			);`,
+		},
+		{
+			name: "project_assessments_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_proj_assess_student ON project_assessments(student_id, semester, academic_year);`,
+		},
 	}
 
 	for _, migration := range migrations {

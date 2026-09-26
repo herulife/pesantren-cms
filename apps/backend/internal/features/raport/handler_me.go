@@ -29,7 +29,7 @@ func (h *Handler) GetMine(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, "Rapor santri", stored)
 		return
 	}
-	res, err := h.repo.Compute(r.Context(), uid, semester, ay, map[string]int{"mapel": 50, "project": 25, "kesantrian": 25})
+	res, err := h.repo.Compute(r.Context(), uid, semester, ay)
 	if err != nil {
 		writeJSON(w, 404, "Belum ada data rapor untuk semester ini", nil)
 		return

@@ -52,6 +52,8 @@ type IRepository interface {
 	UpdateActivity(a *Activity) error
 	DeleteActivity(id int) error
 	GetIndicators(activityID int) ([]Indicator, error)
+	UpsertAssessment(studentID, activityID int, semester, ay string, score float64) error
+	ListAssessments(studentID int, semester, ay string) (map[int]float64, error)
 	CreateIndicator(i *Indicator) error
 	DeleteIndicator(id int) error
 }

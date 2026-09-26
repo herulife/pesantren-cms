@@ -33,7 +33,6 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/save", h.Save)
 	r.Post("/unlock", h.Unlock)                 // require superadmin/bendahara
 	r.Get("/santri/{id}", h.GetByStudentID) // student self view / wali view
-	r.Get("/weights/default", h.DefaultWeights)
 	r.Get("/me", h.GetMine)
 	r.Get("/kesantrian", h.GetKesantrian)
 	r.Post("/kesantrian", h.SetKesantrian)
@@ -48,11 +47,6 @@ func writeJSON(w http.ResponseWriter, status int, msg string, data interface{}) 
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": status < 400, "message": msg, "data": data})
 }
 
-// DefaultWeights returns the E-Raport weight defaults (Mapel 50, Project 25, Kesantrian 25).
-func (h *Handler) DefaultWeights(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, 200, "Bobot default E-Raport", map[string]int{"mapel": 50, "project": 25, "kesantrian": 25})
-}
-
 func (h *Handler) Calculate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	studentID, _ := strconv.Atoi(r.URL.Query().Get("student_id"))
@@ -62,18 +56,7 @@ func (h *Handler) Calculate(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, "student_id, semester, academic_year wajib diisi", nil)
 		return
 	}
-	weights := map[string]int{
-		"mapel":      getInt(r, "mapel_weight", 50),
-		"project":    getInt(r, "project_weight", 25),
-		"kesantrian": getInt(r, "kesantrian_weight", 25),
-	}
-	// Ensure total == 100
-	total := weights["mapel"] + weights["project"] + weights["kesantrian"]
-	if total != 100 {
-		writeJSON(w, 400, "Total bobot E-Raport (mapel+project+kesantrian) harus 100%. Saat ini "+strconv.Itoa(total)+"%", nil)
-		return
-	}
-	res, err := h.repo.Compute(ctx, studentID, semester, ay, weights)
+	res, err := h.repo.Compute(ctx, studentID, semester, ay)
 	if err != nil {
 		writeJSON(w, 500, "Gagal menghitung rapor: "+err.Error(), nil)
 		return
@@ -92,18 +75,19 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, "student_id, semester, academic_year wajib", nil)
 		return
 	}
-	// Recompute final to prevent tampering (bobot = input tervalidasi, sama seperti preview).
-	w2 := map[string]int{
-		"mapel":      getInt(r, "mapel_weight", 50),
-		"project":    getInt(r, "project_weight", 25),
-		"kesantrian": getInt(r, "kesantrian_weight", 25),
-	}
-	if w2["mapel"]+w2["project"]+w2["kesantrian"] != 100 {
-		writeJSON(w, 400, "Total bobot E-Raport harus 100%", nil)
+	// Recompute final to prevent tampering (sama seperti preview).
+	s.Semester = validators.NormalizeSemester(s.Semester)
+	s.AcademicYear = strings.TrimSpace(s.AcademicYear)
+	res, err := h.repo.Compute(ctx, s.StudentID, s.Semester, s.AcademicYear)
+	if err != nil {
+		writeJSON(w, 500, "Gagal menghitung rapor: "+err.Error(), nil)
 		return
 	}
-	res, err := h.repo.Compute(ctx, s.StudentID, s.Semester, s.AcademicYear, w2)
-	if err == nil {
+	if !res.IsComplete {
+		writeJSON(w, 422, "Rapor belum lengkap, tidak dapat dikunci. Kurang: "+strings.Join(res.Missing, ", "), res)
+		return
+	}
+	{
 		s.MapelScore = res.MapelScore
 		s.ProjectScore = res.ProjectScore
 		s.KesantrianScore = res.KesantrianScore
@@ -173,7 +157,7 @@ func (h *Handler) GetByStudentID(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, "Rapor santri", s)
 		return
 	}
-	res, err := h.repo.Compute(ctx, id, semester, ay, map[string]int{"mapel": 50, "project": 25, "kesantrian": 25})
+	res, err := h.repo.Compute(ctx, id, semester, ay)
 	if err != nil {
 		writeJSON(w, 500, "Gagal memuat rapor: "+err.Error(), nil)
 		return

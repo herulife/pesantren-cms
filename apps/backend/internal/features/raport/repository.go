@@ -23,7 +23,8 @@ type ComputedRaport struct {
 	KesantrianScore  float64           `json:"kesantrian_score"`
 	FinalScore       float64           `json:"final_score"`
 	Predikat         string            `json:"predikat"`
-	Weights          map[string]int    `json:"weights"`
+	IsComplete       bool              `json:"is_complete"`
+	Missing          []string          `json:"missing,omitempty"`
 	MapelDetails     []SubjectScore    `json:"mapel_details"`
 	ProjectDetails   []ProjectDetail   `json:"project_details"`
 	KesantrianDetail map[string]float64 `json:"kesantrian_detail"`
@@ -86,12 +87,7 @@ func (r *Repository) ActiveAcademicYear(ctx context.Context) string {
 	return fmt.Sprintf("%d/%d", y, y+1)
 }
 
-func (r *Repository) Compute(ctx context.Context, studentID int, semester, academicYear string, weights map[string]int) (*ComputedRaport, error) {
-	// Default weights: Mapel 50, Project 25, Kesantrian 25
-	if len(weights) == 0 {
-		weights = map[string]int{"mapel": 50, "project": 25, "kesantrian": 25}
-	}
-
+func (r *Repository) Compute(ctx context.Context, studentID int, semester, academicYear string) (*ComputedRaport, error) {
 	var studentName string
 	err := r.db.QueryRowContext(ctx, "SELECT name FROM users WHERE id = ?", studentID).Scan(&studentName)
 	if err != nil {
@@ -99,46 +95,52 @@ func (r *Repository) Compute(ctx context.Context, studentID int, semester, acade
 	}
 
 	raport := &ComputedRaport{
-		StudentID:   studentID,
-		StudentName: studentName,
-		Semester:    semester,
-		AcademicYear: academicYear,
-		Weights:     weights,
+		StudentID:        studentID,
+		StudentName:      studentName,
+		Semester:         semester,
+		AcademicYear:     academicYear,
 		KesantrianDetail: map[string]float64{},
 	}
 
-	// 1. Mapel score from grades weighted by subject.weight
-	raport.MapelScore, raport.MapelDetails = r.computeMapel(ctx, studentID, semester, academicYear)
+	// 1. Nilai mapel = rata-rata biasa semua mapel (tanpa bobot).
+	var mapelOK bool
+	raport.MapelScore, raport.MapelDetails, mapelOK = r.computeMapel(ctx, studentID, semester, academicYear)
 
-	// 2. Project score from subprojects (each subproject score = weighted avg of its activities)
-	raport.ProjectScore, raport.ProjectDetails = r.computeProject(ctx, studentID, semester, academicYear)
+	// 2. Nilai project = rata-rata biasa dari penilaian kegiatan.
+	var projectOK bool
+	raport.ProjectScore, raport.ProjectDetails, projectOK = r.computeProject(ctx, studentID, semester, academicYear)
 
-	// 3. Kesantrian score from kesantrian_aspek (4 aspects)
-	raport.KesantrianScore, err = r.computeKesantrian(ctx, studentID, semester, academicYear, raport.KesantrianDetail)
-	if err != nil {
-		return nil, err
-	}
+	// 3. Nilai kesantrian = rata-rata aspek yang sudah dinilai.
+	var kesOK bool
+	raport.KesantrianScore, kesOK = r.computeKesantrian(ctx, studentID, semester, academicYear, raport.KesantrianDetail)
 
-	// 4. Final = Mapel*X + Project*Y + Kesantrian*Z, X+Y+Z=100
-	w := map[string]float64{
-		"mapel":       float64(weights["mapel"]),
-		"project":     float64(weights["project"]),
-		"kesantrian":  float64(weights["kesantrian"]),
+	// 4. Nilai akhir = rata-rata biasa ketiga komponen, HANYA bila ketiganya
+	// sudah ada datanya. Komponen yang belum dinilai = kosong, bukan angka.
+	if !mapelOK {
+		raport.Missing = append(raport.Missing, "Nilai mapel")
 	}
-	final, err := weight.CalculateERaport(raport.MapelScore, raport.ProjectScore, raport.KesantrianScore, w)
-	if err != nil {
-		return nil, err
+	if !projectOK {
+		raport.Missing = append(raport.Missing, "Nilai project")
 	}
-	raport.FinalScore = final
-	raport.Predikat = weight.Predikat100(final) // C11: skala 0-100, bukan 1-4
+	if !kesOK {
+		raport.Missing = append(raport.Missing, "Nilai kesantrian")
+	}
+	if len(raport.Missing) > 0 {
+		raport.IsComplete = false
+		raport.Status = "incomplete"
+		return raport, nil
+	}
+	raport.IsComplete = true
+	raport.FinalScore = math.Round((raport.MapelScore+raport.ProjectScore+raport.KesantrianScore)/3*100) / 100
+	raport.Predikat = weight.PredikatKKM(raport.FinalScore)
 	raport.Status = "ready"
 
 	return raport, nil
 }
 
-func (r *Repository) computeMapel(ctx context.Context, studentID int, semester, academicYear string) (float64, []SubjectScore) {
+func (r *Repository) computeMapel(ctx context.Context, studentID int, semester, academicYear string) (float64, []SubjectScore, bool) {
 	query := `
-		SELECT g.subject_id, s.name, g.final_score, s.weight
+		SELECT g.subject_id, s.name, g.final_score
 		FROM grades g
 		JOIN subjects s ON s.id = g.subject_id
 		WHERE g.student_id = ? AND g.semester = ? AND g.academic_year = ?
@@ -147,95 +149,109 @@ func (r *Repository) computeMapel(ctx context.Context, studentID int, semester, 
 	`
 	rows, err := r.db.QueryContext(ctx, query, studentID, semester, academicYear)
 	if err != nil {
-		return 0, nil
+		return 0, nil, false
 	}
 	defer rows.Close()
 
 	var details []SubjectScore
-	totalWeighted := 0.0
-	totalWeight := 0.0
+	total := 0.0
 	for rows.Next() {
 		var d SubjectScore
-		if err := rows.Scan(&d.SubjectID, &d.SubjectName, &d.Score, &d.Weight); err != nil {
+		if err := rows.Scan(&d.SubjectID, &d.SubjectName, &d.Score); err != nil {
 			continue
 		}
-		// Gracefully handle weight 0 or NULL
-		if d.Weight <= 0 {
-			d.Weight = 100
-		}
-		totalWeighted += d.Score * d.Weight
-		totalWeight += d.Weight
+		total += d.Score
 		details = append(details, d)
 	}
-	if totalWeight == 0 {
-		return 0, details
+	if len(details) == 0 {
+		return 0, details, false
 	}
-	score := totalWeighted / totalWeight
-	// Normalize to 4-scale? Mapel grades are typically 0-100. E-Raport predikat expects 1-4.
-	// We keep 0-100 for mapel and let Predikat handle both; but CalculateERaport forces <=100 and mixes scales.
-	// For a proper E-Raport, convert to 0-100 scale consistently. Predikat on 100-scale:
-	// We'll store the 100-scale score; final becomes 0-100 scale.
-	return math.Round(score*100) / 100, details
+	return math.Round(total/float64(len(details))*100) / 100, details, true
 }
 
-func (r *Repository) computeProject(ctx context.Context, studentID int, semester, academicYear string) (float64, []ProjectDetail) {
-	// Get all subprojects with weights
-	rows, err := r.db.QueryContext(ctx, `SELECT id, name, weight FROM project_subprojects WHERE is_active = 1 ORDER BY order_index ASC`)
+func (r *Repository) computeProject(ctx context.Context, studentID int, semester, academicYear string) (float64, []ProjectDetail, bool) {
+	// Nilai project = rata-rata biasa kegiatan yang SUDAH dinilai (skala 1-4).
+	// Kegiatan yang belum dinilai tidak ikut rata-rata dan membuat komponen
+	// project belum lengkap (kosong, bukan angka default).
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT a.sub_project_id, sp.name, a.id, a.name, pa.score
+		FROM project_activities a
+		JOIN project_subprojects sp ON sp.id = a.sub_project_id AND sp.is_active = 1
+		LEFT JOIN project_assessments pa ON pa.activity_id = a.id
+			AND pa.student_id = ? AND pa.semester = ? AND pa.academic_year = ?
+		WHERE a.is_active = 1
+		ORDER BY sp.order_index ASC, sp.id ASC, a.order_index ASC, a.id ASC
+	`, studentID, semester, academicYear)
 	if err != nil {
-		return 0, nil
+		return 0, nil, false
 	}
-	type spInfo struct {
-		id     int
-		name   string
-		weight float64
+	defer rows.Close()
+
+	type subAgg struct {
+		id    int
+		name  string
+		total float64
+		n     int
 	}
-	var subProjs []spInfo
+	order := []int{}
+	agg := map[int]*subAgg{}
+	type actRow struct {
+		subID   int
+		name    string
+		scored  bool
+		score14 float64
+	}
+	var acts []actRow
 	for rows.Next() {
-		var sp spInfo
-		rows.Scan(&sp.id, &sp.name, &sp.weight)
-		subProjs = append(subProjs, sp)
-	}
-	rows.Close()
-
-	if len(subProjs) == 0 {
-		return 0, nil
-	}
-
-	// For each subproject, compute score = weighted average of activities.
-	// Activities with indicators are scored 1-4. Since we do not yet have assessment/evidence inputs,
-	// we compute a deterministic default: each activity defaults to 3 (Baik) unless scored.
-	// TODO Phase 9-10: replace with actual assessments from project_assessments.
-	totalWeighted := 0.0
-	totalWeight := 0.0
-	details := []ProjectDetail{}
-	for _, sp := range subProjs {
-		score := 3.0 // default Baik until assessments exist
-		detail := ProjectDetail{
-			SubProjectID: sp.id,
-			SubProject:   sp.name,
-			Score:        score,
-			Weight:       sp.weight,
-			Contribution: 0,
+		var subID, actID int
+		var subName, actName string
+		var sc sql.NullFloat64
+		if err := rows.Scan(&subID, &subName, &actID, &actName, &sc); err != nil {
+			continue
 		}
-		// Sum normalized contributions
-		totalWeighted += score * sp.weight
-		totalWeight += sp.weight
-		details = append(details, detail)
+		_ = actID
+		_ = actName
+		a := actRow{subID: subID, scored: sc.Valid}
+		if sc.Valid {
+			a.score14 = sc.Float64
+		}
+		acts = append(acts, a)
+		if _, ok := agg[subID]; !ok {
+			agg[subID] = &subAgg{id: subID, name: subName}
+			order = append(order, subID)
+		}
+		if sc.Valid {
+			agg[subID].total += sc.Float64
+			agg[subID].n++
+		}
 	}
-	if totalWeight == 0 {
-		return 0, details
+	if len(acts) == 0 {
+		return 0, nil, false
 	}
-	baseScore := totalWeighted / totalWeight
-	// Convert from 1-4 scale to 0-100 scale for consistent final calculation
-	// 1-4 -> 100-scale: (score / 4) * 100
-	score100 := (baseScore / 4.0) * 100.0
-	for i := range details {
-		details[i].Contribution = math.Round((details[i].Score/4.0*100.0)*details[i].Weight/100.0*100) / 100
+
+	details := []ProjectDetail{}
+	subTotal := 0.0
+	subCount := 0
+	scoredAny := false
+	for _, sid := range order {
+		sa := agg[sid]
+		d := ProjectDetail{SubProjectID: sa.id, SubProject: sa.name}
+		if sa.n > 0 {
+			avg14 := sa.total / float64(sa.n)
+			d.Score = math.Round(avg14/4.0*10000) / 100
+			subTotal += d.Score
+			subCount++
+			scoredAny = true
+		}
+		details = append(details, d)
 	}
-	return math.Round(score100*100) / 100, details
+	if !scoredAny {
+		return 0, details, false
+	}
+	return math.Round(subTotal/float64(subCount)*100) / 100, details, true
 }
 
-func (r *Repository) computeKesantrian(ctx context.Context, studentID int, semester, academicYear string, detail map[string]float64) (float64, error) {
+func (r *Repository) computeKesantrian(ctx context.Context, studentID int, semester, academicYear string, detail map[string]float64) (float64, bool) {
 	rows, err := r.db.QueryContext(ctx, `SELECT aspek, score FROM kesantrian_aspek WHERE student_id = ? AND semester = ? AND academic_year = ?`,
 		studentID, semester, academicYear)
 	if err != nil {
@@ -254,18 +270,14 @@ func (r *Repository) computeKesantrian(ctx context.Context, studentID int, semes
 		detail[aspek] = score
 	}
 	if len(scores) == 0 {
-		// Default neutral: all aspects 3 (Baik) on 1-4 scale
-		scores = map[string]float64{"disiplin": 3, "ibadah": 3, "kemandirian": 3, "adab": 3}
-		for k, v := range scores {
-			detail[strings.Title(k)] = v
-		}
+		return 0, false
 	}
 	score14, err := weight.CalculateKesantrianScore(scores)
 	if err != nil {
-		return 0, err
+		return 0, false
 	}
 	// Convert to 100-scale
-	return math.Round((score14/4.0)*10000) / 100, nil
+	return math.Round((score14/4.0)*10000) / 100, true
 }
 
 var ErrRaportLocked = errors.New("rapor terkunci, gunakan unlock eksplisit")
