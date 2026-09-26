@@ -424,17 +424,16 @@ export default function ERaportPage() {
 						<p className="mt-1 text-sm text-slate-500">Atur seberapa besar pengaruh setiap mapel terhadap <strong>Nilai Mapel</strong> di raport. Total bobot harus <strong>100%</strong>.</p>
 					</div>
 
-					<div className="mt-4 grid gap-3 sm:grid-cols-3">
+					<div className="mt-4 grid gap-3 sm:grid-cols-2">
 						<div className="rounded-2xl bg-sky-50 p-4 text-sm">
-							<p className="text-[11px] font-black uppercase tracking-widest text-sky-600">KKM (nilai lulus)</p>
-							<p className="mt-1 text-slate-600">KKM <strong>75</strong> berarti santri dianggap <strong>tuntas</strong> jika nilai mapelnya ≥ 75. Ini ambang batas lulus, <strong>bukan</strong> bobot.</p>
-						</div>
-						<div className="rounded-2xl bg-emerald-50 p-4 text-sm">
-							<p className="text-[11px] font-black uppercase tracking-widest text-emerald-600">Bobot</p>
-							<p className="mt-1 text-slate-600">Persentase pengaruh mapel terhadap Nilai Mapel. Contoh bobot <strong>12.5%</strong> → mapel itu menyumbang <strong>12.5%</strong> dari rata-rata Nilai Mapel.</p>
+							<p className="text-[11px] font-black uppercase tracking-widest text-sky-600">Skala nilai</p>
+							<p className="mt-1 text-slate-600">Tiap kegiatan dinilai <strong>1-4</strong> (1=Perlu Perbaikan, 4=Sangat Baik). Nilai project = rata-rata kegiatan yang sudah dinilai.</p>
 						</div>
 						<div className="rounded-2xl bg-amber-50 p-4 text-sm">
-							<p className="text-[11px] font-black uppercase tracking-widest text-amber-600">Komposisi Nilai Akhir</p>
+							<p className="text-[11px] font-black uppercase tracking-widest text-amber-600">Predikat (KKM 75)</p>
+							<p className="mt-1 text-slate-600">A ≥ 90, B 80-89, C 75-79 (tuntas), D &lt; 75.</p>
+						</div>
+					</div>
 						{subProjects.length === 0 && (
 						<p className="mt-4 text-sm text-slate-400">Belum ada sub-project. Tambah dulu di halaman Project.</p>
 					)}
