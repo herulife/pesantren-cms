@@ -367,8 +367,8 @@ export function exportERaportPDF(payload: ERaportPDFPayload) {
 	y += 2;
 	autoTable(doc, {
 		startY: y,
-		head: [['Mata Pelajaran', 'Nilai', 'Bobot', 'Kontribusi']],
-		body: payload.mapel.map(m => [m.subject, m.score.toFixed(2), `${m.weight}%`, (m.score * m.weight / 100).toFixed(2)]),
+		head: [['Mata Pelajaran', 'Nilai']],
+		body: payload.mapel.map(m => [m.subject, m.score.toFixed(2)]),
 		styles: { fontSize: 9 },
 		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
 	});
@@ -382,8 +382,8 @@ export function exportERaportPDF(payload: ERaportPDFPayload) {
 	y += 2;
 	autoTable(doc, {
 		startY: y,
-		head: [['Sub Project', 'Skor (1-4)', 'Bobot']],
-		body: payload.project.map(p => [p.name, p.score.toFixed(2), `${p.weight}%`]),
+		head: [['Sub Project', 'Skor (1-4)']],
+		body: payload.project.map(p => [p.name, p.score > 0 ? p.score.toFixed(1) : '-']),
 		styles: { fontSize: 9 },
 		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
 	});

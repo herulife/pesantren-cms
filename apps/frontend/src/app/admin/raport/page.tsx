@@ -218,6 +218,10 @@ export default function ERaportPage() {
 			predikat: raport.predikat,
 			mapel: (raport.mapel_details || []).map(d => ({ subject: d.subject_name, score: d.score })),
 			project: (raport.project_details || []).map(d => ({ name: d.sub_project, score: d.score })),
+			kesantrian: ASPEK_OPTS.map(a => {
+				const v = raport.kesantrian_detail?.[a.key] ?? raport.kesantrian_detail?.[a.label];
+				return { aspek: a.label, score: v === undefined ? 0 : Number(v) };
+			}),
 			printedAt: new Date().toLocaleString('id-ID'),
 		});
 	};
