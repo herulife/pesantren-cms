@@ -228,6 +228,12 @@ export default function PortalRaportPage() {
         </div>
       </section>
 
+      {eraport && !eraport.is_complete && (
+        <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 text-sm font-semibold text-amber-800">
+          Rapor semester ini belum lengkap — menunggu penilaian: {((eraport as { missing?: string[] }).missing || []).join(', ')}. Nilai akhir muncul setelah semua dinilai.
+        </div>
+      )}
+
       {eraport && (
         <section className="overflow-hidden rounded-[1.5rem] border border-sky-200 bg-gradient-to-br from-sky-600 via-sky-700 to-sky-800 shadow-lg shadow-sky-700/20 print:shadow-none">
           <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-6">
@@ -248,19 +254,19 @@ export default function PortalRaportPage() {
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-3 text-center ring-1 ring-white/20">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100">Nilai Akhir</p>
-              <p className="text-2xl font-black text-white">{eraport.final_score?.toFixed(2)}</p>
-              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-sky-800">{eraport.predikat}</span>
+              <p className="text-2xl font-black text-white">{eraport.is_complete ? eraport.final_score?.toFixed(2) : '\u2013'}</p>
+              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-sky-800">{eraport.is_complete ? eraport.predikat : 'Belum lengkap'}</span>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 border-t border-white/10 px-5 py-4 sm:grid-cols-3 lg:px-6">
             {[
-              { label: 'Mata Pelajaran', value: eraport.mapel_score },
-              { label: 'Project (QNS)', value: eraport.project_score },
-              { label: 'Kesantrian', value: eraport.kesantrian_score },
+              { label: 'Mata Pelajaran', value: eraport.mapel_score, missing: ((eraport as { missing?: string[] }).missing || []).some(m => m.toLowerCase().includes('mapel')) },
+              { label: 'Project (QNS)', value: eraport.project_score, missing: ((eraport as { missing?: string[] }).missing || []).some(m => m.toLowerCase().includes('project')) },
+              { label: 'Kesantrian', value: eraport.kesantrian_score, missing: ((eraport as { missing?: string[] }).missing || []).some(m => m.toLowerCase().includes('kesantrian')) },
             ].map((item) => (
               <div key={item.label} className="rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/10">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-sky-100">{item.label}</p>
-                <p className="mt-0.5 text-lg font-black text-white">{Number(item.value || 0).toFixed(2)}</p>
+                <p className="mt-0.5 text-lg font-black text-white">{item.missing ? '\u2013' : Number(item.value || 0).toFixed(2)}</p>
               </div>
             ))}
           </div>
@@ -301,12 +307,11 @@ export default function PortalRaportPage() {
             </p>
             <ul className="mt-4 space-y-3">
               {[
-                { name: 'Mata Pelajaran', weight: eraport.weights?.mapel ?? 50, desc: 'Rata-rata nilai semua mapel semester ini.', tint: 'bg-sky-50 text-sky-700' },
-                { name: 'Project', weight: eraport.weights?.project ?? 25, desc: 'Nilai tugas dan project santri.', tint: 'bg-emerald-50 text-emerald-700' },
-                { name: 'Kesantrian', weight: eraport.weights?.kesantrian ?? 25, desc: 'Penilaian adab, ibadah, disiplin, dan kemandirian.', tint: 'bg-amber-50 text-amber-700' },
+                { name: 'Mata Pelajaran', desc: 'Rata-rata nilai semua mapel semester ini.', tint: 'bg-sky-50 text-sky-700' },
+                { name: 'Project', desc: 'Rata-rata nilai kegiatan project yang sudah dinilai.', tint: 'bg-emerald-50 text-emerald-700' },
+                { name: 'Kesantrian', desc: 'Rata-rata aspek adab, ibadah, disiplin, dan kemandirian yang sudah dinilai.', tint: 'bg-amber-50 text-amber-700' },
               ].map((row) => (
                 <li key={row.name} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5">
-                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${row.tint}`}>{row.weight}%</span>
                   <span>
                     <span className="block text-sm font-bold text-slate-900">{row.name}</span>
                     <span className="mt-0.5 block text-xs leading-5 text-slate-500">{row.desc}</span>
@@ -317,10 +322,9 @@ export default function PortalRaportPage() {
             <div className="mt-4 rounded-2xl bg-sky-50 p-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sky-600">Contoh hitung semester ini</p>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">
-                ({Number(eraport.mapel_score || 0).toFixed(1)} × {eraport.weights?.mapel ?? 50}%)
-                {' + '}({Number(eraport.project_score || 0).toFixed(1)} × {eraport.weights?.project ?? 25}%)
-                {' + '}({Number(eraport.kesantrian_score || 0).toFixed(1)} × {eraport.weights?.kesantrian ?? 25}%)
-                {' = '}{eraport.final_score?.toFixed(2)}
+                ({Number(eraport.mapel_score || 0).toFixed(1)} + {Number(eraport.project_score || 0).toFixed(1)} + {Number(eraport.kesantrian_score || 0).toFixed(1)}) ÷ 3
+                {' = '}{eraport.is_complete ? eraport.final_score?.toFixed(2) : 'belum lengkap'}
+                <span className="mt-1 block text-xs font-normal text-slate-500">Predikat ikut KKM 75: A ≥ 90, B 80-89, C 75-79, D &lt; 75. Komponen yang belum dinilai tidak ikut dihitung.</span>
               </p>
             </div>
             <p className="mt-3 text-xs leading-5 text-slate-400">

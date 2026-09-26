@@ -7,7 +7,6 @@ import {
 	CompactUser,
 	ComputedRaport,
 	KesantrianAspect,
-	ExtendedSubject,
 	getAcademicStudents,
 	getActiveAcademicYear,
 	getAcademicYears,
@@ -18,16 +17,18 @@ import {
 	saveRaport,
 	getKesantrianAspects,
 	setKesantrianAspect,
-	getExtendedSubjects,
-	updateSubjectWeights,
 	getSubProjects,
+	getActivities,
+	listProjectAssessments,
+	setProjectAssessment,
+	ProjectActivity,
 } from '@/lib/api';
 import { exportERaportPDF } from '@/lib/export';
 import {
-	BookOpen, CheckCircle2, ClipboardList, Download, GraduationCap, HeartHandshake, Info, Layers, Printer, RefreshCw, Save, Scale, Search, X,
+	BookOpen, CheckCircle2, ClipboardList, Download, GraduationCap, HeartHandshake, Info, Layers, Printer, RefreshCw, Save, Search, X,
 } from 'lucide-react';
 
-type TabKey = 'rekapitulasi' | 'maps' | 'kesantrian';
+type TabKey = 'rekapitulasi' | 'project' | 'kesantrian';
 
 const ASPEK_OPTS = [
 	{ key: 'disiplin', label: 'Disiplin' },
@@ -43,14 +44,20 @@ function predikatColor(p: string) {
 	return 'bg-rose-50 text-rose-700 ring-rose-200';
 }
 
-function GradePill({ label, value, sub }: { label: string; value: number; sub?: string }) {
+function GradePill({ label, value, sub }: { label: string; value: number | null; sub?: string }) {
 	return (
 		<div className="rounded-2xl border border-slate-100 bg-white p-4">
 			<p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-			<p className="mt-1 text-2xl font-black text-slate-900">{value.toFixed(2)}</p>
+			<p className="mt-1 text-2xl font-black text-slate-900">{value === null ? '\u2013' : value.toFixed(2)}</p>
 			{sub && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">{sub}</p>}
 		</div>
 	);
+}
+
+function isMissing(raport: { is_complete?: boolean; missing?: string[] } | null, key: string): boolean {
+	if (!raport) return true;
+	if (raport.is_complete) return false;
+	return (raport.missing || []).some(m => m.toLowerCase().includes(key));
 }
 
 export default function ERaportPage() {
@@ -65,9 +72,9 @@ export default function ERaportPage() {
 	const [years, setYears] = useState<AcademicYear[]>([]);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [stored, setStored] = useState<Map<number, { score: number; predikat: string }>>(new Map());
-	const [subjectWeights, setSubjectWeights] = useState<Record<number, string>>({});
-	const [subjects, setSubjects] = useState<ExtendedSubject[]>([]);
-	const [weightOk, setWeightOk] = useState<boolean>(false);
+	const [activities, setActivities] = useState<ProjectActivity[]>([]);
+	const [projScores, setProjScores] = useState<Record<number, string>>({});
+	const [projSaving, setProjSaving] = useState<Record<number, boolean>>({});
 	const [kesValues, setKesValues] = useState<Record<string, string>>({});
 	const [kesSaved, setKesSaved] = useState<Record<string, boolean>>({});
 	const [subProjects, setSubProjects] = useState<{ id: number; name: string; weight: number }[]>([]);
@@ -104,6 +111,21 @@ export default function ERaportPage() {
 		setLoading(false);
 	}, [semester, year]);
 
+	const loadProjectScores = useCallback(async (sid: number) => {
+		const m = await listProjectAssessments(sid, semester, year);
+		const rec: Record<string, string> = {};
+		Object.entries(m).forEach(([aid, sc]) => { rec[aid] = String(sc); });
+		setProjScores(rec);
+	}, [semester, year]);
+
+	const handleProjectSave = async (activityId: number) => {
+		const val = Number(projScores[activityId]);
+		if (!selected || isNaN(val) || val < 1 || val > 4) { showToast('error', 'Nilai project harus 1-4'); return; }
+		const ok = await setProjectAssessment({ student_id: selected, activity_id: activityId, semester, academic_year: year, score: val });
+		if (ok) { showToast('success', 'Nilai project tersimpan'); loadRaport(selected); loadProjectScores(selected); }
+		else showToast('error', 'Gagal simpan nilai project');
+	};
+
 	const loadKes = useCallback(async (sid: number) => {
 		const list = await getKesantrianAspects(sid, semester, year);
 		const m: Record<string, string> = {};
@@ -111,31 +133,28 @@ export default function ERaportPage() {
 		setKesValues(m);
 	}, [semester, year]);
 
-	const loadWeights = useCallback(async () => {
-		const [subs, teacher] = await Promise.all([getExtendedSubjects(), getSubProjects()]);
-		setSubjects(subs);
-		const m: Record<string, string> = {};
-		subs.forEach(s => { m[s.id] = String(s.weight); });
-		setSubjectWeights(m);
-		const sum = subs.reduce((acc, s) => acc + s.weight, 0);
-		setWeightOk(Math.abs(sum - 100) < 0.01);
+	const loadSubProjects = useCallback(async () => {
+		const teacher = await getSubProjects();
 		const sp: { id: number; name: string; weight: number }[] = [];
 		teacher.forEach(t => sp.push({ id: t.id, name: t.name, weight: t.weight }));
 		setSubProjects(sp);
+		const acts = await getActivities();
+		setActivities(acts.filter(a => a.is_active));
 	}, []);
 
 	const loadAll = useCallback(async () => {
 		loadStudents();
-		loadWeights();
+		loadSubProjects();
 		if (selected) {
 			loadRaport(selected);
 			loadKes(selected);
+			loadProjectScores(selected);
 		}
 		const storedList = await listStoredRaports(year, semester);
 		const m = new Map<number, { score: number; predikat: string }>();
 		storedList.forEach(r => m.set(r.student_id, { score: r.final_score, predikat: r.predikat }));
 		setStored(m);
-	}, [loadStudents, loadWeights, loadRaport, loadKes, selected, semester, year]);
+	}, [loadStudents, loadSubProjects, loadRaport, loadKes, loadProjectScores, selected, semester, year]);
 
 	// eslint-disable-next-line react-hooks/set-state-in-effect -- fetch awal saat mount
 	useEffect(() => { loadAll(); }, [loadAll]);
@@ -157,18 +176,7 @@ export default function ERaportPage() {
 		setSelected(id);
 		await loadRaport(id);
 		await loadKes(id);
-	};
-
-	const handleSaveWeights = async () => {
-		const items = subjects.map(s => ({ subject_id: s.id, weight: Number(subjectWeights[s.id] || 0) }));
-		const sum = items.reduce((a, b) => a + (isNaN(b.weight) ? 0 : b.weight), 0);
-		if (Math.abs(sum - 100) > 0.01) {
-			showToast('error', `Total bobot mapel harus 100%. Saat ini ${sum}%.`);
-			return;
-		}
-		const res = await updateSubjectWeights(items);
-		if (res.ok) { showToast('success', 'Bobot mapel tersimpan'); loadWeights(); setWeightOk(true); }
-		else showToast('error', res.message || 'Gagal simpan bobot');
+		await loadProjectScores(id);
 	};
 
 	const handleKesantrianSave = async (aspek: string) => {
@@ -181,7 +189,7 @@ export default function ERaportPage() {
 
 	const handleLockRaport = async () => {
 		if (!raport) return;
-		const ok = await saveRaport({
+		const res = await saveRaport({
 			student_id: raport.student_id,
 			semester: raport.semester,
 			academic_year: raport.academic_year,
@@ -192,8 +200,8 @@ export default function ERaportPage() {
 			predikat: raport.predikat,
 			notes: '',
 		});
-		if (ok) { showToast('success', 'Rapor dikunci (locked)'); loadAll(); }
-		else showToast('error', 'Gagal mengunci rapor');
+		if (res.ok) { showToast('success', 'Rapor dikunci (locked)'); loadAll(); }
+		else showToast('error', res.message || 'Gagal mengunci rapor');
 	};
 
 	const handlePDF = () => {
@@ -208,14 +216,8 @@ export default function ERaportPage() {
 			kesantrianScore: raport.kesantrian_score,
 			finalScore: raport.final_score,
 			predikat: raport.predikat,
-			weights: {
-				mapel: raport.weights?.mapel ?? 50,
-				project: raport.weights?.project ?? 25,
-				kesantrian: raport.weights?.kesantrian ?? 25,
-			},
-			mapel: (raport.mapel_details || []).map(d => ({ subject: d.subject_name, score: d.score, weight: d.weight })),
-			project: (raport.project_details || []).map(d => ({ name: d.sub_project, score: d.score, weight: d.weight })),
-			kesantrian: ASPEK_OPTS.map(a => ({ aspek: a.label, score: Number(raport.kesantrian_detail?.[a.key] ?? 3) })),
+			mapel: (raport.mapel_details || []).map(d => ({ subject: d.subject_name, score: d.score })),
+			project: (raport.project_details || []).map(d => ({ name: d.sub_project, score: d.score })),
 			printedAt: new Date().toLocaleString('id-ID'),
 		});
 	};
@@ -224,8 +226,6 @@ export default function ERaportPage() {
 		window.print();
 	};
 
-	const weightSum = subjects.reduce((a, s) => a + (Number(subjectWeights[s.id]) || 0), 0);
-	const weightOkLive = Math.abs(weightSum - 100) < 0.01;
 
 	return (
 		<div className="space-y-6">
@@ -246,7 +246,7 @@ export default function ERaportPage() {
 				</div>
 				<div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5">
 					<button onClick={() => setTab('rekapitulasi')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'rekapitulasi' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Rekap</button>
-					<button onClick={() => setTab('maps')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'maps' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Bobot Mapel</button>
+					<button onClick={() => setTab('project')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'project' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Project</button>
 					<button onClick={() => setTab('kesantrian')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'kesantrian' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Kesantrian</button>
 				</div>
 			</div>
@@ -268,9 +268,7 @@ export default function ERaportPage() {
 					</select>
 				</div>
 				<button onClick={loadAll} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"><RefreshCw size={15} /> Muat Ulang</button>
-				{!weightOk && subjects.length > 0 && (
-					<span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">Bobot mapel belum 100% — buka tab Bobot Mapel</span>
-				)}
+
 			</div>
 
 			{tab === 'rekapitulasi' && (
@@ -325,10 +323,15 @@ export default function ERaportPage() {
 									</div>
 								</div>
 
+								{!loading && raport && !raport.is_complete && (
+									<div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+										Rapor belum lengkap — kurang: {(raport.missing || []).join(', ')}. Nilai akhir & predikat baru muncul setelah semua dinilai. Rapor belum lengkap tidak dapat dikunci.
+									</div>
+								)}
 								<div className="grid gap-3 sm:grid-cols-3">
-									<GradePill label="Mata Pelajaran" value={raport.mapel_score} sub={`bobot ${raport.weights?.mapel ?? 50}%`} />
-									<GradePill label="Project" value={raport.project_score} sub={`bobot ${raport.weights?.project ?? 25}%`} />
-									<GradePill label="Kesantrian" value={raport.kesantrian_score} sub={`bobot ${raport.weights?.kesantrian ?? 25}%`} />
+									<GradePill label="Mata Pelajaran" value={isMissing(raport, 'mapel') ? null : raport.mapel_score} sub="rata-rata semua mapel" />
+									<GradePill label="Project" value={isMissing(raport, 'project') ? null : raport.project_score} sub="rata-rata kegiatan" />
+									<GradePill label="Kesantrian" value={isMissing(raport, 'kesantrian') ? null : raport.kesantrian_score} sub="rata-rata 4 aspek" />
 								</div>
 
 								<div className="rounded-3xl border border-slate-200 bg-white p-5">
@@ -341,8 +344,6 @@ export default function ERaportPage() {
 												<tr className="border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
 													<th className="pb-2 font-bold">Mapel</th>
 													<th className="pb-2 font-bold">Nilai</th>
-													<th className="pb-2 font-bold">Bobot</th>
-													<th className="pb-2 font-bold">Kontribusi</th>
 												</tr>
 											</thead>
 											<tbody>
@@ -350,8 +351,6 @@ export default function ERaportPage() {
 													<tr key={d.subject_id} className="border-b border-slate-50">
 														<td className="py-2 font-semibold text-slate-700">{d.subject_name}</td>
 														<td className="py-2 font-bold text-slate-900">{d.score.toFixed(2)}</td>
-														<td className="py-2 text-slate-500">{d.weight}%</td>
-														<td className="py-2 font-semibold text-sky-600">{(d.score * d.weight / 100).toFixed(2)}</td>
 													</tr>
 												))}
 											</tbody>
@@ -365,30 +364,33 @@ export default function ERaportPage() {
 										<div className="mt-3 space-y-3">
 											{(raport.project_details || []).map(d => {
 												const sp = subProjects.find(x => x.id === d.sub_project_id);
+												const scored = (d.score || 0) > 0;
 												return (
 													<div key={d.sub_project_id}>
 														<div className="flex items-center justify-between text-sm">
 															<span className="font-semibold text-slate-700">{sp?.name || d.sub_project}</span>
-															<span className="font-bold text-slate-900">{((d.score || 0) / 4 * 100).toFixed(1)}</span>
+															<span className="font-bold text-slate-900">{scored ? ((d.score || 0) / 4 * 100).toFixed(1) : '\u2013'}</span>
 														</div>
 														<div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
-															<div className="h-full rounded-full bg-sky-500" style={{ width: `${Math.min((d.score || 0) / 4 * 100, 100)}%` }} />
+															<div className="h-full rounded-full bg-sky-500" style={{ width: `${scored ? Math.min((d.score || 0) / 4 * 100, 100) : 0}%` }} />
 														</div>
-														<p className="mt-0.5 text-[11px] text-slate-400">bobot {d.weight}%</p>
 													</div>
 												);
 											})}
+											{(raport.project_details || []).length === 0 && (
+												<p className="text-sm text-slate-400">Belum ada kegiatan project. Tambah di tab Project, lalu isi nilainya per santri.</p>
+											)}
 										</div>
 									</div>
 									<div className="rounded-3xl border border-slate-200 bg-white p-5">
 										<h3 className="flex items-center gap-2 text-sm font-black text-slate-900"><HeartHandshake size={16} className="text-sky-600" /> Kesantrian</h3>
 										<div className="mt-3 space-y-3">
 											{ASPEK_OPTS.map(a => {
-												const sc = raport.kesantrian_detail?.[a.key] ?? raport.kesantrian_detail?.[a.label] ?? 3;
+												const scRaw = raport.kesantrian_detail?.[a.key] ?? raport.kesantrian_detail?.[a.label];
 												return (
 													<div key={a.key} className="flex items-center justify-between text-sm">
 														<span className="font-semibold text-slate-700">{a.label}</span>
-														<span className="rounded-full bg-sky-50 px-2.5 py-0.5 font-black text-sky-700">{Number(sc).toFixed(1)}</span>
+														<span className="rounded-full bg-sky-50 px-2.5 py-0.5 font-black text-sky-700">{scRaw === undefined ? '\u2013' : Number(scRaw).toFixed(1)}</span>
 													</div>
 												);
 											})}
@@ -397,7 +399,7 @@ export default function ERaportPage() {
 								</div>
 
 								<div className="flex flex-wrap gap-3">
-									<button onClick={handleLockRaport} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/25 hover:bg-sky-700">
+									<button onClick={handleLockRaport} disabled={!raport.is_complete} title={!raport.is_complete ? 'Lengkapi dulu: ' + (raport.missing || []).join(', ') : 'Kunci rapor'} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/25 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40">
 										<Save size={17} /> Kunci Rapor
 									</button>
 									<button onClick={handlePDF} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
@@ -413,10 +415,12 @@ export default function ERaportPage() {
 				</div>
 			)}
 
-			{tab === 'maps' && (
+			{tab === 'project' && (
 				<div className="rounded-3xl border border-slate-200 bg-white p-6">
 					<div>
-						<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Scale size={19} className="text-sky-600" /> Bobot Mata Pelajaran</h3>
+						<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Layers size={19} className="text-sky-600" /> Penilaian Project</h3>
+						<p className="mt-1 text-sm text-slate-500">Tiap kegiatan dinilai 1-4 (1=Perlu Perbaikan, 4=Sangat Baik). Nilai project = rata-rata kegiatan yang sudah dinilai. Pilih santri dulu di tab Rekap.</p>
+					</div>
 						<p className="mt-1 text-sm text-slate-500">Atur seberapa besar pengaruh setiap mapel terhadap <strong>Nilai Mapel</strong> di raport. Total bobot harus <strong>100%</strong>.</p>
 					</div>
 
@@ -431,57 +435,46 @@ export default function ERaportPage() {
 						</div>
 						<div className="rounded-2xl bg-amber-50 p-4 text-sm">
 							<p className="text-[11px] font-black uppercase tracking-widest text-amber-600">Komposisi Nilai Akhir</p>
-							<p className="mt-1 text-slate-600">(Nilai Mapel × <strong>50%</strong>) + (Nilai Project × <strong>25%</strong>) + (Nilai Kesantrian × <strong>25%</strong>).</p>
-						</div>
-					</div>
-
-					<div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
-						<div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-5 py-3">
-							<span className="text-[11px] font-black uppercase tracking-widest text-slate-500">Mata Pelajaran</span>
-							<span className="text-[11px] font-black uppercase tracking-widest text-slate-500">Bobot (%)</span>
-						</div>
-						<div className="divide-y divide-slate-100">
-							{subjects.map(s => (
-								<div key={s.id} className="flex items-center gap-4 px-5 py-3">
-									<div className="min-w-0 flex-1">
-										<p className="text-sm font-bold text-slate-800">{s.name}</p>
-										<span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
-											KKM {s.kkm} <span className="font-medium text-slate-400">(min. lulus)</span>
-										</span>
-									</div>
-									<div className="flex w-40 items-center gap-1">
-										<input
-											type="number"
-											value={subjectWeights[s.id] ?? ''}
-											onChange={e => setSubjectWeights(prev => ({ ...prev, [s.id]: e.target.value }))}
-											className="w-full rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-bold text-slate-800 outline-none focus:border-sky-500"
-										/>
-										<span className="font-black text-slate-400">%</span>
-									</div>
+						{subProjects.length === 0 && (
+						<p className="mt-4 text-sm text-slate-400">Belum ada sub-project. Tambah dulu di halaman Project.</p>
+					)}
+					{!selected && subProjects.length > 0 && (
+						<p className="mt-4 text-sm text-slate-400">Pilih santri di tab Rekap untuk mengisi nilai.</p>
+					)}
+					{selected > 0 && subProjects.map(sp => {
+						const acts = activities.filter(a => a.sub_project_id === sp.id);
+						if (acts.length === 0) return null;
+						return (
+							<div key={sp.id} className="mt-5">
+								<p className="text-sm font-black text-slate-800">{sp.name}</p>
+								<div className="mt-2 space-y-3">
+									{acts.map(a => (
+										<div key={a.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+											<div className="min-w-0 flex-1">
+												<p className="text-sm font-bold text-slate-800">{a.name}</p>
+												<p className="text-[11px] text-slate-400">{students.find(s => s.id === selected)?.name}</p>
+											</div>
+											<select value={projScores[a.id] ?? ''} onChange={e => setProjScores(prev => ({ ...prev, [a.id]: e.target.value }))} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold outline-none focus:border-sky-500">
+												<option value="">Pilih nilai</option>
+												<option value="4">4 - Sangat Baik</option>
+												<option value="3">3 - Baik</option>
+												<option value="2">2 - Cukup</option>
+												<option value="1">1 - Perlu Perbaikan</option>
+											</select>
+											<button onClick={() => handleProjectSave(a.id)} className="rounded-xl bg-sky-600 px-4 py-2 text-xs font-bold text-white hover:bg-sky-700">Simpan</button>
+										</div>
+									))}
 								</div>
-							))}
-						</div>
-					</div>
-
-					<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3">
-						<p className="text-sm font-semibold text-slate-600">
-							Total bobot: <strong className={weightOkLive ? 'text-emerald-600' : 'text-rose-600'}>{weightSum}%</strong>
-							<span className="hidden sm:inline"> &nbsp;•&nbsp; </span>
-							<span className={weightOkLive ? 'text-emerald-600' : 'text-slate-500'}>
-								{weightOkLive ? 'Sudah 100% — siap dihitung.' : 'Harus 100% agar nilai mapel dapat dihitung.'}
-							</span>
-						</p>
-						<button onClick={handleSaveWeights} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white hover:bg-sky-700">
-							<Save size={16} /> Simpan Bobot Mapel
-						</button>
-					</div>
+							</div>
+						);
+					})}
 				</div>
 			)}
 
 			{tab === 'kesantrian' && (
 				<div className="rounded-3xl border border-slate-200 bg-white p-6">
 					<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><ClipboardList size={19} className="text-sky-600" /> Penilaian Kesantrian</h3>
-					<p className="mt-1 text-sm text-slate-500">Tiap aspek dinilai 1-4 (1=Perlu Perbaikan, 4=Sangat Baik). Nilai kesantrian = rata-rata 4 aspek × 25%.</p>
+					<p className="mt-1 text-sm text-slate-500">Tiap aspek dinilai 1-4 (1=Perlu Perbaikan, 4=Sangat Baik). Nilai kesantrian = rata-rata aspek yang sudah dinilai.</p>
 					<div className="mt-5 space-y-4">
 						{ASPEK_OPTS.map(a => (
 							<div key={a.key} className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
@@ -533,13 +526,13 @@ export default function ERaportPage() {
 							</button>
 						</div>
 						<p className="mt-3 text-sm leading-6 text-slate-600">
-							Nilai Akhir adalah <strong className="text-slate-900">rata-rata berbobot</strong> dari 3 komponen:
+							Nilai Akhir adalah <strong className="text-slate-900">rata-rata biasa</strong> dari 3 komponen yang sudah dinilai:
 						</p>
 						<ul className="mt-4 space-y-3">
 							{[
-								{ name: 'Nilai Mapel × 50%', desc: 'Rata-rata semua mapel. Bobot tiap mapel diatur di tab Bobot Mapel (total wajib 100%).', tint: 'bg-sky-50 text-sky-700' },
-								{ name: 'Nilai Project × 25%', desc: 'Rata-rata sub-project. Bobot tiap sub-project diatur di halaman Project (total wajib 100%).', tint: 'bg-emerald-50 text-emerald-700' },
-								{ name: 'Nilai Kesantrian × 25%', desc: 'Rata-rata 4 aspek (disiplin, ibadah, kemandirian, adab) skala 1-4.', tint: 'bg-amber-50 text-amber-700' },
+								{ name: 'Nilai Mapel', desc: 'Rata-rata nilai semua mapel semester ini.', tint: 'bg-sky-50 text-sky-700' },
+								{ name: 'Nilai Project', desc: 'Rata-rata nilai kegiatan yang sudah dinilai di tab Project.', tint: 'bg-emerald-50 text-emerald-700' },
+								{ name: 'Nilai Kesantrian', desc: 'Rata-rata 4 aspek (disiplin, ibadah, kemandirian, adab) skala 1-4. Predikat ikut KKM 75: A ≥ 90, B 80-89, C 75-79, D < 75.', tint: 'bg-amber-50 text-amber-700' },
 							].map((row) => (
 								<li key={row.name} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5">
 									<span className={`inline-block rounded-full px-2.5 py-1 text-xs font-black ${row.tint}`}>{row.name}</span>
@@ -550,7 +543,7 @@ export default function ERaportPage() {
 						<div className="mt-4 rounded-2xl bg-sky-50 p-4">
 							<p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sky-600">Contoh hitung</p>
 							<p className="mt-2 text-sm font-semibold leading-6 text-slate-800">
-								(80 × 50%) + (90 × 25%) + (85 × 25%) = 83,75
+								(80 + 90 + 85) ÷ 3 = 85. Komponen yang belum dinilai tidak ikut dihitung dan rapor belum bisa dikunci.
 							</p>
 						</div>
 						<button
