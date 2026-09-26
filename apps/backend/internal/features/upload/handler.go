@@ -99,16 +99,33 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	source, format, err := sanitizeImage(file)
-	if err != nil {
-		logger.Warn(r.Context(), "upload rejected unsupported image", logger.Field{
+	// Baca dulu agar bisa bercabang PDF vs gambar. Form pendaftaran
+	// mengizinkan PDF (KK/ijazah/akta) sehingga backend wajib menerimanya.
+	rawUpload, err := io.ReadAll(io.LimitReader(file, maxUploadSize+1))
+	if err != nil || len(rawUpload) == 0 {
+		sendJSONResponse(w, http.StatusBadRequest, false, "File tidak terbaca", nil)
+		return
+	}
+	if int64(len(rawUpload)) > maxUploadSize {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Ukuran file terlalu besar. Maksimal 5MB.", nil)
+		return
+	}
+	var source []byte
+	var format string
+	isPDF := strings.EqualFold(filepath.Ext(header.Filename), ".pdf") &&
+		len(rawUpload) > 5 && string(rawUpload[:5]) == "%PDF-" &&
+		http.DetectContentType(rawUpload) == "application/pdf"
+	if isPDF {
+		source, format = rawUpload, "pdf"
+	} else if source, format, err = sanitizeImage(bytes.NewReader(rawUpload)); err != nil {
+		logger.Warn(r.Context(), "upload rejected unsupported file", logger.Field{
 			"operation":      "upload_image",
 			"correlation_id": correlationID,
 			"user_id":        userID,
 			"filename":       header.Filename,
 			"error":          err.Error(),
 		})
-		sendJSONResponse(w, http.StatusBadRequest, false, "File harus berupa gambar JPG, JPEG, PNG, GIF, atau WEBP yang valid", nil)
+		sendJSONResponse(w, http.StatusBadRequest, false, "File harus berupa gambar JPG, JPEG, PNG, GIF, WEBP, atau PDF yang valid", nil)
 		return
 	}
 

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle2, FileText, RefreshCw, ShieldCheck, UploadCloud } from 'lucide-react';
 import { useToast } from '@/components/Toast';
-import { getMyPSBRegistration, saveMyPSBDocuments, uploadImage } from '@/lib/api';
+import { getMyPSBRegistration, saveMyPSBDocuments, uploadImage, normalizeApiAssetUrl } from '@/lib/api';
 
 type DocumentKey =
   | 'kk_url'
@@ -259,6 +259,16 @@ export default function DocumentsPage() {
                       <span className="inline-flex items-center gap-1 rounded border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
                         Dokumen sudah masuk
                       </span>
+                    ) : null}
+                    {isUploaded && normalizeApiAssetUrl(documents[doc.id]) ? (
+                      <a
+                        href={normalizeApiAssetUrl(documents[doc.id])}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-sky-700 hover:bg-sky-100"
+                      >
+                        Lihat &#8599;
+                      </a>
                     ) : null}
                   </div>
                   {documentNotes[doc.id] ? (
