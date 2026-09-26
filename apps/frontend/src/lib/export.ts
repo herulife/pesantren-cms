@@ -93,7 +93,7 @@ export function exportToPDF(
 	doc.save(`${filename}.pdf`);
 }
 
-function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
+async function renderStudentReport(doc: jsPDF, payload: StudentReportPayload): Promise<jsPDF> {
 	const tableDoc = doc as AutoTableDoc;
 	const printedAt =
 		payload.printedAt ||
@@ -103,20 +103,11 @@ function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
 			year: 'numeric',
 		});
 
-	doc.setFillColor(5, 150, 105);
-	doc.rect(14, 12, 182, 8, 'F');
-
-	doc.setFontSize(18);
-	doc.setFont('helvetica', 'bold');
-	doc.text('PONDOK PESANTREN AL-MAA', 105, 30, { align: 'center' });
+	await renderKop(doc, 210);
+	doc.setTextColor(255, 255, 255);
 	doc.setFontSize(11);
-	doc.setFont('helvetica', 'normal');
-	doc.text('e-Raport Akademik Santri', 105, 37, { align: 'center' });
-	doc.setFontSize(9);
-	doc.text(`Dicetak pada ${printedAt}`, 105, 43, { align: 'center' });
-
-	doc.setLineWidth(0.6);
-	doc.line(14, 48, 196, 48);
+	doc.setFont('helvetica', 'bold');
+	doc.text('e-Raport Akademik Santri', 105, 44, { align: 'center' });
 
 	doc.setFillColor(248, 250, 252);
 	doc.roundedRect(14, 54, 182, 24, 3, 3, 'F');
@@ -208,41 +199,42 @@ function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
 	return doc;
 }
 
-function buildStudentReportDoc(payload: StudentReportPayload) {
+async function buildStudentReportDoc(payload: StudentReportPayload): Promise<jsPDF> {
 	const doc = new jsPDF();
-	return renderStudentReport(doc, payload);
+	await renderStudentReport(doc, payload);
+	return doc;
 }
 
-export function previewStudentReportPDF(payload: StudentReportPayload) {
-	const doc = buildStudentReportDoc(payload);
+export async function previewStudentReportPDF(payload: StudentReportPayload): Promise<void> {
+	const doc = await buildStudentReportDoc(payload);
 	window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
 }
 
-export function downloadStudentReportPDF(payload: StudentReportPayload) {
-	const doc = buildStudentReportDoc(payload);
+export async function downloadStudentReportPDF(payload: StudentReportPayload): Promise<void> {
+	const doc = await buildStudentReportDoc(payload);
 	doc.save(`${payload.filename}.pdf`);
 }
 
-function buildBulkStudentReportDoc(payload: BulkStudentReportPayload) {
+async function buildBulkStudentReportDoc(payload: BulkStudentReportPayload): Promise<jsPDF> {
 	const doc = new jsPDF();
 
-	payload.reports.forEach((report, index) => {
+	for (let index = 0; index < payload.reports.length; index++) {
 		if (index > 0) {
 			doc.addPage();
 		}
-		renderStudentReport(doc, report);
-	});
+		await renderStudentReport(doc, payload.reports[index]);
+	}
 
 	return doc;
 }
 
-export function previewBulkStudentReportPDF(payload: BulkStudentReportPayload) {
-	const doc = buildBulkStudentReportDoc(payload);
+export async function previewBulkStudentReportPDF(payload: BulkStudentReportPayload): Promise<void> {
+	const doc = await buildBulkStudentReportDoc(payload);
 	window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
 }
 
-export function downloadBulkStudentReportPDF(payload: BulkStudentReportPayload) {
-	const doc = buildBulkStudentReportDoc(payload);
+export async function downloadBulkStudentReportPDF(payload: BulkStudentReportPayload): Promise<void> {
+	const doc = await buildBulkStudentReportDoc(payload);
 	doc.save(`${payload.filename}.pdf`);
 }
 
@@ -364,13 +356,18 @@ async function loadLogoDataUrl(path: string): Promise<{ dataUrl: string; format:
 	}
 }
 
-export async function exportERaportPDF(payload: ERaportPDFPayload) {
-	const doc = new jsPDF('p', 'mm', 'a4');
-	const pageW = doc.internal.pageSize.getWidth();
+let _kopCache: KopInfo | null = null;
+const _logoCache: Record<string, { dataUrl: string; format: 'JPEG' | 'PNG' } | null | undefined> = {};
 
-	// Kop: logo kiri (logo navbar) + nama & alamat sekolah
-	const kop = await loadKopInfo();
-	const logo = await loadLogoDataUrl(kop.logoPath);
+// renderKop menggambar kop resmi (logo kiri + nama & alamat sekolah).
+// Dipakai semua PDF raport agar seragam.
+async function renderKop(doc: jsPDF, pageW: number): Promise<void> {
+	if (!_kopCache) _kopCache = await loadKopInfo();
+	const kop = _kopCache;
+	if (_logoCache[kop.logoPath] === undefined) {
+		_logoCache[kop.logoPath] = await loadLogoDataUrl(kop.logoPath);
+	}
+	const logo = _logoCache[kop.logoPath];
 	doc.setFillColor(16, 105, 79);
 	doc.rect(0, 0, pageW, 48, 'F');
 	let tx = 14;
@@ -393,6 +390,14 @@ export async function exportERaportPDF(payload: ERaportPDFPayload) {
 	doc.setDrawColor(255, 255, 255);
 	doc.setLineWidth(0.4);
 	doc.line(14, 40, pageW - 14, 40);
+}
+
+export async function exportERaportPDF(payload: ERaportPDFPayload) {
+	const doc = new jsPDF('p', 'mm', 'a4');
+	const pageW = doc.internal.pageSize.getWidth();
+
+	await renderKop(doc, pageW);
+	doc.setTextColor(255, 255, 255);
 	doc.setFont('helvetica', 'bold');
 	doc.setFontSize(11);
 	doc.text(`Laporan Hasil Belajar Santri (E-Raport)  ·  ${payload.studentName}  ·  Semester ${payload.semester}  ·  TA ${payload.academicYear}`, pageW / 2, 45, { align: 'center', maxWidth: pageW - 28 });
