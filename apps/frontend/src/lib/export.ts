@@ -24,6 +24,9 @@ type ReportTahfidzRow = {
 type StudentReportPayload = {
 	studentName: string;
 	studentIdentity?: string;
+	homeroomTeacher?: string;
+	parentName?: string;
+	placeDate?: string;
 	printedAt?: string;
 	averageScore: string | number;
 	hadir: string | number;
@@ -196,6 +199,12 @@ async function renderStudentReport(doc: jsPDF, payload: StudentReportPayload): P
 		'Gunakan sebagai bahan evaluasi dan pendampingan belajar di rumah.';
 	doc.text(noteText, 14, noteStartY + 6, { maxWidth: 182, align: 'left' });
 
+	renderSignatures(doc, noteStartY + 16, {
+		homeroomTeacher: payload.homeroomTeacher,
+		parentName: payload.parentName,
+		placeDate: payload.placeDate,
+	});
+
 	return doc;
 }
 
@@ -300,6 +309,9 @@ export type ERaportPDFPayload = {
 	project: { name: string; score: number; weight?: number }[];
 	kesantrian: { aspek: string; score: number }[];
 	printedAt?: string;
+	homeroomTeacher?: string;
+	parentName?: string;
+	placeDate?: string;
 };
 
 export interface KopInfo {
@@ -361,6 +373,63 @@ const _logoCache: Record<string, { dataUrl: string; format: 'JPEG' | 'PNG' } | n
 
 // renderKop menggambar kop resmi (logo kiri + nama & alamat sekolah).
 // Dipakai semua PDF raport agar seragam.
+export interface SignatureInfo {
+	homeroomTeacher?: string;
+	parentName?: string;
+	placeDate?: string;
+}
+
+// renderSignatures menggambar blok tanda tangan: kiri Orang Tua/Wali,
+// kanan Wali Kelas, lengkap tempat-tanggal di atasnya. Otomatis pindah
+// halaman bila ruang tidak cukup. Mengembalikan posisi Y akhir.
+function renderSignatures(
+	doc: jsPDF,
+	startY: number,
+	info: SignatureInfo = {},
+): number {
+	const pageH = doc.internal.pageSize.getHeight();
+	const pageW = doc.internal.pageSize.getWidth();
+	let y = startY;
+	if (y + 58 > pageH - 14) {
+		doc.addPage();
+		y = 20;
+	}
+	const placeDate =
+		info.placeDate ||
+		`Parung, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+	doc.setTextColor(30, 41, 59);
+	doc.setFont('helvetica', 'normal');
+	doc.setFontSize(10);
+	doc.text(placeDate, pageW - 14, y, { align: 'right' });
+	y += 4;
+	const colW = (pageW - 28) / 2;
+	const leftX = 14;
+	const rightX = 14 + colW;
+	const drawCol = (x: number, title: string, name?: string) => {
+		doc.setFont('helvetica', 'bold');
+		doc.setFontSize(11);
+		doc.text(title, x + colW / 2, y, { align: 'center', maxWidth: colW });
+		doc.setFont('helvetica', 'normal');
+		doc.setFontSize(10);
+		const nameY = y + 26;
+		if (name) {
+			doc.setFont('helvetica', 'bold');
+			doc.text(name, x + colW / 2, nameY, { align: 'center', maxWidth: colW - 8 });
+			doc.setFont('helvetica', 'normal');
+		}
+		doc.setLineWidth(0.4);
+		doc.setDrawColor(30, 41, 59);
+		doc.line(x + 12, nameY + 2, x + colW - 12, nameY + 2);
+		doc.setFontSize(9);
+		doc.setTextColor(100, 116, 139);
+		doc.text(name ? 'Nama jelas & tanda tangan' : 'Tanda tangan & nama jelas', x + colW / 2, nameY + 7, { align: 'center' });
+		doc.setTextColor(30, 41, 59);
+	};
+	drawCol(leftX, 'Orang Tua / Wali', info.parentName);
+	drawCol(rightX, 'Wali Kelas', info.homeroomTeacher);
+	return y + 38;
+}
+
 async function renderKop(doc: jsPDF, pageW: number): Promise<void> {
 	if (!_kopCache) _kopCache = await loadKopInfo();
 	const kop = _kopCache;
@@ -389,7 +458,10 @@ async function renderKop(doc: jsPDF, pageW: number): Promise<void> {
 	doc.text(kop.contact, tx, 22 + addrLines.slice(0, 2).length * 4 + 1, { maxWidth: pageW - tx - 14 });
 	doc.setDrawColor(255, 255, 255);
 	doc.setLineWidth(0.4);
-	doc.line(14, 40, pageW - 14, 40);
+	doc.line(14, 39.4, pageW - 14, 39.4);
+	doc.setDrawColor(217, 179, 106);
+	doc.setLineWidth(0.7);
+	doc.line(14, 41, pageW - 14, 41);
 }
 
 export async function exportERaportPDF(payload: ERaportPDFPayload) {
@@ -476,6 +548,13 @@ export async function exportERaportPDF(payload: ERaportPDFPayload) {
 		body: payload.kesantrian.map(k => [k.aspek, k.score.toFixed(1)]),
 		styles: { fontSize: 9 },
 		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+
+	const lastY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || 120;
+	renderSignatures(doc, lastY + 12, {
+		homeroomTeacher: payload.homeroomTeacher,
+		parentName: payload.parentName,
+		placeDate: payload.placeDate,
 	});
 
 	// Footer
