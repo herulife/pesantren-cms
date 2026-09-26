@@ -133,6 +133,21 @@ func PredikatKKM(score float64) string {
 	}
 }
 
+// PredikatKKM memakai ambang KKM (lulus = 75):
+// A (Sangat Baik) ≥ 90, B (Baik) 80-89, C (Cukup) 75-79, D < 75.
+func PredikatKKM(score float64) string {
+	switch {
+	case score >= 90:
+		return "Sangat Baik"
+	case score >= 80:
+		return "Baik"
+	case score >= 75:
+		return "Cukup"
+	default:
+		return "Perlu Perbaikan"
+	}
+}
+
 func Predikat100(score float64) string {
 	switch {
 	case score >= 87.75:
