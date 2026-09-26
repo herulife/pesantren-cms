@@ -304,8 +304,8 @@ export type ERaportPDFPayload = {
 	kesantrianScore: number;
 	finalScore: number;
 	predikat: string;
-	mapel: { subject: string; score: number; weight: number }[];
-	project: { name: string; score: number; weight: number }[];
+	mapel: { subject: string; score: number; weight?: number }[];
+	project: { name: string; score: number; weight?: number }[];
 	kesantrian: { aspek: string; score: number }[];
 	printedAt?: string;
 };
