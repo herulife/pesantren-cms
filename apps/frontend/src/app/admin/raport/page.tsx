@@ -421,8 +421,6 @@ export default function ERaportPage() {
 						<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Layers size={19} className="text-sky-600" /> Penilaian Project</h3>
 						<p className="mt-1 text-sm text-slate-500">Tiap kegiatan dinilai 1-4 (1=Perlu Perbaikan, 4=Sangat Baik). Nilai project = rata-rata kegiatan yang sudah dinilai. Pilih santri dulu di tab Rekap.</p>
 					</div>
-						<p className="mt-1 text-sm text-slate-500">Atur seberapa besar pengaruh setiap mapel terhadap <strong>Nilai Mapel</strong> di raport. Total bobot harus <strong>100%</strong>.</p>
-					</div>
 
 					<div className="mt-4 grid gap-3 sm:grid-cols-2">
 						<div className="rounded-2xl bg-sky-50 p-4 text-sm">
