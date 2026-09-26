@@ -1271,8 +1271,7 @@ func migrateUsersRoleCheck() {
 		}
 	}
 	defer rollback()
-	if _, err := tx.Exec(`CREATE TABLE users_new (` + strings.Join(defs, ",
-") + `)`); err != nil {
+	if _, err := tx.Exec(`CREATE TABLE users_new (` + strings.Join(defs, ", ") + `)`); err != nil {
 		log.Printf("[DB] users_role_check_v2 create failed: %v", err)
 		return
 	}
