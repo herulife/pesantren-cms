@@ -310,22 +310,92 @@ export type ERaportPDFPayload = {
 	printedAt?: string;
 };
 
-export function exportERaportPDF(payload: ERaportPDFPayload) {
+export interface KopInfo {
+	name: string;
+	address: string;
+	contact: string;
+	logoPath: string;
+}
+
+async function loadKopInfo(): Promise<KopInfo> {
+	const fallback: KopInfo = {
+		name: 'YAYASAN ALMAA PARUNG BOGOR',
+		address: 'Jl Haji Mawi Gang Omega, Desa Waru, Parung, Bogor, Jawa Barat',
+		contact: '+6287784423282 · ponpesalmaaparung@gmail.com · almaparung.com',
+		logoPath: '/assets/img/logo-alama.jpg',
+	};
+	try {
+		const base = typeof window !== 'undefined' ? window.location.origin : '';
+		const res = await fetch(`${base}/api/settings/public`, { cache: 'no-store' });
+		const json = await res.json();
+		const list: Array<{ key: string; value: string }> = json?.data || [];
+		const get = (k: string) => (list.find(s => s.key === k)?.value || '').trim();
+		const addr = get('school_address') || fallback.address;
+		const contacts = [get('school_phone'), get('school_email'), get('school_website')].filter(Boolean).join(' · ');
+		return {
+			name: (get('school_name') || fallback.name).toUpperCase(),
+			address: addr,
+			contact: contacts || fallback.contact,
+			logoPath: get('web_logo_url') || fallback.logoPath,
+		};
+	} catch {
+		return fallback;
+	}
+}
+
+async function loadLogoDataUrl(path: string): Promise<{ dataUrl: string; format: 'JPEG' | 'PNG' } | null> {
+	try {
+		const base = typeof window !== 'undefined' ? window.location.origin : '';
+		const url = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? path : '/' + path}`;
+		const res = await fetch(url, { cache: 'force-cache' });
+		if (!res.ok) return null;
+		const blob = await res.blob();
+		const format = (blob.type || '').includes('png') ? 'PNG' : 'JPEG';
+		const dataUrl = await new Promise<string>((resolve, reject) => {
+			const fr = new FileReader();
+			fr.onload = () => resolve(String(fr.result || ''));
+			fr.onerror = () => reject(new Error('logo'));
+			fr.readAsDataURL(blob);
+		});
+		if (!dataUrl.startsWith('data:image/')) return null;
+		return { dataUrl, format };
+	} catch {
+		return null;
+	}
+}
+
+export async function exportERaportPDF(payload: ERaportPDFPayload) {
 	const doc = new jsPDF('p', 'mm', 'a4');
 	const pageW = doc.internal.pageSize.getWidth();
 
-	// Header
+	// Kop: logo kiri (logo navbar) + nama & alamat sekolah
+	const kop = await loadKopInfo();
+	const logo = await loadLogoDataUrl(kop.logoPath);
 	doc.setFillColor(16, 105, 79);
-	doc.rect(0, 0, pageW, 42, 'F');
+	doc.rect(0, 0, pageW, 48, 'F');
+	let tx = 14;
+	if (logo) {
+		try {
+			doc.addImage(logo.dataUrl, logo.format, 14, 9, 26, 26);
+			tx = 46;
+		} catch { /* tanpa logo bila gagal */ }
+	}
 	doc.setTextColor(255, 255, 255);
 	doc.setFont('helvetica', 'bold');
-	doc.setFontSize(18);
-	doc.text('PONDOK PESANTREN AL-MAA', pageW / 2, 17, { align: 'center' });
-	doc.setFontSize(12);
-	doc.text('Laporan Hasil Belajar Santri (E-Raport)', pageW / 2, 26, { align: 'center' });
-	doc.setFontSize(10);
+	doc.setFontSize(15);
+	doc.text(kop.name, tx, 16, { maxWidth: pageW - tx - 14 });
 	doc.setFont('helvetica', 'normal');
-	doc.text(`${payload.studentName}  ·  Semester ${payload.semester}  ·  TA ${payload.academicYear}`, pageW / 2, 35, { align: 'center' });
+	doc.setFontSize(9);
+	const addrLines = doc.splitTextToSize(kop.address, pageW - tx - 14);
+	doc.text(addrLines.slice(0, 2), tx, 22);
+	doc.setFontSize(8.5);
+	doc.text(kop.contact, tx, 22 + addrLines.slice(0, 2).length * 4 + 1, { maxWidth: pageW - tx - 14 });
+	doc.setDrawColor(255, 255, 255);
+	doc.setLineWidth(0.4);
+	doc.line(14, 40, pageW - 14, 40);
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.text(`Laporan Hasil Belajar Santri (E-Raport)  ·  ${payload.studentName}  ·  Semester ${payload.semester}  ·  TA ${payload.academicYear}`, pageW / 2, 45, { align: 'center', maxWidth: pageW - 28 });
 
 	// Identity + Final score
 	doc.setTextColor(30, 41, 59);

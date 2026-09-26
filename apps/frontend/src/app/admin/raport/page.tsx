@@ -204,9 +204,9 @@ export default function ERaportPage() {
 		else showToast('error', res.message || 'Gagal mengunci rapor');
 	};
 
-	const handlePDF = () => {
+	const handlePDF = async () => {
 		if (!raport) return;
-		exportERaportPDF({
+		await exportERaportPDF({
 			studentName: raport.student_name,
 			studentID: raport.student_id,
 			semester: raport.semester,
