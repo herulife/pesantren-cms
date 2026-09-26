@@ -33,6 +33,10 @@ var manageableRoles = map[string]bool{
 	"bendahara":   true,
 	"panitia_psb": true,
 	"tim_media":   true,
+	"pimpinan":    true,
+	"wali_kelas":  true,
+	"guru":        true,
+	"ustadz":      true,
 }
 
 func IsManageableRole(role string) bool {

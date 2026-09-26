@@ -85,7 +85,7 @@ func createTables() {
 		role TEXT NOT NULL DEFAULT 'user',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		whatsapp TEXT DEFAULT '',
-		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user'))
+		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'))
 	);
 
 	CREATE TABLE IF NOT EXISTS faqs (
@@ -823,6 +823,8 @@ func createTables() {
 	addColumnIfNotExists("receipts", "updated_at", "DATETIME")
 	addColumnIfNotExists("payment_transactions", "bill_period", "TEXT DEFAULT ''")
 	addColumnIfNotExists("classes", "code", "TEXT DEFAULT ''")
+	addColumnIfNotExists("classes", "wali_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL")
+	addColumnIfNotExists("teachers", "user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL")
 	addColumnIfNotExists("classes", "wali_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("classes", "academic_year", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "event_date", "TEXT DEFAULT ''")
@@ -1174,6 +1176,14 @@ func runMigrations() {
 			name: "project_assessments_index",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_proj_assess_student ON project_assessments(student_id, semester, academic_year);`,
 		},
+		{
+			name: "teachers_user_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_user_unique ON teachers(user_id);`,
+		},
+		{
+			name: "classes_wali_user_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_classes_wali_user ON classes(wali_user_id);`,
+		},
 	}
 
 	for _, migration := range migrations {
@@ -1185,6 +1195,120 @@ func runMigrations() {
 	}
 
 	backfillSantriUserAccounts()
+	migrateUsersRoleCheck()
+}
+
+// migrateUsersRoleCheck melebarkan CHECK role users agar menerima peran
+// akademik baru (pimpinan, wali_kelas, guru, ustadz) via rebuild tabel.
+// Idempoten (dicatat di schema_migrations).
+func migrateUsersRoleCheck() {
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='users_role_check_v2'`).Scan(&done); err != nil {
+		return
+	}
+	if done > 0 {
+		return
+	}
+	// Susun ulang definisi kolom dari tabel berjalan (tahan terhadap kolom
+	// tambahan di masa depan), kecuali CHECK role yang diganti.
+	rows, err := DB.Query(`PRAGMA table_info(users)`)
+	if err != nil {
+		return
+	}
+	type colDef struct {
+		name    string
+		ctype   string
+		notnull bool
+		dflt    sql.NullString
+		pk      bool
+	}
+	var cols []colDef
+	var names []string
+	for rows.Next() {
+		var cid int
+		var c colDef
+		if err := rows.Scan(&cid, &c.name, &c.ctype, &c.notnull, &c.dflt, &c.pk); err != nil {
+			rows.Close()
+			return
+		}
+		cols = append(cols, c)
+		names = append(names, `"`+c.name+`"`)
+	}
+	rows.Close()
+	if len(cols) == 0 {
+		return
+	}
+	var defs []string
+	for _, c := range cols {
+		if c.pk {
+			defs = append(defs, `"id" INTEGER PRIMARY KEY AUTOINCREMENT`)
+			continue
+		}
+		d := `"` + c.name + `" ` + c.ctype
+		if c.notnull {
+			d += " NOT NULL"
+		}
+		if c.dflt.Valid {
+			d += " DEFAULT " + c.dflt.String
+		}
+		defs = append(defs, d)
+	}
+	defs = append(defs, `CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'))`)
+	colList := strings.Join(names, ", ")
+
+	// PRAGMA foreign_keys hanya bisa diubah di luar transaksi + sebelum serve.
+	_, _ = DB.Exec(`PRAGMA foreign_keys=OFF`)
+	tx, err := DB.Begin()
+	if err != nil {
+		_, _ = DB.Exec(`PRAGMA foreign_keys=ON`)
+		return
+	}
+	committed := false
+	rollback := func() {
+		if !committed {
+			_ = tx.Rollback()
+			_, _ = DB.Exec(`PRAGMA foreign_keys=ON`)
+		}
+	}
+	defer rollback()
+	if _, err := tx.Exec(`CREATE TABLE users_new (` + strings.Join(defs, ",
+") + `)`); err != nil {
+		log.Printf("[DB] users_role_check_v2 create failed: %v", err)
+		return
+	}
+	if _, err := tx.Exec(`INSERT INTO users_new (` + colList + `) SELECT ` + colList + ` FROM users`); err != nil {
+		log.Printf("[DB] users_role_check_v2 copy failed: %v", err)
+		return
+	}
+	if _, err := tx.Exec(`DROP TABLE users`); err != nil {
+		return
+	}
+	if _, err := tx.Exec(`ALTER TABLE users_new RENAME TO users`); err != nil {
+		return
+	}
+	if _, err := tx.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users(email)`); err != nil {
+		return
+	}
+	if _, err := tx.Exec(`CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)`); err != nil {
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		return
+	}
+	committed = true
+	_, _ = DB.Exec(`PRAGMA foreign_keys=ON`)
+	if rows, err := DB.Query(`PRAGMA foreign_key_check`); err == nil {
+		bad := 0
+		for rows.Next() {
+			bad++
+		}
+		rows.Close()
+		if bad > 0 {
+			log.Printf("[DB] users_role_check_v2: %d pelanggaran FK terdeteksi", bad)
+		}
+	}
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('users_role_check_v2')")
+	log.Printf("[DB] users_role_check_v2 applied: peran akademik baru aktif")
 }
 
 // backfillSantriUserAccounts menghubungkan santri yang diinput manual (tanpa
