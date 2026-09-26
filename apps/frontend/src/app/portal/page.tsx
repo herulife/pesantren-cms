@@ -45,6 +45,13 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
     actionLabel: 'Buka Raport',
     actionHref: '/portal/raport',
   },
+  santri: {
+    title: 'Santri Aktif',
+    description: 'Alhamdulillah, kamu sudah terdaftar sebagai santri aktif. Biodata tidak perlu diisi ulang.',
+    accent: 'from-emerald-700 to-teal-800',
+    actionLabel: 'Buka Raport',
+    actionHref: '/portal/raport',
+  },
   re_registration: {
     title: 'Masa Daftar Ulang',
     description: 'Saatnya melakukan daftar ulang. Selesaikan sebelum batas waktu agar status santri kamu terekam.',
@@ -102,7 +109,7 @@ export default function PortalDashboard() {
   }, []);
 
   const registrationStatus = registration?.status || 'pending';
-  const hasStudentAccess = registrationStatus === 'accepted';
+  const hasStudentAccess = registrationStatus === 'accepted' || registrationStatus === 'santri';
 
   const portalState = useMemo(() => {
     const biodataFields = [
@@ -229,7 +236,7 @@ export default function PortalDashboard() {
       });
     }
 
-    if (status === 'accepted' || status === 're_registration') {
+    if (status === 'accepted' || status === 're_registration' || status === 'santri') {
       const reRegDone = status === 're_registration';
       checklist.push({
         href: '/portal',
@@ -251,7 +258,7 @@ export default function PortalDashboard() {
       }
     }
 
-    if (status === 'accepted') {
+    if (status === 'accepted' || status === 'santri') {
       checklist.push({
         href: '/portal/exams',
         title: 'Ujian Daring (CBT)',

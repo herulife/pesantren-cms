@@ -113,7 +113,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const registrationStatus = registration?.status || 'pending';
-  const hasStudentAccess = registrationStatus === 'accepted';
+  const hasStudentAccess = registrationStatus === 'accepted' || registrationStatus === 'santri';
   const isServicePath = pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams');
   const paymentStatus = registration?.payment_status || 'unpaid';
   const dataSiswaCompleted = [
