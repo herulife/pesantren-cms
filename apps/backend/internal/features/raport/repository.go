@@ -255,7 +255,7 @@ func (r *Repository) computeKesantrian(ctx context.Context, studentID int, semes
 	rows, err := r.db.QueryContext(ctx, `SELECT aspek, score FROM kesantrian_aspek WHERE student_id = ? AND semester = ? AND academic_year = ?`,
 		studentID, semester, academicYear)
 	if err != nil {
-		return 0, err
+		return 0, false
 	}
 	defer rows.Close()
 
