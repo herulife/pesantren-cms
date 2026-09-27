@@ -136,6 +136,11 @@ func SetKKM(v int) {
 // KKM mengembalikan ambang ketuntasan saat ini.
 func KKM() int { return kkm }
 
+// IsFullAccessRole benar untuk peran yang boleh mengubah pengaturan akademik.
+func IsFullAccessRole(role string) bool {
+	return role == "superadmin" || role == "admin"
+}
+
 // bands mengembalikan batas bawah A, B, C, D relatif terhadap KKM:
 // pita 15 poin; A = kkm+15, B = kkm+5, C = kkm, D = kkm-15.
 func bands() (float64, float64, float64, float64) {

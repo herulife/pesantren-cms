@@ -5,6 +5,7 @@ import (
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/scope"
+	"almaparung-api/internal/platform/weight"
 	"almaparung-api/internal/validators"
 	"encoding/json"
 	"net/http"
@@ -51,7 +52,59 @@ func (h *Handler) Routes() chi.Router {
 	// Students list
 	r.Get("/students", h.GetStudents)
 	r.Get("/grades/me", h.GetMyGrades)
+	// KKM (ambang ketuntasan) — dapat diubah admin
+	r.Get("/kkm", h.GetKKM)
+	r.Put("/kkm", h.UpdateKKM)
 	return r
+}
+
+// GetKKM mengembalikan ambang KKM akademik.
+func (h *Handler) GetKKM(w http.ResponseWriter, r *http.Request) {
+	k := weight.KKM()
+	if v := academicKKMFromDB(); v > 0 {
+		k = v
+	}
+	writeJSONResponse(w, http.StatusOK, true, "KKM akademik", map[string]int{"kkm": k})
+}
+
+// UpdateKKM menyimpan ambang KKM (hanya admin) dan menyegarkan nilai runtime.
+func (h *Handler) UpdateKKM(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !weight.IsFullAccessRole(role) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Hanya admin yang dapat mengubah KKM", nil)
+		return
+	}
+	var req struct {
+		KKM int `json:"kkm"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
+		return
+	}
+	if req.KKM < 1 || req.KKM > 99 {
+		writeJSONResponse(w, http.StatusBadRequest, false, "KKM harus 1-99", nil)
+		return
+	}
+	if _, err := database.DB.Exec(`INSERT INTO settings (key, value, description) VALUES ('academic_kkm', ?, 'Ambang KKM akademik') ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`, strconv.Itoa(req.KKM)); err != nil {
+		logger.Error(r.Context(), "update kkm failed", logger.Field{"error": err.Error()})
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal menyimpan KKM", nil)
+		return
+	}
+	weight.SetKKM(req.KKM)
+	writeJSONResponse(w, http.StatusOK, true, "KKM tersimpan", map[string]int{"kkm": req.KKM})
+}
+
+// academicKKMFromDB membaca KKM tersimpan (0 bila belum ada).
+func academicKKMFromDB() int {
+	var v string
+	if err := database.DB.QueryRow(`SELECT value FROM settings WHERE key='academic_kkm'`).Scan(&v); err != nil {
+		return 0
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 func currentUserID(r *http.Request) (int, bool) {
