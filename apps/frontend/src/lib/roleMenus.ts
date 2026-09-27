@@ -19,9 +19,9 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Konten & Publikasi', label: 'Data Pengajar', href: '/admin/teachers', roles: ['superadmin', 'tim_media'], docRef: 'teachers' },
   { category: 'Transaksi', label: 'Pembayaran SPP', href: '/admin/payments', roles: ['bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
-  { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['bendahara'], docRef: 'academics' },
-  { category: 'Akademik', label: 'Nilai Akademik', href: '/admin/academics', roles: ['bendahara'], docRef: 'academics' },
-  { category: 'Akademik', label: 'Project & Kegiatan', href: '/admin/project', roles: ['bendahara', 'tim_media'], docRef: 'academics' },
+  { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
+  { category: 'Akademik', label: 'Nilai Akademik', href: '/admin/academics', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'], docRef: 'academics' },
+  { category: 'Akademik', label: 'Project & Kegiatan', href: '/admin/project', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
   { category: 'Akademik', label: 'Kedisiplinan', href: '/admin/disciplines', roles: ['panitia_psb'], docRef: 'disciplines' },
   { category: 'Konten & Publikasi', label: 'Program Pondok', href: '/admin/programs', roles: ['tim_media'], docRef: 'programs' },
   { category: 'Konten & Publikasi', label: 'Berita', href: '/admin/news', roles: ['tim_media'], docRef: 'news' },
@@ -33,7 +33,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Layanan', label: 'Pesan & Inbox', href: '/admin/messages', roles: ['panitia_psb'], docRef: 'messages' },
   { category: 'Layanan', label: 'WhatsApp Gateway', href: '/admin/notifications', roles: ['superadmin', 'bendahara'], docRef: 'notifications' },
   { category: 'PSB', label: 'Data Santri (PSB)', href: '/admin/psb', roles: ['panitia_psb'], docRef: 'psb' },
-  { category: 'PSB', label: 'Data Santri Aktif', href: '/admin/kesantrian', roles: ['superadmin', 'panitia_psb'], docRef: 'academics' },
+  { category: 'PSB', label: 'Data Santri Aktif', href: '/admin/kesantrian', roles: ['superadmin', 'admin', 'panitia_psb', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
   { category: 'PSB', label: 'Pengaturan PSB', href: '/admin/psb/pengaturan', roles: ['superadmin'], docRef: 'psb' },
   { category: 'Sistem', label: 'Manajemen Pengguna', href: '/admin/users', roles: ['superadmin', 'bendahara'], docRef: 'users' },
   { category: 'Sistem', label: 'Log Sistem', href: '/admin/logs', roles: ['superadmin'], docRef: 'logs' },
@@ -42,7 +42,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Sistem', label: 'Tutorial', href: '/admin/help' },
 ];
 
-export const MANAGEABLE_ROLES = ['bendahara', 'panitia_psb', 'tim_media'] as const;
+export const MANAGEABLE_ROLES = ['bendahara', 'panitia_psb', 'tim_media', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'] as const;
 
 // Standar: semua menu yang boleh dilihat role tersebut.
 // superadmin = semua; user (portal) = tidak ada menu admin.
@@ -55,7 +55,7 @@ export function standardMenusForRole(role: string): string[] {
 // Standar lengkap untuk semua role — dipakai Reset Default & seeding DB.
 export function standardRolePermissions(): Record<string, string[]> {
   const perms: Record<string, string[]> = {};
-  ['superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'user'].forEach((r) => {
+  ['superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'user', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'].forEach((r) => {
     perms[r] = standardMenusForRole(r);
   });
   return perms;

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { currentSemester } from '@/lib/api';
+import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/Toast';
 import {
 	CompactUser,
@@ -63,6 +64,18 @@ function isMissing(raport: { is_complete?: boolean; missing?: string[] } | null,
 export default function ERaportPage() {
 	const { showToast } = useToast();
 	const [tab, setTab] = useState<TabKey>('rekapitulasi');
+	const { user: authUser } = useAuth();
+	const canSeeTab = (t: TabKey) => {
+		const r = authUser?.role;
+		if (!r || r === 'superadmin' || r === 'admin') return true;
+		if (r === 'ustadz') return t === 'kesantrian';
+		if (r === 'pimpinan') return t === 'rekapitulasi';
+		return true;
+	};
+	const showLock = authUser?.role !== 'pimpinan';
+	useEffect(() => {
+		if (authUser?.role === 'ustadz') setTab('kesantrian');
+	}, [authUser?.role]);
 	const [students, setStudents] = useState<CompactUser[]>([]);
 	const [selected, setSelected] = useState<number>(0);
 	const [raport, setRaport] = useState<ComputedRaport | null>(null);
@@ -249,9 +262,9 @@ export default function ERaportPage() {
 					</h1>
 				</div>
 				<div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5">
-					<button onClick={() => setTab('rekapitulasi')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'rekapitulasi' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Rekap</button>
-					<button onClick={() => setTab('project')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'project' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Project</button>
-					<button onClick={() => setTab('kesantrian')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'kesantrian' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Kesantrian</button>
+					{canSeeTab('rekapitulasi') && (<button onClick={() => setTab('rekapitulasi')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'rekapitulasi' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Rekap</button>)}
+					{canSeeTab('project') && (<button onClick={() => setTab('project')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'project' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Project</button>)}
+					{canSeeTab('kesantrian') && (<button onClick={() => setTab('kesantrian')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'kesantrian' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Kesantrian</button>)}
 				</div>
 			</div>
 
@@ -403,9 +416,9 @@ export default function ERaportPage() {
 								</div>
 
 								<div className="flex flex-wrap gap-3">
-									<button onClick={handleLockRaport} disabled={!raport.is_complete} title={!raport.is_complete ? 'Lengkapi dulu: ' + (raport.missing || []).join(', ') : 'Kunci rapor'} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/25 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40">
+									{showLock && (<button onClick={handleLockRaport} disabled={!raport.is_complete} title={!raport.is_complete ? 'Lengkapi dulu: ' + (raport.missing || []).join(', ') : 'Kunci rapor'} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/25 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40">
 										<Save size={17} /> Kunci Rapor
-									</button>
+									</button>)}
 									<button onClick={handlePDF} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
 										<Download size={17} /> Unduh PDF
 									</button>

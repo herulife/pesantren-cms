@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
+import { useAuth } from '@/components/AuthProvider';
 import {
   Attendance,
   CompactUser,
@@ -21,6 +22,7 @@ import {
   getGrades,
   getGradesByStudent,
   getSubjects,
+  getUsers,
   getTahfidz,
   sendWhatsApp,
 } from '@/lib/api';
@@ -85,6 +87,17 @@ export default function AcademicsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<CompactUser[]>([]);
   const [subjectForm, setSubjectForm] = useState(subjectInit);
+  const { user: authUser } = useAuth();
+  const [guruUsers, setGuruUsers] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
+  const tabVisible = (id: string) => {
+    const r = authUser?.role;
+    if (!r || r === 'superadmin' || r === 'admin') return true;
+    if (r === 'guru') return ['dashboard', 'grades'].includes(id);
+    if (r === 'ustadz') return ['dashboard', 'tahfidz'].includes(id);
+    if (r === 'wali_kelas') return ['dashboard', 'grades', 'attendance', 'recap', 'reports'].includes(id);
+    if (r === 'pimpinan') return true;
+    return id === 'dashboard';
+  };
   const [reportOpen, setReportOpen] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const [bulkReportOpen, setBulkReportOpen] = useState(false);
@@ -98,8 +111,9 @@ export default function AcademicsPage() {
   const [deleteState, setDeleteState] = useState<{ type: DeleteType; id: number | null }>({ type: 'grade', id: null });
 
   const loadRefs = useCallback(async () => {
-    const [subjectData, studentData] = await Promise.all([getSubjects(), getAcademicStudents()]);
+    const [subjectData, studentData, allUsers] = await Promise.all([getSubjects(), getAcademicStudents(), getUsers()]);
     setSubjects(subjectData);
+    setGuruUsers((allUsers || []).filter(u => u.role === 'guru'));
     setStudents(studentData);
   }, []);
 
@@ -439,7 +453,7 @@ export default function AcademicsPage() {
         { id: 'recap', label: 'Rekap Nilai', icon: BarChart3 },
         { id: 'reports', label: 'Cetak Raport', icon: FileDown },
         { id: 'subjects', label: 'Mata Pelajaran', icon: Layers3 },
-      ].map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id as TabKey)} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-sky-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}><tab.icon size={16} /> {tab.label}</button>)}</div>
+      ].filter((tab) => tabVisible(tab.id)).map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id as TabKey)} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-sky-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}><tab.icon size={16} /> {tab.label}</button>)}</div>
 
       <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
@@ -730,9 +744,13 @@ export default function AcademicsPage() {
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Kelola Mata Pelajaran</h5>
-            <form onSubmit={saveSubject} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_auto]">
+            <form onSubmit={saveSubject} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_1fr_auto]">
               <input required value={subjectForm.name} onChange={(e) => setSubjectForm((p) => ({ ...p, name: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5" placeholder="Nama mapel" />
               <input value={subjectForm.category} onChange={(e) => setSubjectForm((p) => ({ ...p, category: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5" placeholder="Kategori" />
+              <select value={subjectForm.teacher_id} onChange={(e) => setSubjectForm((p) => ({ ...p, teacher_id: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm" title="Guru pengampu">
+                <option value="0">-- Guru pengampu --</option>
+                {guruUsers.map(u => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
+              </select>
               <button disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50">{isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} />} Tambah</button>
             </form>
           </div>

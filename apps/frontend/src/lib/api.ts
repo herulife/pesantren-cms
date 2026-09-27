@@ -3577,7 +3577,7 @@ export async function bulkDeleteSantri(ids: number[]): Promise<{ ok: boolean; me
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus santri' }; }
 }
 
-export interface SchoolClass { id: number; code: string; name: string; jenjang: string; wali_name: string; academic_year: string; is_active: number; created_at: string; updated_at: string; }
+export interface SchoolClass { id: number; code: string; name: string; jenjang: string; wali_name: string; wali_user_id: number; academic_year: string; is_active: number; created_at: string; updated_at: string; }
 export interface AcademicYear { id: number; name: string; start_date: string; end_date: string; is_active: number; created_at: string; updated_at: string; }
 
 export async function getClasses(activeOnly = false) {
@@ -3587,11 +3587,11 @@ export async function getClasses(activeOnly = false) {
     return (result.data || []) as SchoolClass[];
   } catch (e) { console.error("[API] Fetch classes error:", e); return []; }
 }
-export async function createClass(data: { name: string; jenjang?: string; wali_name?: string; academic_year?: string }) {
+export async function createClass(data: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string }) {
   const res = await fetch(`${API_BASE_URL}/school/classes`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
   return parseResponse(res);
 }
-export async function updateClass(id: number, data: { name: string; jenjang?: string; wali_name?: string; academic_year?: string; is_active: number }) {
+export async function updateClass(id: number, data: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string; is_active: number }) {
   const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
   return parseResponse(res);
 }

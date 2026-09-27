@@ -2,15 +2,15 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { getClasses, createClass, updateClass, deleteClass, getAcademicYears, SchoolClass, AcademicYear } from '@/lib/api';
+import { getClasses, createClass, updateClass, deleteClass, getAcademicYears, getUsers, SchoolClass, AcademicYear } from '@/lib/api';
 import { exportToExcel } from '@/lib/export';
 import { PageHeader, Pagination, EmptyState, ConfirmModal, ActionMenu, ImportModal, Toast, useToastState } from '../ui';
 
 const PER_PAGE = 8;
 
-type FormState = { name: string; jenjang: string; wali_name: string; academic_year: string };
+type FormState = { name: string; jenjang: string; wali_name: string; wali_user_id: string; academic_year: string };
 
-const emptyForm: FormState = { name: '', jenjang: '', wali_name: '', academic_year: '' };
+const emptyForm: FormState = { name: '', jenjang: '', wali_name: '', wali_user_id: '', academic_year: '' };
 
 export default function BsKelas() {
   const [rows, setRows] = useState<SchoolClass[]>([]);
@@ -22,6 +22,7 @@ export default function BsKelas() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SchoolClass | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [waliUsers, setWaliUsers] = useState<{ id: number; name: string }[]>([]);
   const [formErr, setFormErr] = useState('');
   const [saving, setSaving] = useState(false);
   const [delTarget, setDelTarget] = useState<SchoolClass | null>(null);
@@ -31,9 +32,10 @@ export default function BsKelas() {
   const { toast, show } = useToastState();
 
   const load = async () => {
-    const [c, y] = await Promise.all([getClasses(), getAcademicYears()]);
+    const [c, y, u] = await Promise.all([getClasses(), getAcademicYears(), getUsers()]);
     setRows(c);
     setYears(y);
+    setWaliUsers((u || []).filter(x => x.role === 'wali_kelas').map(x => ({ id: x.id, name: x.name })));
     if (!yearFilter) {
       const active = y.find((x) => x.is_active);
       if (active) setYearFilter(active.name);
@@ -69,7 +71,7 @@ export default function BsKelas() {
 
   const openEdit = (r: SchoolClass) => {
     setEditing(r);
-    setForm({ name: r.name, jenjang: r.jenjang || '', wali_name: r.wali_name || '', academic_year: r.academic_year || '' });
+    setForm({ name: r.name, jenjang: r.jenjang || '', wali_name: r.wali_name || '', wali_user_id: r.wali_user_id ? String(r.wali_user_id) : '', academic_year: r.academic_year || '' });
     setFormErr('');
     setModalOpen(true);
   };
@@ -81,9 +83,10 @@ export default function BsKelas() {
       return;
     }
     setSaving(true);
+    const payload = { ...form, wali_user_id: form.wali_user_id ? Number(form.wali_user_id) : 0 };
     const r = editing
-      ? await updateClass(editing.id, { ...form, is_active: editing.is_active })
-      : await createClass(form);
+      ? await updateClass(editing.id, { ...payload, is_active: editing.is_active })
+      : await createClass(payload);
     setSaving(false);
     if (r.success) {
       show(true, editing ? 'Kelas berhasil diubah.' : 'Kelas berhasil ditambahkan.');
@@ -240,6 +243,10 @@ export default function BsKelas() {
                 <div className="alma-field">
                   <label htmlFor="kelas-wali">Wali Kelas</label>
                   <input id="kelas-wali" className="alma-input" value={form.wali_name} onChange={(e) => setForm({ ...form, wali_name: e.target.value })} placeholder="Nama wali kelas" />
+                  <select id="kelas-wali-user" className="alma-select mt-2" value={form.wali_user_id} onChange={(e) => setForm({ ...form, wali_user_id: e.target.value })} title="Akun wali kelas (untuk hak akses)">
+                    <option value="">-- Akun wali (opsional) --</option>
+                    {waliUsers.map((u) => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
+                  </select>
                 </div>
                 <div className="alma-field">
                   <label htmlFor="kelas-year-form">Tahun Ajaran</label>

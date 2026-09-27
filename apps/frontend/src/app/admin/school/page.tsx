@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { getClasses, createClass, deleteClass, getAcademicYears, createAcademicYear, activateAcademicYear, deleteAcademicYear, getSantriList, setSantriClass, SchoolClass, AcademicYear, Santri } from "@/lib/api";
+import { getClasses, createClass, deleteClass, getAcademicYears, createAcademicYear, activateAcademicYear, deleteAcademicYear, getSantriList, setSantriClass, getUsers, SchoolClass, AcademicYear, Santri } from "@/lib/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
 import { Plus, Trash2, CheckCircle } from "lucide-react";
@@ -15,14 +15,17 @@ export default function SchoolAdminPage() {
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [name, setName] = useState("");
   const [jenjang, setJenjang] = useState("");
+  const [waliId, setWaliId] = useState("");
+  const [waliUsers, setWaliUsers] = useState<{ id: number; name: string }[]>([]);
   const [yearName, setYearName] = useState("");
   const [delId, setDelId] = useState<number | null>(null);
   const [delKind, setDelKind] = useState<"class" | "year">("class");
   const { showToast } = useToast();
 
   const load = useCallback(async () => {
-    const [c, y] = await Promise.all([getClasses(), getAcademicYears()]);
+    const [c, y, u] = await Promise.all([getClasses(), getAcademicYears(), getUsers()]);
     setClasses(c); setYears(y);
+    setWaliUsers((u || []).filter(x => x.role === 'wali_kelas').map(x => ({ id: x.id, name: x.name })));
   }, []);
   const loadSantris = useCallback(async () => {
     const r = await getSantriList({ limit: 200 });
@@ -36,8 +39,8 @@ export default function SchoolAdminPage() {
 
   const addClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await createClass({ name, jenjang });
-    if (res.success) { showToast("success", "Kelas ditambahkan."); setName(""); setJenjang(""); load(); }
+    const res = await createClass({ name, jenjang, wali_user_id: waliId ? Number(waliId) : undefined });
+    if (res.success) { showToast("success", "Kelas ditambahkan."); setName(""); setJenjang(""); setWaliId(""); load(); }
     else showToast("error", res.message || "Gagal menambah kelas.");
   };
   const addYear = async (e: React.FormEvent) => {
@@ -67,14 +70,18 @@ export default function SchoolAdminPage() {
           <form onSubmit={addClass} className="flex gap-2 mb-4">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama kelas (cth: VII-A)" className="border rounded-xl px-3 py-2 text-sm" />
             <input value={jenjang} onChange={(e) => setJenjang(e.target.value)} placeholder="Jenjang (SMP/SMK)" className="border rounded-xl px-3 py-2 text-sm" />
+            <select value={waliId} onChange={(e) => setWaliId(e.target.value)} className="border rounded-xl px-3 py-2 text-sm" title="Wali kelas">
+              <option value="">-- Wali kelas --</option>
+              {waliUsers.map(u => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
+            </select>
             <button className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><Plus size={16} /> Tambah</button>
           </form>
           <div className="bg-white border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-slate-50 text-left"><th className="p-3">Nama</th><th className="p-3">Jenjang</th><th className="p-3">Aksi</th></tr></thead>
+              <thead><tr className="bg-slate-50 text-left"><th className="p-3">Nama</th><th className="p-3">Jenjang</th><th className="p-3">Wali Kelas</th><th className="p-3">Aksi</th></tr></thead>
               <tbody>
                 {classes.map((c) => (
-                  <tr key={c.id} className="border-t"><td className="p-3 font-bold">{c.name}</td><td className="p-3">{c.jenjang || "-"}</td>
+                  <tr key={c.id} className="border-t"><td className="p-3 font-bold">{c.name}</td><td className="p-3">{c.jenjang || "-"}</td><td className="p-3">{c.wali_name || waliUsers.find(w => w.id === c.wali_user_id)?.name || "-"}</td>
                     <td className="p-3"><button onClick={() => { setDelId(c.id); setDelKind("class"); }} className="text-rose-600"><Trash2 size={16} /></button></td></tr>
                 ))}
                 {classes.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-slate-400">Belum ada kelas. Tambahkan atau tunggu backfill otomatis dari data santri.</td></tr>}
