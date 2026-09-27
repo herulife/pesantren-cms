@@ -196,7 +196,7 @@ export default function AcademicsPage() {
   }), [filteredGrades, recapSubjectColumns]);
   const recapCompletionStats = useMemo(() => {
     const total = studentRecaps.length;
-    const completed = studentRecaps.filter((item) => item.average >= 75).length;
+    const completed = studentRecaps.filter((item) => item.average >= kkm).length;
     return {
       total,
       completed,
@@ -515,7 +515,7 @@ export default function AcademicsPage() {
                         {recapSubjectColumns.slice(0, 4).map((subject) => <td key={subject.id} className="px-6 py-3 text-center text-slate-600">{item.subjectScores[subject.id] ?? '-'}</td>)}
                         <td className="px-6 py-3 text-center font-semibold text-slate-900">{item.average.toFixed(1)}</td>
                         <td className="px-6 py-3 text-center">
-                          <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${item.average >= 75 ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span>
+                          <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${item.average >= kkm ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -673,7 +673,7 @@ export default function AcademicsPage() {
                       <td className="px-4 py-4 font-bold text-slate-800">{item.studentName}</td>
                       {recapSubjectColumns.map((subject) => <td key={subject.id} className="px-4 py-4 text-center font-semibold text-slate-600">{item.subjectScores[subject.id] ?? '-'}</td>)}
                       <td className="px-4 py-4 text-center font-black text-slate-900">{item.average.toFixed(1)}</td>
-                      <td className="px-4 py-4 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span></td>
+                      <td className="px-4 py-4 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= kkm ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1046,7 +1046,7 @@ export default function AcademicsPage() {
                       ))}
                       <td className="px-4 py-4 text-center font-black text-slate-900">{item.average.toFixed(1)}</td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= kkm ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>
                           {item.status}
                         </span>
                       </td>
