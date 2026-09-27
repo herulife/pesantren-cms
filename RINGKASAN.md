@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-09-27 (Jilid A peran live). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-09-27 (KKM dinamis live). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 1. **Jangan timpa kerja agen lain.** Cek file `.bak-*` dan `git status` sebelum edit. Ada beberapa agen aktif di repo yang sama.
@@ -19,11 +19,11 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:roleB2` | Jilid A peran, healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090) |
-| Frontend | `alma-parung-frontend-roleB` | `roleB` (menggantikan jilid55 agen lain; image jilid55 utuh) | Image jilid54 milik sesi ini tersedia |
+| Backend | `alma-parung-backend` | `alma-parung-backend:kkm` (`7815d3fb1d59`) | KKM dinamis + peran, healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090) |
+| Frontend | `alma-parung-frontend-kkm` | `alma-parung-frontend:kkm` (`a3738ef614b1`) | KKM card di dashboard + role menu, healthy, `-p 3002:3000` |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `jilid48`+`jilid51`, frontend `jilid53`+`jilid54` | — |
-| DB | — | — | users 7, santri 2 (per 26 Sep; cek ulang) |
+| Rollback tersedia | — | backend `roleB2`+`skala`+`jilid51`+`jilid48`; frontend `skala`+`jilid54`+`jilid53` | — |
+| DB | — | — | users 5, santri 2 (per 27 Sep; cek ulang) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 ```
@@ -33,7 +33,7 @@ cd ~/alma-parung && NEWJWT=$(grep "^JWT_SECRET=" .env|head -1|cut -d= -f2-) && d
 ## 3. STRUKTUR PERAN (pekerjaan berjalan — baca ini!)
 Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / GURU (mapelnya) / USTADZ (tahfidz+kesantrian)`.
 - **Jilid A (SELESAI, live):** backend + migrasi `users_role_check_v2`, `platform/scope`, guard nilai/rapor/kesantrian/tahfidz/project/exam/santri, grup route baru, CBT pindah ke grup guru. Uji 16/16 lolos. Dampak: `tim_media`/`bendahara` kini 403 di akademik.
-- **Jilid B (BELUM):** frontend per peran (menu guru/wali/ustadz/pimpinan + UI penugasan admin mapel→guru, kelas→wali).
+- **Jilid B (SELESAI, live):** frontend per-role (roleMenus+guru picker+wali_user_id di school/kelas/mapel, tombol Kunci rapor disembunyikan utk pimpinan, default tab ustadz=kesantrian).
 - **Jilid C (BELUM, butuh input user):** akun perdana + assignment. **BLOKIR: tunggu daftar nama+email+peran dari user.**
 - File kunci: `platform/scope/scope.go`, migrasi di `platform/database/db.go`, guard di handler academics/raport/project/exams/santri. Detail lengkap: `CATATAN-JILID42.md` §25.
 
@@ -54,12 +54,15 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 - Jilid 51: upload PDF + tombol Lihat — live.
 - Kop PDF + TTD (jilid52–54), mapel Hadis Arbain, bersih storage §23, hapus Putra/Putri kelas.
 - Jilid A peran (backend, image roleB2): lihat §3 di atas.
+- Jilid B peran (frontend, image roleB): roleMenus + guru picker + wali_user_id — lihat §3.
+- Skala nilai seragam 0-100 (grade+CBT selaras, kesantrian tampil 0-100) — live backend+frontend `skala`.
+- **KKM dinamis**: setting `academic_kkm` (default 75, disimpan di tabel settings), GET `/academics/kkm` (semua role akademik) + PUT (admin), grade-letter mapel (Create+Update) & CBT pakai `weight.GradeLetter100` berbasis KKM (pita: A≥KKM+15, B≥KKM+5, C=KKM, D=KKM-15), predikat rapor bawaan weight mengikuti KKM. Frontend: KKM card di tab Dashboard `/admin/academics` (edit admin [superadmin/admin], info pita untuk semua). Verifikasi API: KKM 84→D (kk 90), →B (kk 70), →B (kk 75); tsc lolos; DB integrity ok. Live image `kkm` (backend 7815d3fb1d59, frontend a3738ef614b1). CATATAN: nilai lama tak dihitung ulang (berlaku utk yg di-edit/dibuat setelahnya). File: `platform/weight/engine.go`, `academics/repository.go`+`handler.go`, `exams/repository.go`, `cmd/api/main.go` (loadKKMFromDB), `lib/api.ts`, `admin/academics/page.tsx`.
 
 ## 5. TODO AKTIF
-1. [ ] Jilid B: frontend per-role.
-2. [ ] Jilid C: akun perdana (tunggu daftar user).
-3. [ ] Rotasi password SSH `H3ru@2026`.
-4. [ ] Update skor halaman `/audit`.
+1. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).
+2. [ ] Rotasi password SSH `H3ru@2026`.
+3. [ ] Update skor halaman `/audit`.
+4. [ ] (Opsional) KKM dinamis utk tampilan CBT & PDF predikat ikut KKM (sudah selaras via weight; cek halaman ekslusif CBT).
 5. [ ] Jangan hapus: `backups/*.gz|*.db`, image/tag + container agen lain (`pekerjaan-*`, `userdel-*`, `kopraport-*`, `role-separation-*`, `ai-fix*`, `santrifilter-*`), volume `clinic-os-*`, `/tmp/j28` (milik UID lain).
 
 ## 6. PELAJARAN TEKNIS (jangan ulangi)
