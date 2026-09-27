@@ -20,7 +20,7 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend` | `alma-parung-backend:roleB2` | Jilid A peran, healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090) |
-| Frontend | `alma-parung-frontend-jilid55` | `jilid55` (milik agen lain!) | Image jilid54 milik sesi ini tersedia |
+| Frontend | `alma-parung-frontend-roleB` | `roleB` (menggantikan jilid55 agen lain; image jilid55 utuh) | Image jilid54 milik sesi ini tersedia |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `jilid48`+`jilid51`, frontend `jilid53`+`jilid54` | — |
 | DB | — | — | users 7, santri 2 (per 26 Sep; cek ulang) |
