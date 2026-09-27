@@ -147,7 +147,7 @@ export default function AcademicsPage() {
     try {
       const saved = await updateAcademicKKM(val);
       setKkm(saved);
-      showToast('success', \`KKM tersimpan, pengaturan ketuntasan diperbarui.\`);
+      showToast('success', `KKM tersimpan, pengaturan ketuntasan diperbarui.`);
     } catch {
       showToast('error', 'Gagal menyimpan KKM.');
     } finally {
