@@ -70,3 +70,5 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 - Build lama (backend ~10 mnt, frontend ~15 mnt, konteks 2,2 GB) — pakai `nohup` + polling, jangan blokir 1 call.
 - `pgrep -f "docker build"` bisa false-positive dari perintah ssh sendiri.
 - Tool `bash` merusak `$()`/backtick dalam perintah remote — pakai file script + scp.
+
+- Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
