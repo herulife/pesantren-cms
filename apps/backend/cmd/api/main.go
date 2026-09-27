@@ -128,6 +128,7 @@ func main() {
 	// AI Config dari tabel settings disuntikkan ke env runtime agar generator
 	// artikel & draf pesan memakai provider yang dikonfigurasi admin.
 	loadAISettingsFromDB(settingRepo)
+	loadKKMFromDB(settingRepo)
 	// PSB memakai pengaturan publik (biaya & rekening) untuk notifikasi WA.
 	psbHandler = psbHandler.WithSettingsStore(settingRepo)
 
@@ -583,6 +584,17 @@ func getEnv(key, fallback string) string {
 // loadAISettingsFromDB menyuntikkan konfigurasi AI dari tabel settings ke env
 // runtime (mirip pola di handler notifications) agar dipakai oleh semua fitur
 // yang memanggil platform/ai, termasuk generator artikel berita.
+// loadKKMFromDB menyuntikkan ambang KKM akademik dari settings ke runtime
+// weight engine agar huruf & predikat mengikuti KKM yang diatur admin.
+func loadKKMFromDB(settingRepo *settings.Repository) {
+	if v, err := settingRepo.GetByKey("academic_kkm"); err == nil {
+		if n, convErr := strconv.Atoi(strings.TrimSpace(v)); convErr == nil && n > 0 {
+			weight.SetKKM(n)
+			logger.Info(context.Background(), "academic kkm loaded", logger.Field{"kkm": n})
+		}
+	}
+}
+
 func loadAISettingsFromDB(settingRepo *settings.Repository) {
 	load := func(key, env string) {
 		if v, err := settingRepo.GetByKey(key); err == nil && strings.TrimSpace(v) != "" {
