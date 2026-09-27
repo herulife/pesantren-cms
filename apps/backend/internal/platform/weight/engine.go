@@ -98,6 +98,37 @@ func CalculateERaport(mapel, project, kesantrian float64, weights map[string]flo
 	return CalculateWeightedScore(scores, weights)
 }
 
+// GradeWeights adalah bobot komponen nilai mapel: UTS, UAS, Tugas, UH.
+type GradeWeights struct {
+	UTS  float64
+	UAS  float64
+	Task float64
+	UH   float64
+}
+
+// DefaultGradeWeights: UTS 25%, UAS 30%, Tugas 25%, UH 20% (jumlah 100).
+func DefaultGradeWeights() GradeWeights {
+	return GradeWeights{UTS: 25, UAS: 30, Task: 25, UH: 20}
+}
+
+func (g GradeWeights) ToMap() map[string]float64 {
+	return map[string]float64{"uts": g.UTS, "uas": g.UAS, "task": g.Task, "uh": g.UH}
+}
+
+// ValidateGradeWeights memastikan keempat bobot >0 dan total 100.
+func ValidateGradeWeights(g GradeWeights) error {
+	return ValidateWeights(g.ToMap())
+}
+
+// CalculateGradeFinal menghitung nilai akhir mapel dari empat komponen
+// (uts, uas, task, uh) memakai bobot per mapel.
+func CalculateGradeFinal(uts, uas, task, uh float64, g GradeWeights) (float64, error) {
+	return CalculateWeightedScore(
+		map[string]float64{"uts": uts, "uas": uas, "task": task, "uh": uh},
+		g.ToMap(),
+	)
+}
+
 // Predikat dari nilai 1-4
 func Predikat(score float64) string {
 	switch {

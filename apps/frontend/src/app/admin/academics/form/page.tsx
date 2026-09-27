@@ -22,7 +22,7 @@ import { ArrowLeft, BookOpen, Calendar, ClipboardList, Loader2, Pencil, Save, Us
 
 type FormType = 'grade' | 'attendance' | 'tahfidz' | 'bulk-grade' | 'bulk-edit';
 
-const gradeInit = { id: 0, student_id: '', subject_id: '', semester: '1', academic_year: '2025/2026', uts_score: '', uas_score: '', task_score: '', notes: '' };
+const gradeInit = { id: 0, student_id: '', subject_id: '', semester: '1', academic_year: '2025/2026', uts_score: '', uas_score: '', task_score: '', uh_score: '', notes: '' };
 const attendanceInit = { id: 0, student_id: '', date: new Date().toISOString().split('T')[0], status: 'hadir', notes: '' };
 const tahfidzInit = { id: 0, student_id: '', surah_name: '', juz: '', start_ayat: '', end_ayat: '', status: 'proses', musyrif_notes: '', evaluation_date: new Date().toISOString().split('T')[0] };
 
@@ -69,9 +69,9 @@ function AcademicsFormContent() {
   const [attendanceForm, setAttendanceForm] = useState({ ...attendanceInit, date: selectedDate });
   const [tahfidzForm, setTahfidzForm] = useState(tahfidzInit);
   const [bulkGradeMeta, setBulkGradeMeta] = useState({ subject_id: '', semester: selectedSemester, academic_year: selectedYear });
-  const [bulkGradeRows, setBulkGradeRows] = useState<Array<{ student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; notes: string }>>([]);
+  const [bulkGradeRows, setBulkGradeRows] = useState<Array<{ student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; uh_score: string; notes: string }>>([]);
   const [bulkEditSubjectId, setBulkEditSubjectId] = useState(searchParams.get('subject_id') || '');
-  const [bulkEditRows, setBulkEditRows] = useState<Array<{ id: number; student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; notes: string }>>([]);
+  const [bulkEditRows, setBulkEditRows] = useState<Array<{ id: number; student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; uh_score: string; notes: string }>>([]);
 
   const academicPeriodLabel = `${selectedSemester === '2' ? 'Semester 2' : 'Semester 1'} - Tahun Ajaran ${selectedYear}`;
 
@@ -95,6 +95,7 @@ function AcademicsFormContent() {
             uts_score: String(current.uts_score),
             uas_score: String(current.uas_score),
             task_score: String(current.task_score),
+            uh_score: String(current.uh_score),
             notes: current.notes || '',
           });
         }
@@ -136,6 +137,7 @@ function AcademicsFormContent() {
             uts_score: '',
             uas_score: '',
             task_score: '',
+            uh_score: '',
             notes: '',
           })));
         }
@@ -154,6 +156,7 @@ function AcademicsFormContent() {
                 uts_score: String(item.uts_score),
                 uas_score: String(item.uas_score),
                 task_score: String(item.task_score),
+                uh_score: String(item.uh_score),
                 notes: item.notes || '',
               }))
               .sort((a, b) => a.student_name.localeCompare(b.student_name)),
@@ -201,11 +204,11 @@ function AcademicsFormContent() {
   const controlClass = 'block w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100';
   const textAreaClass = `${controlClass} min-h-[160px] resize-y leading-6 font-medium`;
 
-  const updateBulkGradeRow = (studentId: string, field: 'uts_score' | 'uas_score' | 'task_score' | 'notes', value: string) => {
+  const updateBulkGradeRow = (studentId: string, field: 'uts_score' | 'uas_score' | 'task_score' | 'uh_score' | 'notes', value: string) => {
     setBulkGradeRows((prev) => prev.map((row) => row.student_id === studentId ? { ...row, [field]: value } : row));
   };
 
-  const updateBulkEditRow = (gradeId: number, field: 'uts_score' | 'uas_score' | 'task_score' | 'notes', value: string) => {
+  const updateBulkEditRow = (gradeId: number, field: 'uts_score' | 'uas_score' | 'task_score' | 'uh_score' | 'notes', value: string) => {
     setBulkEditRows((prev) => prev.map((row) => row.id === gradeId ? { ...row, [field]: value } : row));
   };
 
@@ -222,6 +225,7 @@ function AcademicsFormContent() {
           uts_score: String(item.uts_score),
           uas_score: String(item.uas_score),
           task_score: String(item.task_score),
+          uh_score: String(item.uh_score),
           notes: item.notes || '',
         }))
         .sort((a, b) => a.student_name.localeCompare(b.student_name)),
@@ -242,6 +246,7 @@ function AcademicsFormContent() {
           uts_score: Number(gradeForm.uts_score),
           uas_score: Number(gradeForm.uas_score),
           task_score: Number(gradeForm.task_score),
+          uh_score: Number(gradeForm.uh_score),
           notes: gradeForm.notes,
         };
         if (gradeForm.id) await updateGrade(gradeForm.id, payload);
@@ -279,7 +284,7 @@ function AcademicsFormContent() {
 
       if (type === 'bulk-grade') {
         if (!bulkGradeMeta.subject_id) throw new Error('Pilih mata pelajaran terlebih dahulu.');
-        const rowsToSave = bulkGradeRows.filter((row) => row.uts_score || row.uas_score || row.task_score);
+        const rowsToSave = bulkGradeRows.filter((row) => row.uts_score || row.uas_score || row.task_score || row.uh_score);
         if (!rowsToSave.length) throw new Error('Isi minimal satu nilai untuk diproses.');
         await Promise.all(rowsToSave.map((row) => createGrade({
           student_id: Number(row.student_id),
@@ -289,6 +294,7 @@ function AcademicsFormContent() {
           uts_score: Number(row.uts_score || 0),
           uas_score: Number(row.uas_score || 0),
           task_score: Number(row.task_score || 0),
+          uh_score: Number(row.uh_score || 0),
           notes: row.notes,
         })));
         showToast('success', `${rowsToSave.length} nilai berhasil ditambahkan.`);
@@ -300,6 +306,7 @@ function AcademicsFormContent() {
           uts_score: Number(row.uts_score || 0),
           uas_score: Number(row.uas_score || 0),
           task_score: Number(row.task_score || 0),
+          uh_score: Number(row.uh_score || 0),
           notes: row.notes,
         })));
         showToast('success', `${bulkEditRows.length} nilai berhasil diperbarui.`);
@@ -394,8 +401,11 @@ function AcademicsFormContent() {
                   <Field label="Nilai UAS">
                     <input required type="number" min="0" max="100" value={gradeForm.uas_score} onChange={(event) => setGradeForm((prev) => ({ ...prev, uas_score: event.target.value }))} className={controlClass} />
                   </Field>
-                  <Field label="Nilai Tugas" className="md:col-span-2">
+                  <Field label="Nilai Tugas">
                     <input required type="number" min="0" max="100" value={gradeForm.task_score} onChange={(event) => setGradeForm((prev) => ({ ...prev, task_score: event.target.value }))} className={controlClass} />
+                  </Field>
+                  <Field label="Nilai Ulangan Harian">
+                    <input required type="number" min="0" max="100" value={gradeForm.uh_score} onChange={(event) => setGradeForm((prev) => ({ ...prev, uh_score: event.target.value }))} className={controlClass} />
                   </Field>
                   <Field label="Catatan" className="md:col-span-2">
                     <textarea rows={5} value={gradeForm.notes} onChange={(event) => setGradeForm((prev) => ({ ...prev, notes: event.target.value }))} className={textAreaClass} placeholder="Catatan guru, deskripsi capaian, atau arahan tindak lanjut..." />
@@ -527,13 +537,14 @@ function AcademicsFormContent() {
                 <p className="text-xs font-medium text-slate-500">Kosongkan baris yang belum ingin diproses.</p>
               </div>
               <div className="ap-table-wrap overflow-x-auto">
-                <table className="min-w-[860px] w-full text-sm">
+                <table className="min-w-[1000px] w-full text-sm">
                   <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                     <tr>
                       <th className="px-4 py-3 text-left">Santri</th>
                       <th className="px-4 py-3 text-center">UTS</th>
                       <th className="px-4 py-3 text-center">UAS</th>
                       <th className="px-4 py-3 text-center">Tugas</th>
+                      <th className="px-4 py-3 text-center">UH</th>
                       <th className="px-4 py-3 text-left">Catatan</th>
                     </tr>
                   </thead>
@@ -544,6 +555,7 @@ function AcademicsFormContent() {
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uts_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'uts_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uas_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'uas_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.task_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'task_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
+                        <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uh_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'uh_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input value={row.notes} onChange={(event) => updateBulkGradeRow(row.student_id, 'notes', event.target.value)} className={`${controlClass} min-w-[220px]`} placeholder="Catatan singkat..." /></td>
                       </tr>
                     ))}
@@ -587,13 +599,14 @@ function AcademicsFormContent() {
                 <p className="text-xs font-medium text-slate-500">Perubahan akan disimpan serentak saat kamu klik tombol simpan.</p>
               </div>
               <div className="ap-table-wrap overflow-x-auto">
-                <table className="min-w-[860px] w-full text-sm">
+                <table className="min-w-[1000px] w-full text-sm">
                   <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                     <tr>
                       <th className="px-4 py-3 text-left">Santri</th>
                       <th className="px-4 py-3 text-center">UTS</th>
                       <th className="px-4 py-3 text-center">UAS</th>
                       <th className="px-4 py-3 text-center">Tugas</th>
+                      <th className="px-4 py-3 text-center">UH</th>
                       <th className="px-4 py-3 text-left">Catatan</th>
                     </tr>
                   </thead>
@@ -604,12 +617,13 @@ function AcademicsFormContent() {
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uts_score} onChange={(event) => updateBulkEditRow(row.id, 'uts_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uas_score} onChange={(event) => updateBulkEditRow(row.id, 'uas_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.task_score} onChange={(event) => updateBulkEditRow(row.id, 'task_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
+                        <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uh_score} onChange={(event) => updateBulkEditRow(row.id, 'uh_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input value={row.notes} onChange={(event) => updateBulkEditRow(row.id, 'notes', event.target.value)} className={`${controlClass} min-w-[220px]`} placeholder="Catatan singkat..." /></td>
                       </tr>
                     ))}
                     {bulkEditRows.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-500">
+                        <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
                           Belum ada data nilai untuk mata pelajaran ini pada periode aktif.
                         </td>
                       </tr>

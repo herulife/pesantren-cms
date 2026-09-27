@@ -9,6 +9,7 @@ import {
   Attendance,
   CompactUser,
   Grade,
+  GradeWeight,
   Subject,
   TahfidzProgress,
   createSubject,
@@ -20,6 +21,7 @@ import {
   getAcademicStudents,
   getAttendance,
   getAttendanceSummary,
+  getGradeWeights,
   getGrades,
   getGradesByStudent,
   getSubjects,
@@ -27,6 +29,7 @@ import {
   getTahfidz,
   sendWhatsApp,
   updateAcademicKKM,
+  updateGradeWeights,
 } from '@/lib/api';
 import { downloadBulkStudentReportPDF, downloadStudentReportPDF, exportToExcel, exportToPDF, previewBulkStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
 import { AlertTriangle, BarChart3, BookOpen, Calendar, ClipboardList, Download, Eye, FileDown, FileSpreadsheet, LayoutDashboard, Layers3, MessageSquare, Pencil, Plus, Printer, RefreshCw, Search, Trash2, Trophy, Users, X } from 'lucide-react';
@@ -92,6 +95,8 @@ export default function AcademicsPage() {
   const { user: authUser } = useAuth();
   const [kkm, setKkm] = useState(75);
   const [kkmInput, setKkmInput] = useState('75');
+  const [gradeWeights, setGradeWeights] = useState<GradeWeight[]>([]);
+  const [isWeightsSaving, setIsWeightsSaving] = useState(false);
   const [isKkmSaving, setIsKkmSaving] = useState(false);
   const [guruUsers, setGuruUsers] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
   const tabVisible = (id: string) => {
@@ -116,12 +121,13 @@ export default function AcademicsPage() {
   const [deleteState, setDeleteState] = useState<{ type: DeleteType; id: number | null }>({ type: 'grade', id: null });
 
   const loadRefs = useCallback(async () => {
-    const [subjectData, studentData, allUsers, kkmData] = await Promise.all([getSubjects(), getAcademicStudents(), getUsers(), getAcademicKKM().catch(() => 75)]);
+    const [subjectData, studentData, allUsers, kkmData, weightData] = await Promise.all([getSubjects(), getAcademicStudents(), getUsers(), getAcademicKKM().catch(() => 75), getGradeWeights().catch(() => [])]);
     setSubjects(subjectData);
     setGuruUsers((allUsers || []).filter(u => u.role === 'guru'));
     setStudents(studentData);
     setKkm(kkmData || 75);
     setKkmInput(String(kkmData || 75));
+    setGradeWeights(weightData || []);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -152,6 +158,23 @@ export default function AcademicsPage() {
       showToast('error', 'Gagal menyimpan KKM.');
     } finally {
       setIsKkmSaving(false);
+    }
+  };
+
+  const saveWeights = async () => {
+    const anyInvalid = gradeWeights.some((w) => {
+      const total = w.uts_weight + w.uas_weight + w.task_weight + w.uh_weight;
+      return [w.uts_weight, w.uas_weight, w.task_weight, w.uh_weight].some((v) => !v || v < 0 || v > 100) || Math.abs(total - 100) > 0.01;
+    });
+    if (anyInvalid) { showToast('error', 'Pastikan setiap bobot 1-100 dan total tiap mapel = 100%.'); return; }
+    setIsWeightsSaving(true);
+    try {
+      await updateGradeWeights(gradeWeights);
+      showToast('success', 'Bobot nilai per mapel tersimpan.');
+    } catch {
+      showToast('error', 'Gagal menyimpan bobot nilai.');
+    } finally {
+      setIsWeightsSaving(false);
     }
   };
 
@@ -448,8 +471,8 @@ export default function AcademicsPage() {
   const exportData = (type: 'pdf' | 'excel') => {
     const title = activeTab === 'grades' ? 'Laporan Nilai Santri' : activeTab === 'attendance' ? 'Laporan Presensi Santri' : 'Laporan Tahfidz Santri';
     const filename = activeTab === 'grades' ? 'laporan_nilai' : activeTab === 'attendance' ? 'laporan_presensi' : 'laporan_tahfidz';
-    const columns = activeTab === 'grades' ? ['Santri', 'Mapel', 'UTS', 'UAS', 'Tugas', 'Akhir', 'Grade'] : activeTab === 'attendance' ? ['Santri', 'Tanggal', 'Status', 'Catatan'] : ['Santri', 'Surah', 'Juz', 'Ayat', 'Status', 'Tanggal'];
-    const rows = activeTab === 'grades' ? filteredGrades.map((v) => [v.student_name || '-', v.subject_name || '-', v.uts_score, v.uas_score, v.task_score, v.final_score, v.grade_letter]) : activeTab === 'attendance' ? filteredAttendance.map((v) => [v.student_name || '-', v.date, v.status, v.notes || '-']) : filteredTahfidz.map((v) => [v.student_name || '-', v.surah_name, v.juz, `${v.start_ayat}-${v.end_ayat}`, v.status, v.evaluation_date]);
+    const columns = activeTab === 'grades' ? ['Santri', 'Mapel', 'UTS', 'UAS', 'Tugas', 'UH', 'Akhir', 'Grade'] : activeTab === 'attendance' ? ['Santri', 'Tanggal', 'Status', 'Catatan'] : ['Santri', 'Surah', 'Juz', 'Ayat', 'Status', 'Tanggal'];
+    const rows = activeTab === 'grades' ? filteredGrades.map((v) => [v.student_name || '-', v.subject_name || '-', v.uts_score, v.uas_score, v.task_score, v.uh_score, v.final_score, v.grade_letter]) : activeTab === 'attendance' ? filteredAttendance.map((v) => [v.student_name || '-', v.date, v.status, v.notes || '-']) : filteredTahfidz.map((v) => [v.student_name || '-', v.surah_name, v.juz, `${v.start_ayat}-${v.end_ayat}`, v.status, v.evaluation_date]);
     if (type === 'pdf') return exportToPDF(title, columns, rows, filename);
     return exportToExcel(title, columns, rows, filename);
   };
@@ -635,9 +658,9 @@ export default function AcademicsPage() {
       {['grades', 'attendance', 'tahfidz'].includes(activeTab) && <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {isLoading ? <div className="py-24 text-center text-sm font-bold text-slate-400">Memuat data...</div> : <div className="ap-table-wrap overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th>{activeTab === 'grades' && <><th className="px-4 py-4">Mapel</th><th className="px-4 py-4">UTS</th><th className="px-4 py-4">UAS</th><th className="px-4 py-4">Tugas</th><th className="px-4 py-4">Akhir</th><th className="px-4 py-4">Grade</th></>}{activeTab === 'attendance' && <><th className="px-4 py-4">Tanggal</th><th className="px-4 py-4">Status</th></>}{activeTab === 'tahfidz' && <><th className="px-4 py-4">Surah</th><th className="px-4 py-4">Juz</th><th className="px-4 py-4">Ayat</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Evaluasi</th></>}<th className="px-6 py-4 text-right">Aksi</th></tr></thead>
+            <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th>{activeTab === 'grades' && <><th className="px-4 py-4">Mapel</th><th className="px-4 py-4">UTS</th><th className="px-4 py-4">UAS</th><th className="px-4 py-4">Tugas</th><th className="px-4 py-4">UH</th><th className="px-4 py-4">Akhir</th><th className="px-4 py-4">Grade</th></>}{activeTab === 'attendance' && <><th className="px-4 py-4">Tanggal</th><th className="px-4 py-4">Status</th></>}{activeTab === 'tahfidz' && <><th className="px-4 py-4">Surah</th><th className="px-4 py-4">Juz</th><th className="px-4 py-4">Ayat</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Evaluasi</th></>}<th className="px-6 py-4 text-right">Aksi</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {activeTab === 'grades' && filteredGrades.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.subject_name}</td><td className="px-4 py-4">{v.uts_score}</td><td className="px-4 py-4">{v.uas_score}</td><td className="px-4 py-4">{v.task_score}</td><td className="px-4 py-4 font-black text-sky-600">{v.final_score}</td><td className="px-4 py-4">{v.grade_letter}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('grade', { id: v.id, semester: v.semester, year: v.academic_year }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'grade', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {activeTab === 'grades' && filteredGrades.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.subject_name}</td><td className="px-4 py-4">{v.uts_score}</td><td className="px-4 py-4">{v.uas_score}</td><td className="px-4 py-4">{v.task_score}</td><td className="px-4 py-4">{v.uh_score}</td><td className="px-4 py-4 font-black text-sky-600">{v.final_score}</td><td className="px-4 py-4">{v.grade_letter}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('grade', { id: v.id, semester: v.semester, year: v.academic_year }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'grade', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
               {activeTab === 'attendance' && filteredAttendance.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.date}</td><td className="px-4 py-4 font-bold uppercase">{v.status}</td><td className="px-6 py-4"><div className="flex justify-end gap-2">{v.status === 'alpha' && <button onClick={() => notifyAlpha(v)} className="rounded-xl bg-amber-50 p-2 text-amber-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-sm"><MessageSquare size={15} /></button>}<button onClick={() => router.push(buildFormHref('attendance', { id: v.id, date: v.date }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'attendance', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
               {activeTab === 'tahfidz' && filteredTahfidz.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.surah_name}</td><td className="px-4 py-4">{v.juz}</td><td className="px-4 py-4">{v.start_ayat}-{v.end_ayat}</td><td className="px-4 py-4 uppercase">{v.status}</td><td className="px-4 py-4">{v.evaluation_date}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('tahfidz', { id: v.id }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'tahfidz', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
             </tbody>
@@ -806,6 +829,39 @@ export default function AcademicsPage() {
               </tbody>
             </table>
           </div>
+
+          {['superadmin', 'admin'].includes(authUser?.role || '') && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Bobot Komponen Nilai per Mapel</h5>
+                  <p className="mt-1 text-sm text-slate-600">UTS + UAS + Tugas + Ulangan Harian harus berjumlah 100% untuk tiap mata pelajaran. Nilai akhir dihitung otomatis dari bobot ini.</p>
+                </div>
+                <button onClick={saveWeights} disabled={isWeightsSaving} className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50">{isWeightsSaving ? <RefreshCw size={16} className="animate-spin" /> : <FileDown size={16} />} Simpan Bobot</button>
+              </div>
+              <div className="ap-table-wrap mt-4 overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-4 py-3 text-left">Mapel</th><th className="px-4 py-3 text-center">UTS %</th><th className="px-4 py-3 text-center">UAS %</th><th className="px-4 py-3 text-center">Tugas %</th><th className="px-4 py-3 text-center">UH %</th><th className="px-4 py-3 text-center">Total</th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {gradeWeights.map((w) => {
+                      const total = w.uts_weight + w.uas_weight + w.task_weight + w.uh_weight;
+                      const ok = Math.abs(total - 100) <= 0.01 && [w.uts_weight, w.uas_weight, w.task_weight, w.uh_weight].every((v) => v > 0 && v <= 100);
+                      return (
+                        <tr key={w.subject_id}>
+                          <td className="px-4 py-3 font-bold text-slate-800">{w.subject_name}</td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.uts_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, uts_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.uas_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, uas_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.task_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, task_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.uh_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, uh_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className={`px-4 py-3 text-center text-sm font-bold ${ok ? 'text-emerald-600' : 'text-rose-600'}`}>{total.toFixed(0)}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

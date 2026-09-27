@@ -26,10 +26,21 @@ type Grade struct {
 	UTSScore     float64 `json:"uts_score"`
 	UASScore     float64 `json:"uas_score"`
 	TaskScore    float64 `json:"task_score"`
+	UHScore      float64 `json:"uh_score"`
 	FinalScore   float64 `json:"final_score"`
 	GradeLetter  string  `json:"grade_letter"`
 	Notes        string  `json:"notes"`
 	CreatedAt    string  `json:"created_at"`
+}
+
+// SubjectWeight adalah bobot prosentase komponen nilai per mapel.
+type SubjectWeight struct {
+	SubjectID   int     `json:"subject_id"`
+	SubjectName string  `json:"subject_name,omitempty"`
+	UtsWeight   float64 `json:"uts_weight"`
+	UasWeight   float64 `json:"uas_weight"`
+	TaskWeight  float64 `json:"task_weight"`
+	UhWeight    float64 `json:"uh_weight"`
 }
 
 type Attendance struct {
@@ -106,7 +117,7 @@ func (r *Repository) DeleteSubject(id int) error {
 func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]Grade, error) {
 	query := `
 		SELECT g.id, g.student_id, u.name as student_name, g.subject_id, s.name as subject_name,
-		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, 
+		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score,
 		       g.final_score, g.grade_letter, g.notes, g.created_at
 		FROM grades g
 		JOIN users u ON g.student_id = u.id
@@ -140,7 +151,7 @@ func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]G
 	for rows.Next() {
 		var g Grade
 		if err := rows.Scan(&g.ID, &g.StudentID, &g.StudentName, &g.SubjectID, &g.SubjectName,
-			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore,
+			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore, &g.UHScore,
 			&g.FinalScore, &g.GradeLetter, &g.Notes, &g.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -152,7 +163,7 @@ func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]G
 func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 	query := `
 		SELECT g.id, g.student_id, g.subject_id, s.name as subject_name,
-		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, 
+		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score, 
 		       g.final_score, g.grade_letter, g.notes, g.created_at
 		FROM grades g
 		JOIN subjects s ON g.subject_id = s.id
@@ -169,7 +180,7 @@ func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 	for rows.Next() {
 		var g Grade
 		if err := rows.Scan(&g.ID, &g.StudentID, &g.SubjectID, &g.SubjectName,
-			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore,
+			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore, &g.UHScore,
 			&g.FinalScore, &g.GradeLetter, &g.Notes, &g.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -179,32 +190,112 @@ func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 }
 
 func (r *Repository) CreateGrade(g *Grade) error {
-	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
+	weights, err := r.GetSubjectWeights(g.SubjectID)
+	if err != nil {
+		return err
+	}
+	final, err := weight.CalculateGradeFinal(g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, weights)
+	if err != nil {
+		return err
+	}
+	g.FinalScore = final
 	g.GradeLetter = weight.GradeLetter100(g.FinalScore)
 
 	query := `
-		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, final_score, grade_letter, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, uh_score, final_score, grade_letter, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	_, err := r.db.Exec(query, g.StudentID, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.FinalScore, g.GradeLetter, g.Notes)
+	_, err = r.db.Exec(query, g.StudentID, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, g.FinalScore, g.GradeLetter, g.Notes)
 	return err
 }
 
 func (r *Repository) UpdateGrade(id int, g *Grade) error {
-	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
+	weights, err := r.GetSubjectWeights(g.SubjectID)
+	if err != nil {
+		return err
+	}
+	final, err := weight.CalculateGradeFinal(g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, weights)
+	if err != nil {
+		return err
+	}
+	g.FinalScore = final
 	g.GradeLetter = weight.GradeLetter100(g.FinalScore)
 
 	query := `
-		UPDATE grades SET subject_id=?, semester=?, academic_year=?, uts_score=?, uas_score=?, task_score=?, final_score=?, grade_letter=?, notes=?
+		UPDATE grades SET subject_id=?, semester=?, academic_year=?, uts_score=?, uas_score=?, task_score=?, uh_score=?, final_score=?, grade_letter=?, notes=?
 		WHERE id=?
 	`
-	_, err := r.db.Exec(query, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.FinalScore, g.GradeLetter, g.Notes, id)
+	_, err = r.db.Exec(query, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, g.FinalScore, g.GradeLetter, g.Notes, id)
 	return err
 }
 
 func (r *Repository) DeleteGrade(id int) error {
 	_, err := r.db.Exec("DELETE FROM grades WHERE id = ?", id)
 	return err
+}
+
+// GetSubjectWeights mengambil bobot komponen nilai subjek; fallback ke default.
+func (r *Repository) GetSubjectWeights(subjectID int) (weight.GradeWeights, error) {
+	fallback := weight.DefaultGradeWeights()
+	var uts, uas, task, uh float64
+	err := r.db.QueryRow(`SELECT uts_weight, uas_weight, task_weight, uh_weight FROM subject_grade_weights WHERE subject_id = ?`, subjectID).
+		Scan(&uts, &uas, &task, &uh)
+	if err == sql.ErrNoRows {
+		return fallback, nil
+	}
+	if err != nil {
+		return fallback, err
+	}
+	if uts == 0 && uas == 0 && task == 0 && uh == 0 {
+		return fallback, nil
+	}
+	return weight.GradeWeights{UTS: uts, UAS: uas, Task: task, UH: uh}, nil
+}
+
+// GetAllSubjectWeights mengambil daftar bobot per mapel (diisi default bila belum diset).
+func (r *Repository) GetAllSubjectWeights() ([]SubjectWeight, error) {
+	query := `
+		SELECT s.id, s.name,
+		       COALESCE(w.uts_weight, 25), COALESCE(w.uas_weight, 30),
+		       COALESCE(w.task_weight, 25), COALESCE(w.uh_weight, 20)
+		FROM subjects s
+		LEFT JOIN subject_grade_weights w ON w.subject_id = s.id
+		ORDER BY s.name
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []SubjectWeight
+	for rows.Next() {
+		var sw SubjectWeight
+		if err := rows.Scan(&sw.SubjectID, &sw.SubjectName, &sw.UtsWeight, &sw.UasWeight, &sw.TaskWeight, &sw.UhWeight); err != nil {
+			return nil, err
+		}
+		out = append(out, sw)
+	}
+	return out, rows.Err()
+}
+
+// UpsertSubjectWeights menyimpan bobot komponen nilai per mapel.
+func (r *Repository) UpsertSubjectWeights(items []SubjectWeight) error {
+	for _, item := range items {
+		if _, err := r.db.Exec(`
+			INSERT INTO subject_grade_weights (subject_id, uts_weight, uas_weight, task_weight, uh_weight, updated_at)
+			VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			ON CONFLICT(subject_id) DO UPDATE SET
+				uts_weight=excluded.uts_weight,
+				uas_weight=excluded.uas_weight,
+				task_weight=excluded.task_weight,
+				uh_weight=excluded.uh_weight,
+				updated_at=CURRENT_TIMESTAMP
+		`, item.SubjectID, item.UtsWeight, item.UasWeight, item.TaskWeight, item.UhWeight); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Attendance

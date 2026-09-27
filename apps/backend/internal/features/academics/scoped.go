@@ -8,7 +8,7 @@ import (
 func (r *Repository) GetScopedGrades(semester, year string, subjectIDs []int, classes []string, limit, offset int) ([]Grade, error) {
 	query := `
 		SELECT g.id, g.student_id, u.name as student_name, g.subject_id, s.name as subject_name,
-		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score,
+		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score,
 		       g.final_score, g.grade_letter, g.notes, g.created_at
 		FROM grades g
 		JOIN users u ON g.student_id = u.id
@@ -57,7 +57,7 @@ func (r *Repository) GetScopedGrades(semester, year string, subjectIDs []int, cl
 	for rows.Next() {
 		var g Grade
 		if err := rows.Scan(&g.ID, &g.StudentID, &g.StudentName, &g.SubjectID, &g.SubjectName,
-			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore,
+			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore, &g.UHScore,
 			&g.FinalScore, &g.GradeLetter, &g.Notes, &g.CreatedAt); err != nil {
 			return nil, err
 		}

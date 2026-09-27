@@ -327,11 +327,22 @@ func createTables() {
 		uts_score REAL DEFAULT 0,
 		uas_score REAL DEFAULT 0,
 		task_score REAL DEFAULT 0,
+		uh_score REAL DEFAULT 0,
 		final_score REAL DEFAULT 0,
 		grade_letter TEXT DEFAULT '',
 		notes TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (student_id) REFERENCES users(id),
+		FOREIGN KEY (subject_id) REFERENCES subjects(id)
+	);
+
+	CREATE TABLE IF NOT EXISTS subject_grade_weights (
+		subject_id INTEGER PRIMARY KEY,
+		uts_weight REAL DEFAULT 25,
+		uas_weight REAL DEFAULT 30,
+		task_weight REAL DEFAULT 25,
+		uh_weight REAL DEFAULT 20,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (subject_id) REFERENCES subjects(id)
 	);
 
@@ -1184,6 +1195,18 @@ func runMigrations() {
 			name: "classes_wali_user_index",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_classes_wali_user ON classes(wali_user_id);`,
 		},
+		{
+			name: "subject_grade_weights_table",
+			sql: `CREATE TABLE IF NOT EXISTS subject_grade_weights (
+				subject_id INTEGER PRIMARY KEY,
+				uts_weight REAL DEFAULT 25,
+				uas_weight REAL DEFAULT 30,
+				task_weight REAL DEFAULT 25,
+				uh_weight REAL DEFAULT 20,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (subject_id) REFERENCES subjects(id)
+			);`,
+		},
 	}
 
 	for _, migration := range migrations {
@@ -1194,8 +1217,41 @@ func runMigrations() {
 		_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)", migration.name)
 	}
 
+	migrateGradesUhScore()
 	backfillSantriUserAccounts()
 	migrateUsersRoleCheck()
+}
+
+// migrateGradesUhScore menambahkan kolom uh_score pada tabel grades bila
+// belum ada (idempoten, dicatat di schema_migrations).
+func migrateGradesUhScore() {
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='grades_uh_score_column'`).Scan(&done); err != nil {
+		return
+	}
+	if done > 0 {
+		return
+	}
+	rows, err := DB.Query(`PRAGMA table_info(grades)`)
+	if err != nil {
+		return
+	}
+	var found bool
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt interface{}
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err == nil && name == "uh_score" {
+			found = true
+		}
+	}
+	rows.Close()
+	if !found {
+		if _, err := DB.Exec(`ALTER TABLE grades ADD COLUMN uh_score REAL DEFAULT 0`); err != nil {
+			return
+		}
+	}
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('grades_uh_score_column')")
 }
 
 // migrateUsersRoleCheck melebarkan CHECK role users agar menerima peran

@@ -682,6 +682,7 @@ export interface Grade {
 	uts_score: number;
 	uas_score: number;
 	task_score: number;
+	uh_score: number;
 	final_score: number;
 	grade_letter: string;
 	notes: string;
@@ -2276,6 +2277,35 @@ export async function updateAcademicKKM(kkm: number) {
 	const data = await res.json();
 	if (!res.ok) throw new Error(data.message || 'Gagal menyimpan KKM');
 	return data.data?.kkm ?? kkm;
+}
+
+export interface GradeWeight {
+	subject_id: number;
+	subject_name?: string;
+	uts_weight: number;
+	uas_weight: number;
+	task_weight: number;
+	uh_weight: number;
+}
+
+export async function getGradeWeights() {
+	const res = await fetch(`${API_BASE_URL}/academics/grade-weights`, {
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	const result = await parseResponse(res);
+	return (result.data || []) as GradeWeight[];
+}
+
+export async function updateGradeWeights(items: GradeWeight[]) {
+	const res = await fetch(`${API_BASE_URL}/academics/grade-weights`, {
+		method: 'PUT',
+		headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+		body: JSON.stringify({ items })
+	});
+	const data = await res.json();
+	if (!res.ok) throw new Error(data.message || 'Gagal menyimpan bobot nilai');
+	return data;
 }
 
 export async function getSubjects() {

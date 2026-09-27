@@ -36,6 +36,9 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/grades", h.CreateGrade)
 	r.Put("/grades/{id}", h.UpdateGrade)
 	r.Delete("/grades/{id}", h.DeleteGrade)
+	// Bobot komponen nilai per mapel (UTS/UAS/Tugas/UH)
+	r.Get("/grade-weights", h.GetGradeWeights)
+	r.Put("/grade-weights", h.UpdateGradeWeights)
 	// Attendance
 	r.Get("/attendance", h.GetAttendance) // ?date=2025-01-15
 	r.Post("/attendance", h.CreateAttendance)
@@ -148,6 +151,9 @@ func validateGrade(g *Grade) map[string][]string {
 	if g.TaskScore < 0 || g.TaskScore > 100 {
 		errs["task_score"] = []string{"Nilai tugas harus 0-100"}
 	}
+	if g.UHScore < 0 || g.UHScore > 100 {
+		errs["uh_score"] = []string{"Nilai ulangan harian harus 0-100"}
+	}
 	validSemesters := map[string]bool{"1": true, "2": true, "ganjil": true, "genap": true}
 	if g.Semester != "" && !validSemesters[strings.ToLower(g.Semester)] {
 		errs["semester"] = []string{"Semester harus 1 atau 2"}
@@ -221,24 +227,6 @@ func parsePagination(r *http.Request) (limit, offset int) {
 		offset = 0
 	}
 	return limit, offset
-}
-
-func calcGrade(uts, uas, task float64) (float64, string) {
-	final := (30*uts + 40*uas + 30*task) / 100
-	var letter string
-	switch {
-	case final >= 85:
-		letter = "A"
-	case final >= 70:
-		letter = "B"
-	case final >= 55:
-		letter = "C"
-	case final >= 40:
-		letter = "D"
-	default:
-		letter = "E"
-	}
-	return final, letter
 }
 
 func (h *Handler) GetSubjects(w http.ResponseWriter, r *http.Request) {
@@ -507,6 +495,50 @@ func (h *Handler) DeleteGrade(w http.ResponseWriter, r *http.Request) {
 	writeJSONResponse(w, http.StatusOK, true, "Nilai berhasil dihapus", nil)
 }
 
+// GetGradeWeights mengembalikan bobot komponen nilai per mapel.
+func (h *Handler) GetGradeWeights(w http.ResponseWriter, r *http.Request) {
+	weights, err := h.repo.GetAllSubjectWeights()
+	if err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Bobot nilai berhasil dimuat", weights)
+}
+
+// UpdateGradeWeights menyimpan bobot komponen nilai per mapel (admin).
+func (h *Handler) UpdateGradeWeights(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !weight.IsFullAccessRole(role) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Hanya admin yang dapat mengubah bobot nilai", nil)
+		return
+	}
+	var req struct {
+		Items []SubjectWeight `json:"items"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		writeJSONResponse(w, http.StatusBadRequest, false, "Permintaan tidak valid", nil)
+		return
+	}
+	if len(req.Items) == 0 {
+		writeJSONResponse(w, http.StatusBadRequest, false, "Daftar bobot tidak boleh kosong", nil)
+		return
+	}
+	for _, item := range req.Items {
+		gw := weight.GradeWeights{UTS: item.UtsWeight, UAS: item.UasWeight, Task: item.TaskWeight, UH: item.UhWeight}
+		if err := weight.ValidateGradeWeights(gw); err != nil {
+			writeJSONResponse(w, http.StatusBadRequest, false, "Bobot mapel "+strings.TrimSpace(item.SubjectName)+" tidak valid: "+err.Error(), nil)
+			return
+		}
+	}
+	if err := h.repo.UpsertSubjectWeights(req.Items); err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Bobot nilai berhasil disimpan", nil)
+}
+
 func (h *Handler) GetAttendance(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 	as, err := h.repo.GetAttendance(date)
@@ -733,6 +765,9 @@ type IRepository interface {
 	CreateGrade(g *Grade) error
 	UpdateGrade(id int, g *Grade) error
 	DeleteGrade(id int) error
+	GetSubjectWeights(subjectID int) (weight.GradeWeights, error)
+	GetAllSubjectWeights() ([]SubjectWeight, error)
+	UpsertSubjectWeights(items []SubjectWeight) error
 	ReportPerGuru(semester, year string) ([]PerGuruRow, error)
 	GetScopedGrades(semester, year string, subjectIDs []int, classes []string, limit, offset int) ([]Grade, error)
 	ReportPerGuruFor(semester, year string, teacherID int) ([]PerGuruRow, error)

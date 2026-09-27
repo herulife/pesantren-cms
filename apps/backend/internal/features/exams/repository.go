@@ -263,26 +263,36 @@ func (r *Repository) FinishSession(sessionID int) (float64, error) {
 	// tidak terpisah dari nilai manual saat rapor dihitung.
 	semester = validators.NormalizeSemester(semester)
 
-	// CBT menulis komponen UAS. Ambil komponen UTS/tugas yang sudah ada (jika
-	// guru sudah mengisi manual) lalu hitung ulang final dengan formula yang
-	// SAMA seperti nilai manual: (UTS*30 + UAS*40 + Tugas*30)/100.
-	var uts, task float64
-	_ = tx.QueryRow(`SELECT COALESCE(uts_score,0), COALESCE(task_score,0) FROM grades
+	// CBT menulis komponen UAS. Ambil komponen UTS/tugas/UH yang sudah ada (jika
+	// guru sudah mengisi manual) lalu hitung ulang final memakai bobot per mapel
+	// (SAMA seperti nilai manual): default UTS*25 + UAS*30 + Tugas*25 + UH*20.
+	var uts, task, uh, utsW, uasW, taskW, uhW float64
+	_ = tx.QueryRow(`SELECT COALESCE(uts_score,0), COALESCE(task_score,0), COALESCE(uh_score,0) FROM grades
 		WHERE student_id=? AND subject_id=? AND semester=? AND academic_year=?`,
-		studentID, subjectID, semester, year).Scan(&uts, &task)
-	finalScore := (uts*30 + score*40 + task*30) / 100
+		studentID, subjectID, semester, year).Scan(&uts, &task, &uh)
+	_ = tx.QueryRow(`SELECT uts_weight, uas_weight, task_weight, uh_weight FROM subject_grade_weights
+		WHERE subject_id=?`, subjectID).Scan(&utsW, &uasW, &taskW, &uhW)
+	weights := weight.GradeWeights{UTS: utsW, UAS: uasW, Task: taskW, UH: uhW}
+	if utsW == 0 && uasW == 0 && taskW == 0 && uhW == 0 {
+		weights = weight.DefaultGradeWeights()
+	}
+	finalScore, calcErr := weight.CalculateGradeFinal(uts, score, task, uh, weights)
+	if calcErr != nil {
+		return 0, calcErr
+	}
 	finalScore = math.Round(finalScore*100) / 100
 	letter := gradeLetter(finalScore)
 
 	if _, err := tx.Exec(`
-		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, final_score, grade_letter, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, uh_score, final_score, grade_letter, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(student_id, subject_id, semester, academic_year) DO UPDATE SET
 			uas_score = excluded.uas_score,
+			uh_score = excluded.uh_score,
 			final_score = excluded.final_score,
 			grade_letter = excluded.grade_letter,
 			notes = excluded.notes
-	`, studentID, subjectID, semester, year, uts, score, task, finalScore, letter, "Generated from CBT"); err != nil {
+	`, studentID, subjectID, semester, year, uts, score, task, uh, finalScore, letter, "Generated from CBT"); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
