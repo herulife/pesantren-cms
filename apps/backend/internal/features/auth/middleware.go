@@ -19,6 +19,7 @@ const UserContextKey contextKey = "user"
 var validRoles = map[string]bool{
 	"superadmin": true, "bendahara": true, "panitia_psb": true,
 	"tim_media": true, "admin": true, "user": true,
+	"pimpinan": true, "wali_kelas": true, "guru": true, "ustadz": true,
 }
 
 func IsValidRole(role string) bool { return validRoles[role] }
