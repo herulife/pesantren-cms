@@ -2257,6 +2257,27 @@ export async function updatePayment(id: number, data: Omit<Payment, 'id' | 'crea
 }
 
 // Academics
+export async function getAcademicKKM() {
+	const res = await fetch(`${API_BASE_URL}/academics/kkm`, {
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	if (!res.ok) throw new Error('Gagal memuat KKM');
+	const data = await res.json();
+	return data.data?.kkm ?? 75;
+}
+
+export async function updateAcademicKKM(kkm: number) {
+	const res = await fetch(`${API_BASE_URL}/academics/kkm`, {
+		method: 'PUT',
+		headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+		body: JSON.stringify({ kkm })
+	});
+	const data = await res.json();
+	if (!res.ok) throw new Error(data.message || 'Gagal menyimpan KKM');
+	return data.data?.kkm ?? kkm;
+}
+
 export async function getSubjects() {
 	try {
 		const res = await fetch(`${API_BASE_URL}/academics/subjects`, {

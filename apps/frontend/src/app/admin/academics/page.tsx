@@ -16,6 +16,7 @@ import {
   deleteGrade,
   deleteSubject,
   deleteTahfidz,
+  getAcademicKKM,
   getAcademicStudents,
   getAttendance,
   getAttendanceSummary,
@@ -25,6 +26,7 @@ import {
   getUsers,
   getTahfidz,
   sendWhatsApp,
+  updateAcademicKKM,
 } from '@/lib/api';
 import { downloadBulkStudentReportPDF, downloadStudentReportPDF, exportToExcel, exportToPDF, previewBulkStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
 import { AlertTriangle, BarChart3, BookOpen, Calendar, ClipboardList, Download, Eye, FileDown, FileSpreadsheet, LayoutDashboard, Layers3, MessageSquare, Pencil, Plus, Printer, RefreshCw, Search, Trash2, Trophy, Users, X } from 'lucide-react';
@@ -88,6 +90,9 @@ export default function AcademicsPage() {
   const [students, setStudents] = useState<CompactUser[]>([]);
   const [subjectForm, setSubjectForm] = useState(subjectInit);
   const { user: authUser } = useAuth();
+  const [kkm, setKkm] = useState(75);
+  const [kkmInput, setKkmInput] = useState('75');
+  const [isKkmSaving, setIsKkmSaving] = useState(false);
   const [guruUsers, setGuruUsers] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
   const tabVisible = (id: string) => {
     const r = authUser?.role;
@@ -111,10 +116,12 @@ export default function AcademicsPage() {
   const [deleteState, setDeleteState] = useState<{ type: DeleteType; id: number | null }>({ type: 'grade', id: null });
 
   const loadRefs = useCallback(async () => {
-    const [subjectData, studentData, allUsers] = await Promise.all([getSubjects(), getAcademicStudents(), getUsers()]);
+    const [subjectData, studentData, allUsers, kkmData] = await Promise.all([getSubjects(), getAcademicStudents(), getUsers(), getAcademicKKM().catch(() => 75)]);
     setSubjects(subjectData);
     setGuruUsers((allUsers || []).filter(u => u.role === 'guru'));
     setStudents(studentData);
+    setKkm(kkmData || 75);
+    setKkmInput(String(kkmData || 75));
   }, []);
 
   const loadData = useCallback(async () => {
@@ -132,6 +139,22 @@ export default function AcademicsPage() {
 
   useEffect(() => { loadRefs(); }, [loadRefs]);
   useEffect(() => { loadData(); }, [loadData]);
+
+  const saveKKM = async () => {
+    const val = parseInt(kkmInput, 10);
+    if (!val || val < 1 || val > 99) { showToast('error', 'KKM harus 1-99.'); return; }
+    setIsKkmSaving(true);
+    try {
+      const saved = await updateAcademicKKM(val);
+      setKkm(saved);
+      showToast('success', \`KKM tersimpan, pengaturan ketuntasan diperbarui.\`);
+    } catch {
+      showToast('error', 'Gagal menyimpan KKM.');
+    } finally {
+      setIsKkmSaving(false);
+    }
+  };
+
   const filteredGrades = useMemo(() => grades.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.subject_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [grades, searchQuery]);
   const filteredAttendance = useMemo(() => attendance.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [attendance, searchQuery]);
   const filteredTahfidz = useMemo(() => tahfidz.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || v.surah_name.toLowerCase().includes(searchQuery.toLowerCase())), [tahfidz, searchQuery]);
@@ -180,7 +203,7 @@ export default function AcademicsPage() {
         return {
           ...item,
           average,
-          status: average >= 75 ? 'Tuntas' : 'Perlu Pendampingan',
+          status: average >= kkm ? 'Tuntas' : 'Perlu Pendampingan',
         };
       })
       .sort((a, b) => b.average - a.average)
@@ -188,7 +211,7 @@ export default function AcademicsPage() {
         ...item,
         rank: index + 1,
       }));
-  }, [filteredGrades]);
+  }, [filteredGrades, kkm]);
   const recapSubjectAverages = useMemo(() => recapSubjectColumns.map((subject) => {
     const scores = filteredGrades.filter((item) => item.subject_id === subject.id).map((item) => item.final_score);
     const average = scores.length ? scores.reduce((sum, value) => sum + value, 0) / scores.length : 0;
@@ -202,7 +225,7 @@ export default function AcademicsPage() {
       completed,
       pending: Math.max(total - completed, 0),
     };
-  }, [studentRecaps]);
+  }, [studentRecaps, kkm]);
   const topSubjects = useMemo(() => recapSubjectAverages
     .slice()
     .sort((a, b) => b.average - a.average)
@@ -474,6 +497,26 @@ export default function AcademicsPage() {
 
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
+          <div className="rounded-xl border border-sky-200 bg-sky-50/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-sky-800">Ambang Ketuntasan (KKM)</h3>
+              <p className="mt-1 text-sm text-slate-600">Nilai di bawah KKM membutuhkan pendampingan. Huruf: A ≥ KKM+15, B ≥ KKM+5, C = KKM, D = KKM-15, E &lt; KKM-15.</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="inline-flex rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-sky-700 ring-1 ring-sky-200">KKM saat ini: {kkm}</span>
+                <span className="inline-flex rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">Tuntas: ≥ {kkm}</span>
+                <span className="inline-flex rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 ring-1 ring-rose-200">Pendampingan: &lt; {kkm}</span>
+              </div>
+            </div>
+            {['superadmin', 'admin'].includes(authUser?.role || '') && (
+              <div className="flex items-center gap-2">
+                <input type="number" min={1} max={99} value={kkmInput} onChange={(e) => setKkmInput(e.target.value)} className="w-28 rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" />
+                <button onClick={saveKKM} disabled={isKkmSaving} className="rounded-lg bg-sky-600 text-white px-4 py-2 text-sm font-semibold transition-colors hover:bg-sky-700 disabled:opacity-50">{isKkmSaving ? 'Menyimpan...' : 'Simpan KKM'}</button>
+              </div>
+            )}
+          </div>
+        </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {dashboardStats.map((stat) => (
               <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
