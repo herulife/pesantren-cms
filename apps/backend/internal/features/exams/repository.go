@@ -7,6 +7,7 @@ import (
 	"math"
 	"time"
 
+	"almaparung-api/internal/platform/weight"
 	"almaparung-api/internal/validators"
 )
 
@@ -200,18 +201,7 @@ func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) err
 }
 
 func gradeLetter(final float64) string {
-	switch {
-	case final >= 90:
-		return "A"
-	case final >= 80:
-		return "B"
-	case final >= 75:
-		return "C"
-	case final >= 60:
-		return "D"
-	default:
-		return "E"
-	}
+	return weight.GradeLetter100(final)
 }
 
 func (r *Repository) FinishSession(sessionID int) (float64, error) {

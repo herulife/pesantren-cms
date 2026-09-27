@@ -3,6 +3,8 @@ package academics
 import (
 	"database/sql"
 	"time"
+
+	"almaparung-api/internal/platform/weight"
 )
 
 type Subject struct {
@@ -178,17 +180,7 @@ func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 
 func (r *Repository) CreateGrade(g *Grade) error {
 	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
-	if g.FinalScore >= 90 {
-		g.GradeLetter = "A"
-	} else if g.FinalScore >= 80 {
-		g.GradeLetter = "B"
-	} else if g.FinalScore >= 75 {
-		g.GradeLetter = "C"
-	} else if g.FinalScore >= 60 {
-		g.GradeLetter = "D"
-	} else {
-		g.GradeLetter = "E"
-	}
+	g.GradeLetter = weight.GradeLetter100(g.FinalScore)
 
 	query := `
 		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, final_score, grade_letter, notes)

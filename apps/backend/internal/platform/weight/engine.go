@@ -118,18 +118,62 @@ func Predikat(score float64) string {
 // C: 1.51-2.50, D: <1.51) x25: 87.75 / 62.75 / 37.75.
 // SPEC_GAP: sekolah perlu mengonfirmasi ambang ini vs KKM mapel (default 75).
 // JANGAN panggil Predikat() dengan skor 0-100 (82.58 -> "Sangat Baik" salah).
-// PredikatKKM memakai ambang KKM (lulus = 75):
-// A (Sangat Baik) ≥ 90, B (Baik) 80-89, C (Cukup) 75-79, D < 75.
+// kkm = ambang ketuntasan (dapat diubah admin). Default 75.
+var kkm = 75
+
+// SetKKM mengubah ambang KKM global (dipanggil saat boot + saat admin simpan).
+// Dijaga pada 1..99 agar pita huruf tetap valid.
+func SetKKM(v int) {
+	if v < 1 {
+		v = 1
+	}
+	if v > 99 {
+		v = 99
+	}
+	kkm = v
+}
+
+// KKM mengembalikan ambang ketuntasan saat ini.
+func KKM() int { return kkm }
+
+// bands mengembalikan batas bawah A, B, C, D relatif terhadap KKM:
+// pita 15 poin; A = kkm+15, B = kkm+5, C = kkm, D = kkm-15.
+func bands() (float64, float64, float64, float64) {
+	k := float64(kkm)
+	return k + 15, k + 5, k, k - 15
+}
+
+// PredikatKKM: A (Sangat Baik) >= KKM+15, B (Baik) >= KKM+5, C (Cukup) >= KKM,
+// D (Perlu Perbaikan) di bawah KKM. Default KKM 75 -> A>=90, B>=80, C>=75.
 func PredikatKKM(score float64) string {
+	a, b, c, _ := bands()
 	switch {
-	case score >= 90:
+	case score >= a:
 		return "Sangat Baik"
-	case score >= 80:
+	case score >= b:
 		return "Baik"
-	case score >= 75:
+	case score >= c:
 		return "Cukup"
 	default:
 		return "Perlu Perbaikan"
+	}
+}
+
+// GradeLetter100 memetakan nilai 0-100 ke huruf mengikuti ambang KKM yang sama
+// dengan PredikatKKM, sehingga huruf mapel & predikat raport selalu selaras.
+func GradeLetter100(score float64) string {
+	a, b, c, d := bands()
+	switch {
+	case score >= a:
+		return "A"
+	case score >= b:
+		return "B"
+	case score >= c:
+		return "C"
+	case score >= d:
+		return "D"
+	default:
+		return "E"
 	}
 }
 
