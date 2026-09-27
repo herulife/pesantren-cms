@@ -178,13 +178,13 @@ func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 
 func (r *Repository) CreateGrade(g *Grade) error {
 	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
-	if g.FinalScore >= 85 {
+	if g.FinalScore >= 90 {
 		g.GradeLetter = "A"
-	} else if g.FinalScore >= 70 {
+	} else if g.FinalScore >= 80 {
 		g.GradeLetter = "B"
-	} else if g.FinalScore >= 55 {
+	} else if g.FinalScore >= 75 {
 		g.GradeLetter = "C"
-	} else if g.FinalScore >= 40 {
+	} else if g.FinalScore >= 60 {
 		g.GradeLetter = "D"
 	} else {
 		g.GradeLetter = "E"
@@ -200,13 +200,13 @@ func (r *Repository) CreateGrade(g *Grade) error {
 
 func (r *Repository) UpdateGrade(id int, g *Grade) error {
 	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
-	if g.FinalScore >= 85 {
+	if g.FinalScore >= 90 {
 		g.GradeLetter = "A"
-	} else if g.FinalScore >= 70 {
+	} else if g.FinalScore >= 80 {
 		g.GradeLetter = "B"
-	} else if g.FinalScore >= 55 {
+	} else if g.FinalScore >= 75 {
 		g.GradeLetter = "C"
-	} else if g.FinalScore >= 40 {
+	} else if g.FinalScore >= 60 {
 		g.GradeLetter = "D"
 	} else {
 		g.GradeLetter = "E"

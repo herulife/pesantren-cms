@@ -407,7 +407,7 @@ export default function ERaportPage() {
 												return (
 													<div key={a.key} className="flex items-center justify-between text-sm">
 														<span className="font-semibold text-slate-700">{a.label}</span>
-														<span className="rounded-full bg-sky-50 px-2.5 py-0.5 font-black text-sky-700">{scRaw === undefined ? '\u2013' : Number(scRaw).toFixed(1)}</span>
+														<span className="rounded-full bg-sky-50 px-2.5 py-0.5 font-black text-sky-700">{scRaw === undefined ? '\u2013' : (((Number(scRaw) || 0) / 4 * 100).toFixed(1))}</span>
 													</div>
 												);
 											})}

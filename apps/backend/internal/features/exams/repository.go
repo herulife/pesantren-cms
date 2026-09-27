@@ -201,13 +201,13 @@ func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) err
 
 func gradeLetter(final float64) string {
 	switch {
-	case final >= 85:
+	case final >= 90:
 		return "A"
-	case final >= 70:
+	case final >= 80:
 		return "B"
-	case final >= 55:
+	case final >= 75:
 		return "C"
-	case final >= 40:
+	case final >= 60:
 		return "D"
 	default:
 		return "E"
