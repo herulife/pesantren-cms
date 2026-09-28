@@ -5,10 +5,12 @@ import { useToast } from '@/components/Toast';
 import { useAuth } from '@/components/AuthProvider';
 import {
   CreateViolationPayload,
+  Santri,
   StudentDisciplinePoint,
   ViolationLog,
   createViolation,
   getDisciplinePoints,
+  getSantriList,
   getSettings,
   getViolationLogs,
 } from '@/lib/api';
@@ -98,6 +100,26 @@ export default function DisciplinesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateViolationPayload>(formInit);
   const [templates, setTemplates] = useState<Record<string, string>>({});
+  // Daftar Santri untuk dropdown. Dulu form minta "ID Santri" diketik manual,
+  // sehingga id akun admin (mis. 1) bisa terkirim dan muncul di tabel
+  // sebagai baris "Santri" bernama "Admin".
+  const [santriOptions, setSantriOptions] = useState<Santri[]>([]);
+  const [isLoadingSantri, setIsLoadingSantri] = useState(false);
+
+  const loadSantriOptions = useCallback(async () => {
+    setIsLoadingSantri(true);
+    try {
+      const res = await getSantriList({ status: 'aktif', limit: 500 });
+      // student_id merujuk users.id, jadi hanya Santri yang sudah punya
+      // akun portal (user_id) yang bisa jadi sasaran.
+      setSantriOptions(res.items.filter((s) => Boolean(s.user_id)));
+    } catch (e) {
+      console.error('Failed to load Santri options:', e);
+      setSantriOptions([]);
+    } finally {
+      setIsLoadingSantri(false);
+    }
+  }, []);
 
   const loadTemplates = useCallback(async () => {
     if (role !== 'superadmin') {
@@ -165,6 +187,11 @@ export default function DisciplinesPage() {
     const danger = points.filter((p) => p.current_points <= 55).length;
     return { total, safe, warning, danger };
   }, [points]);
+
+  // Muat daftar Santri begitu modal dibuka supaya dropdown tidak kosong.
+  useEffect(() => {
+    if (modalOpen) void loadSantriOptions();
+  }, [modalOpen, loadSantriOptions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -455,16 +482,31 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
       <Modal open={modalOpen} title="Catat Pelanggaran Baru" onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-slate-500">ID Santri *</label>
-            <input
-              type="number"
+            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-slate-500">Santri *</label>
+            <select
               required
-              min={1}
+              disabled={isLoadingSantri}
               value={form.student_id || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, student_id: Number(e.target.value) }))}
-              placeholder="Masukkan ID santri"
-              className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200 transition-all"
-            />
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="">
+                {isLoadingSantri
+                  ? 'Memuat daftar Santri...'
+                  : santriOptions.length === 0
+                    ? 'Tidak ada Santri aktif yang punya akun'
+                    : 'Pilih Santri'}
+              </option>
+              {santriOptions.map((s) => (
+                <option key={s.id} value={s.user_id ?? ''}>
+                  {s.name} — Kelas {s.class || '-'}
+                  {s.nis ? ` (NIS ${s.nis})` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+              Hanya Santri aktif yang sudah punya akun portal bisa dipilih.
+            </p>
           </div>
 
           <div>
