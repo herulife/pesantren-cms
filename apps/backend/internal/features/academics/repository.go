@@ -235,16 +235,16 @@ func (r *Repository) DeleteGrade(id int) error {
 }
 
 // GetSubjectWeights mengambil bobot komponen nilai subjek; fallback ke default.
+// Bila tabel bobot belum termigrasi atau baris belum diset, selalu kembalikan
+// default (UTS 25 / UAS 30 / Tugas 25 / UH 20) supaya input nilai guru tidak
+// pernah gagal hanya karena pengaturan bobot belum siap.
 func (r *Repository) GetSubjectWeights(subjectID int) (weight.GradeWeights, error) {
 	fallback := weight.DefaultGradeWeights()
 	var uts, uas, task, uh float64
 	err := r.db.QueryRow(`SELECT uts_weight, uas_weight, task_weight, uh_weight FROM subject_grade_weights WHERE subject_id = ?`, subjectID).
 		Scan(&uts, &uas, &task, &uh)
-	if err == sql.ErrNoRows {
-		return fallback, nil
-	}
 	if err != nil {
-		return fallback, err
+		return fallback, nil
 	}
 	if uts == 0 && uas == 0 && task == 0 && uh == 0 {
 		return fallback, nil
@@ -279,10 +279,15 @@ func (r *Repository) GetAllSubjectWeights() ([]SubjectWeight, error) {
 	return out, rows.Err()
 }
 
-// UpsertSubjectWeights menyimpan bobot komponen nilai per mapel.
+// UpsertSubjectWeights menyimpan bobot komponen nilai per mapel (satu transaksi).
 func (r *Repository) UpsertSubjectWeights(items []SubjectWeight) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	for _, item := range items {
-		if _, err := r.db.Exec(`
+		if _, err := tx.Exec(`
 			INSERT INTO subject_grade_weights (subject_id, uts_weight, uas_weight, task_weight, uh_weight, updated_at)
 			VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 			ON CONFLICT(subject_id) DO UPDATE SET
@@ -295,7 +300,7 @@ func (r *Repository) UpsertSubjectWeights(items []SubjectWeight) error {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }
 
 // Attendance
