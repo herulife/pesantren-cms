@@ -92,6 +92,30 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 
 - **Pembersihan storage (28 Sep 2026, tanpa deploy)**: disk `/` turun dari **89% ke 47%** (105G -> 55G terpakai, 63G bebas). Yang DIBERSIHKAN (semua cache/file yatim, tidak ada data): (1) `docker image prune -f` -> 95 image gantung (tanpa tag, sisa build lama) hilang, `/var/lib/containerd` 72G -> 31G, docker-reported reclaim 9.2GB; (2) 251 file `.so` yatim di `/tmp` (2.1G, jeweils 5.5MB, berasal dari exec yang gagal); (3) cache npm `/home/alma/.npm` 6.0G -> 12M dan `/root/.npm` 337M -> 76K; (4) `journalctl --vacuum-size=100M` 320M -> 66M; (5) `/tmp/go-build*` 24M + sisa kerja `/tmp/oshot`, `/tmp/opencode-ap` 18M. **Efek samping yang perlu tahu**: cache layer build Docker sudah habis, jadi build frontend/backend berikutnya akan lebih lambat (tidak bisa `--cache-from` layer lama). Yang SENGAJA TIDAK disentuh: cache Go (~5.1G: repo `.gocache` 1.5G, `.gomodcache` 1.3G, `~/.cache/go-build` 428M, `~/.gocache` 255M, `~/go/pkg` 1.3G, `/tmp/gocache-heru` 306M), `/home/heru/.npm` 792M, `/tmp/j28` 775M, 38 tag image lama + 11 container exited (3.2G, sebagian memang container rollback), `mcr.microsoft.com/playwright:v1.49.0-jammy` 3.32G, 9x `data/alma-parung.db.bak-*`, dan `/home/alma/{eraport-clone,vibe-coding-repos}`. User memutuskan berhenti di titik ini. Census `/tmp`: 1.096 entri basi (>3 hari) -> 1.4G tersisa, sebagian besar folder kerja `j*full` milik agen lain. Verifikasi setelah bersih: `alma-parung-frontend-bobot` (jilid45) & `alma-parung-backend` (jilid43) healthy, `/`=200, `/admin/help`=307, `/assets/tutorials/*`=307, `/api/academics/kkm`=401 (semua sesuai).
 
+- **Rumah Keeper 28 Sep: F (tsbuildinfo) + G (dok usang) + E (redaksi secret)**
+  - **F [MEKANIK]**: `apps/frontend/tsconfig.tsbuildinfo` tadinya root-owned sehingga `tsc` gagal `TS5033`
+    untuk user `heru`. Audit menemukan **24.080 file** root-owned di repo (`.gocache`/`.gomodcache` + `.bak`/backup baru) —的karena ada build Go yang dijalankan lewat `sudo`, cache-nya jadi milik root.
+    Semua `chown heru:heru` (di luar `node_modules` + `.git`) -> sisa **0**.
+    Bukti perbaikan: `su heru -c "npx tsc --noEmit"` sekarang **EXIT=0** tanpa perlu `--incremental false`.
+    *Aturan baru: jangan `sudo` build Go — cache jadi root-owned dan menggigit user `heru`.*
+  - **G [DOKUMENTASI]**: `CATATAN-JILID42.md` diberi banner **DOCUMENTASI USANG** di atasnya. Isinya cuma
+    1 entri lama (KKM dynamic / image `kkm`), tidak mencakup bobot-UH, dropdown Kesantrian, tutorial eRapor,
+    maupun fix Kedisiplinan; nama filenya pun menyesatkan (isi entri **"Jilid 28 — KKM dynamic"**).
+    Banner mengarahkan ke `RINGKASAN.md` §2/§4/§6 dan `HANDOFF.md` §4. Isi asli tidak diubah
+    (backup `CATATAN-JILID42.md.bak-20260928`).
+  - **E [KEAMANAN] audit + redaksi**: sapuan pola secret ke seluruh repo (`.go/.ts/.tsx/.js/.json/.env/.md/.sh/.sql`),
+    nilai **tidak pernah dicetak** — hanya lokasi + kategori + hash. 21 temuan, 3 di antaranya nyata:
+    1. `RINGKASAN.md` §2 memuat **API key DAHL asli** di baris perintah deploy -> diganti `"$DAHLKEY"`.
+    2. `ssh_logs.py` **hardcode password SSH server lain** (103.107.206.10 / user `ubuntu24`) -> ditulis ulang,
+       kredensial via env `SSH_HOST/SSH_PORT/SSH_USER/SSH_PASS` (+ `getpass`), dan password dikirim lewat
+       `stdin` ke `sudo -S`, bukan disisipkan ke string perintah.
+    3. `docs/deploy-alma-vercel-vps.md` memuat `JWT_SECRET` contoh -> jadi placeholder
+       `change_me_use_openssl_rand_hex_32` (dicek: bukan sama dengan `.env`).
+    Sisa 10 temuan sudah diverifikasi **false positive**: `change_me_*` di `.env.example` + docs,
+    `PASS = os.environ.get("SSH_PASS")` (sekarang read-from-env), `password:` sebagai nama field JS di
+    `SKILL.md`/`api.ts`/halaman users, dan fixture validator. `PASS = "Tes123456"` di
+    `scripts/smoke_nik_final.py` = password akun sementara yang dibuat lalu dihapus skrip itu sendiri (risiko rendah).
+    `.env` sudah ada di `.gitignore`. **Belum**做: rotasi `JWT_SECRET` + password SSH `heru` + hapus `/tmp/pgl/inspect10.js` — semuanya butuh izin user.
 - **Fix Kedisiplinan (`disiplinfix`, 28 Sep)**: di `/admin/disciplines` kolom "Santri" menampilkan **"Admin"**.
   Akar masalah: kolom `student_id` di `student_points`/`violation_logs` merujuk `users.id`, tapi validasi lama
   hanya `SELECT COUNT(*) FROM users WHERE id=?` (semua user lolos, termasuk akun admin/staff) dan form meminta

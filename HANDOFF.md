@@ -100,19 +100,22 @@ Semua terverifikasi: `tsc --noEmit --incremental false` 0 error, `docker build` 
 
 ### E. [KEAMANAN] Credential
 
+- **[28 Sep] Audit + redaksi 3 kebocoran nyata SELESAI**: API key DAHL di `RINGKASAN.md` -> `"$DAHLKEY"`; password SSH server lain di `ssh_logs.py` -> env `SSH_PASS` + `getpass` (dikirim via stdin ke `sudo -S`); `JWT_SECRET` contoh di `docs/deploy-alma-vercel-vps.md` -> placeholder. Sisa temuan sudah diverifikasi false positive.
 - Password SSH `heru` masih yang lama — sudah masuk TODO rotasi, **tidak boleh diganti tanpa izin user**.
 - `/tmp/pgl/inspect10.js` berisi `JWT_SECRET` hardcode (file agen lain, **jangan dihapus tanpa izin**).
   Kalau bisa, sarankan rotasi `JWT_SECRET` (efek: semua sesi invalid, harus deploy ulang container backend
   dengan env baru).
 - `/tmp/oshot`, `/tmp/opencode-ap`, dan skrip `.sh` yang pernah berisi password sudah dihapus 28 Sep.
 
-### F. [MEKANIK] `tsconfig.tsbuildinfo` dimiliki root
+### F. [SELESAI 28 Sep] `tsconfig.tsbuildinfo` dimiliki root
 
 - `apps/frontend/tsconfig.tsbuildinfo` dimiliki root → `tsc` selalu gagal `TS5033` untuk user `heru`.
 - Solusi: owner repo `chown heru` file itu, atau nonaktifkan `incremental` di `apps/frontend/tsconfig.json`.
-- Selama belum diperbaiki: **selalu** pakai `npx tsc --noEmit --incremental false`.
+- **SUDAH DIPERBAIKI**: 24.080 file root-owned di-`chown heru:heru` -> sisa 0; `tsc --noEmit` jalan normal.
+  JANGAN `sudo` build Go (cache jadi root-owned). Untuk `tsc` sebagai user `alma` masih perlu
+  `--incremental false` atau `su heru`, karena file tsbuildinfo milik `heru`.
 
-### G. [DOKUMENTASI] `CATATAN-JILID42.md` usang
+### G. [SELESAI 28 Sep] `CATATAN-JILID42.md` usang
 
 - Isinya tidak mencakup pekerjaan bobot / jilid43 / jilid44 / jilid45. Entah diupdate atau ditandai usang
   supaya agen lain tidak mencari detail yang tidak ada. Detail lengkap ada di `RINGKASAN.md` §4.
