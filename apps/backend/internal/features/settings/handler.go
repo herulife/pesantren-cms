@@ -28,6 +28,13 @@ func writeJSONResponse(w http.ResponseWriter, status int, success bool, message 
 	})
 }
 
+// heavySettings sengaja TIDAK ikut dikirim pada daftar settings umum.
+// website_builder_revisions memuat riwayat revisi penuh (~380 KB, 91% dari
+// seluruh payload settings) dan tidak ada consumer frontend maupun backend
+// yang membacanya lewat daftar ini. Nilainya tetap utuh di database dan
+// bisa diambil lewat endpoint khusus GET /settings/revisions.
+var heavySettings = []string{"website_builder_revisions"}
+
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	list, err := h.repo.FindAll()
 	if err != nil {
@@ -35,7 +42,30 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
-	writeJSONResponse(w, http.StatusOK, true, "Pengaturan berhasil dimuat", list)
+
+	trimmed := make([]Setting, 0, len(list))
+	for _, setting := range list {
+		if slices.Contains(heavySettings, setting.Key) {
+			continue
+		}
+		trimmed = append(trimmed, setting)
+	}
+
+	writeJSONResponse(w, http.StatusOK, true, "Pengaturan berhasil dimuat", trimmed)
+}
+
+// GetRevisions mengembalikan riwayat revisi website builder secara eksplisit.
+// Dipisah dari GetAll supaya daftar settings tetap ringan tapi datanya tetap
+// bisa diakses superadmin.
+func (h *Handler) GetRevisions(w http.ResponseWriter, r *http.Request) {
+	value, err := h.repo.GetByKey("website_builder_revisions")
+	if err != nil || value == "" {
+		value = "{}"
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Riwayat revisi website builder berhasil dimuat", map[string]string{
+		"key":   "website_builder_revisions",
+		"value": value,
+	})
 }
 
 func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +219,7 @@ func (h *Handler) BatchUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.GetAll)
+	r.Get("/revisions", h.GetRevisions)
 	r.Put("/batch", h.BatchUpdate)
 	r.Put("/{key}", h.Update)
 	return r
