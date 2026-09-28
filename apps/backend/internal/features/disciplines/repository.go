@@ -97,7 +97,7 @@ func (r *Repository) FindAllPoints(ctx context.Context, limit, offset int) ([]St
 		       sp.current_points, sp.academic_year, sp.updated_at
 		FROM student_points sp
 		JOIN users u ON u.id = sp.student_id
-		JOIN santri s s ON s.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 		LEFT JOIN registrations reg ON reg.user_id = u.id
 		ORDER BY sp.updated_at DESC LIMIT ? OFFSET ?
 	`
@@ -122,7 +122,7 @@ func (r *Repository) FindAllPoints(ctx context.Context, limit, offset int) ([]St
 	r.db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM student_points sp
 		JOIN users u ON u.id = sp.student_id
-		JOIN santri s s ON s.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 	`).Scan(&total)
 
 	return list, total, nil
@@ -134,7 +134,7 @@ func (r *Repository) GetStudentPoint(ctx context.Context, studentID int) (*Stude
 		       sp.current_points, sp.academic_year, sp.updated_at
 		FROM student_points sp
 		JOIN users u ON u.id = sp.student_id
-		JOIN santri s s ON s.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 		LEFT JOIN registrations reg ON reg.user_id = u.id
 		WHERE sp.student_id = ?
 	`
@@ -159,7 +159,7 @@ func (r *Repository) FindAllLogs(ctx context.Context, studentID int, limit, offs
 		       vl.action_taken, vl.created_at
 		FROM violation_logs vl
 		JOIN users u ON u.id = vl.student_id
-		JOIN santri s s ON s.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 		LEFT JOIN registrations reg ON reg.user_id = u.id
 	`
 	args := []interface{}{}
@@ -194,7 +194,7 @@ func (r *Repository) FindAllLogs(ctx context.Context, studentID int, limit, offs
 	countQuery := `
 		SELECT COUNT(*) FROM violation_logs vl
 		JOIN users u ON u.id = vl.student_id
-		JOIN santri s s ON s.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 	`
 	if studentID > 0 {
 		countQuery += " WHERE student_id = ?"
