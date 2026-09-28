@@ -2,6 +2,8 @@
 > Terakhir diperbarui: 2026-09-28 (dropdown kustom Kelas+Status Kesantrian; RBAC `/school` read). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
+
+> **Baru 28 Sep 2026:** file `HANDOFF.md` di root repo adalah serah terima lengkap — apa yang sudah selesai, 8 pekerjaan terbuka (A-H) + langkah eksekusinya, dan gotcha teknis. Baca `HANDOFF.md` kalau mau lanjut; daftar TODO singkat tetap di §5 bawah.
 1. **Jangan timpa kerja agen lain.** Cek file `.bak-*` dan `git status` sebelum edit. Ada beberapa agen aktif di repo yang sama.
 2. **Skema kerja "jilid":** tulis patch `apply_jilidNN.py` → `scp` ke server → dry-run di `/tmp/jNN_test` → cocok → apply → `tsc` (frontend) → `docker build` → deploy ganti container → verifikasi.
 3. **Jangan pernah re-run patch script yang sudah di-apply** (tidak idempoten — anchor hilang, bisa duplikat kode). Selalu `--dry` dulu.
@@ -31,7 +33,7 @@ cd ~/alma-parung && NEWJWT=$(grep "^JWT_SECRET=" .env|head -1|cut -d= -f2-) && d
 ```
 
 ## 2.1 CATATAN SINGKAT UNTUK AGEN PENERUS (state 28 Sep 2026)
-**Tiga pekerjaan terakhir — semuanya sudah live, sudah diverifikasi, sudah penuh di §4:**
+**Empat pekerjaan terakhir (paling baru: **jilid 45** tutorial `/admin/help` + pembersihan storage) — semuanya sudah live, sudah diverifikasi, sudah penuh di §4 dan `HANDOFF.md` §3:** — semuanya sudah live, sudah diverifikasi, sudah penuh di §4:**
 1. Bobot nilai per mapel + kolom UH → image `bobot` (backend & frontend).
 2. **Jilid 43** — RBAC: `GET /api/school/classes` + `/years` dibuka ke `wali_kelas` & `pimpinan` (dulu 403 → dropdown **Kelas** kosong di form Kesantrian). Image backend `jilid43`.
 3. **Jilid 44** — field **Kelas** & **Status** di `/admin/kesantrian/form` diganti dropdown kustom (`SelectField`), bukan `<select>` native. Image frontend `jilid44`.
@@ -95,11 +97,11 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 2. [ ] Rotasi password SSH `H3ru@2026`.
 3. [ ] Update skor halaman `/audit`.
 4. [ ] (Opsional) KKM dinamis utk tampilan CBT & PDF predikat ikut KKM (sudah selaras via weight; cek halaman ekslusif CBT).
-5. [ ] (Baru) Isi UH untuk nilai yang sudah ada — kalau tidak, nilai lama turun saat di-edit ulang. **Catatan 28 Sep: opsi "set bobot UH = 0" TIDAK bisa dipakai** — `weight.ValidateGradeWeights` menolak bobot 0, jadi mapel tanpa ulangan harian perlu bobot redistributed (mis. 30/30/20/20) atau backend diubah agar bobot 0 boleh.
-6. [ ] (Baru) Bobot yang tersimpan tidak memengaruhi `grades` yang sudah ada; perlu tombol/endpoint "hitung ulang nilai" bila ditanyakan user.
+5. [ ] (Baru) [lihat `HANDOFF.md` item B] Isi UH untuk nilai yang sudah ada — kalau tidak, nilai lama turun saat di-edit ulang. **Catatan 28 Sep: opsi "set bobot UH = 0" TIDAK bisa dipakai** — `weight.ValidateGradeWeights` menolak bobot 0, jadi mapel tanpa ulangan harian perlu bobot redistributed (mis. 30/30/20/20) atau backend diubah agar bobot 0 boleh.
+6. [ ] (Baru) Bobot yang tersimpan tidak memengaruhi `grades` yang sudah ada; perlu tombol/endpoint "hitung ulang nilai" bila ditanyakan user. Rencana eksekusi sudah ditulis di `HANDOFF.md` item C.
 7. [ ] Jangan hapus: `backups/*.gz|*.db`, image/tag + container agen lain (`pekerjaan-*`, `userdel-*`, `kopraport-*`, `role-separation-*`, `ai-fix*`, `santrifilter-*`), volume `clinic-os-*`, `/tmp/j28` (milik UID lain).
 8. [ ] (Baru) Minta user cek di Android/Chrome: field **Kelas** & **Status** di `/admin/kesantrian/form` kini dropdown kustom (image frontend `jilid44`) — pastikan tidak lagi "langsung nutup". Bila `<select>` native di halaman lain (mis. `/admin/school`, `/admin-bs`) juga bermasalah di Android, pola `SelectField` di `app/admin/kesantrian/form/page.tsx` bisa dipakai ulang.
-9. [ ] (Baru) `CATATAN-JILID42.md` belum diupdate untuk pekerjaan bobot / jilid43 / jilid44 — detail lengkap ada di §4 RINGKASAN. Lengkapi atau tandai usang agar agen lain tidak mencari detail yang tidak ada di sana.
+9. [ ] (Baru) `CATATAN-JILID42.md` belum diupdate untuk pekerjaan bobot / jilid43 / jilid44 / jilid45 (sudah ditangani di `HANDOFF.md` item G) — — detail lengkap ada di §4 RINGKASAN. Lengkapi atau tandai usang agar agen lain tidak mencari detail yang tidak ada di sana.
 10. [ ] (Baru) File `/tmp/pgl/inspect10.js` (milik agen lain) berisi `JWT_SECRET` hardcode — Credential ada di disk server. Sudah dilaporkan ke user; JANGAN dihapus tanpa izin karena mungkin masih dipakai agen lain.
 11. [ ] (Baru) 2 screenshot tutorial (`acad-08-presensi.png`, `acad-09-tahfidz.png`) sudah dipakai di `visualSteps` (langkah 6-7). Kalau nanti ditambah section tutorial lain, pakai pattern yang sama: redactor DOM + guard middleware, jangan asal taruh PNG ke `public/`.
 12. [ ] (Baru) 3 file `.bak-tutorial-20260928-064738` (adminDocs/help-page/middleware) sudah dihapus setelah deploy; contoh aslinya ada di riwayat git (`c125ef9`, `5a36b0d`), tidak perlu backup terpisah.
