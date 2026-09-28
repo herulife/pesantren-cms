@@ -171,7 +171,7 @@ key menyumbang **91%**: `website_builder_revisions` = 380.645 byte. Dicek: **tid
 frontend maupun backend** yang membacanya lewat daftar settings (grep `apps/frontend/src` +
 `apps/backend/internal` = 0 hasil) → 380 KB dead weight di tiap request.
 - `GetAll` kini menyaring key berat lewat `heavySettings`; `GET /api/settings/revisions` (baru)
- ietmprovide akses eksplisit sehingga **tidak ada functionality yang hilang**.
+ menyediakan akses eksplisit sehingga **tidak ada functionality yang hilang**.
 - Aman karena `Repository.UpdateMany` hanya upsert key yang dikirim (tidak ada delete-all), jadi
   memangkas `GetAll` tidak mungkin menghapus data. Route `/settings` sudah dibungkus
   `auth.RequireRole("superadmin")` di `main.go` → endpoint baru otomatis superadmin-only.
