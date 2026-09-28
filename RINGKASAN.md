@@ -21,8 +21,8 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:disiplinfix` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:disiplinfix` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:sppautofix` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:sppautofix` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
 | DB | — | — | users 6, santri 1 (per 28 Sep; cek ulang) |
@@ -133,6 +133,75 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
   `https://almaparung.com` 200. Rollback: `alma-parung-backend-rollback-135939` (jilid43),
   `alma-parung-frontend-bobot-rollback-135947` (jilid45). Backup DB:
   `backups/pre-disiplines-fix-20260928-125938.db` + `backups/pre-deploy-disiplinfix-20260928-135936.db`.
+
+## Jilid 55 — Tagihan Otomatis SPP: envelope bocor + input stepMismatch (28 Sep 2026, LIVE)
+
+**Gejala laporan user:** di `/admin/payments` → "Tagihan Otomatis" selalu tertulis *Nonaktif*,
+dan saat Simpan muncul **"Payload permintaan tidak valid"**.
+
+**Akar masalah (bukan satu, tapi dua yang menumpuk):**
+
+1. **Envelope bocor di satu consumer.** `getSppAutoConfig()` di `apps/frontend/src/lib/api.ts`
+   mengembalikan envelope `{success,message,data}`, tapi `SppBills.tsx:102` menyuapkannya
+   *langsung* ke `setAutoCfg(cfg)`. Akibatnya `autoCfg.enabled/amount/due_day` = `undefined`
+   → tombol selalu "Nonaktif" walau DB `spp_auto_enabled=true`. Saat Simpan, envelope itu
+   dikembalikan sebagai payload; backend memakai `validators.DecodeJSON` +
+   `DisallowUnknownFields()` sehingga field `success/message/data` ditolak → HTTP 400.
+   - **Jebakan:** `getSppAutoConfig()` punya **dua consumer dengan ekspektasi berbeda**.
+     `app/admin-bs/tagihan-spp/page.tsx` sudah benar (`c.success && c.data`, envelope).
+     Jadi **tidak boleh** diubah jadi `return .data` — itu akan merusak halaman tsb.
+     Yang diperbaiki: consumer-nya, plus `api.ts` diberi return type eksplisit.
+   - **Mengapa `tsc` lama tidak menangkap:** `parseResponse()` (`api.ts:362`) tidak punya
+     return type annotation, jadi `res.json()` membuat hasilnya `any`. Return type eksplisit
+     di `getSppAutoConfig()` kini membuat drift seperti ini tertangkap compiler.
+
+2. **`min="1" step="1000"`** di dua halaman. Step base = `min` = 1, sehingga nilai valid hanya
+   1, 1001, 2001, … `15000000`/`150000`/`1000000` kena `stepMismatch`. Karena `<form>` tidak
+   memakai `noValidate`, browser **memblokir submit** + menampilkan bubble. Diperbaiki ke
+   `min="0"` (grid 0, 1000, 2000, … → semua rupiah bulat valid).
+
+**Perubahan file:**
+- `apps/frontend/src/lib/api.ts` — `getSppAutoConfig()` diberi return type `Promise<{success;message;data:SppAutoConfig}>`.
+- `apps/frontend/src/app/admin/payments/SppBills.tsx` — `setAutoCfg(cfg?.data || {default})`; `min="1"`→`min="0"`.
+- `apps/frontend/src/app/admin-bs/tagihan-spp/page.tsx` — `min="1"`→`min="0"`.
+- `apps/backend/internal/features/settings/handler.go` — perbaikan P2 (lihat entri P2 di bawah).
+
+**P2 — `GET /api/settings`.Payload 465 KB.** Tabel `settings` = 416.551 byte / 76 key, dan satu
+key menyumbang **91%**: `website_builder_revisions` = 380.645 byte. Dicek: **tidak ada consumer
+frontend maupun backend** yang membacanya lewat daftar settings (grep `apps/frontend/src` +
+`apps/backend/internal` = 0 hasil) → 380 KB dead weight di tiap request.
+- `GetAll` kini menyaring key berat lewat `heavySettings`; `GET /api/settings/revisions` (baru)
+ ietmprovide akses eksplisit sehingga **tidak ada functionality yang hilang**.
+- Aman karena `Repository.UpdateMany` hanya upsert key yang dikirim (tidak ada delete-all), jadi
+  memangkas `GetAll` tidak mungkin menghapus data. Route `/settings` sudah dibungkus
+  `auth.RequireRole("superadmin")` di `main.go` → endpoint baru otomatis superadmin-only.
+- Hasil: **465 KB → 45,8 KB** (75 setting, `-90%`).
+
+**Verifikasi:**
+- `tsc --noEmit --incremental false` → **0 error**; `gofmt -l` bersih; `go vet` exit 0; `go build ./...` exit 0.
+- Bundle image dicek benar-benar berisi patch: `setAutoCfg(cfg?.data` dan `min:"0",step:"1000"`.
+- Container uji (fe 3005 / be 8095) + produksi (8090): `GET /api/spp/auto-config` → `200`,
+  `data = {enabled:true, amount:1000000, due_day:10, wa_enabled:true}` → UI tampil **AKTIF**.
+- **Round-trip `PUT /api/spp/auto-config`** dengan nilai identik DB → `200`
+  "Pengaturan tagihan otomatis disimpan", dan state DB terbukti **tidak berubah** (idempoten).
+- `GET /api/settings` 46.904 B (sebelumnya ~465 KB); `GET /api/settings/revisions` 380.645 char utuh.
+- `https://almaparung.com` `/` 200, `/login` 200, `/admin/payments` + `/admin-bs/tagihan-spp` 307
+  (redirect login), `/api/ready` 200. Kedua container **healthy**, log tanpa error/panic.
+- Backup DB: `backups/pre-sppautofix-20260928-231544.db`.
+
+**Deploy:** image `alma-parung-backend:sppautofix` + `alma-parung-frontend:sppautofix`.
+Rollback: image `disiplinfix` (masih ada), container lama
+`alma-parung-backend-OLD-231556` / `alma-parung-frontend-OLD-231629` masih stopped di mesin.
+
+**Catatan operasional (penting untuk agen penerus):**
+- Build frontend **gagal 1x** dengan 42 error `next/font/google queries have exactly one entry`
+  (Turbopack Next 16 + `layout.tsx` yang import `Inter` **dan** `Outfit`). Bukan regresi kode —
+  `layout.tsx` identik dengan build `disiplinfix` yang sukses, jaringan ke `fonts.googleapis.com`
+  & `fonts.gstatic.com` normal. Build **retry langsung sukses**. Perlakukan sebagai
+  Turbopack font-fetch yang flaky; kalau berulang, siapkan `NEXT_FONT_GOOGLE_MOCKED_RESPONSES`.
+- `go` tidak ada di PATH shell non-interaktif → pakai `export PATH=$PATH:/usr/local/go/bin`.
+- Auto-commit watcher ikut meng-*commit* file backup `.pre-sppautofix` / `.pre-settingspayload`
+  (jadi ikut ter-*track* di git). Sudah dilaporkan ke user, belum dihapus.
 
 ## 5. TODO AKTIF
 1. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).

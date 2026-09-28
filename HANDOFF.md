@@ -51,6 +51,21 @@ Pola verifikasi cepat (tidak menyentuh produksi): build image → `docker run -d
 
 Semua terverifikasi: `tsc --noEmit --incremental false` 0 error, `docker build` sukses, 17/17 uji DOM di container uji **dan** 17/17 di `https://almaparung.com` (0 console error, 0 HTTP 4xx/5xx).
 
+6. **Jilid 55 (28 Sep)** — **Tagihan Otomatis SPP** di `/admin/payments`: dua bug yang menumpuk.
+   (a) `getSppAutoConfig()` mengembalikan envelope tapi `SppBills.tsx` menyuapkannya langsung ke
+   `setAutoCfg` → UI selalu "Nonaktif" + Simpan gagal **"Payload permintaan tidak valid"**
+   (backend pakai `DisallowUnknownFields`). (b) `min="1" step="1000"` → `stepMismatch` memblokir
+   submit di browser. **Penting:** `getSppAutoConfig()` punya 2 consumer berbeda ekspektasi —
+   `admin-bs/tagihan-spp` sudah benar, jadi jangan diubah jadi `return .data`; perbaiki
+   consumer-nya. `parseResponse()` return `any` sehingga `tsc` tak pernah menangkapnya.
+   (c) P2: `GET /api/settings` 465 KB → **45,8 KB** dengan memangkas `website_builder_revisions`
+   (91% payload, 0 consumer) + endpoint baru `GET /api/settings/revisions` (data tetap utuh).
+   Image `alma-parung-backend:sppautofix` + `alma-parung-frontend:sppautofix` (live). Rollback:
+   image `disiplinfix`. Detail + cara verifikasi: `RINGKASAN.md` §4 "Jilid 55".
+   **Jebakan build:** Turbopack Next 16 bisa gagal *flaky* dengan
+   `next/font/google queries have exactly one entry` (layout.tsx import Inter+Outfit) —
+   bukan regresi, **retry build** dan berhasil. `go` perlu `export PATH=$PATH:/usr/local/go/bin`.
+
 ---
 
 ## 4. Pekerjaan terbuka (urutan prioritas)
