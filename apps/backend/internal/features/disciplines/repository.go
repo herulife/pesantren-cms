@@ -33,7 +33,11 @@ type ViolationLog struct {
 // ErrNotSantri dikembalikan bila student_id tidak menunjuk Santri sungguhan.
 //
 // CATATAN ID: student_id pada student_points & violation_logs merujuk ke
-// users.id (akun portal), BUKAN ke santri.id. Diverifikasi 28 Sep 2026.
+// users.id (akun portal), BUKAN ke santri.id. Diverifikasi 28 Sep 2026:
+// baris dengan student_id=1 menunjuk akun superadmin sehingga kolom
+// "Santri" di /admin/disciplines menampilkan "Admin".
+var ErrNotSantri = errors.New("student_id bukan Santri")
+
 type Repository struct {
 	db *sql.DB
 }
@@ -41,7 +45,16 @@ type Repository struct {
 // IsSantriUserMember melapor apakah userID adalah akun Santri: ada di tabel
 // users DAN punya baris di `santri` yang ter-link lewat user_id.
 func (r *Repository) IsSantriUserMember(ctx context.Context, userID int) (bool, error) {
-	return isSantri(ctx, r.db, userID)
+	var count int
+	err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM users u
+		JOIN_santri s ON s.user_id = u.id
+		WHERE u.id = ?
+	`, userID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 // isSantriTx varian in-transaksi supaya pengecekan + penulisan tidak lewat
