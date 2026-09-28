@@ -1285,7 +1285,7 @@ export interface SppAutoConfig {
 	wa_enabled: boolean;
 }
 
-export async function getSppAutoConfig() {
+export async function getSppAutoConfig(): Promise<{ success: boolean; message: string; data: SppAutoConfig }> {
 	const res = await fetch(`${API_BASE_URL}/spp/auto-config`, {
 		headers: getAuthHeaders()
 	});
