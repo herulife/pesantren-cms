@@ -410,7 +410,7 @@ export default function PortalRaportPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-xl border border-slate-200 bg-white p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">UTS</p>
                       <p className="mt-1 text-sm font-bold text-slate-800">{formatScore(item.uts_score)}</p>
@@ -422,6 +422,10 @@ export default function PortalRaportPage() {
                     <div className="rounded-xl border border-slate-200 bg-white p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Tugas</p>
                       <p className="mt-1 text-sm font-bold text-slate-800">{formatScore(item.task_score)}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Ulangan Harian</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">{formatScore(item.uh_score)}</p>
                     </div>
                   </div>
 
