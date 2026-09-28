@@ -30,6 +30,28 @@ Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 cd ~/alma-parung && NEWJWT=$(grep "^JWT_SECRET=" .env|head -1|cut -d= -f2-) && docker stop alma-parung-backend && docker rm alma-parung-backend && docker run -d --name alma-parung-backend --restart always -p 8090:8080 -e DB_PATH=/data/alma-parung.db -e JWT_SECRET="$NEWJWT" -e API_PORT=8080 -e DAHL_API_KEY=dahl_LWJ8L7SpgoHbzHAB4j4DPtoc9s1jbebVn -e DAHL_API_URL=https://inference.dahl.global/v1 -v /home/heru/alma-parung/data:/data -v /home/heru/alma-parung/data/uploads:/app/apps/backend/public/uploads alma-parung-backend:<TAG>
 ```
 
+## 2.1 CATATAN SINGKAT UNTUK AGEN PENERUS (state 28 Sep 2026)
+**Tiga pekerjaan terakhir — semuanya sudah live, sudah diverifikasi, sudah penuh di §4:**
+1. Bobot nilai per mapel + kolom UH → image `bobot` (backend & frontend).
+2. **Jilid 43** — RBAC: `GET /api/school/classes` + `/years` dibuka ke `wali_kelas` & `pimpinan` (dulu 403 → dropdown **Kelas** kosong di form Kesantrian). Image backend `jilid43`.
+3. **Jilid 44** — field **Kelas** & **Status** di `/admin/kesantrian/form` diganti dropdown kustom (`SelectField`), bukan `<select>` native. Image frontend `jilid44`.
+
+**Yang perlu dipantau:**
+- Tunggu konfirmasi user di Android/Chrome untuk jilid 44 (TODO 8).
+- Akun `wali_kelas`/`pimpinan` belum ada (Jilid C masih terblokir awaiting user) → bug RBAC kelas hanya terlihat setelah role itu dibuat; uji role cukup lewat container uji.
+- Bobot UH: nilai lama tidak dihitung ulang (TODO 5 & 6).
+
+**Peringatan operasional:**
+- Nama container frontend masih `alma-parung-frontend-bobot` (nama tidak ikut tag image `jilid44`). Script deploy lama di lokal (`/tmp/opencode/bobot/deploy_frontend.sh`) menunjuk `alma-parung-frontend-kkm` yang sudah dihapus → akan gagal. Pakai `/tmp/deploy_front44.sh` (server) atau tulis ulang:
+  `docker stop alma-parung-frontend-bobot && docker rm alma-parung-frontend-bobot && docker run -d --name alma-parung-frontend-bobot --restart unless-stopped -p 3002:3000 alma-parung-frontend:<TAG>`
+- Backend WAJIB tetap `-p 8090:8080` (nginx proxy `/api/`), frontend WAJIB `-p 3002:3000`. Jangan ubah nama container/port tanpa cek nginx.
+- `/admin/*` butuh sesi; tanpa cookie balas 307 ke `/login` (bukan error).
+
+**Pola verifikasi cepat (dipakai jilid 43/44, tidak menyentuh produksi):**
+- Build image → container uji di port cadangan + salinan DB → uji → baru ganti container produksi. Backend: `docker run -d --name j43test -p 8099:8080 --env-file /tmp/env-alma-backend.txt -v /tmp/j43data:/data alma-parung-backend:<TAG>`. Frontend: `docker run -d --name j44test -p 3003:3000 alma-parung-frontend:<TAG>` (rewrite `/api` di `next.config.ts` otomatis mengarah ke `https://almaparung.com`, jadi API tetap hidup tanpa konfigurasi tambahan).
+- Uji API per-role: JWT HS256 buatan sendiri, claims `{id,email,role,token_version,iat,jti,exp}`; `role` + `token_version` WAJIB sama dengan DB (`validateSession`) → untuk role tanpa akun, buat user uji di DB **salinan**, jangan di DB produksi.
+- Uji UI/DOM: playwright-core + chromium headless di server — binary `/home/heru/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell`, wajib `LD_LIBRARY_PATH=/tmp/chromelibs/usr/lib/x86_64-linux-gnu`, contoh skrip di `/tmp/pgl/`. Login diinjeksi lewat cookie `alma_token`.
+
 ## 3. STRUKTUR PERAN (pekerjaan berjalan — baca ini!)
 Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / GURU (mapelnya) / USTADZ (tahfidz+kesantrian)`.
 - **Jilid A (SELESAI, live):** backend + migrasi `users_role_check_v2`, `platform/scope`, guard nilai/rapor/kesantrian/tahfidz/project/exam/santri, grup route baru, CBT pindah ke grup guru. Uji 16/16 lolos. Dampak: `tim_media`/`bendahara` kini 403 di akademik.
@@ -69,8 +91,10 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 4. [ ] (Opsional) KKM dinamis utk tampilan CBT & PDF predikat ikut KKM (sudah selaras via weight; cek halaman ekslusif CBT).
 5. [ ] (Baru) Isi UH untuk nilai yang sudah ada, atau set bobot UH mapel = 0 bila mapel tsb tidak memakai UH — kalau tidak, nilai lama turun saat di-edit ulang.
 6. [ ] (Baru) Bobot yang tersimpan tidak memengaruhi `grades` yang sudah ada; perlu tombol/endpoint "hitung ulang nilai" bila ditanyakan user.
-8. [ ] (Baru) Minta user cek di Android/Chrome: field **Kelas** & **Status** di `/admin/kesantrian/form` kini dropdown kustom (image frontend `jilid44`) — pastikan tidak lagi "langsung nutup". Bila `<select>` native di halaman lain (mis. `/admin/school`, `/admin-bs`) juga bermasalah di Android, pola `SelectField` di `app/admin/kesantrian/form/page.tsx` bisa dipakai ulang.
 7. [ ] Jangan hapus: `backups/*.gz|*.db`, image/tag + container agen lain (`pekerjaan-*`, `userdel-*`, `kopraport-*`, `role-separation-*`, `ai-fix*`, `santrifilter-*`), volume `clinic-os-*`, `/tmp/j28` (milik UID lain).
+8. [ ] (Baru) Minta user cek di Android/Chrome: field **Kelas** & **Status** di `/admin/kesantrian/form` kini dropdown kustom (image frontend `jilid44`) — pastikan tidak lagi "langsung nutup". Bila `<select>` native di halaman lain (mis. `/admin/school`, `/admin-bs`) juga bermasalah di Android, pola `SelectField` di `app/admin/kesantrian/form/page.tsx` bisa dipakai ulang.
+9. [ ] (Baru) `CATATAN-JILID42.md` belum diupdate untuk pekerjaan bobot / jilid43 / jilid44 — detail lengkap ada di §4 RINGKASAN. Lengkapi atau tandai usang agar agen lain tidak mencari detail yang tidak ada di sana.
+10. [ ] (Baru) `apps/frontend/tsconfig.tsbuildinfo` dimiliki root → `tsc` selalu gagal `TS5033` untuk user `heru`. Minta owner `chown heru` file itu, atau nonaktifkan `incremental` di `tsconfig.json`.
 
 ## 6. PELAJARAN TEKNIS (jangan ulangi)
 - SQLite `modernc` + `_txlock=immediate`: tulis saat `rows` terbuka = DEADLOCK. Kumpulkan dulu, tutup, baru tulis.
@@ -82,3 +106,9 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 - Tool `bash` merusak `$()`/backtick dalam perintah remote — pakai file script + scp.
 
 - Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
+- **chi**: memecah grup terproteksi jadi `r.Route(path, func(r chi.Router){ ... })` dengan grup READ rute spesifik + grup WRITE `r.Mount("/", h.Routes())` aman — rute spesifik menang untuk method-nya, sisanya tetap masuk mount (POST/PUT/DELETE **bukan** 405, sudah diuji 13/13). Tetap wajib uji ulang endpoint WRITE setiap kali melakukan pemecahan seperti ini.
+- **Android/Chrome**: popup `<select>` native bisa "terbuka lalu langsung nutup". Headless tidak bisa menirukan popup, dan instrumentasi (urutan event, blur, mutasi DOM, scroll, transform/filter ancestor) bisa bersih total → jangan disalahkan logika React; ganti ke combobox kustom (lihat `SelectField`).
+- `tsc --noEmit` gagal `TS5033` kalau `tsconfig.tsbuildinfo` dimiliki root → tambah `--incremental false`.
+- DB live mode WAL (ada `-wal`/`-shm`); salinan konsisten pakai `python3` `src.backup(dst)`, bukan `cp`.
+- Berkas root-owned di `/tmp`/folder ter-mount tidak bisa dihapus oleh `heru` → `docker run --rm -v DIR:/x alpine sh -c "rm -rf /x/*"`.
+- Build: jalankan `nohup ... > log 2>&1 &` + file penanda `.done`; jangan `pgrep -f <cmd>` lewat ssh (self-match → loop nyangkut & broken pipe). Pesan "Install the buildx component" dari `docker build` = warning legacy builder, bukan error.
