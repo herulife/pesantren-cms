@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { getKasTransactions, createKasTransaction, deleteKasTransaction, getKasCategories, KasTransaction, KasCategory } from '@/lib/api';
 import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 export default function BsKas() {
   const [rows, setRows] = useState<KasTransaction[]>([]);
@@ -47,8 +49,10 @@ export default function BsKas() {
     }
   };
 
+  const confirmDialog = useConfirm();
+
   const hapus = async (id: number) => {
-    if (!confirm('Hapus transaksi ini?')) return;
+    if (!(await confirmDialog({ title: 'Hapus transaksi', message: 'Hapus transaksi ini? Tindakan ini tidak bisa dibatalkan.', confirmText: 'Hapus' }))) return;
     const r = await deleteKasTransaction(id);
     setOk(r.success);
     setMsg(r.message || '');

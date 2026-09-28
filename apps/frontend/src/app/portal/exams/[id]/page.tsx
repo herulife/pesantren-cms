@@ -21,11 +21,16 @@ import {
   GraduationCap,
   ShieldCheck
 } from 'lucide-react';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 export default function ExamInterfacePage() {
   const params = useParams();
   const router = useRouter();
   const examID = parseInt(params.id as string);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [sessionID, setSessionID] = useState<number | null>(null);
@@ -53,7 +58,7 @@ export default function ExamInterfacePage() {
       }
 
       if (!sid) {
-        alert("Gagal memulai sesi ujian. Silakan kembali.");
+        showToast('error', 'Gagal memulai sesi ujian. Silakan kembali.');
         router.push('/portal/exams');
         return;
       }
@@ -69,13 +74,13 @@ export default function ExamInterfacePage() {
     return () => {
       isMounted = false;
     };
-  }, [examID, router]);
+  }, [examID, router, showToast]);
 
   const handleFinish = useCallback(async (skipConfirm: boolean = false) => {
     if (!sessionID || isSubmitting || isFinished) return;
     
     if (!skipConfirm) {
-      const confirmFinish = window.confirm("Apakah Anda yakin ingin menyelesaikan ujian ini? Jawaban tidak dapat diubah lagi.");
+      const confirmFinish = await confirmDialog({ title: 'Selesaikan ujian', message: 'Apakah Anda yakin ingin menyelesaikan ujian ini? Jawaban tidak dapat diubah lagi.', confirmText: 'Selesaikan', type: 'warning' });
       if (!confirmFinish && (timeLeft ?? 0) > 0) return;
     }
 
@@ -85,10 +90,10 @@ export default function ExamInterfacePage() {
       setScore(res.score);
       setIsFinished(true);
     } else {
-      alert("Gagal mengirim jawaban akhir. Silakan coba lagi.");
+      showToast('error', 'Gagal mengirim jawaban akhir. Silakan coba lagi.');
     }
     setIsSubmitting(false);
-  }, [isFinished, isSubmitting, sessionID, timeLeft]);
+  }, [confirmDialog, isFinished, isSubmitting, sessionID, showToast, timeLeft]);
 
   // Timer
   useEffect(() => {

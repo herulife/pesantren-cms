@@ -7,6 +7,8 @@ import {
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { MessageCircle, QrCode, KeyRound, RefreshCw, Unplug, Send, CheckCircle2, XCircle } from 'lucide-react';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 function StatusBadge({ st }: { st: WAGatewayStatus | null }) {
   if (!st) {
@@ -133,8 +135,10 @@ export default function WAGatewayCard() {
     }
   };
 
+  const confirmDialog = useConfirm();
+
   const doDisconnect = async () => {
-    if (!confirm('Putuskan koneksi WhatsApp? Perlu pairing ulang untuk menghubungkan lagi.')) return;
+    if (!(await confirmDialog({ title: 'Putuskan koneksi WhatsApp', message: 'Putuskan koneksi WhatsApp? Perlu pairing ulang untuk menghubungkan lagi.', confirmText: 'Putuskan', type: 'warning' }))) return;
     const r = await disconnectWAGateway();
     if (r.success) {
       showToast('success', 'Koneksi diputus.');

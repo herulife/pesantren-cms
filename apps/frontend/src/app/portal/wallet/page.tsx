@@ -14,6 +14,7 @@ import {
   Nfc
 } from 'lucide-react';
 import { getMyWallet, getWalletHistory, setWalletPIN, type Wallet, type WalletTransaction } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 export default function WalletPage() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -23,6 +24,7 @@ export default function WalletPage() {
   const [pin, setPin] = useState('');
   const [isSettingPin, setIsSettingPin] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const { showToast } = useToast();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -68,7 +70,7 @@ export default function WalletPage() {
       setShowPinModal(false);
       setRefreshTick((value) => value + 1);
     } else {
-      alert("Gagal mengatur PIN");
+      showToast('error', 'Gagal mengatur PIN');
     }
     setIsSettingPin(false);
   };

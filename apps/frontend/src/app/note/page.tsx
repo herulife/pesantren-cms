@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { createNote, deleteNote, getMyNotes, type CreateNoteResult, type MineNote } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 import PublicLayout from '@/components/PublicLayout';
 
 const EXPIRY_OPTIONS = [
@@ -227,8 +229,10 @@ export function NotePageContent() {
     showToast('success', 'Kunci baru dibuat. Catatan baru masuk ke kunci ini.');
   };
 
+  const confirmDialog = useConfirm();
+
   const handleDeleteNote = async (item: MineNote) => {
-    const ok = window.confirm(`Hapus catatan "${item.title || '(tanpa judul)'}"?`);
+    const ok = await confirmDialog({ title: 'Hapus catatan', message: `Hapus catatan "${item.title || '(tanpa judul)'}"? Tindakan ini tidak bisa dibatalkan.`, confirmText: 'Hapus' });
     if (!ok) return;
     const res = await deleteNote(item.url_id, item.delete_token);
     if (res.success) {
@@ -247,7 +251,7 @@ export function NotePageContent() {
 
   const handleDelete = async () => {
     if (!result) return;
-    const ok = window.confirm('Hapus catatan ini? Link-nya tidak akan bisa diakses lagi.');
+    const ok = await confirmDialog({ title: 'Hapus catatan', message: 'Hapus catatan ini? Link-nya tidak akan bisa diakses lagi.', confirmText: 'Hapus' });
     if (!ok) return;
     const res = await deleteNote(result.url_id, result.delete_token);
     if (res.success) {

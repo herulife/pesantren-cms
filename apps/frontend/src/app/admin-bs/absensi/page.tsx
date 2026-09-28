@@ -4,6 +4,8 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getEmployees, getTeacherAttendance, createTeacherAttendance, deleteTeacherAttendance, getRawLogs, importRawLogs, syncAbsen, Employee, TeacherAttendance, RawLog } from '@/lib/api';
 import { BsTitle, BsAlert } from '../ui';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 function today() { return new Date().toISOString().split('T')[0]; }
 function firstOfMonth() { return today().slice(0, 8) + '01'; }
@@ -43,8 +45,10 @@ function BsAbsensiInner() {
     }
   };
 
+  const confirmDialog = useConfirm();
+
   const hapus = async (id: number) => {
-    if (!confirm('Hapus absensi ini?')) return;
+    if (!(await confirmDialog({ title: 'Hapus absensi', message: 'Hapus absensi ini? Tindakan ini tidak bisa dibatalkan.', confirmText: 'Hapus' }))) return;
     const r = await deleteTeacherAttendance(id);
     setOk(r.success);
     setMsg(r.message || '');

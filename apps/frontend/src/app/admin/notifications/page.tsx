@@ -21,6 +21,8 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 import WASettingsPanel from '@/components/WASettingsPanel';
 
 export default function NotificationsPage() {
@@ -145,9 +147,11 @@ export default function NotificationsPage() {
     return opts;
   })();
 
+  const confirmDialog = useConfirm();
+
   const handleBroadcastTagihan = async () => {
     if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
-    if (!confirm('Kirim pengingat tagihan SPP ke semua santri yang menunggak?')) return;
+    if (!(await confirmDialog({ title: 'Kirim pengingat tagihan', message: 'Kirim pengingat tagihan SPP ke semua santri yang menunggak? Pesan dikirim via WhatsApp dan tidak bisa ditarik kembali.', confirmText: 'Kirim', type: 'warning' }))) return;
 
     setBroadcastingTagihan(true);
     try {
@@ -166,7 +170,7 @@ export default function NotificationsPage() {
 
   const handleBroadcastNilai = async () => {
     if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
-    if (!confirm('Kirim notifikasi nilai raport ke wali santri yang memiliki nomor WA?')) return;
+    if (!(await confirmDialog({ title: 'Kirim notifikasi nilai', message: 'Kirim notifikasi nilai raport ke wali santri yang memiliki nomor WhatsApp?', confirmText: 'Kirim', type: 'warning' }))) return;
 
     setBroadcastingNilai(true);
     try {
@@ -185,7 +189,7 @@ export default function NotificationsPage() {
 
   const handleBroadcastPSB = async () => {
     if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
-    if (!confirm('Kirim status pendaftaran PSB ke semua wali calon santri?')) return;
+    if (!(await confirmDialog({ title: 'Kirim status PSB', message: 'Kirim status pendaftaran PSB ke semua wali calon santri?', confirmText: 'Kirim', type: 'warning' }))) return;
 
     setBroadcastingPSB(true);
     try {

@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { getDonors, createDonor, updateDonor, deleteDonor, Donor } from '@/lib/api';
 import { BsTitle, BsAlert, PageHeader, ImportModal, Toast, useToastState } from '../ui';
 import { exportToExcel } from '@/lib/export';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 export default function BsDonatur() {
   const [rows, setRows] = useState<Donor[]>([]);
@@ -71,8 +73,10 @@ export default function BsDonatur() {
     }
   };
 
+  const confirmDialog = useConfirm();
+
   const hapus = async (id: number) => {
-    if (!confirm('Hapus donatur ini?')) return;
+    if (!(await confirmDialog({ title: 'Hapus donatur', message: 'Hapus donatur ini? Tindakan ini tidak bisa dibatalkan.', confirmText: 'Hapus' }))) return;
     const r = await deleteDonor(id);
     setOk(r.success);
     setMsg(r.message || '');

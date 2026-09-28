@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { getDonations, getDonors, getCampaigns, createDonation, verifyDonation, Donation, Donor, Campaign } from '@/lib/api';
 import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 const TYPES = ['Infak', 'Sedekah', 'Wakaf', 'Zakat'];
 
@@ -46,8 +48,10 @@ export default function BsDonasi() {
     }
   };
 
+  const confirmDialog = useConfirm();
+
   const verif = async (id: number) => {
-    if (!confirm('Verifikasi donasi ini?')) return;
+    if (!(await confirmDialog({ title: 'Verifikasi donasi', message: 'Verifikasi donasi ini? Status donasi akan berubah menjadi terverifikasi.', confirmText: 'Verifikasi', type: 'info' }))) return;
     const r = await verifyDonation(id);
     setOk(r.success);
     setMsg(r.message || '');

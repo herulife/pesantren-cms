@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import { Area } from 'react-easy-crop';
+import { useToast } from '@/components/Toast';
 
 // Utility helper to crop the image using canvas
 const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob> => {
@@ -64,6 +65,7 @@ export default function ImageCropperModal({
   const handleCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
+  const { showToast } = useToast();
 
   if (!isOpen || !imageSrc) return null;
 
@@ -75,7 +77,7 @@ export default function ImageCropperModal({
       onCropComplete(croppedBlob);
     } catch (e) {
       console.error(e);
-      alert('Gagal memotong gambar.');
+      showToast('error', 'Gagal memotong gambar.');
     } finally {
       setIsProcessing(false);
     }

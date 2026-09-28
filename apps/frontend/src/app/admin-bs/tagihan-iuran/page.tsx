@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { getIuranBills, generateIuranBills, deleteIuranByPeriod, deleteIuranBySantri, verifyIuranBill, getIuranSantri, IuranBill, IuranSantri } from '@/lib/api';
 import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 function nowPeriod() {
   const d = new Date();
@@ -69,13 +71,15 @@ export default function BsTagihanIuran() {
     if (r.success) load(period, nameFilter);
   };
 
+  const confirmDialog = useConfirm();
+
   const hapusPeriode = async () => {
     if (!nameFilter) {
       setOk(false);
       setMsg('Isi filter nama iuran dulu.');
       return;
     }
-    if (!confirm(`Hapus SEMUA tagihan ${nameFilter} periode ${period}?`)) return;
+    if (!(await confirmDialog({ title: 'Hapus tagihan iuran', message: `Hapus SEMUA tagihan ${nameFilter} periode ${period} yang belum dibayar? Tindakan ini tidak bisa dibatalkan.`, confirmText: 'Hapus Semua' }))) return;
     const r = await deleteIuranByPeriod(nameFilter, period);
     setOk(r.success);
     setMsg(r.message || '');
@@ -84,7 +88,7 @@ export default function BsTagihanIuran() {
 
   const hapusSantri = async () => {
     if (!delSantri) return;
-    if (!confirm('Hapus tagihan santri ini (yang belum dibayar)?')) return;
+    if (!(await confirmDialog({ title: 'Hapus tagihan', message: 'Hapus tagihan santri ini (yang belum dibayar)? Tindakan ini tidak bisa dibatalkan.', confirmText: 'Hapus' }))) return;
     const r = await deleteIuranBySantri(Number(delSantri), nameFilter || undefined, period);
     setOk(r.success);
     setMsg(r.message || '');

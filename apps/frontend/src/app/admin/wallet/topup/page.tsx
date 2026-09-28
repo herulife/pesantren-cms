@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Search, Wallet, Plus, RefreshCw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { topUpWalletAdmin } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 export default function AdminTopUpPage() {
   const [studentID, setStudentID] = useState('');
@@ -11,6 +12,7 @@ export default function AdminTopUpPage() {
   const [description, setDescription] = useState('Top-up Saldo Tunai');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const { showToast } = useToast();
 
   const handleTopUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ export default function AdminTopUpPage() {
       setStudentID('');
       setTimeout(() => setIsSuccess(false), 3000);
     } else {
-      alert("Gagal melakukan top-up. Pastikan ID Santri benar.");
+      showToast('error', 'Gagal melakukan top-up. Pastikan ID Santri benar.');
     }
     setIsLoading(false);
   };

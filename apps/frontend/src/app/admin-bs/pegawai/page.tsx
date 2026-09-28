@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { getEmployees, createEmployee, deleteEmployee, Employee } from '@/lib/api';
 import { BsTitle, BsAlert, PageHeader, ImportModal, Toast, useToastState } from '../ui';
 import { exportToExcel } from '@/lib/export';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 export default function BsPegawai() {
   const [rows, setRows] = useState<Employee[]>([]);
@@ -71,8 +73,10 @@ export default function BsPegawai() {
     }
   };
 
+  const confirmDialog = useConfirm();
+
   const hapus = async (code: string) => {
-    if (!confirm(`Hapus pegawai ${code}?`)) return;
+    if (!(await confirmDialog({ title: 'Hapus pegawai', message: `Hapus pegawai ${code}? Tindakan ini tidak bisa dibatalkan.`, confirmText: 'Hapus' }))) return;
     const r = await deleteEmployee(code);
     setOk(r.success);
     setMsg(r.message || '');

@@ -5,6 +5,8 @@ import { getUsers, createUser, updateUserRole, resetUserPassword, deleteUser } f
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 type U = { id: number; name: string; email: string; role: string; created_at: string; last_login_at?: string | null };
 const ROLES = ['superadmin', 'bendahara', 'panitia_psb', 'tim_media'];
@@ -99,8 +101,10 @@ export default function BsUsers() {
     setMsg(r.message || '');
   };
 
+  const confirmDialog = useConfirm();
+
   const hapus = async (id: number, name: string) => {
-    if (!confirm(`Hapus user "${name}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!(await confirmDialog({ title: 'Hapus user', message: `Hapus user "${name}"? Tindakan ini tidak bisa dibatalkan.`, confirmText: 'Hapus' }))) return;
     const r = await deleteUser(id);
     setOk(r.success);
     setMsg(r.message || '');

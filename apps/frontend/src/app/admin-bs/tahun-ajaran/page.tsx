@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { getAcademicYears, createAcademicYear, activateAcademicYear, deleteAcademicYear, AcademicYear } from '@/lib/api';
 import { BsTitle, BsAlert } from '../ui';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 export default function BsTahunAjaran() {
   const [rows, setRows] = useState<AcademicYear[]>([]);
@@ -35,8 +37,10 @@ export default function BsTahunAjaran() {
     if (r.success) load();
   };
 
+  const confirmDialog = useConfirm();
+
   const hapus = async (id: number) => {
-    if (!confirm('Hapus tahun ajaran ini?')) return;
+    if (!(await confirmDialog({ title: 'Hapus tahun ajaran', message: 'Hapus tahun ajaran ini? Tindakan ini tidak bisa dibatalkan.', confirmText: 'Hapus' }))) return;
     const r = await deleteAcademicYear(id);
     setOk(r.success);
     setMsg(r.message || '');

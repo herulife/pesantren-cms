@@ -7,6 +7,8 @@ import {
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeader } from '../ui';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 export default function BsNotifikasi() {
   const { showToast } = useToast();
@@ -107,8 +109,10 @@ export default function BsNotifikasi() {
     }
   };
 
+  const confirmDialog = useConfirm();
+
   const doDisconnect = async () => {
-    if (!confirm('Putuskan koneksi WhatsApp?')) return;
+    if (!(await confirmDialog({ title: 'Putuskan koneksi WhatsApp', message: 'Putuskan koneksi WhatsApp? Perlu pairing ulang untuk menghubungkan lagi.', confirmText: 'Putuskan', type: 'warning' }))) return;
     const r = await disconnectWAGateway();
     if (r.success) {
       showToast('success', 'Koneksi diputus.');

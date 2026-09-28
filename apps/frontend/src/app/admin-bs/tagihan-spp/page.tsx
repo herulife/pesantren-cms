@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { getSppBills, generateSppBills, deleteSppByPeriod, deleteSppBySantri, verifySppBill, getSppSantri, SppBill, SppSantri, getSppAutoConfig, updateSppAutoConfig, SppAutoConfig } from '@/lib/api';
 import { fmtRp, BsTitle, BsAlert, PageHeader } from '../ui';
 import { exportToExcel } from '@/lib/export';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 function nowPeriod() {
   const d = new Date();
@@ -71,8 +73,10 @@ export default function BsTagihanSpp() {
     if (r.success) load(period);
   };
 
+  const confirmDialog = useConfirm();
+
   const hapusPeriode = async () => {
-    if (!confirm(`Hapus SEMUA tagihan SPP belum dibayar periode ${period}?`)) return;
+    if (!(await confirmDialog({ title: 'Hapus tagihan SPP', message: `Hapus SEMUA tagihan SPP periode ${period} yang belum dibayar? Tindakan ini tidak bisa dibatalkan.`, confirmText: 'Hapus Semua' }))) return;
     const r = await deleteSppByPeriod(period);
     setOk(r.success);
     setMsg(r.message || '');
@@ -81,7 +85,7 @@ export default function BsTagihanSpp() {
 
   const hapusSantri = async () => {
     if (!delSantri) return;
-    if (!confirm('Hapus tagihan santri ini (yang belum dibayar)?')) return;
+    if (!(await confirmDialog({ title: 'Hapus tagihan', message: 'Hapus tagihan santri ini (yang belum dibayar)? Tindakan ini tidak bisa dibatalkan.', confirmText: 'Hapus' }))) return;
     const r = await deleteSppBySantri(Number(delSantri), period);
     setOk(r.success);
     setMsg(r.message || '');
