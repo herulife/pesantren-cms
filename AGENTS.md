@@ -9,12 +9,14 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - `apps/backend` — Go (chi, `module almaparung-api`), SQLite. Lihat `apps/backend/internal/{features,platform,validators}`, entry `apps/backend/cmd/api/main.go`.
   - `apps/frontend` — Next.js 16 + React 19 + Tailwind 4. Lihat `apps/frontend/src/{app,components,lib}`.
 - Database prod: `/home/heru/alma-parung/data/alma-parung.db`, di-mount ke container sebagai `/data` (`DB_PATH=/data/alma-parung.db`). Uploads: `data/uploads` → `/app/apps/backend/public/uploads`.
-- Container: `alma-parung-backend` (image `alma-parung-backend:nikfix`, `-p 8090:8080`), `alma-parung-frontend` (image `alma-parung-frontend:wizard`, `-p 3002:3000`), `--restart always`.
+- Container (**per 28 Sep 2026, benar**): `alma-parung-backend` (image `alma-parung-backend:jilid43`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-bobot`** (image `alma-parung-frontend:jilid45`, alias `tutorial`, `-p 3002:3000`, `--restart unless-stopped`). Nama container frontend TIDAK ikut tag image dan sudah beberapa kali berubah — **cek `docker ps` sebelum recreate**, jangan percaya nama di dokumen lama.
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
 
 ## 2. Dokumen yang wajib dibaca dulu
 
 - `SUMMARY_SESI.md` — memori sesi (status verified vs belum, pelajaran penting).
+- `HANDOFF.md` — **serah terima + daftar kerja terbuka** (28 Sep 2026): apa yang sudah selesai, 8 pekerjaan yang masih terbuka, dan resep eksekusinya. Baca ini kalau mau lanjut.
+- `RINGKASAN.md` — status live (§2), riwayat (§4), TODO aktif (§5), pelajaran teknis (§6).
 - `TAGIHAN_OPMODE.md` — daftar kerja + protokol deploy.
 - `docs/` — `API_CONTRACT.md`, `DATABASE.md`, `RBAC_MATRIX.md`, `SECURITY.md`, `TEST_MATRIX.md`, `REPAIR_PLAN.md`, `FINDINGS_REGISTER.md`, `*_CURRENT.md`, `*_RUNBOOK.md`.
 
@@ -38,9 +40,11 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 
 - Smoke test API **harus dari dalam VPS** (`http://127.0.0.1:8090`), bukan dari runner (akan `000`).
 - Go toolchain hanya di container build; di host pakai `python3` + sqlite untuk inspeksi DB. Tulis ke DB prod hanya untuk data uji — selalu cleanup.
-- Akses docker hanya user `heru` (grup `docker`). Build backend: `docker build -t alma-parung-backend:nikfix -f apps/backend/Dockerfile .`. Recreate pakai `--env-file` dari env container berjalan (lihat `TAGIHAN_OPMODE.md`), jangan susun env manual.
-- Frontend: `npm run build --prefix apps/frontend` harus sukses; deploy = build image `alma-parung-frontend:wizard` + recreate `-p 3002:3000` (tanpa mount/env khusus).
+- Akses docker: user `heru` (grup `docker`); user lain (mis. `alma`) butuh `sudo`. Build backend: `docker build -t alma-parung-backend:<TAG> -f apps/backend/Dockerfile .`. Recreate pakai `--env-file` dari env container berjalan (lihat `TAGIHAN_OPMODE.md`), jangan susun env manual.
+- Frontend: `npm run build --prefix apps/frontend` harus sukses; deploy = build image `alma-parung-frontend:<TAG>` + recreate container `-p 3002:3000` (tanpa mount/env khusus).
+- `tsc` di host: `apps/frontend/tsconfig.tsbuildinfo` dimiliki root → selalu pakai `npx tsc --noEmit --incremental false`.
 - Setelah deploy: `curl /api/ready` (harap 200) + smoke terverifikasi sebelum klaim selesai.
+- Build lambat (backend ~10 mnt, frontend ~11-15 mnt): jalankan `nohup ... > log 2>&1 &` + file penanda `.done`, jangan blokir satu panggilan ssh. Detail & gotcha lain ada di `HANDOFF.md` §5.
 - JANGAN reset password prod tanpa izin user. Bila diizinkan: backup `password_hash`, set bcrypt sementara, kembalikan + verifikasi setelahnya.
 - Nomor WA uji: gateway (081932506078) untuk pesan sistem; 082114752228 hanya bila user meminta. Jangan kirim ke nomor fiktif (server WA menolak: `no LID found`).
 - Jangan commit secret. Jangan tampilkan JWT_SECRET/password di output.
