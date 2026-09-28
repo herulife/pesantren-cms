@@ -21,8 +21,8 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:jilid43` (`a5508e379eae`) | Dropdown Kelas Kesantrian untuk wali_kelas/pimpinan (RBAC `/school` read), healthy, image sebelumnya `bobot` (bobot nilai + UH) tetap ada untuk rollback, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090) |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid45` (`9d21ec2ed640`, alias `tutorial`) | Dropdown kustom field Kelas & Status form Kesantrian (popup `<select>` native bermasalah di Android/Chrome), **masih terisi** kartu bobot nilai + kolom UH, plus tutorial `/admin/help` seksi Nilai & Raport (eRapor) yang lengkap (glosarium, contoh hitung, tabel grade, FAQ, 9 screenshot), healthy, `-p 3002:3000`. Bonus jilid45: `src/middleware.ts` kini menolak akses anonim ke `/assets/tutorials/*` (307 ke `/login`) karena screenshot memakai data sistem. Image `jilid44` (`e603cd08a19e`) & `bobot` (`9854105e2313`) untuk rollback. **Nama container berubah** dari `alma-parung-frontend-kkm` (per 28 Sep); image `kkm` tetap ada untuk rollback. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:disiplinfix` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:disiplinfix` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
 | DB | — | — | users 6, santri 1 (per 28 Sep; cek ulang) |
@@ -92,6 +92,24 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 
 - **Pembersihan storage (28 Sep 2026, tanpa deploy)**: disk `/` turun dari **89% ke 47%** (105G -> 55G terpakai, 63G bebas). Yang DIBERSIHKAN (semua cache/file yatim, tidak ada data): (1) `docker image prune -f` -> 95 image gantung (tanpa tag, sisa build lama) hilang, `/var/lib/containerd` 72G -> 31G, docker-reported reclaim 9.2GB; (2) 251 file `.so` yatim di `/tmp` (2.1G, jeweils 5.5MB, berasal dari exec yang gagal); (3) cache npm `/home/alma/.npm` 6.0G -> 12M dan `/root/.npm` 337M -> 76K; (4) `journalctl --vacuum-size=100M` 320M -> 66M; (5) `/tmp/go-build*` 24M + sisa kerja `/tmp/oshot`, `/tmp/opencode-ap` 18M. **Efek samping yang perlu tahu**: cache layer build Docker sudah habis, jadi build frontend/backend berikutnya akan lebih lambat (tidak bisa `--cache-from` layer lama). Yang SENGAJA TIDAK disentuh: cache Go (~5.1G: repo `.gocache` 1.5G, `.gomodcache` 1.3G, `~/.cache/go-build` 428M, `~/.gocache` 255M, `~/go/pkg` 1.3G, `/tmp/gocache-heru` 306M), `/home/heru/.npm` 792M, `/tmp/j28` 775M, 38 tag image lama + 11 container exited (3.2G, sebagian memang container rollback), `mcr.microsoft.com/playwright:v1.49.0-jammy` 3.32G, 9x `data/alma-parung.db.bak-*`, dan `/home/alma/{eraport-clone,vibe-coding-repos}`. User memutuskan berhenti di titik ini. Census `/tmp`: 1.096 entri basi (>3 hari) -> 1.4G tersisa, sebagian besar folder kerja `j*full` milik agen lain. Verifikasi setelah bersih: `alma-parung-frontend-bobot` (jilid45) & `alma-parung-backend` (jilid43) healthy, `/`=200, `/admin/help`=307, `/assets/tutorials/*`=307, `/api/academics/kkm`=401 (semua sesuai).
 
+- **Fix Kedisiplinan (`disiplinfix`, 28 Sep)**: di `/admin/disciplines` kolom "Santri" menampilkan **"Admin"**.
+  Akar masalah: kolom `student_id` di `student_points`/`violation_logs` merujuk `users.id`, tapi validasi lama
+  hanya `SELECT COUNT(*) FROM users WHERE id=?` (semua user lolos, termasuk akun admin/staff) dan form meminta
+  "ID Santri" **diketik manual** -> id 1 (superadmin) jadi sasaran. Tiga lapis perbaikan:
+  1. Data: `student_id` 1 -> 74 (Aday Kodarudin, satu-satunya Santri ter-link), poin di-reset 90 -> 100.
+  2. Backend `disciplines/repository.go`: sentinel `ErrNotSantri` + `isSantriTx()` (harus ada di `users`
+     **dan** punya baris `santri` ter-link) -> `POST /disciplines/violations` balas **422** untuk akun
+     non-Santri (`handler.go` pakai `errors.Is`). Lima query tampilan + 2 count query di-`JOIN` ke tabel
+     `santri` lewat `user_id`, sehingga akun non-Santri tidak bocor ke tabel walau data lama masih ada.
+  3. Frontend `app/admin/disciplines/page.tsx`: input angka diganti `<select>` dropdown Santri dari
+     `getSantriList({status:'aktif',limit:500})`, difilter `Boolean(user_id)`, label `nama - kelas (NIS)`.
+  Verifikasi: `tsc --noEmit --incremental false` 0 error; container uji (port 8099, DB salinan) 422 untuk
+  id 1/2/13 + 201 untuk id 74; `GET /disciplines/points` & `/disciplines/logs` di produksi hanya menampilkan
+  "Aday Kodarudin"; bundle image baru 1 chunk dropdown & 0 chunk input manual; `/api/ready` = READY;
+  `https://almaparung.com` 200. Rollback: `alma-parung-backend-rollback-135939` (jilid43),
+  `alma-parung-frontend-bobot-rollback-135947` (jilid45). Backup DB:
+  `backups/pre-disiplines-fix-20260928-125938.db` + `backups/pre-deploy-disiplinfix-20260928-135936.db`.
+
 ## 5. TODO AKTIF
 1. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).
 2. [ ] Rotasi password SSH `H3ru@2026`.
@@ -114,7 +132,17 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 - Patch anchor dari copy basi = MISS; selalu dry-run di server. File `.bak-*` = agen lain sedang kerja.
 - Build lama (backend ~10 mnt, frontend ~15 mnt, konteks 2,2 GB) — pakai `nohup` + polling, jangan blokir 1 call.
 - `pgrep -f "docker build"` bisa false-positive dari perintah ssh sendiri.
-- Tool `bash` merusak `$()`/backtick dalam perintah remote — pakai file script + scp.
+- Tool `bash` merusak `$()`/backtick dalam perintah remote - pakai file script + scp.
+- **`student_id` di tabel fitur `disciplines` != `santri.id`.** Kolom itu menunjuk `users.id`; kolom nama di
+  query joined ke `users`, jadi akun staff bisa ikut tampil. Cek ulang `JOIN ... ON` sebelum menambah
+  validasi, atau data bisa menunjuk akun admin/staff.
+- Patch string-literal ke file JS/Go rawan salah baca. Verifikasi ulang dengan `python3` `repr()`/`ord()`,
+  atau pakai patch berbasis regex/nomor baris, bukan string match panjang.
+- Alias SQL ganda (gaya `JOIN x s s ON`) lolos `go build` karena SQL tak divalidasi compile, tapi balas
+  **500** saat runtime. Setelah ubah query, selalu uji `GET` (bukan cuma `POST`) di container uji.
+- `docker run -v /tmp:/data` + `DB_PATH=/data/alma-parung.db` akan **membuat DB kosong baru** kalau nama
+  filenya berbeda -> semua token 401 ("sesi tidak valid"). Mount direktori khusus, jangan `/tmp` mentah.
+- `sudo rm` file di `/tmp` milik user lain sebelum `scp` ulang; file root-owned di `/tmp` membuat scp gagal.
 
 - Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
 - **chi**: memecah grup terproteksi jadi `r.Route(path, func(r chi.Router){ ... })` dengan grup READ rute spesifik + grup WRITE `r.Mount("/", h.Routes())` aman — rute spesifik menang untuk method-nya, sisanya tetap masuk mount (POST/PUT/DELETE **bukan** 405, sudah diuji 13/13). Tetap wajib uji ulang endpoint WRITE setiap kali melakukan pemecahan seperti ini.

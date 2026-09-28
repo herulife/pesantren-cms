@@ -21,12 +21,12 @@ di situ terlalu singkat untuk langsung dieksekusi. File ini berisi detail ekseku
 
 | Layanan | Container | Image | Port | Restart | Catatan |
 |---|---|---|---|---|---|
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid45` (alias `tutorial`, id `9d21ec2ed640`) | `3002:3000` | `unless-stopped` | nama container **tidak** ikut tag image; `CMD npm run start`; tanpa mount/env khusus |
-| Backend | `alma-parung-backend` | `alma-parung-backend:jilid43` | `8090:8080` | `always` | env hanya di dalam container (`docker inspect`), **jangan print** |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:disiplinfix` | healthy |
+| Backend | `alma-parung-backend` | `alma-parung-backend:disiplinfix` | healthy |
 | Store | `alma-store` | `latest` | — | — | terpisah, jangan sentuh |
 | Clinic OS | `clinic-os-{postgres,redis,mailpit,minio}-1` | — | — | — | proyek lain, jangan sentuh |
 
-Rollback tersedia: frontend `jilid44`, `bobot`, `kkm`, `skala`, `jilid53`, `jilid54`; backend `bobot`, `kkm`, `roleB2`, `skala`, `jilid51`, `jilid48`.
+Rollback tersedia: container `alma-parung-backend-rollback-135939` (backend `jilid43`) & `alma-parung-frontend-bobot-rollback-135947` (frontend `jilid45`); tag lama frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid53`+`jilid54`, backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`.
 
 Command recreate frontend (pola yang dipakai 28 Sep, berhasil):
 

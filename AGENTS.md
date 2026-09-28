@@ -9,9 +9,12 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - `apps/backend` — Go (chi, `module almaparung-api`), SQLite. Lihat `apps/backend/internal/{features,platform,validators}`, entry `apps/backend/cmd/api/main.go`.
   - `apps/frontend` — Next.js 16 + React 19 + Tailwind 4. Lihat `apps/frontend/src/{app,components,lib}`.
 - Database prod: `/home/heru/alma-parung/data/alma-parung.db`, di-mount ke container sebagai `/data` (`DB_PATH=/data/alma-parung.db`). Uploads: `data/uploads` → `/app/apps/backend/public/uploads`.
-- Container (**per 28 Sep 2026, benar**): `alma-parung-backend` (image `alma-parung-backend:jilid43`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-bobot`** (image `alma-parung-frontend:jilid45`, alias `tutorial`, `-p 3002:3000`, `--restart unless-stopped`). Nama container frontend TIDAK ikut tag image dan sudah beberapa kali berubah — **cek `docker ps` sebelum recreate**, jangan percaya nama di dokumen lama.
+- Container (**per 28 Sep 2026, benar - update ke `disiplinfix`**): `alma-parung-backend` (image `alma-parung-backend:disiplinfix`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-bobot`** (image `alma-parung-frontend:disiplinfix`, `-p 3002:3000`, `--restart unless-stopped`).
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
 
+- **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
+  menolak akun non-Santri dengan **422** (`ErrNotSantri`); form WAJIB pakai dropdown (filter `user_id`
+  non-null). Jangan menambah endpoint yang menerima `student_id` mentah tanpa cek ke tabel `santri`.
 ## 2. Dokumen yang wajib dibaca dulu
 
 - `SUMMARY_SESI.md` — memori sesi (status verified vs belum, pelajaran penting).
