@@ -416,10 +416,24 @@ func main() {
 				r.Mount("/kas", kasHandler.Routes())
 			})
 
-			// Master Sekolah (kelas + tahun ajaran): dibaca semua role operasional
-			r.Group(func(r chi.Router) {
-				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
-				r.Mount("/school", schoolHandler.Routes())
+			// Master Sekolah (kelas + tahun ajaran).
+			// READ (kelas + tahun ajaran) dibuka ke semua role operasional: form
+			// Kesantrian & halaman raport milik wali_kelas/pimpinan memanggil
+			// GET /school/classes. Sebelumnya grup ini hanya superadmin/bendahara/
+			// panitia_psb/admin -> 403 -> dropdown "Kelas" kosong dan wali kelas
+			// tidak bisa memilih kelas sama sekali.
+			// WRITE (create/update/delete/activate) tetap superadmin/bendahara/
+			// panitia_psb/admin.
+			r.Route("/school", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin", "wali_kelas", "pimpinan"))
+					r.Get("/classes", schoolHandler.ListClasses)
+					r.Get("/years", schoolHandler.ListYears)
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
+					r.Mount("/", schoolHandler.Routes())
+				})
 			})
 
 			// HR/pegawai: hanya superadmin + bendahara (panitia_psb over-broad).
