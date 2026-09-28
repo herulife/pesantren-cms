@@ -41,6 +41,13 @@ function HelpContent() {
         ...section.quickActions,
         ...section.workflows.flatMap((workflow) => [workflow.title, ...workflow.steps]),
         ...section.tips,
+        ...(section.glossary ?? []).flatMap((item) => [item.term, item.meaning]),
+        ...(section.examples ?? []).flatMap((item) => [item.title, ...item.lines]),
+        ...(section.reference
+          ? [section.reference.title, section.reference.note ?? '', ...section.reference.columns, ...section.reference.rows.flat()]
+          : []),
+        ...(section.faq ?? []).flatMap((item) => [item.question, item.answer]),
+        ...(section.visualSteps ?? []).flatMap((item) => [item.title, item.description, item.alt]),
       ]
         .join(' ')
         .toLowerCase();
@@ -210,6 +217,25 @@ function HelpContent() {
             </div>
           </section>
 
+            {currentSection.glossary && currentSection.glossary.length > 0 && (
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900">Apa arti kata-katanya?</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Baca dulu bagian ini supaya tidak salah arti. Istilah yang paling sering muncul di halaman ini
+                  dijelaskan dengan bahasa sehari-hari.
+                </p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {currentSection.glossary.map((item) => (
+                    <div key={item.term} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-black text-sky-700">{item.term}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">{item.meaning}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+
           <section className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-bold text-slate-900">Di menu ini bisa apa saja?</h3>
@@ -287,6 +313,88 @@ function HelpContent() {
               </div>
             </section>
           )}
+
+            {currentSection.examples && currentSection.examples.length > 0 && (
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900">Contoh perhitungannya begini</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Angka-angka di bawah memakai data contoh, bukan data asli. Tapi cara hitungnya persis sama
+                  dengan yang dipakai sistem.
+                </p>
+                <div className="mt-5 space-y-5">
+                  {currentSection.examples.map((item) => (
+                    <div key={item.title} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                      <h4 className="text-base font-bold text-slate-900">{item.title}</h4>
+                      <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs leading-6 text-slate-100">
+                        {item.lines.join('\n')}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {currentSection.reference && (
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900">{currentSection.reference.title}</h3>
+                {currentSection.reference.note && (
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{currentSection.reference.note}</p>
+                )}
+                <div className="ap-table-wrap mt-5 overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        {currentSection.reference.columns.map((column) => (
+                          <th
+                            key={column}
+                            className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
+                            {column}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {currentSection.reference.rows.map((row) => (
+                        <tr key={row[0]}>
+                          {row.map((cell, cellIndex) => (
+                            <td
+                              key={`${row[0]}-${cellIndex}`}
+                              className={`px-4 py-3 ${cellIndex === 0 ? 'font-black text-slate-900' : 'text-slate-600'}`}
+                            >
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {currentSection.faq && currentSection.faq.length > 0 && (
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900">Pertanyaan yang sering muncul</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Kalau jawabannya tidak ada di sini, silakan tanya admin.
+                </p>
+                <div className="mt-5 space-y-3">
+                  {currentSection.faq.map((item) => (
+                    <details
+                      key={item.question}
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 [&_summary]:cursor-pointer [&_summary]:list-none"
+                    >
+                      <summary className="flex items-start gap-2 text-sm font-bold text-slate-800">
+                        <CircleHelp className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                        {item.question}
+                      </summary>
+                      <p className="mt-3 pl-6 text-sm leading-6 text-slate-600">{item.answer}</p>
+                    </details>
+                  ))}
+                </div>
+              </section>
+            )}
 
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900">Siapa boleh buka apa</h3>

@@ -21,6 +21,24 @@ export interface AdminDocSection {
     image: string;
     alt: string;
   }>;
+  glossary?: Array<{
+    term: string;
+    meaning: string;
+  }>;
+  examples?: Array<{
+    title: string;
+    lines: string[];
+  }>;
+  reference?: {
+    title: string;
+    note?: string;
+    columns: string[];
+    rows: string[][];
+  };
+  faq?: Array<{
+    question: string;
+    answer: string;
+  }>;
 }
 
 export interface RoleAccessRow {
@@ -297,40 +315,256 @@ export const adminDocSections: AdminDocSection[] = [
     title: 'Nilai & Raport (eRapor)',
     category: 'Santri',
     href: '/admin/academics',
-    image: { src: '/assets/tutorials/admin-academics.png', alt: 'Tampilan Dashboard eRapor: rekap nilai santri' },
+    image: { src: '/assets/tutorials/admin-academics.png', alt: 'Tampilan Dashboard eRapor beserta ringkasan angka di dalamnya' },
     summary:
-      'Tempat mengisi nilai, absen, hafalan, dan menyusun raport. Apa yang diisi di sini akan dilihat wali di HP-nya.',
-    audience: ['Pimpinan', 'Bendahara'],
+      'Tempat mengatur bobot nilai, mengisi nilai, mencatat kehadiran dan hafalan, lalu mencetak raport. Halaman ini punya 7 tab: Dashboard, Nilai, Presensi, Tahfidz, Rekap Nilai, Cetak Raport, dan Mata Pelajaran. Apa pun yang disimpan di sini langsung bisa dilihat wali di HP-nya.',
+    audience: ['Admin / Pimpinan', 'Guru & Ustadz', 'Wali Kelas', 'Operator Nilai'],
     quickActions: [
-      'Isi nilai santri per mata pelajaran.',
-      'Catat hadir/izin/sakit/alpha santri.',
-      'Catat progres hafalan (tahfidz).',
-      'Susun dan cetak raport.',
+      'Menentukan bobot tiap komponen nilai (UTS, UAS, Tugas, UH) untuk setiap mata pelajaran.',
+      'Mengatur KKM, yaitu angka batas minimum nilai agar dianggap lulus.',
+      'Mengisi nilai satu per satu, atau sekaligus banyak santri lewat Input Massal.',
+      'Memperbaiki nilai yang keliru tanpa mengetik ulang dari awal, lewat Edit Massal.',
+      'Mencatat kehadiran: Hadir, Izin, Sakit, atau Alpha. Alpha bisa langsung diberi tahu ke wali via WhatsApp.',
+      'Mencatat progres hafalan: surah, juz, ayat, dan tanggal evaluasi.',
+      'Melihat ranking dan rekap nilai per mata pelajaran.',
+      'Mencetak raport untuk satu santri atau untuk beberapa santri sekaligus.',
+      'Mengekspor data nilai dan presensi ke PDF atau Excel.',
+    ],
+    glossary: [
+      { term: 'UTS', meaning: 'Ujian Tengah Semester, yaitu ujian di tengah semester.' },
+      { term: 'UAS', meaning: 'Ujian Akhir Semester, yaitu ujian di akhir semester.' },
+      { term: 'Tugas', meaning: 'Nilai pekerjaan, PR, atau kuis yang dikumpulkan selama pelajaran.' },
+      { term: 'UH', meaning: 'Ulangan Harian, yaitu test kecil saat jam pelajaran. Sekarang ada 4 komponen nilai: UTS, UAS, Tugas, dan UH.' },
+      { term: 'Bobot', meaning: 'Porsi tiap komponen dalam nilai akhir, ditulis dalam persen. Contoh: UTS 25 persen artinya UTS menyumbang seperempat dari nilai akhir.' },
+      { term: 'Nilai akhir', meaning: 'Angka hasil hitungan gabungan semua komponen sesuai bobot. Ini yang muncul di kolom Akhir.' },
+      { term: 'Grade', meaning: 'Huruf A sampai E yang dibuat otomatis dari nilai akhir.' },
+      { term: 'KKM', meaning: 'Kriteria Ketuntasan Minimal, yaitu angka batas nilai agar sudah dianggap menguasai pelajaran tersebut.' },
+      { term: 'Predikat', meaning: 'Keterangan kalimat dari nilai, misalnya Sangat Baik, Baik, Cukup, atau Perlu Perbaikan.' },
+      { term: 'Semester 1 dan Semester 2', meaning: 'Dua periode belajar dalam satu tahun ajaran. Nilai semester 1 dan semester 2 disimpan terpisah.' },
+      { term: 'Tahun Ajaran', meaning: 'Periode sekolah selama satu tahun, ditulis seperti 2025/2026.' },
+      { term: 'Raport', meaning: 'Laporan nilai resmi yang dicetak dan dibagikan ke wali.' },
     ],
     workflows: [
       {
-        title: 'Cara mengisi nilai santri',
+        title: 'LANGKAH 1 (WAJIB DULUAN) - Mengatur bobot nilai per mata pelajaran',
         steps: [
-          'Klik menu eRapor, buka bagian Nilai.',
-          'Pilih dulu semester dan tahun ajarannya. Pastikan tidak salah pilih!',
-          'Pilih kelas dan mata pelajaran.',
-          'Isi nilainya satu-satu, lalu klik Simpan.',
-          'Lihat ringkasannya untuk memastikan tidak ada yang kosong atau salah ketik.',
+          'Buka menu eRapor. Di deretan tab, klik tab "Mata Pelajaran" yang paling kanan.',
+          'Di bawah daftar mata pelajaran ada kotak biru berjudul "Bobot Komponen Nilai per Mapel".',
+          'Di dalam kotak itu ada satu baris per mata pelajaran, dengan 4 kolom angka: UTS, UAS, Tugas, dan UH.',
+          'Klik kotak angkanya lalu ketik persentasenya. Contoh untuk Matematika: UTS 25, UAS 30, Tugas 25, UH 20.',
+          'Lihat kolom Total di ujung kanan. Kalau hijau, totalnya sudah benar (100 persen). Kalau merah, totalnya belum tepat.',
+          'Perbaiki angka yang salah sampai kolom Total hijau. Ulangi untuk setiap mata pelajaran yang bobotnya berbeda.',
+          'Kalau semua sudah hijau, klik tombol "Simpan Bobot" di kanan atas kotak itu.',
+          'Selesai. Mulai sekarang nilai akhir setiap mapel dihitung memakai bobot ini.',
         ],
       },
       {
-        title: 'Cara menyiapkan raport untuk wali',
+        title: 'LANGKAH 2 - Mengatur KKM (ambang ketuntasan)',
         steps: [
-          'Pastikan nilai, absen, dan hafalan semuanya sudah terisi.',
-          'Buka bagian Raport/Rekap.',
-          'Klik Lihat Dulu (preview) dan baca baik-baik.',
-          'Kalau sudah benar, baru cetak atau bagikan.',
+          'Kembali ke tab "Dashboard".',
+          'Di paling atas ada kartu biru "Ambang Ketuntasan (KKM)". Angka KKM yang dipakai ada di kotak putih.',
+          'Kalau perlu diubah, ketik angka baru antara 1 sampai 99, lalu klik "Simpan KKM".',
+          'Angka KKM yang wajar biasanya antara 70 sampai 80. Tidak diubah juga tidak apa-apa.',
+        ],
+      },
+      {
+        title: 'LANGKAH 3 - Mengisi nilai satu per satu',
+        steps: [
+          'Klik tab "Nilai".',
+          'Pilih Semester dan Tahun Ajaran dulu di bagian atas. Salah pilih berarti nilai masuk tempat yang salah.',
+          'Di baris tombol, klik "Tambah Data" untuk menambah satu nilai. Halaman form akan terbuka.',
+          'Pilih Santri, lalu pilih Mata Pelajaran.',
+          'Isi 4 kotak nilai: Nilai UTS, Nilai UAS, Nilai Tugas, dan Nilai Ulangan Harian. Semuanya wajib diisi, rentang 0 sampai 100.',
+          'Isi kolom Catatan kalau perlu, untuk deskripsi capaian atau arahan tindak lanjut.',
+          'Klik Simpan. Nilai akhir dan Grade terhitung sendiri, tidak perlu dihitung manual.',
+          'Kembali ke tab Nilai, lalu periksa baris yang baru muncul. Pastikan kolom Akhir dan Grade sudah terisi.',
+        ],
+      },
+      {
+        title: 'LANGKAH 4 - Mengisi nilai banyak santri sekaligus (Input Massal)',
+        steps: [
+          'Di tab "Nilai", klik tombol "Input Massal". Ini cara tercepat untuk satu kelas.',
+          'Di bagian atas, pilih Mata Pelajaran, Semester, dan Tahun Ajaran. Pengaturan ini berlaku untuk semua baris di tabel.',
+          'Di tabel "Daftar Nilai Santri", isi kolom UTS, UAS, Tugas, dan UH untuk setiap santri.',
+          'Baris yang tidak mau diisi boleh dikosongkan. Baris kosong otomatis dilewati, jadi aman.',
+          'Klik Simpan. Semua baris yang terisi langsung tersimpan.',
+        ],
+      },
+      {
+        title: 'LANGKAH 5 - Memperbaiki nilai yang salah (Edit Massal)',
+        steps: [
+          'Kalau nilai sudah tersimpan dan mau dibetulkan, tidak perlu dihapus satu per satu.',
+          'Di tab "Nilai", klik tombol "Edit Massal".',
+          'Tabel yang muncul hanya berisi nilai yang sudah ada, jadi yang salah bisa langsung dicari.',
+          'Perbaiki angkanya, lalu klik Simpan.',
+        ],
+      },
+      {
+        title: 'LANGKAH 6 - Mencatat kehadiran (presensi)',
+        steps: [
+          'Klik tab "Presensi".',
+          'Pilih tanggal di kotak tanggal. Untuk mengoreksi hari sebelumnya, tinggal ganti tanggalnya.',
+          'Klik "Tambah Data", pilih Santri, lalu pilih status: Hadir, Izin, Sakit, atau Alpha.',
+          'Klik Simpan. Ulangi untuk santri berikutnya.',
+          'Untuk status Alpha, ada tombol pesan WhatsApp di tabel supaya wali langsung diberi tahu.',
+        ],
+      },
+      {
+        title: 'LANGKAH 7 - Mencatat progres hafalan (tahfidz)',
+        steps: [
+          'Klik tab "Tahfidz".',
+          'Klik "Tambah Data", lalu pilih Santri.',
+          'Isi Surah, Juz, Ayat mulai, Ayat selesai, Status, dan Tanggal Evaluasi.',
+          'Klik Simpan.',
+        ],
+      },
+      {
+        title: 'LANGKAH 8 - Melihat rekap dan ranking',
+        steps: [
+          'Klik tab "Rekap Nilai".',
+          'Empat kotak di atas berisi angka: Santri Terekap, Mapel Aktif, Ketuntasan, dan Perlu Pendampingan.',
+          'Di bawahnya ada tabel ranking. Nomor 1 ada di paling atas.',
+          'Santri yang rata-ratanya di bawah KKM ditandai "Perlu Pendampingan".',
+          'Klik "EXPORT REKAP" untuk mengunduh rekapnya ke Excel.',
+        ],
+      },
+      {
+        title: 'LANGKAH 9 - Mencetak raport untuk wali',
+        steps: [
+          'Klik tab "Cetak Raport", lalu pilih Semester dan Tahun Ajaran.',
+          'Untuk satu santri: di kotak "Raport Individual", pilih nama santri dari dropdown.',
+          'Klik "PREVIEW PDF" untuk melihat dulu tampilmya di layar.',
+          'Kalau sudah benar, klik CETAK untuk langsung mencetak, atau DOWNLOAD PDF untuk menyimpan berkas.',
+          'Untuk beberapa santri sekaligus: di kotak "Raport Massal", centang santri yang mau dicetak. Ada tombol "Pilih Semua" dan "Kosongkan".',
+          'Pastikan nilai, presensi, dan hafalan sudah lengkap sebelum dicetak.',
         ],
       },
     ],
+    examples: [
+      {
+        title: 'Contoh hitung nilai akhir (Matematika, bobot UTS 25 / UAS 30 / Tugas 25 / UH 20)',
+        lines: [
+          'Nilai santinya: UTS 80, UAS 90, Tugas 85, UH 70',
+          '',
+          'UTS    80 x 25 persen = 20,00',
+          'UAS    90 x 30 persen = 27,00',
+          'Tugas  85 x 25 persen = 21,25',
+          'UH     70 x 20 persen = 14,00',
+          '                    ---------',
+          'Nilai akhir     = 82,25   (dibulatkan jadi 82.25)',
+          '',
+          'Grade: dengan KKM 75, angka 82.25 masuk huruf B, karena batas minimal B = 80.',
+        ],
+      },
+      {
+        title: 'Kenapa nilai bisa terasa turun setelah diedit?',
+        lines: [
+          'Bobot lama: UTS 25, UAS 40, Tugas 35, UH 0',
+          'Nilai akhir = 80x25% + 90x40% + 85x35% = 86,25',
+          '',
+          'Bobot baru: UTS 25, UAS 30, Tugas 25, UH 20',
+          'Nilai akhir = 80x25% + 90x30% + 85x25% + 70x20% = 82,25',
+          '',
+          'Kalau kolom UH belum diisi, nilainya dianggap 0, sehingga hasil hitungan',
+          'justru lebih kecil dari perhitungan lama yang tidak memotong UH.',
+          'Solusinya: isi kolom UH, atau sementara set bobot UH = 0 untuk mapel',
+          'yang memang tidak ada ulangan hariannya.',
+        ],
+      },
+    ],
+    reference: {
+      title: 'Tabel Referensi - Arti Grade berdasarkan KKM',
+      note: 'Grade dibuat otomatis dari nilai akhir dan angka KKM. Kalau KKM diubah, semua baris ikut berubah. KKM bawaan sistem adalah 75.',
+      columns: ['Grade', 'Artinya', 'KKM 75', 'KKM 80', 'KKM 70'],
+      rows: [
+        ['A', 'Sangat Baik', 'minimal 90', 'minimal 95', 'minimal 85'],
+        ['B', 'Baik', '80 sampai 89', '85 sampai 94', '75 sampai 84'],
+        ['C', 'Cukup, sudah tuntas', '75 sampai 79', '80 sampai 84', '70 sampai 74'],
+        ['D', 'Perlu pendampingan', '60 sampai 74', '65 sampai 79', '55 sampai 69'],
+        ['E', 'Perlu perbaikan', 'di bawah 60', 'di bawah 65', 'di bawah 55'],
+      ],
+    },
+    faq: [
+      {
+        question: 'Kenapa nilai akhir terasa turun setelah nilai diedit?',
+        answer: 'Penyebabnya biasanya kolom UH belum diisi, sehingga nilainya dianggap 0, sementara bobot UH sudah 20 persen. Isi kolom UH, atau set bobot UH = 0 untuk mapel yang memang tidak memakai ulangan harian.',
+      },
+      {
+        question: 'Total bobot saya merah dan tidak bisa disimpan. Kenapa?',
+        answer: 'Totalnya harus tepat 100 persen, dan tiap bobot harus lebih besar dari 0. Contoh salah: 25 + 30 + 25 + 10 = 90 persen. Perbaiki sampai kolom Total hijau, lalu klik Simpan Bobot.',
+      },
+      {
+        question: 'Bobot sudah saya ubah, tapi nilai akhir yang lama tidak ikut berubah. Kenapa?',
+        answer: 'Nilai yang sudah tersimpan tidak dihitung ulang secara otomatis. Nilai akhir memakai bobot baru kalau nilai itu disimpan ulang, yaitu diedit lalu disimpan. Kalau perlu semua nilai dihitung ulang sekaligus, minta bantuan admin.',
+      },
+      {
+        question: 'Apakah wali bisa mengubah nilai?',
+        answer: 'Tidak. Wali hanya bisa membaca. Yang bisa mengubah nilai adalah admin dan guru yang mengampu mata pelajaran tersebut.',
+      },
+      {
+        question: 'Saya guru, tapi mata pelajaran saya tidak muncul. Kenapa?',
+        answer: 'Cek dulu di tab Mata Pelajaran apakah mapel Anda terdaftar. Kalau tidak ada, minta admin untuk menambahkannya dan mengaitkan nama Anda sebagai pengampu.',
+      },
+      {
+        question: 'Di mana wali melihat hasil nilai ini?',
+        answer: 'Wali melihat raportnya di HP lewat menu Portal, bagian Raport. Di sana terlihat nilai UTS, UAS, Tugas, UH, nilai akhir, dan grade. Karena itu, periksa dulu dengan PREVIEW PDF sebelum mencetak.',
+      },
+      {
+        question: 'Kenapa pilihan semester dan tahun ajaran perlu diperhatikan sekali lagi?',
+        answer: 'Nilai disimpan terpisah untuk tiap semester dan tiap tahun ajaran. Salah memilih berarti nilai tidak akan muncul di raport yang sedang disusun. Periksa dua kali sebelum klik Simpan.',
+      },
+    ],
+    visualSteps: [
+      {
+        title: 'Mata Pelajaran - tempat mengatur bobot nilai',
+        description: 'Klik tab "Mata Pelajaran". Di bawah daftar mapel ada kotak biru "Bobot Komponen Nilai per Mapel". Di sanalah Anda mengetik bobot UTS, UAS, Tugas, dan UH tiap mapel. Perhatikan kolom Total, harus hijau artinya sudah 100 persen.',
+        image: '/assets/tutorials/acad-03-bobot.png',
+        alt: 'Tab Mata Pelajaran eRapor: daftar mapel dan kartu Bobot Komponen Nilai per Mapel dengan kolom UTS, UAS, Tugas, UH, dan Total',
+      },
+      {
+        title: 'Dashboard - melihat angka KKM',
+        description: 'Kartu biru "Ambang Ketuntasan (KKM)" ada di paling atas tab Dashboard. Di situ terlihat angka KKM yang sedang dipakai, dan admin bisa mengubahnya.',
+        image: '/assets/tutorials/acad-01-dashboard.png',
+        alt: 'Tab Dashboard eRapor: kartu Ambang Ketuntasan KKM, rekap nilai siswa, dan rata-rata per mata pelajaran',
+      },
+      {
+        title: 'Nilai - daftar semua nilai yang sudah masuk',
+        description: 'Tab "Nilai" menampilkan semua nilai dalam bentuk tabel: Santri, Mapel, UTS, UAS, Tugas, UH, Akhir, dan Grade. Di atasnya ada pilihan Semester dan Tahun Ajaran. Tombol Input Massal dan Edit Massal juga ada di sini.',
+        image: '/assets/tutorials/acad-02-nilai.png',
+        alt: 'Tab Nilai eRapor: tabel daftar nilai dengan kolom UTS, UAS, Tugas, UH, Akhir, dan Grade',
+      },
+      {
+        title: 'Formulir tambah nilai untuk satu santri',
+        description: 'Halaman form ini muncul setelah klik "Tambah Data". Ada 4 kotak nilai: UTS, UAS, Tugas, dan Ulangan Harian. Semuanya wajib diisi. Nilai akhir dihitung otomatis, tidak perlu dihitung manual.',
+        image: '/assets/tutorials/acad-04-form-nilai.png',
+        alt: 'Form tambah nilai Santri: pilih Santri, Mata Pelajaran, Semester, Tahun Ajaran, dan kolom Nilai UTS, UAS, Tugas, Ulangan Harian',
+      },
+      {
+        title: 'Input Massal - isi banyak santri sekaligus',
+        description: 'Cara cepat: pilih mata pelajaran, semester, dan tahun ajaran sekali saja, lalu isi semua baris di tabel. Baris yang dikosongkan otomatis dilewati.',
+        image: '/assets/tutorials/acad-05-input-massal.png',
+        alt: 'Halaman Input Nilai Massal: metadata mapel dan tabel daftar nilai Santri dengan kolom UTS, UAS, Tugas, UH, dan Catatan',
+      },
+      {
+        title: 'Cetak Raport - individual dan massal',
+        description: 'Tab "Cetak Raport" punya dua bagian. "Raport Individual" untuk satu santri: pilih nama, lalu PREVIEW PDF, CETAK, atau DOWNLOAD PDF. "Raport Massal" untuk beberapa santri sekaligus: centang yang mau dicetak, atau klik "Pilih Semua".',
+        image: '/assets/tutorials/acad-06-cetak.png',
+        alt: 'Tab Cetak Raport: bagian Raport Individual dengan tombol CETAK, PREVIEW PDF, DOWNLOAD PDF, dan bagian Raport Massal',
+      },
+      {
+        title: 'Rekap Nilai - melihat ranking dan ketuntasan',
+        description: 'Empat kotak angka di atas: Santri Terekap, Mapel Aktif, Ketuntasan, Perlu Pendampingan. Di bawahnya tabel ranking. Santri yang rata-ratanya di bawah KKM ditandai Perlu Pendampingan.',
+        image: '/assets/tutorials/acad-07-rekap.png',
+        alt: 'Tab Rekap Nilai: kotak statistik Santri Terekap, Mapel Aktif, Ketuntasan, Perlu Pendampingan, dan tabel ranking',
+      },
+    ],
     tips: [
-      'Salah pilih semester = nilai masuk tempat yang salah. Cek 2 kali sebelum simpan.',
-      'Semua yang disimpan di sini langsung bisa dilihat wali. Jadi teliti dulu baru simpan.',
+      'Atur bobot harus dilakukan sebelum mengisi nilai. Kalau bobot diubah belakangan, nilai akhir yang sudah tersimpan tidak ikut berubah dengan sendirinya.',
+      'Semua kolom bobot harus lebih besar dari 0 dan totalnya harus tepat 100 persen. Kalau tidak, Simpan akan ditolak.',
+      'Jangan lupa mengisi kolom UH. Kalau UH kosong atau bernilai 0 sementara bobot UH 20 persen, nilai akhir bisa turun jauh.',
+      'Salah pilih Semester atau Tahun Ajaran berarti nilai masuk tempat yang salah dan tidak muncul di raport. Cek dua kali sebelum klik Simpan.',
+      'Semua yang disimpan di sini langsung bisa dilihat wali di HP. Teliti dulu baru simpan.',
+      'Buka PREVIEW PDF raport sebelum mencetak. Lebih baik menemukan kesalahan sekarang daripada setelah raport keluar.',
     ],
   },
   {
