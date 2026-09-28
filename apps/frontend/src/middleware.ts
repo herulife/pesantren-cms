@@ -21,6 +21,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Screenshot tutorial memakai data dari sistem, jadi hanya bisa dibuka setelah login
+  if (pathname.startsWith('/assets/tutorials') && !token) {
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return NextResponse.next();
 }
 

@@ -433,7 +433,7 @@ export const adminDocSections: AdminDocSection[] = [
         steps: [
           'Klik tab "Cetak Raport", lalu pilih Semester dan Tahun Ajaran.',
           'Untuk satu santri: di kotak "Raport Individual", pilih nama santri dari dropdown.',
-          'Klik "PREVIEW PDF" untuk melihat dulu tampilmya di layar.',
+          'Klik "PREVIEW PDF" untuk melihat dulu tampilnya di layar.',
           'Kalau sudah benar, klik CETAK untuk langsung mencetak, atau DOWNLOAD PDF untuk menyimpan berkas.',
           'Untuk beberapa santri sekaligus: di kotak "Raport Massal", centang santri yang mau dicetak. Ada tombol "Pilih Semua" dan "Kosongkan".',
           'Pastikan nilai, presensi, dan hafalan sudah lengkap sebelum dicetak.',
@@ -459,7 +459,7 @@ export const adminDocSections: AdminDocSection[] = [
       {
         title: 'Kenapa nilai bisa terasa turun setelah diedit?',
         lines: [
-          'Bobot lama: UTS 25, UAS 40, Tugas 35, UH 0',
+          'Bobot lama (tanpa komponen UH): UTS 25, UAS 40, Tugas 35',
           'Nilai akhir = 80x25% + 90x40% + 85x35% = 86,25',
           '',
           'Bobot baru: UTS 25, UAS 30, Tugas 25, UH 20',
@@ -467,8 +467,9 @@ export const adminDocSections: AdminDocSection[] = [
           '',
           'Kalau kolom UH belum diisi, nilainya dianggap 0, sehingga hasil hitungan',
           'justru lebih kecil dari perhitungan lama yang tidak memotong UH.',
-          'Solusinya: isi kolom UH, atau sementara set bobot UH = 0 untuk mapel',
-          'yang memang tidak ada ulangan hariannya.',
+          'Solusinya: isi kolom UH dengan nilai yang benar. Bobot UH tidak boleh 0,',
+          'jadi kalau mapel ini memang tidak ada ulangan hariannya, minta bantuan',
+          'admin menyesuaikan bobot mapel ini.',
         ],
       },
     ],
@@ -487,7 +488,7 @@ export const adminDocSections: AdminDocSection[] = [
     faq: [
       {
         question: 'Kenapa nilai akhir terasa turun setelah nilai diedit?',
-        answer: 'Penyebabnya biasanya kolom UH belum diisi, sehingga nilainya dianggap 0, sementara bobot UH sudah 20 persen. Isi kolom UH, atau set bobot UH = 0 untuk mapel yang memang tidak memakai ulangan harian.',
+        answer: 'Penyebabnya biasanya kolom UH belum diisi, sehingga nilainya dianggap 0, sementara bobot UH sudah 20 persen. Isi kolom UH dengan nilai yang benar. Bobot UH tidak boleh diisi 0 karena sistem mewajibkan tiap bobot lebih dari 0, jadi kalau mapel ini memang tidak ada ulangan hariannya, minta admin menyesuaikan bobot mapel ini.',
       },
       {
         question: 'Total bobot saya merah dan tidak bisa disimpan. Kenapa?',
@@ -544,6 +545,18 @@ export const adminDocSections: AdminDocSection[] = [
         description: 'Cara cepat: pilih mata pelajaran, semester, dan tahun ajaran sekali saja, lalu isi semua baris di tabel. Baris yang dikosongkan otomatis dilewati.',
         image: '/assets/tutorials/acad-05-input-massal.png',
         alt: 'Halaman Input Nilai Massal: metadata mapel dan tabel daftar nilai Santri dengan kolom UTS, UAS, Tugas, UH, dan Catatan',
+      },
+      {
+        title: 'Presensi - mencatat kehadiran santri',
+        description: 'Tab "Presensi" berisi catatan kehadiran santri. Buka tab ini untuk mengecek data kehadiran yang sudah masuk, dan klik "Tambah Data" bila perlu menambah catatan baru.',
+        image: '/assets/tutorials/acad-08-presensi.png',
+        alt: 'Tab Presensi eRapor: daftar catatan kehadiran santri beserta tombol Tambah Data',
+      },
+      {
+        title: 'Tahfidz - catatan hafalan',
+        description: 'Tab "Tahfidz" dipakai untuk mencatat hasil hafalan santri. Buka tab ini untuk mengecek data hafalan yang sudah masuk, dan klik "Tambah Data" bila perlu menambah catatan baru.',
+        image: '/assets/tutorials/acad-09-tahfidz.png',
+        alt: 'Tab Tahfidz eRapor: daftar catatan hafalan santri beserta tombol Tambah Data',
       },
       {
         title: 'Cetak Raport - individual dan massal',
