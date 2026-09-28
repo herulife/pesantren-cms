@@ -2,6 +2,8 @@ package disciplines
 
 import (
 	"context"
+	"errors"
+
 	"almaparung-api/internal/validators"
 	"net/http"
 	"strconv"
@@ -149,6 +151,12 @@ func (h *Handler) CreateViolation(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		if errors.Is(err, ErrNotSantri) {
+			logger.LogError("Rejected violation for non-santri student_id %d", req.StudentID)
+			SendErrorResponse(w, http.StatusUnprocessableEntity,
+				"ID Santri tidak valid. Pilih Santri dari daftar, bukan akun admin/staff.")
+			return
+		}
 		logger.LogError("Failed recording violation: %v", err)
 		SendErrorResponse(w, http.StatusInternalServerError, "Gagal memproses data pelanggaran dan pengurangan poin")
 		return
