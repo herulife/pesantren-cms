@@ -99,7 +99,7 @@ export default function SppBills() {
       setBills(bData);
       setSummary(sData);
       setSantriList(santri);
-      setAutoCfg(cfg || { enabled: false, amount: 0, due_day: 10, wa_enabled: false });
+      setAutoCfg(cfg?.data || { enabled: false, amount: 0, due_day: 10, wa_enabled: false });
     } finally {
       setIsLoading(false);
     }
@@ -377,7 +377,7 @@ export default function SppBills() {
           </div>
           <div>
             <label className={labelCls}>Besar SPP (Rp)</label>
-            <input type="number" min="1" step="1000" placeholder="Contoh: 150000" value={autoCfg.amount || ''} onChange={(e) => setAutoCfg({ ...autoCfg, amount: Number(e.target.value) || 0 })} className={inputCls} />
+            <input type="number" min="0" step="1000" placeholder="Contoh: 150000" value={autoCfg.amount || ''} onChange={(e) => setAutoCfg({ ...autoCfg, amount: Number(e.target.value) || 0 })} className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>Jatuh Tempo (tanggal)</label>
