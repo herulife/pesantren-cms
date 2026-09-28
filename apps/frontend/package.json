@@ -21,7 +21,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-easy-crop": "^5.5.7",
-    "recharts": "^3.8.1",
+    "server-only": "^0.0.1",
     "suneditor": "^2.47.8",
     "suneditor-react": "^3.6.1",
     "swiper": "^12.1.3",

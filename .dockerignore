@@ -1,0 +1,42 @@
+.git
+.github
+node_modules
+data
+uploads
+.backups
+backups
+*.db
+*.db-*
+**/*.db
+**/*.db-*
+*.log
+*.bat
+.env
+.env.*
+.stop_server.bat
+.start_server.bat
+.ssh_logs.py
+.ds.md
+.proposal_sapu_elektrik.md
+.aturan_santri_alma.docx
+.persona
+.docs
+.deploy/darussunnah/data
+.deploy/darussunnah/nginx.darussunnah.conf
+.deploy/darussunnah/.env
+.deploy/darussunnah/.env.example
+.deploy/darussunnah/README.md
+.deploy/darussunnah/uploads
+.apps/backend
+.apps/frontend/.next
+.apps/frontend/node_modules
+.apps/frontend/out
+
+# Next.js / build output must never enter the build context. The entries above
+# were written with a leading dot, so they never matched and a stale .next was
+# baked into the image, leaving orphaned public chunks servable.
+**/.next
+**/node_modules
+**/out
+**/dist
+**/build
