@@ -324,7 +324,7 @@ export interface KopInfo {
 
 async function loadKopInfo(): Promise<KopInfo> {
 	const fallback: KopInfo = {
-		name: 'YAYASAN ALMAA PARUNG BOGOR',
+		name: 'PONDOK PESANTREN AL-MAA PARUNG BOGOR',
 		address: 'Jl Haji Mawi Gang Omega, Desa Waru, Parung, Bogor, Jawa Barat',
 		contact: '+6287784423282 · ponpesalmaaparung@gmail.com · almaparung.com',
 		logoPath: '/assets/img/logo-alama.jpg',

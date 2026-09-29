@@ -79,6 +79,12 @@ export function resolveSchool(props: {
   };
 }
 
+export function formatSchoolName(name: string): string {
+	const n = (name || '').trim();
+	if (!n) return 'Pondok Pesantren';
+	return n.toLowerCase().startsWith('pondok pesantren') ? n : 'Pondok Pesantren ' + n;
+}
+
 const rp = (v: number) => 'Rp. ' + (v || 0).toLocaleString('id-ID');
 
 // Dokumen kwitansi murni (dipakai preview layar + area cetak). Bukan tabel HTML:
@@ -93,7 +99,7 @@ export function KwitansiDocument({ data, school, petugas }: {
       <div className="flex items-center gap-4">
         <img src={school.logoUrl} alt={`Logo ${school.name}`} className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16" />
         <div className="min-w-0">
-          <p className="text-base font-bold uppercase leading-tight tracking-wide sm:text-lg">Pondok Pesantren {school.name}</p>
+          <p className="text-base font-bold uppercase leading-tight tracking-wide sm:text-lg">{formatSchoolName(school.name)}</p>
           <p className="mt-1 text-xs leading-snug text-neutral-700 sm:text-[13px]">{school.address}</p>
           <p className="text-xs text-neutral-700 sm:text-[13px]">Telp. {school.phone}</p>
         </div>
@@ -169,7 +175,7 @@ export async function downloadKwitansiPDF(data: KwitansiTx, school: KwitansiScho
   }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  const titleLines = doc.splitTextToSize(`PONDOK PESANTREN ${school.name.toUpperCase()}`, maxW - (logo ? 24 : 0));
+  const titleLines = doc.splitTextToSize(`formatSchoolName(school.name).toUpperCase()`, maxW - (logo ? 24 : 0));
   doc.text(titleLines, headX, y + 6);
   y += 6 + titleLines.length * 5;
   doc.setFont('helvetica', 'normal');
