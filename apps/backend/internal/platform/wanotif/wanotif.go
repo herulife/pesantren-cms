@@ -302,3 +302,21 @@ func ExistsKind(ctx context.Context, registrationID int64, kind string) (bool, e
 	}
 	return n > 0, nil
 }
+
+// RecentKind mengecek apakah sudah ada catatan untuk satu registrasi & jenis
+// notifikasi yang dibuat dalam jendela waktu tertentu (mis. 2 menit terakhir).
+// Dipakai debounce agar ledakan perubahan status beruntun tidak mengirim WA
+// berulang ke nomor wali.
+func RecentKind(ctx context.Context, registrationID int64, kind string, within time.Duration) (bool, error) {
+	ensureTable()
+	since := time.Now().UTC().Add(-within).Format("2006-01-02 15:04:05")
+	var n int
+	err := database.DB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM wa_notifications
+		  WHERE registration_id = ? AND kind = ? AND created_at >= ?`,
+		registrationID, kind, since).Scan(&n)
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}

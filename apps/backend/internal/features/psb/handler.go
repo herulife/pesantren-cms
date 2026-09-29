@@ -595,6 +595,13 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
 	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
 
+	// Catat status pembayaran sebelum diubah agar tahu apakah terjadi transisi
+	// menjadi lunas (LUNAS hanya dikirim SEKALI, saat benar-benar berubah).
+	wasPaid := false
+	if prev, err := h.repo.FindByID(r.Context(), id); err == nil {
+		wasPaid = prev.PaymentStatus == "paid"
+	}
+
 	if err := h.repo.UpdatePaymentStatus(r.Context(), id, req.PaymentStatus, req.PaymentNote, actorID); err != nil {
 		if errors.Is(err, ErrInvalidTransition) {
 			SendErrorResponse(w, http.StatusUnprocessableEntity, "Transisi status pembayaran tidak diizinkan")
@@ -611,8 +618,10 @@ func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {
 		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 
-	// WA otomatis saat pembayaran dinyatakan lunas (dicatat + dicoba kirim).
-	if req.PaymentStatus == "paid" {
+	// WA otomatis saat pembayaran dinyatakan lunas — hanya jika transisi
+	// (sebelumnya belum lunas). Menyimpan catatan saat sudah lunas TIDAK
+	// mengirim ulang pesan LUNAS.
+	if req.PaymentStatus == "paid" && !wasPaid {
 		if reg, err := h.repo.FindByID(r.Context(), id); err == nil {
 			phone := whatsapp.NormalizePhone(firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone))
 			if phone != "" {
@@ -858,6 +867,21 @@ func psbStatusLabel(status string) string {
 // status pendaftaran berubah. Gagal kirim (gateway nonaktif / nomor kosong)
 // hanya dicatat di log dan TIDAK menggagalkan operasi inti.
 func notifyPSBTransition(r *http.Request, repo PSBRepository, id int, status, note string, opts *StatusUpdateOptions) {
+	// Hanya kirim WA untuk status yang bernilai informatif bagi wali:
+	// tes, daftar ulang, diterima, ditolak, jadi santri. Status antara seperti
+	// review/pending TIDAK dikirim agar tidak membanjiri nomor wali.
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "tes", "re_registration", "accepted", "rejected", "santri":
+	default:
+		return
+	}
+
+	// Debounce: lewati jika sudah ada notifikasi status yang sama untuk reg ini
+	// dalam 2 menit terakhir (mis. admin mengklik beberapa status beruntun).
+	if recent, err := wanotif.RecentKind(r.Context(), int64(id), "psb_status", 2*time.Minute); err == nil && recent {
+		return
+	}
+
 	reg, err := repo.FindByID(r.Context(), id)
 	if err != nil {
 		return
