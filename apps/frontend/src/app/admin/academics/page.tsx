@@ -925,7 +925,7 @@ export default function AcademicsPage() {
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white print:rounded-none print:border-slate-300">
                 <div className="border-b-4 border-sky-600 px-8 pt-8 pb-5 text-center print:px-0">
                     <img src="/assets/img/logo-alama.jpg" alt="Logo Pesantren Alamparung" className="mx-auto h-20 w-20 shrink-0 object-contain" />
-                    <h4 className="mt-3 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">PESANTREN ALAMPARUNG</h4>
+                    <h4 className="mt-3 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">PONDOK PESANTREN AL-MAA PARUNG BOGOR</h4>
                     <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.3em] text-sky-700">Pendidikan Tahfidz, Talents dan AI</p>
                     <div className="mx-auto mt-3 h-0.5 w-2/3 bg-sky-600" />
                     <p className="mt-3 text-sm font-medium text-slate-600">Jl. Haji Mawi Gang Omega, Desa Waru, Kec. Parung, Kab. Bogor, Jawa Barat</p>
