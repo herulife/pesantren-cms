@@ -13,6 +13,7 @@ import {
   getSantriList,
   getSettings,
   getViolationLogs,
+  sendDisciplineWA,
 } from '@/lib/api';
 import { AlertCircle, AlertTriangle, CheckCircle2, ClipboardList, FileWarning, MessageCircle, MessageSquare, Plus, RefreshCw, Search, Send, Shield, ShieldAlert, ShieldCheck, Users, X } from 'lucide-react';
 
@@ -719,6 +720,8 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
           </div>
         </form>
       </Modal>
+
+      {waModalJSX}
     </div>
   );
 }
