@@ -71,7 +71,6 @@ export default function DocumentsPage() {
           data?.birth_date,
           data?.address,
           data?.school_origin,
-          data?.program_choice,
           data?.father_name,
           data?.father_job,
           data?.father_phone,
