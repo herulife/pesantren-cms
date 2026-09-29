@@ -252,6 +252,89 @@ COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''),
 **Deploy:** backend image `alma-parung-backend:disc-fix` (frontend tidak berubah, tetap `sppautofix`).
 Rollback: `alma-parung-backend-DISC-*` (image `sppautofix`) dan image `disiplinfix`.
 
+## Jilid 57 — Tombol Kontak: dari WA Web ke WA Gateway + popup pesan (29 Sep 2026, LIVE)
+
+**Permintaan user:** di `/admin/disciplines`, tombol **Kontak** tidak boleh lagi membuka
+WhatsApp Web. Pesan harus dikirim lewat **WA gateway yang sudah terpasang**, dengan
+**popup berisi pesan yang sudah terisi template dan bisa diedit** sebelum dikirim.
+
+**Kondisi lama:** kedua handler di `apps/frontend/src/app/admin/disciplines/page.tsx`
+(`handleSendWA` untuk pelanggaran, `handleSendWARekap` untuk rekap) membangun URL
+`https://wa.me/<nomor>?text=<pesan>` lalu `window.open(..., '_blank')`. Jadi:
+pesan terkirim lewat browser(user yang harus kirim & clicking "Continue" di WA Web),
+tidak lewat gateway, dan tidak ada jejak/riwayat di sistem.
+
+**Perubahan:**
+
+*Backend* — `apps/backend/internal/features/disciplines/handler.go`
+
+- Route baru: `POST /api/disciplines/wa-send` (otomatis ikut RBAC
+  `RequireRole("superadmin", "panitia_psb")` karena di-mount di group yang sama
+  di `main.go:508`).
+- Handler `SendWANotification` memvalidasi lalu meneruskan ke
+  `wanotif.Enqueue(ctx, nil, kind, phone, message)`, yang menyimpan ke tabel
+  `wa_notifications` **dan langsung mencoba mengirim** via `whatsapp.SendMessage`.
+  Kalau gagal ada retry berjenjang (60s/300s/1800s, `max_attempts=3`),
+  status `pending`/`sent`/`failed`/`dead`.
+- `registration_id` sengaja `nil`: Santri aktif bukan pendaftar PSB sehingga tidak
+  punya baris di `registrations` — pola yang sama dipakai autobilling SPP.
+- Nomor dinormalisasi dengan `whatsapp.NormalizePhone` (`08xx` → `62xx`,
+  `+62`/`62` diteruskan).
+
+Validasi (semua `400`, **sudah teruji live**, tidak menyentuh gateway):
+
+| Kasus | Pesan |
+|---|---|
+| `message` kosong / hanya spasi | "Pesan tidak boleh kosong" |
+| `message` > 4096 karakter | "Pesan terlalu panjang. Maksimal 4096 karakter." |
+| nomor kosong / bukan 10–15 digit setelah normalisasi | "Nomor WhatsApp wali tidak valid. Perbarui nomor di data Santri terlebih dahulu." |
+| JSON tidak valid / field hilang | "Payload permintaan tidak valid" |
+
+*Frontend* — `apps/frontend/src/app/admin/disciplines/page.tsx`
+
+- State baru: `waModal`, `waMessage`, `isSendingWA`, `waSendResult`.
+- `openWAModal()` menggantikan `window.open`: pesan dihitung dari template yang **sama**
+  (`wa_discipline_violation_template` / `wa_discipline_summary_template`, dengan fallback
+  teks bawaan) lalu dibuka di `<textarea>` yang bisa diedit.
+- Modal menampilkan nama Santri + nomor tujuan, counter karakter `n/4096`, dan
+  keterangan "Dikirim via WhatsApp gateway — tidak membuka WhatsApp Web".
+- `submitWA()` memanggil `sendDisciplineWA()`; status `failed`/`dead` dari gateway
+  ditampilkan sebagai kegagalan dengan saran kirim ulang lewat Notifikasi WhatsApp
+  (bukan `alert`/`confirm`jsbawaan).
+- Helper baru `sendDisciplineWA()` di `apps/frontend/src/lib/api.ts`.
+
+**Catatan desain (untuk agent penerus):** `student_id` sengaja tidak dipakai backend
+untuk lookup nomor — nomor dikirim dari state frontend yang bersumber dari
+`santri.parent_phone` (sudah benar sejak Jilid 56). Kalau mau mengeraskan agar nomor
+pasti otoritatif server, tambahkan repository method yang mengambil nomor berdasarkan
+`student_id` dan abaikan `phone` dari body.
+
+**Verifikasi:**
+- `gofmt` bersih, `go build ./...` exit 0, `go vet` exit 0.
+- `npx tsc --noEmit` exit 0 (0 error).
+- `POST /api/disciplines/wa-send` tanpa auth → `401` (route terdaftar, bukan 404).
+- 6 kasus validasi di atas → `400` dengan pesan yang benar.
+- `GET /api/disciplines/points` → `200`, `parent_phone` terisi, `student_id` ada.
+- Bundle frontend ter-deploy: `disciplines/page.tsx` berisi `Kirim via Gateway`,
+  **0** kemunculan `https://wa.me`, **0** `window.open`.
+- `/api/ready` READY, `/admin/disciplines` 307 (auth, normal), tanpa panic/error di log.
+- **Belum diuji:** pengiriman nyata ke nomor wali asli (mengirim pesan ke orang sungguhan)
+  → butuh persetujuan user.
+
+**Deploy:** `alma-parung-backend:disc-wa` + `alma-parung-frontend:disc-wa`, keduanya healthy.
+Rollback: `alma-parung-backend-DISCWA-OLD-005417` (image `disc-fix`) dan
+`alma-parung-frontend-DISCWA-OLD-005456` (image `sppautofix`).
+Backup DB: `backups/pre-discwa-20260929-004139.db`.
+
+**Peringatan (dari proses, bukan fitur):** saat investigasi sempat dibuat file
+`waq_tmp.go` di root repo; auto-commit watcher **ter-commit**-nya (commit `9e0a29d`).
+File sudah dihapus dan watcher ikut meng-commit penghapusannya (`7db5412`).
+Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
+
+**Sisa `wa.me` di repo (di luar scope jilid ini):** `kontak`, `psb`, `donations`,
+`admin/teachers`, `admin/settings/tabs/TabHalamanPSB`, `admin/messages`,
+`components/PublicLayout.tsx`, `lib/donations.ts`, `lib/page-content.ts`.
+
 ## 5. TODO AKTIF
 1. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).
 2. [ ] Rotasi password SSH `H3ru@2026`.
