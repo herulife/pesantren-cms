@@ -111,6 +111,7 @@ async function renderStudentReport(doc: jsPDF, payload: StudentReportPayload): P
 	doc.setFontSize(11);
 	doc.setFont('helvetica', 'bold');
 	doc.text('e-Raport Akademik Santri', 105, 44, { align: 'center' });
+	doc.setTextColor(30, 41, 59);
 
 	doc.setFillColor(248, 250, 252);
 	doc.roundedRect(14, 54, 182, 24, 3, 3, 'F');
