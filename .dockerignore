@@ -13,5 +13,8 @@ data/*-shm
 data/
 backups/
 **/*.db*
+*.bak-*
+*.pre-*
 apps/frontend/.env*
 deploy/darussunnah/data/
+deploy/

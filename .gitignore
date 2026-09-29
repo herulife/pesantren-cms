@@ -42,7 +42,10 @@ raport/bun.lockb
 
 # Uploaded files
 data/uploads/
-.bak-*
+# pakai * di depan: pola lama `.bak-*` hanya cocok untuk file bernama
+# `.bak-xxx` di awal, bukan `AGENTS.md.bak-xxx` -> 28 file tetap ter-track
+*.bak-*
+*.pre-*
 
 # live data (jangan commit)
 data/
@@ -58,3 +61,5 @@ backups/*.gz
 
 # Deploy env (secret)
 deploy/*.txt
+# backend_env_userdel.env memuat JWT_SECRET live; jangan pernah di-commit
+deploy/*.env
