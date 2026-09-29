@@ -93,12 +93,11 @@ func (r *Repository) EnsureStudentPointExists(ctx context.Context, studentID int
 
 func (r *Repository) FindAllPoints(ctx context.Context, limit, offset int) ([]StudentPoint, int, error) {
 	query := `
-		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(reg.parent_phone, '') as parent_phone, 
+		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as parent_phone, 
 		       sp.current_points, sp.academic_year, sp.updated_at
 		FROM student_points sp
 		JOIN users u ON u.id = sp.student_id
 		JOIN santri s ON s.user_id = u.id
-		LEFT JOIN registrations reg ON reg.user_id = u.id
 		ORDER BY sp.updated_at DESC LIMIT ? OFFSET ?
 	`
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -130,12 +129,11 @@ func (r *Repository) FindAllPoints(ctx context.Context, limit, offset int) ([]St
 
 func (r *Repository) GetStudentPoint(ctx context.Context, studentID int) (*StudentPoint, error) {
 	query := `
-		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(reg.parent_phone, '') as parent_phone,
+		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as parent_phone,
 		       sp.current_points, sp.academic_year, sp.updated_at
 		FROM student_points sp
 		JOIN users u ON u.id = sp.student_id
 		JOIN santri s ON s.user_id = u.id
-		LEFT JOIN registrations reg ON reg.user_id = u.id
 		WHERE sp.student_id = ?
 	`
 	row := r.db.QueryRowContext(ctx, query, studentID)
@@ -154,13 +152,12 @@ func (r *Repository) GetStudentPoint(ctx context.Context, studentID int) (*Stude
 
 func (r *Repository) FindAllLogs(ctx context.Context, studentID int, limit, offset int) ([]ViolationLog, int, error) {
 	baseQuery := `
-		SELECT vl.id, vl.student_id, u.name as student_name, COALESCE(reg.parent_phone, '') as parent_phone,
+		SELECT vl.id, vl.student_id, u.name as student_name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as parent_phone,
 		       vl.reporter_name, vl.violation_category, vl.violation_detail, vl.points_deducted, 
 		       vl.action_taken, vl.created_at
 		FROM violation_logs vl
 		JOIN users u ON u.id = vl.student_id
 		JOIN santri s ON s.user_id = u.id
-		LEFT JOIN registrations reg ON reg.user_id = u.id
 	`
 	args := []interface{}{}
 	if studentID > 0 {
