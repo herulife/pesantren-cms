@@ -2865,6 +2865,15 @@ export async function getDisciplinePoints(params: { limit?: number; offset?: num
 	}
 }
 
+export async function sendDisciplineWA(data: { student_id: number; phone: string; message: string; kind: string }) {
+	const res = await fetch(`${API_BASE_URL}/disciplines/wa-send`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
 export async function getStudentDisciplinePoint(studentId: number) {
 	try {
 		const res = await fetch(`${API_BASE_URL}/disciplines/students/${studentId}/points`, {

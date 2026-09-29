@@ -3,7 +3,10 @@ package disciplines
 import (
 	"context"
 	"errors"
+	"strings"
 
+	"almaparung-api/internal/platform/wanotif"
+	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
 	"net/http"
 	"strconv"
@@ -165,12 +168,74 @@ func (h *Handler) CreateViolation(w http.ResponseWriter, r *http.Request) {
 	SendSuccessResponse(w, http.StatusCreated, nil, "Riwayat pelanggaran berhasil dicatat")
 }
 
+// waMessageMaxLimit adalah batas aman pesan WhatsApp. WhatsApp membatas pesan
+// jauh di bawah ini, tapi kita potong lebih awal supaya user diberi umpan balik
+// yang jelas alih-alih pesan gagal terkirim.
+const waMessageMaxLimit = 4096
+
+// SendWANotification mengirim pesan WhatsApp ke wali Santri melalui WA gateway
+// internal (tabel wa_notifications), bukan membuka tautan wa web.
+//
+// registration_id sengaja nil: Santri aktif bukan pendaftar PSB, jadi tidak
+// punya baris di tabel registrations. Pola ini sama dengan yang dipakai
+// autobilling untuk pengingat SPP otomatis.
+func (h *Handler) SendWANotification(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		StudentID int    `json:"student_id"`
+		Phone     string `json:"phone"`
+		Message   string `json:"message"`
+		Kind      string `json:"kind"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, "Payload permintaan tidak valid")
+		return
+	}
+
+	message := strings.TrimSpace(req.Message)
+	switch {
+	case message == "":
+		SendErrorResponse(w, http.StatusBadRequest, "Pesan tidak boleh kosong")
+		return
+	case len(message) > waMessageMaxLimit:
+		SendErrorResponse(w, http.StatusBadRequest,
+			"Pesan terlalu panjang. Maksimal "+strconv.Itoa(waMessageMaxLimit)+" karakter.")
+		return
+	}
+
+	phone := whatsapp.NormalizePhone(req.Phone)
+	if phone == "" {
+		SendErrorResponse(w, http.StatusBadRequest,
+			"Nomor WhatsApp wali tidak valid. Perbarui nomor di data Santri terlebih dahulu.")
+		return
+	}
+	if len(phone) < 10 || len(phone) > 15 {
+		SendErrorResponse(w, http.StatusBadRequest,
+			"Nomor WhatsApp wali tidak valid. Perbarui nomor di data Santri terlebih dahulu.")
+		return
+	}
+
+	kind := strings.TrimSpace(req.Kind)
+	if kind == "" {
+		kind = "disciplines_manual"
+	}
+	kind = "disciplines_" + kind
+
+	rec, err := wanotif.Enqueue(r.Context(), nil, kind, phone, message)
+	if err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, "Gagal mengirim pesan WhatsApp: "+err.Error())
+		return
+	}
+
+	SendSuccessResponse(w, http.StatusOK, rec, "Pesan WhatsApp berhasil dikirim/diantrekan")
+}
+
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/points", h.GetAllPoints)
 	r.Get("/students/{id}/points", h.GetStudentPoints)
 	r.Get("/logs", h.GetAllLogs)
 	r.Post("/violations", h.CreateViolation)
+	r.Post("/wa-send", h.SendWANotification)
 	return r
 }
 

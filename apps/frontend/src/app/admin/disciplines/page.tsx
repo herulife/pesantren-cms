@@ -14,7 +14,7 @@ import {
   getSettings,
   getViolationLogs,
 } from '@/lib/api';
-import { AlertTriangle, ClipboardList, FileWarning, MessageCircle, MessageSquare, Plus, RefreshCw, Search, Shield, ShieldAlert, ShieldCheck, Users, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, ClipboardList, FileWarning, MessageCircle, MessageSquare, Plus, RefreshCw, Search, Send, Shield, ShieldAlert, ShieldCheck, Users, X } from 'lucide-react';
 
 const VIOLATION_CATEGORIES = [
   { value: 'Aqidah', label: 'Aqidah' },
@@ -100,6 +100,10 @@ export default function DisciplinesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateViolationPayload>(formInit);
   const [templates, setTemplates] = useState<Record<string, string>>({});
+  const [waModal, setWAModal] = useState<{ studentId: number; name: string; phone: string; kind: string; message: string } | null>(null);
+  const [waMessage, setWAMessage] = useState('');
+  const [isSendingWA, setIsSendingWA] = useState(false);
+  const [waSendResult, setWASendResult] = useState<{ ok: boolean; text: string } | null>(null);
   // Daftar Santri untuk dropdown. Dulu form minta "ID Santri" diketik manual,
   // sehingga id akun admin (mis. 1) bisa terkirim dan muncul di tabel
   // sebagai baris "Santri" bernama "Admin".
@@ -241,14 +245,18 @@ Tindakan: ${log.action_taken || '-'}
 Mohon kerja samanya untuk pembinaan santri yang lebih baik. Syukran.`;
     }
 
-    const encodedMessage = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${log.parent_phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
-    window.open(waUrl, '_blank');
+    openWAModal({
+      studentId: log.student_id,
+      name: log.student_name,
+      phone: log.parent_phone,
+      kind: 'violation',
+      message,
+    });
   };
 
   const handleSendWARekap = (p: StudentDisciplinePoint) => {
     if (!p.parent_phone) {
-      showToast('error', 'Nomor HP orang tua tidak ditemukan di data pendaftaran.');
+      showToast('error', 'Nomor HP orang tua tidak ditemukan di data Santri.');
       return;
     }
 
@@ -269,10 +277,88 @@ Status: *${getSanctionLevel(p.current_points).label}*
 Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
     }
 
-    const encodedMessage = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${p.parent_phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
-    window.open(waUrl, '_blank');
+    openWAModal({
+      studentId: p.student_id,
+      name: p.student_name,
+      phone: p.parent_phone,
+      kind: 'summary',
+      message,
+    });
   };
+
+  const waModalJSX = waModal ? (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <form onSubmit={submitWA} className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h3 className="text-lg font-black tracking-tight text-slate-800">Kirim WhatsApp ke Orang Tua</h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Penerima: <span className="font-semibold text-slate-700">{waModal.name}</span> &middot; {waModal.phone}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => !isSendingWA && setWAModal(null)}
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Tutup"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5">
+          <label htmlFor="wa-message" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+            Pesan (bisa diedit)
+          </label>
+          <textarea
+            id="wa-message"
+            value={waMessage}
+            onChange={(e) => { setWAMessage(e.target.value); setWASendResult(null); }}
+            rows={11}
+            maxLength={4096}
+            className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm leading-relaxed text-slate-800 transition-colors focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-100"
+            placeholder="Tulis pesan untuk orang tua..."
+          />
+          <div className="mt-1.5 flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">Dikirim via WhatsApp gateway &mdash; tidak membuka WhatsApp Web.</span>
+            <span className={waMessage.length > 4096 ? 'font-bold text-rose-600' : 'text-slate-400'}>
+              {waMessage.length}/4096
+            </span>
+          </div>
+
+          {waSendResult && (
+            <div className={`mt-4 flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm ${
+              waSendResult.ok
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-rose-200 bg-rose-50 text-rose-800'
+            }`}>
+              {waSendResult.ok ? <CheckCircle2 size={17} className="mt-0.5 shrink-0" /> : <AlertCircle size={17} className="mt-0.5 shrink-0" />}
+              <span className="leading-snug">{waSendResult.text}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50 px-6 py-4">
+          <button
+            type="button"
+            onClick={() => setWAModal(null)}
+            disabled={isSendingWA}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={isSendingWA || !waMessage.trim()}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {isSendingWA ? <RefreshCw size={15} className="animate-spin" /> : <Send size={15} />}
+            {isSendingWA ? 'Mengirim...' : 'Kirim via Gateway'}
+          </button>
+        </div>
+      </form>
+    </div>
+  ) : null;
 
   return (
     <div className="pb-10 font-outfit">
