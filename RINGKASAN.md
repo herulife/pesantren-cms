@@ -21,7 +21,7 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:sppautofix` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:disc-fix` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
 | Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:sppautofix` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
@@ -202,6 +202,55 @@ Rollback: image `disiplinfix` (masih ada), container lama
 - `go` tidak ada di PATH shell non-interaktif → pakai `export PATH=$PATH:/usr/local/go/bin`.
 - Auto-commit watcher ikut meng-*commit* file backup `.pre-sppautofix` / `.pre-settingspayload`
   (jadi ikut ter-*track* di git). Sudah dilaporkan ke user, belum dihapus.
+
+## Jilid 56 — Bug: kolom "Kontak" kosong di /admin/disciplines (28 Sep 2026, LIVE)
+
+**Gejala laporan user:** di `https://almaparung.com/admin/disciplines`, kolom **Kontak**
+selalu kosong/nonaktif padahal data Santri aktif sudah punya nomor orang tua.
+
+**Akar masalah:** 3 query di `apps/backend/internal/features/disciplines/repository.go`
+mengambil nomor WA wali dari tabel **`registrations`**:
+
+```sql
+COALESCE(reg.parent_phone, '') as parent_phone
+LEFT JOIN registrations reg ON reg.user_id = u.id
+```
+
+Tetapi tabel `registrations` di DB produksi **0 baris** — seluruh data sudah bermigrasi
+ke tabel `santri`. Akibatnya `reg.parent_phone` selalu NULL → `COALESCE` → `''`.
+Frontend lalu me-render tombol WA nonaktif:
+
+```tsx
+className={p.parent_phone ? 'text-sky-600 hover:bg-sky-50' : 'text-slate-300 cursor-not-allowed'}
+```
+
+**Kenapa lama tidak ketahuan:** `COALESCE(...,'')` menyembunyikan kegagalan JOIN sebagai
+string kosong, bukan NULL/error — jadi tidak ada error di log, hanya UI yang diam-diam kosong.
+
+**Perbaikan:** ganti sumber ke `santri.parent_phone`, dengan fallback berurutan ke
+`father_phone` lalu `mother_phone` (beberapa data hanya mengisi salah satu kolom ortu).
+`JOIN registrations` dihapus karena tidak terpakai lagi; tabel `santri` sudah ter-JOIN di
+ketiga query tersebut.
+
+```sql
+COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''),
+         NULLIF(s.mother_phone, ''), '') as parent_phone
+```
+
+**Cakupan:** bug ini **terisolasi di `disciplines` saja** (3 query: `FindAllPoints`,
+`GetStudentPoint`, `FindAllLogs`). Sudah dicek fitur lain — `notifications`, `spp`, `iuran`,
+`santri` — semuanya sudah membaca `santri.parent_phone` dengan benar. `psb` yang
+`JOIN registrations` memang benar (untuk pendaftar PSB, bukan Santri aktif).
+
+**Verifikasi:**
+- `gofmt` bersih, `go build ./...` exit 0, `go vet` exit 0.
+- DB: sebelum query = `''` (kosong), sesudah = terisi.
+- `GET /api/disciplines/points` & `/logs` → `200`, `parent_phone` terisi (len 12) → tombol WA aktif.
+- `/api/ready` = READY, `https://almaparung.com` 200, `/admin/disciplines` 307 (auth, normal).
+- Backend log tanpa error/panic. Container healthy.
+
+**Deploy:** backend image `alma-parung-backend:disc-fix` (frontend tidak berubah, tetap `sppautofix`).
+Rollback: `alma-parung-backend-DISC-*` (image `sppautofix`) dan image `disiplinfix`.
 
 ## 5. TODO AKTIF
 1. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).

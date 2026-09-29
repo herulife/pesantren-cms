@@ -66,6 +66,13 @@ Semua terverifikasi: `tsc --noEmit --incremental false` 0 error, `docker build` 
    `next/font/google queries have exactly one entry` (layout.tsx import Inter+Outfit) —
    bukan regresi, **retry build** dan berhasil. `go` perlu `export PATH=$PATH:/usr/local/go/bin`.
 
+7. **Jilid 56 (28 Sep)** — **bug kolom "Kontak" kosong** di `/admin/disciplines`:
+   query ambil nomor wali dari tabel `registrations` yang **0 baris** (data sudah di
+   `santri`), jadi `COALESCE` menyembunyikannya jadi `''` dan tombol WA nonaktif.
+   Diperbaiki ke `santri.parent_phone` + fallback `father_phone`/`mother_phone`.
+   Isolated di `disciplines` saja; fitur lain sudah benar. Image `disc-fix` (backend).
+   Detail: `RINGKASAN.md` §4 "Jilid 56".
+
 ---
 
 ## 4. Pekerjaan terbuka (urutan prioritas)
