@@ -2,30 +2,16 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowRight, BookOpenCheck, GraduationCap, RefreshCw, Save, Users } from 'lucide-react';
+import { AlertCircle, ArrowRight, GraduationCap, RefreshCw, Save, Users } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { getMyPSBRegistration, saveMyPSBRegistration, type Registration } from '@/lib/api';
 
 type Jenjang = 'smp' | 'smk';
-type Program = 'tahfidz' | 'bahasa';
 type Category = 'reguler' | 'yatim' | 'dhuafa';
 
 const jenjangOptions: Array<{ value: Jenjang; title: string; desc: string; note: string }> = [
   { value: 'smp', title: 'SMP', desc: 'Sekolah Menengah Pertama', note: 'Dari SD/MI • Kelas awal VII' },
   { value: 'smk', title: 'SMK', desc: 'Sekolah Menengah Kejuruan', note: 'Dari SMP/MTs • Kelas awal X' },
-];
-
-const programOptions: Array<{ value: Program; title: string; desc: string }> = [
-  {
-    value: 'tahfidz',
-    title: "Tahfidz Al-Qur'an",
-    desc: 'Program unggulan hafalan Al-Qur\u2019an dengan target muroja\u2019ah harian dan ujian hafalan berkala.',
-  },
-  {
-    value: 'bahasa',
-    title: 'Bahasa Arab',
-    desc: 'Program unggulan penguasaan Bahasa Arab untuk memahami kitab dan praktik percakapan harian.',
-  },
 ];
 
 const categoryOptions: Array<{ value: Category; title: string; desc: string }> = [
@@ -59,9 +45,8 @@ function ProgramPageContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [jenjang, setJenjang] = useState<'' | Jenjang>('');
-  const [program, setProgram] = useState<'' | Program>('');
   const [category, setCategory] = useState<Category>('reguler');
-  const [errors, setErrors] = useState<{ jenjang?: string; program?: string }>({});
+  const [errors, setErrors] = useState<{ jenjang?: string }>({});
 
   useEffect(() => {
     const fetchRegistration = async () => {
@@ -70,7 +55,6 @@ function ProgramPageContent() {
         const data = await getMyPSBRegistration();
         setRegistration(data);
         setJenjang(clean(data?.jenjang || '') as '' | Jenjang);
-        setProgram(clean(data?.program_choice || '') as '' | Program);
         setCategory((clean(data?.category || '') || 'reguler') as Category);
       } finally {
         setIsLoading(false);
@@ -81,12 +65,11 @@ function ProgramPageContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nextErrors: { jenjang?: string; program?: string } = {};
+    const nextErrors: { jenjang?: string } = {};
     if (jenjang !== 'smp' && jenjang !== 'smk') nextErrors.jenjang = 'Pilih jenjang SMP atau SMK';
-    if (program !== 'tahfidz' && program !== 'bahasa') nextErrors.program = 'Pilih program Tahfidz atau Bahasa';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      showToast('error', 'Periksa kembali pilihan jenjang dan program.');
+      showToast('error', 'Periksa kembali pilihan jenjang.');
       return;
     }
     setIsSaving(true);
@@ -106,14 +89,14 @@ function ProgramPageContent() {
         mother_name: registration?.mother_name || '',
         mother_job: registration?.mother_job || '',
         mother_phone: registration?.mother_phone || '',
-        program_choice: program,
+        program_choice: '',
         jenjang,
         category,
       });
-      showToast('success', 'Program & jenjang berhasil disimpan. Lanjut unggah dokumen.');
+      showToast('success', 'Jenjang berhasil disimpan. Lanjut unggah dokumen.');
       router.push('/portal/documents');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal menyimpan program & jenjang.';
+      const message = error instanceof Error ? error.message : 'Gagal menyimpan jenjang.';
       showToast('error', message);
     } finally {
       setIsSaving(false);
@@ -171,51 +154,6 @@ function ProgramPageContent() {
         <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
           <div className="mb-5 flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white">
-              <BookOpenCheck size={20} />
-            </span>
-            <div>
-              <h5 className="text-xs font-black uppercase tracking-widest text-slate-900">Program Unggulan</h5>
-              <p className="mt-1 text-xs text-slate-500">Pilih program yang paling sesuai minat calon santri.</p>
-            </div>
-          </div>
-          <div className="grid gap-3">
-            {programOptions.map((opt) => {
-              const selected = program === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setProgram(opt.value)}
-                  aria-pressed={selected}
-                  className={`flex items-start gap-4 rounded-2xl border p-5 text-left transition ${
-                    selected
-                      ? 'border-sky-300 bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-                      : errors.program
-                        ? 'border-rose-300 bg-white hover:border-rose-400'
-                        : 'border-slate-200 bg-white hover:border-sky-300 hover:bg-sky-50'
-                  }`}
-                >
-                  <span
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                      selected ? 'border-white bg-white' : 'border-slate-300 bg-white'
-                    }`}
-                  >
-                    {selected ? <span className="h-2.5 w-2.5 rounded-full bg-sky-600" /> : null}
-                  </span>
-                  <span>
-                    <span className={`block text-base font-black ${selected ? 'text-white' : 'text-slate-900'}`}>{opt.title}</span>
-                    <span className={`mt-1 block text-xs leading-relaxed ${selected ? 'text-sky-100' : 'text-slate-600'}`}>{opt.desc}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {errors.program ? <p className="mt-2 text-xs font-bold text-rose-600">{errors.program}</p> : null}
-        </div>
-
-        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
-          <div className="mb-5 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white">
               <Users size={20} />
             </span>
             <div>
@@ -258,7 +196,7 @@ function ProgramPageContent() {
       </div>
 
       <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 md:flex-row md:items-center md:justify-between">
-        <p className="text-xs font-medium text-slate-500">Program & jenjang bisa disesuaikan kembali sebelum panitia memproses berkas.</p>
+        <p className="text-xs font-medium text-slate-500">Jenjang bisa disesuaikan kembali sebelum panitia memproses berkas.</p>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <button
             type="submit"
