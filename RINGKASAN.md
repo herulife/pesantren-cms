@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-09-29 (WA PSB: hanya status bernilai + debounce 2 menit + LUNAS sekali; sebelumnya Program Unggulan dihapus PERMANEN dari /portal/program). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-09-29 (E-Raport: kop kini "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel PDF kembali gelap/terlihat; sebelumnya WA PSB hanya status bernilai + debounce 2 menit + LUNAS sekali). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -22,9 +22,9 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend` | `alma-parung-backend:fix-wa-dedup` | WA PSB anti-spam (hanya status bernilai + debounce 2 min + LUNAS sekali), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `disc-wa` untuk rollback. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:fix-psb-current` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:fix-eraport-kop` | Kop e-raport PDF = "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel tidak lagi putih (bug `setTextColor`), healthy, `-p 3002:3000`. Image `fix-psb-current` untuk rollback. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `disc-wa`(sebelum Jilid 60)+`bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
+| Rollback tersedia | — | backend `disc-wa`+`bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `fix-psb-current`(sebelum Jilid 61)+`jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
 | DB | — | — | users 6, santri 1 (per 28 Sep; cek ulang) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
