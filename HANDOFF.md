@@ -9,6 +9,17 @@ pekerjaan yang sudah selesai, dan bisa langsung eksekusi pekerjaan yang masih te
 
 ---
 
+> **Jilid 57 (29 Sep 2026):** tombol Kontak di `/admin/disciplines` sekarang memakai popup pesan
+> yang bisa diedit lalu kirim lewat **WA gateway** (`POST /api/disciplines/wa-send` →
+> `wanotif.Enqueue` → `whatsapp.SendMessage`), bukan `wa.me`/WA Web. Detail di `RINGKASAN.md` §4 Jilid 57.
+> Pengiriman nyata ke nomor wali asli **belum** diuji — butuh persetujuan user.
+> Sisa `wa.me` masih ada di halaman lain (kontak, psb, donations, teachers, messages, PublicLayout).
+
+> **Peringatan:** file scratch (`*.go` uji, query helper) jangan ditaruh di dalam repo —
+> auto-commit watcher akan langsung meng-commit-nya. Pakai `/tmp`.
+
+---
+
 ## 1. Kenapa file ini ada
 
 Sesi 28 Sep 2026 menutup 2 pekerjaan (tutorial eRapor + pembersihan storage) dan menyisakan 6 pekerjaan
@@ -21,12 +32,13 @@ di situ terlalu singkat untuk langsung dieksekusi. File ini berisi detail ekseku
 
 | Layanan | Container | Image | Port | Restart | Catatan |
 |---|---|---|---|---|---|
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:disiplinfix` | healthy |
-| Backend | `alma-parung-backend` | `alma-parung-backend:disiplinfix` | healthy |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:disc-wa` | healthy |
+| Backend | `alma-parung-backend` | `alma-parung-backend:disc-wa` | healthy |
 | Store | `alma-store` | `latest` | — | — | terpisah, jangan sentuh |
 | Clinic OS | `clinic-os-{postgres,redis,mailpit,minio}-1` | — | — | — | proyek lain, jangan sentuh |
 
-Rollback tersedia: container `alma-parung-backend-rollback-135939` (backend `jilid43`) & `alma-parung-frontend-bobot-rollback-135947` (frontend `jilid45`); tag lama frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid53`+`jilid54`, backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`.
+Rollback terbaru (29 Sep, Jilid 57): `alma-parung-backend-DISCWA-OLD-005417` (backend image `disc-fix`) & `alma-parung-frontend-DISCWA-OLD-005456` (frontend image `sppautofix`).
+Rollback lama (masih ada, kadaluarsa): container `alma-parung-backend-rollback-135939` (backend `jilid43`) & `alma-parung-frontend-bobot-rollback-135947` (frontend `jilid45`); tag lama frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid53`+`jilid54`, backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`.
 
 Command recreate frontend (pola yang dipakai 28 Sep, berhasil):
 
