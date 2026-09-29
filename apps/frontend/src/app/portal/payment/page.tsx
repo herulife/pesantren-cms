@@ -163,7 +163,6 @@ export default function PortalPaymentPage() {
     registration?.birth_date,
     registration?.address,
     registration?.school_origin,
-    registration?.program_choice,
     registration?.father_name,
     registration?.father_job,
     registration?.father_phone,
