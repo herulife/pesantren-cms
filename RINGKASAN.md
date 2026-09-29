@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-09-29 (Program Unggulan dihapus PERMANEN dari /portal/program; program_choice bukan syarat biodata lagi). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-09-29 (WA PSB: hanya status bernilai + debounce 2 menit + LUNAS sekali; sebelumnya Program Unggulan dihapus PERMANEN dari /portal/program). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -21,10 +21,10 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:disc-wa` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:fix-wa-dedup` | WA PSB anti-spam (hanya status bernilai + debounce 2 min + LUNAS sekali), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `disc-wa` untuk rollback. |
 | Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:fix-psb-current` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
+| Rollback tersedia | — | backend `disc-wa`(sebelum Jilid 60)+`bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
 | DB | — | — | users 6, santri 1 (per 28 Sep; cek ulang) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
@@ -251,6 +251,44 @@ COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''),
 
 **Deploy:** backend image `alma-parung-backend:disc-fix` (frontend tidak berubah, tetap `sppautofix`).
 Rollback: `alma-parung-backend-DISC-*` (image `sppautofix`) dan image `disiplinfix`.
+
+## Jilid 60 — WA PSB tidak lagi spam: hanya status bernilai + debounce 2 menit + LUNAS sekali (29 Sep 2026, LIVE)
+
+**Permintaan user:** “kenapa ini kirim berkali2, coba kamu cek” — wali menerima WA
+“Pembayaran pendaftaran telah terverifikasi (LUNAS)” beruntun.
+
+**Akar masalah (terverifikasi dari DB + log + audit):** pesan LUNAS sebenarnya terkirim
+HANYA 1× (baris `wa_notifications` id·36, `attempts=1`). Yang terasa “berkali-kali” adalah
+4 WA berbeda dalam ±16 detik untuk Asep Sunandar (reg·40): 13:49:00 LUNAS, 13:49:09
+“Berkas sedang diverifikasi panitia”, 13:49:11 “Sedang diproses”, 13:49:15 “Diterima”.
+Pemicunya: superadmin mengubah payment→`paid`, lalu status `review`→`pending`→`accepted`
+beruntun; *setiap* transisi memanggil `notifyPSBTransition` (psb/handler.go) yang selalu
+mengirim WA. Faktor lain: nomor 6282114752228 juga terdaftar untuk reg·36 (jono) sehingga
+menerima pesan serupa pada 25 Sep. Tidak ada retry/dobel kirim (attempts=1, status sent).
+
+**Perubahan (2 file backend):**
+- `apps/backend/internal/features/psb/handler.go` →
+  `notifyPSBTransition` kini **hanya mengirim WA untuk status bernilai**: `tes`,
+  `re_registration`, `accepted`, `rejected`, `santri`. Status antara `review`/`pending`
+  TIDAK dikirim (tidak membanjiri wali). Plus **debounce `psb_status` 2 menit** per
+  registrasi (lewati bila sudah ada notifikasi status yang sama < 2 menit lalu).
+  `UpdatePaymentStatus` → pesan LUNAS **hanya saat transisi belum-lunas → lunas**
+  (cek `prev.PaymentStatus` sebelum update); menyimpan catatan saat sudah lunas
+  TIDAK mengirim ulang LUNAS.
+- `apps/backend/internal/platform/wanotif/wanotif.go` → tambah fungsi `RecentKind`
+  (cek keberadaan baris `registration_id`+`kind` dengan `created_at` dalam jeda waktu).
+
+**Deploy:** `docker build -f apps/backend/Dockerfile -t alma-parung-backend:fix-wa-dedup .`
+→ swap container `alma-parung-backend` (`-p 8090:8080`, restart always, bind
+`data`→`/data` & `data/uploads`→`.../public/uploads`, env JWT/DAHL/API_PORT sama).
+Backend healthy + `[WAGATE] terhubung`. Git auto-commit HEAD `3c6d1ef`. Backup:
+`handler.go.bak-20260929-wafix`, `wanotif.go.bak-20260929-wafix`.
+
+**Verifikasi (reg uji id·55, nomor fiktif → tetap mencatat baris WA tanpa spam):**
+- status→`review` → TIDAK ada baris WA.
+- payment `unpaid`→`paid` → 1× `psb_payment` (LUNAS); PUT `paid`+note lagi → TIDAK dobel.
+- status→`accepted` → 1× `psb_status`; `accepted` lagi → debounce, TIDAK ada tambahan.
+- Data uji (reg·55 + WA id·40/41) sudah dibersihkan dari DB live.
 
 ## Jilid 59 — Hapus PERMANEN "Program Unggulan" dari /portal/program + KUNCI source (29 Sep 2026, LIVE)
 
