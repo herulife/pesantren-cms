@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-09-28 (dropdown kustom Kelas+Status Kesantrian; RBAC `/school` read). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-09-29 (fix PSB upload: Program Unggulan tidak bisa dipilih → program_choice kosong → dokumen tidak bisa diunggah). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -21,8 +21,8 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:disc-fix` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:sppautofix` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:disc-wa` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:fix-psb-upload` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
 | DB | — | — | users 6, santri 1 (per 28 Sep; cek ulang) |
@@ -251,6 +251,52 @@ COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''),
 
 **Deploy:** backend image `alma-parung-backend:disc-fix` (frontend tidak berubah, tetap `sppautofix`).
 Rollback: `alma-parung-backend-DISC-*` (image `sppautofix`) dan image `disiplinfix`.
+
+## Jilid 58 — Fix PSB upload: Program Unggulan tidak bisa dipilih, dokumen tidak bisa diunggah (29 Sep 2026, LIVE)
+
+**Permintaan user:** “saya mau upload documen tidak bisa lagi” — di pendaftaran PSB.
+
+**Akar masalah (regresi):** commit `0fd6a92` (26 Sep) menghapus pemilih
+**Program Unggulan** (Tahfidz/Bahasa) dari `apps/frontend/src/app/portal/program/page.tsx`
+dan mulai menyimpan `program_choice: ''` (hardcoded). Sementara itu halaman
+`apps/frontend/src/app/portal/documents/page.tsx` masih memasukkan
+`data?.program_choice` ke `requiredBiodataFields` sebagai syarat
+`isBiodataReady` — sehingga calon santri tidak pernah lolos gate
+(“Lengkapi Biodata”) dan **tidak bisa upload dokumen apa pun**.
+
+**Verifikasi akar masalah:**
+- `POST /api/upload`, `GET/PUT /api/psb/me`, `PUT /api/psb/me/documents` semua OK
+  dari backend (uji curl dengan token valid, cookie & bearer, via 127.0.0.1:8090 dan
+  https://almaparung.com) — bukan masalah backend/nginx/upload.
+- Reproduksi headless (Playwright, akun user·68 jono dan user·76 Aday): halaman
+  `/portal/program` tidak punya pilihan program; setelah simpan `program_choice=''″,
+  `/portal/documents` menolak upload dengan gate “Lengkapi Biodata Dulu”.
+
+**Perubahan:** kembalikan `apps/frontend/src/app/portal/program/page.tsx` ke versi
+sebelum regresi (mengembalikan `Program` type, `programOptions` Tahfidz/Bahasa,
+state + validasi + UI “Program Unggulan”, dan `program_choice: program` pada
+`saveMyPSBRegistration`). File identik dengan `0fd6a92^`.
+
+**Deploy:** `docker build -f Dockerfile.frontend -t alma-parung-frontend:fix-psb-upload .`
+(structure sama dengan build `disc-wa`: node:20-alpine deps/builder/runner, healthcheck
+wget). Container `alma-parung-frontend-bobot` di-*swap* ke image baru
+(`-p 3002:3000`, restart unless-stopped). Git auto-commit HEAD `c212b3b`
+(commit otomatis oleh watcher).
+
+**Verifikasi pasca-deploy (headless, user Aday id·76, token craft /tmp/mk_token_aday.py):**
+- `/portal/program` menampilkan Program Unggulan; pilih Tahfidz → Simpan & Lanjut
+  → redirect ke `/portal/documents`.
+- Upload KK di UI: `POST /api/upload` → 201, `PUT /api/psb/me/documents` → 200,
+  UI menampilkan “kk_test.png berhasil disimpan”.
+- DB: registrasi id·39 menerima `kk_url` + `program_choice='tahfidz'` selama pengujian;
+  data uji sudah langsung dikembalikan ke asal (`''`).
+- `https://almaparung.com` HTTP 200, container healthy.
+
+**Lain-lain yang ditemukan selama investigasi:**
+- `GET /api/me` butuh klaim email di JWT; token tanpa email → 404 → frontend tampil
+  halaman login. Bukan bug, hanya urusan token uji.
+- Container live sebelum deploy: backend `disc-wa` (0.0.0.0:8090→8080), frontend
+  `disc-wa` (0.0.0.0:3002→3000), keduanya dibuat 29 Sep ±00:53–00:54.
 
 ## Jilid 57 — Tombol Kontak: dari WA Web ke WA Gateway + popup pesan (29 Sep 2026, LIVE)
 
