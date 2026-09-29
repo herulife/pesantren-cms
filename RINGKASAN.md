@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-09-29 (fix PSB upload: Program Unggulan tidak bisa dipilih → program_choice kosong → dokumen tidak bisa diunggah). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-09-29 (Program Unggulan dihapus PERMANEN dari /portal/program; program_choice bukan syarat biodata lagi). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -22,7 +22,7 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend` | `alma-parung-backend:disc-wa` | Dropdown Kelas Kesantrian + KKM dinamis + guard Kedisiplinan (`ErrNotSantri` -> HTTP 422), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `jilid43` (`a5508e379eae`) untuk rollback. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:fix-psb-upload` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:fix-psb-current` | KKM card + role menu + **dropdown Santri** di `/admin/disciplines` (menggantikan input "ID Santri" manual), healthy, `-p 3002:3000`. Image `jilid45` (`9d21ec2ed640`) untuk rollback. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
 | DB | — | — | users 6, santri 1 (per 28 Sep; cek ulang) |
@@ -251,6 +251,41 @@ COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''),
 
 **Deploy:** backend image `alma-parung-backend:disc-fix` (frontend tidak berubah, tetap `sppautofix`).
 Rollback: `alma-parung-backend-DISC-*` (image `sppautofix`) dan image `disiplinfix`.
+
+## Jilid 59 — Hapus PERMANEN "Program Unggulan" dari /portal/program + KUNCI source (29 Sep 2026, LIVE)
+
+**Permintaan user:** “di halaman /portal/program, Program Unggulan dihilangkan aja tapi jangan
+merubah settingan yang lain” + “kunci dulu agar agen lain tidak menggunakan source lama, atau
+source lama otomatis dihapus”.
+
+**Konteks:** fix Jilid 58 sebelumnya mengembalikan picker Program Unggulan (“Tahfidz/Bahasa”)
+agar upload dokumen bisa lewat gate `program_choice`. User memutuskan Program Unggulan tidak
+dipakai → picker dihapus permanen, tapi alur upload & pembayaran harus tetap jalan.
+
+**Perubahan:**
+- `apps/frontend/src/app/portal/program/page.tsx` → dikembalikan ke commit `0fd6a92`
+  (sama persis, sudah dicek `diff`): tanpa Program Unggulan, hanya Jenjang (SMP/SMK) + Kategori,
+  `program_choice: ''` pada `saveMyPSBRegistration`.
+- `apps/frontend/src/app/portal/documents/page.tsx` → `program_choice` dihapus dari
+  `requiredBiodataFields` / `isBiodataReady` (agar upload dokumen tidak terbebani field ini).
+- `apps/frontend/src/app/portal/page.tsx` (dashboard) → `program_choice` dihapus dari
+  `biodataFields` (sisa 1 pemakaian = label display "Program Pilihan", sengaja dipertahankan).
+- `apps/frontend/src/app/portal/payment/page.tsx` → `program_choice` dihapus dari gate
+  `requiredBiodataFields`.
+
+**KUNCI / lock (agar agen lain tidak memakai source lama):**
+- Image frontend live: `alma-parung-frontend:fix-psb-current`
+  (= `fix-psb-upload-nopicker`, SHA `6ac3f7f070b6`).
+- Image lama yang masih membawa picker sudah dihapus: `alma-parung-frontend:fix-psb-upload`
+  dan `alma-parung-frontend:disc-wa`.
+- Catatan lock ditulis di `AGENTS.md` §5b. JANGAN kembalikan picker / jangan jadikan
+  `program_choice` wajib kecuali user memerintah.
+
+**Verifikasi (headless, akun user·76 Aday):**
+- `/portal/program`: HAS_PROGRAM_UNGGULAN=false, HAS_JENJANG=true, HAS_KATEGORI=true.
+- Submit → redirect `/portal/documents` → upload KK: `POST /api/upload` 201,
+  `PUT /api/psb/me/documents` 200, UI “kk_test.png berhasil disimpan”.
+- Data uji (kk_url reg id·39) langsung dikembalikan ke `''`.
 
 ## Jilid 58 — Fix PSB upload: Program Unggulan tidak bisa dipilih, dokumen tidak bisa diunggah (29 Sep 2026, LIVE)
 

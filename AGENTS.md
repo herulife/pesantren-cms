@@ -52,6 +52,20 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - Nomor WA uji: gateway (081932506078) untuk pesan sistem; 082114752228 hanya bila user meminta. Jangan kirim ke nomor fiktif (server WA menolak: `no LID found`).
 - Jangan commit secret. Jangan tampilkan JWT_SECRET/password di output.
 
+## 5b. KUNCI / LOCK (29 Sep 2026) — do NOT revert without user order
+
+- **Program Unggulan di `/portal/program` DIHAPUS selamanya (perintah user 29 Sep 2026).**
+  - Frontend `apps/frontend/src/app/portal/program/page.tsx` setara commit `0fd6a92`
+    (tanpa picker Tahfidz/Bahasa; `program_choice` disimpan sebagai string kosong).
+  - `program_choice` TIDAK lagi menjadi syarat "biodata lengkap" di
+    `apps/frontend/src/app/portal/documents/page.tsx`, `apps/frontend/src/app/portal/page.tsx`,
+    dan `apps/frontend/src/app/portal/payment/page.tsx` (agar upload dokumen & pembayaran tetap bisa).
+  - JANGAN mengembalikan pemilih "Program Unggulan" / jangan jadikan `program_choice` wajib lagi.
+  - Image frontend terkunci: `alma-parung-frontend:fix-psb-current`
+    (= `fix-psb-upload-nopicker`). Image lama yang mengandung picker (`fix-psb-upload`,
+    frontend `disc-wa`) sudah dihapus dari mesin.
+  - Verifikasi (29 Sep 2026): `/portal/program` tanpa Program Unggulan, upload dokumen tetap
+    201/200 end-to-end.
 ## 5. Riwayat perubahan penting sesi ini (Sep 2026)
 
 - NIK 409 verified; edit-lock 403 verified.
