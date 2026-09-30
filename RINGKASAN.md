@@ -63,6 +63,34 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+## Jilid 66 - Tombol "No. Rekening" di Pengaturan PSB langsung ke tab No. Rekening (30 Sep 2026, LIVE)
+
+**Order user:** "di `/admin/psb/pengaturan` waktu klik setting no rekening, arahkan langsung ke
+`/admin/settings` **langsung ke tab rekening**".
+
+**Perubahan (1 baris):** `apps/frontend/src/app/admin/psb/pengaturan/page.tsx` —
+`href="/admin/settings"` → `href="/admin/settings?tab=No.%20Rekening"` pada tombol
+"Buka Pengaturan No. Rekening →".
+
+**Kenapa cukup pakai `?tab=`:** halaman `admin/settings/page.tsx` sudah punya inisialisasi tab dari
+query string — `useState(() => new URLSearchParams(window.location.search).get('tab'))`, divalidasi
+terhadap daftar `TABS`, jatuh ke `Umum` kalau tidak dikenal. Id tab rekening persis
+`'No. Rekening'` (ADA TITIK dan SPASI), jadi harus di-encode. Pola ini sudah dipakai
+`admin/teachers/page.tsx:525`, `admin/employees/page.tsx:142`, dan `lib/adminDocs.ts:587`
+(`?tab=Staf%20Mengajar`) — konsisten, tidak perlu komponen/ID baru.
+
+⚠️ `?tab=` hanya dibaca saat **mount**. Pindah dari `/admin/psb/pengaturan` aman (routennya beda,
+selalu remount), tapi kalau nanti ada tombol similar yang menyasar tab dari **halaman settings
+itu sendiri**, `Link` akan melakukan soft navigation dan tab **tidak** berganti — perlu
+`router.replace` + `key`, bukan `Link`.
+
+**Verifikasi:** `npx tsc --noEmit --incremental false` → exit 0. Deploy image
+`alma-parung-frontend:psbrektab`, container `alma-parung-frontend-bobot` (`-p 3002:3000`,
+tanpa mount/env), `curl /` 200, dan klik tombolnya → URL jadi
+`/admin/settings?tab=No.%20Rekening` dengan tab **No. Rekening** langsung aktif.
+
+---
+
 ## Jilid 65 - Hapus total fitur BGN + import ulang Santri dari master Google Sheet (30 Sep 2026, LIVE)
 
 **Order user (30 Sep):** hapus data Santri lama, bersihkan semua BGN, lalu import ulang
