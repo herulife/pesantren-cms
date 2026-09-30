@@ -175,7 +175,7 @@ export async function downloadKwitansiPDF(data: KwitansiTx, school: KwitansiScho
   }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  const titleLines = doc.splitTextToSize(`formatSchoolName(school.name).toUpperCase()`, maxW - (logo ? 24 : 0));
+  const titleLines = doc.splitTextToSize(formatSchoolName(school.name).toUpperCase(), maxW - (logo ? 24 : 0));
   doc.text(titleLines, headX, y + 6);
   y += 6 + titleLines.length * 5;
   doc.setFont('helvetica', 'normal');
