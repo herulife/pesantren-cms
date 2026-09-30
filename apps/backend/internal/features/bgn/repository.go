@@ -2,8 +2,9 @@ package bgn
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
-	"errors")
+)
 
 type Repository struct {
 	db *sql.DB
@@ -12,6 +13,9 @@ type Repository struct {
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
+
+// BgnRecipientsTable adalah nama tabel penerima BGN.
+const BgnRecipientsTable = "bgn_recipients"
 
 // SantriTable adalah nama tabel data Santri di aplikasi.
 const SantriTable = "santri"
@@ -189,7 +193,7 @@ func (r *Repository) Delete(id int) error {
 func (r *Repository) Link(id int, value int) error {
 	if value == 0 {
 		res, err := r.db.Exec(
-			"UPDATE "+BgnTable+" SET "+colSantriID+" = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+			"UPDATE "+BgnRecipientsTable+" SET "+colSantriID+" = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
 			id)
 		if err != nil {
 			return err
@@ -208,10 +212,10 @@ func (r *Repository) Link(id int, value int) error {
 	// harus benar-benar ada. Query sekaligus menolak Santri yang sudah dipakai
 	// oleh penerima lain supaya relasi tetap satu-ke-satu.
 	res, err := r.db.Exec(
-		"UPDATE "+BgnTable+" SET "+colSantriID+" = ?, updated_at = CURRENT_TIMESTAMP "+
+		"UPDATE "+BgnRecipientsTable+" SET "+colSantriID+" = ?, updated_at = CURRENT_TIMESTAMP "+
 			"WHERE id = ? AND position = 'santri' "+
 			"AND EXISTS (SELECT 1 FROM "+SantriTable+" WHERE id = ?) "+
-			"AND NOT EXISTS (SELECT 1 FROM "+BgnTable+" o WHERE o.id <> "+BgnTable+
+			"AND NOT EXISTS (SELECT 1 FROM "+BgnRecipientsTable+" o WHERE o.id <> "+BgnRecipientsTable+
 			".id AND o."+colSantriID+" = ?)",
 		value, id, value, value)
 	if err != nil {
@@ -227,7 +231,7 @@ func (r *Repository) Link(id int, value int) error {
 
 	// Zero baris: tentukan penyebabnya agar pesan error ke pengguna akurat.
 	var position string
-	if err := r.db.QueryRow("SELECT position FROM "+BgnTable+" WHERE id = ?", id).
+	if err := r.db.QueryRow("SELECT position FROM "+BgnRecipientsTable+" WHERE id = ?", id).
 		Scan(&position); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
@@ -246,7 +250,7 @@ func (r *Repository) Link(id int, value int) error {
 		return err
 	}
 	var used int
-	if err := r.db.QueryRow("SELECT 1 FROM "+BgnTable+
+	if err := r.db.QueryRow("SELECT 1 FROM "+BgnRecipientsTable+
 		" WHERE "+colSantriID+" = ? AND id <> ?", value, id).Scan(&used); err == nil {
 		return ErrSantriTaken
 	} else if !errors.Is(err, sql.ErrNoRows) {

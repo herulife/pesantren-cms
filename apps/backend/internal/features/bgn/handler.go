@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
 	"github.com/go-chi/chi/v5"
-	"errors")
+)
 
 type Handler struct {
 	repo IRepository
