@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-09-29 (E-Raport: kop kini "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel PDF kembali gelap/terlihat; sebelumnya WA PSB hanya status bernilai + debounce 2 menit + LUNAS sekali). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-09-30 (Jilid 64 - BGN P1: pagination + export Excel/PDF + tautan opsional ke data Santri; Jilid 63 menambahkan menu Penerima BGN). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -21,11 +21,11 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:fix-wa-dedup` | WA PSB anti-spam (hanya status bernilai + debounce 2 min + LUNAS sekali), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Image `disc-wa` untuk rollback. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:fix-eraport-kop` | Kop e-raport PDF = "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel tidak lagi putih (bug `setTextColor`), healthy, `-p 3002:3000`. Image `fix-psb-current` untuk rollback. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:jilid64-bgnp1` | WA PSB anti-spam (hanya status bernilai + debounce 2 min + LUNAS sekali), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Jilid 64 (BGN paginasi + export + tautan Santri) dan Jilid 63 (menu BGN), healthy, WAJIB `-p 8090:8080` karena nginx mem-proxy /api/ ke 8090. Rollback: `jilid63-bgn`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid64-bgnp1` | Kop e-raport PDF = "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel tidak lagi putih (bug `setTextColor`), healthy, `-p 3002:3000`. Jilid 64 (BGN paginasi + export Excel/PDF + tautan Santri) dan Jilid 63 (menu BGN), healthy, `-p 3002:3000`. Rollback: `jilid63-bgn`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `disc-wa`+`bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `fix-psb-current`(sebelum Jilid 61)+`jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
-| DB | — | — | users 6, santri 1 (per 28 Sep; cek ulang) |
+| DB | — | — | bgn_recipients 71 (santri 58 / guru 6 / tendik 7); santri 3; kolom baru `bgn_recipients.santri_id`, seluruhnya 0 (belum ada tautan) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 ```
@@ -63,6 +63,103 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+## Jilid 64 - Fitur BGN P1: pagination + export Excel/PDF + tautan opsional ke data Santri (30 Sep 2026, LIVE)
+
+**Latar belakang.** Jilid 63 sudah menambah menu Penerima BGN + import template, tetapi
+halamannya memuat seluruh baris sekaligus dan belum bisa di-export. Data live saat itu:
+71 penerima (santri 58 / guru 6 / tendik 7). Tabel `santri` di aplikasi hanya berisi 3 baris
+dan tidak ada satu pun nama yang sama dengan data BGN, jadi auto-link tidak mungkin. Tautan
+dibuat manual dan sifatnya opsional.
+
+**Cakupan (P1 saja; P2/P3 tidak dikerjakan).**
+1. Pagination `limit`/`offset` + `total` (default 50, maksimum 500).
+2. Export Excel dan PDF dari tombol di UI, memakai utilitas repo yang sudah ada
+   (`src/lib/export.ts` -> `xlsx` + `jspdf`). Backend hanya menyediakan data lengkap.
+3. Tautan opsional `bgn_recipients.santri_id` ke tabel `santri`, plus statistik baru "Tertaut".
+
+**Migrasi DB (otomatis saat container start).**
+- `ALTER TABLE bgn_recipients ADD COLUMN santri_id INTEGER NOT NULL DEFAULT 0`
+- Tercatat sebagai `bgn_recipients_santri_link` di `schema_migrations`, dan idempoten karena
+  dicek lebih dulu lewat `pragma table_info`.
+- Tidak ada foreign key (SQLite tidak bisa menambah FK lewat `ALTER TABLE`). Integritas
+  dijaga di lapisan aplikasi; lihat bagian "Validasi tautan".
+- Backup pra-deploy: `backups/pre-deploy-jilid64-bgnp1-20260930-113314.db` (integritas `ok`,
+  71 baris). Backup awal pekerjaan: `backups/pre-bgn-p1-20260930-091735.db`.
+
+**Endpoint baru.**
+
+| Method | Path | Keterangan |
+|---|---|---|
+| GET | `/api/bgn?limit=&offset=` | paginasi; respons `{data, total, limit, offset}` |
+| GET | `/api/bgn/export` | semua baris tanpa paginasi, tetap hormati filter |
+| GET | `/api/bgn/santri-options?search=&limit=` | kandidat Santri untuk dialog tautan |
+| POST | `/api/bgn/{id}/link` | body `{"santri_id":n}`; `0` berarti lepas tautan |
+
+**Validasi tautan.** `Repository.Link` memakai satu `UPDATE` bersyarat lalu memeriksa
+`RowsAffected`; bila nol baris, repository menelusuri penyebabnya dan handler memetakan
+sentinel error ke HTTP yang sesuai.
+
+| Kondisi | HTTP | Pesan |
+|---|---|---|
+| Santri sudah ditautkan ke penerima lain | 409 | Data Santri sudah ditautkan ke penerima BGN lain |
+| ID BGN tidak ada | 404 | Penerima BGN tidak ditemukan |
+| ID Santri tidak ada | 400 | Data Santri tidak ditemukan |
+| Posisi penerima bukan `santri` | 400 | Hanya penerima BGN dengan posisi Santri yang dapat ditautkan |
+| `santri_id` negatif | 400 | Data Santri tidak valid |
+
+Tautan bersifat satu-ke-satu. Sebelumnya tanpa validasi, satu Santri bisa ditautkan ke banyak
+baris dan ID BGN yang tidak ada tetap dijawab 200. Di UI tombol taut hanya muncul untuk baris
+posisi Santri; guru dan tendik tidak punya tombol tersebut.
+
+**Dua perbaikan yang ditemukan saat pengujian.**
+- Search tidak pernah mencari nama Santri yang tertaut, padahal kolom itu ditampilkan di
+  tabel. `buildWhere` kini menambah syarat `OR s.name LIKE ?`. Karena `buildWhere` dipakai
+  bersama oleh list, count, dan export, ketiganya tetap konsisten.
+- Field read-only baru (`santri_id`, `santri_name`, `santri_class`) dikecualikan dari
+  `RecipientInput` supaya strict JSON tidak menolak payload yang memuatnya.
+
+**Tampilan.** 25 baris per halaman; label rentang "Menampilkan 1-25 Dari 71 DATA"; tombol
+Sebelumnya dan Selanjutnya, keduanya nonaktif di batas; blok paginasi disembunyikan bila
+total tidak lebih dari 25. Data Santri tidak memakai kolom tersendiri, melainkan badge
+`KELAS - NAMA SANTRI` di bawah nama penerima ketika tertaut. Kartu statistik bertambah
+"Tertaut".
+
+**Pengujian.**
+- API pada container uji dengan salinan DB: 49 dari 49 PASS. Mencakup migrasi dari kondisi
+  lama, pagination termasuk `limit` dibatasi 500 dan `offset` melewati akhir data, filter,
+  export 71 baris dan penghormatan filter, seluruh kasus validasi tautan, strict JSON, serta
+  RBAC 401 tanpa token.
+- DOM memakai Playwright pada container uji: 40 dari 40 PASS. Tiga halaman (25/25/21), mundur
+  satu langkah, filter posisi guru 6 baris dan tendik 7 baris, search, empty state, tombol
+  taut hanya di baris Santri, taut menghasilkan badge dan kartu "Tertaut" naik dari 0 ke 1,
+  lepas tautan, tombol export nonaktif saat hasil kosong, unduhan Excel dan PDF terpicu, dan
+  nol error konsol.
+- Isi file export diperiksa, bukan hanya keberadaan file: Excel berisi 77 baris XML (71 data
+  plus judul dan header, baris terakhir "Mpok Nani"), PDF `PDF-1.3` 3 halaman (multi-page
+  berjalan) memuat kolom "Data Santri" dan seluruh 66 nomor identitas.
+- Produksi setelah deploy: DOM 17 dari 17 PASS, export terunduh dan diperiksa ulang (71
+  baris, PDF 3 halaman), `integrity_check` ok, 71 baris utuh, `/api/ready` 200, tanpa token
+  401, dan nol error di `docker logs`.
+
+**Deploy.** Image `alma-parung-backend:jilid64-bgnp1` dan `alma-parung-frontend:jilid64-bgnp1`;
+backend `-p 8090:8080`, frontend `-p 3002:3000`; env diambil dari container yang sedang
+berjalan, bukan disusun manual. Rollback ke `jilid63-bgn` untuk kedua layanan.
+
+**Catatan operasional.**
+- `docker build` wajib memakai `--network=host`. Pada jaringan bridge, DNS gagal saat
+  `go mod download` dan `npm ci`. Build memakan sekitar 9 sampai 11 menit, jadi jalankan
+  dengan `setsid nohup` plus file penanda `.done`.
+- Container uji frontend tidak boleh memakai `--network=host` dengan PORT default 3000,
+  karena port 3000 dipakai proses agen lain dan hasilnya `EADDRINUSE`. Pakai port 3010.
+- Rewrite Next.js dibekukan saat build ke `.next/routes-manifest.json` dengan default
+  `https://almaparung.com`. Agar frontend uji menguji backend uji, salin file itu dari
+  image, ganti domainnya ke `http://127.0.0.1:8099`, lalu mount read-only ke container uji.
+  Tanpa langkah ini, container uji diam-diam menguji produksi.
+- Uji DOM memakai image resmi `mcr.microsoft.com/playwright:v1.49.0-jammy` karena host tidak
+  punya pustaka `libatk` sehingga chromium di host gagal start. Modul `playwright-core`
+  diambil dari `/tmp/pgl` di host dan di-mount sebagai `/pgl`; token lewat `/t`.
+- Backend cukup `--env-file`. Frontend produksi dijalankan tanpa mount atau env khusus.
+
 ## Jilid 63 — Fitur BGN: menu Penerima Manfaat Beras Bergizi Nasional + input data template (30 Sep 2026, LIVE)
 - **Backend** `internal/features/bgn/` (model.go, repository.go, handler.go): tabel baru `bgn_recipients`
   (migration `bgn_recipients_table` + index `bgn_recipients_identity_index`), kolom `identity` (NISN/NIK,
