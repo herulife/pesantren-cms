@@ -31,26 +31,116 @@ func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.GetAll)
 	r.Get("/stats", h.GetStats)
+	r.Get("/export", h.Export)
+	r.Get("/santri-options", h.GetSantriOptions)
 	r.Post("/", h.Create)
 	r.Post("/import", h.Import)
+	r.Post("/{id}/link", h.Link)
 	r.Put("/{id}", h.Update)
 	r.Delete("/{id}", h.Delete)
 	return r
 }
 
-func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	filter := Filter{
+// filterFromQuery membaca filter bersama yang dipakai GetAll dan Export.
+func filterFromQuery(r *http.Request) Filter {
+	return Filter{
 		Position: strings.TrimSpace(r.URL.Query().Get("position")),
 		Status:   strings.TrimSpace(r.URL.Query().Get("status")),
 		Search:   strings.TrimSpace(r.URL.Query().Get("search")),
 	}
-	items, err := h.repo.FindAll(filter)
+}
+
+// parsePagination membaca limit/offset dengan batas atas 500 (pola repo lain).
+func parsePagination(r *http.Request) (limit, offset int) {
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil || limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	offset, err = strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
+func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
+	filter := filterFromQuery(r)
+	filter.Limit, filter.Offset = parsePagination(r)
+
+	items, total, err := h.repo.FindAll(filter)
 	if err != nil {
 		logger.Error(r.Context(), "FindAll bgn failed", logger.Field{"error": err.Error()})
 		sendJSON(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "message": "Gagal memuat data BGN (Internal Server Error)"})
 		return
 	}
+	sendJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data":    items,
+		"total":   total,
+		"limit":   filter.Limit,
+		"offset":  filter.Offset,
+	})
+}
+
+// Export mengembalikan SELURUH penerima yang cocok filter (tanpa paginasi),
+// untuk dimuat di frontend sebagai data export Excel/PDF.
+func (h *Handler) Export(w http.ResponseWriter, r *http.Request) {
+	items, err := h.repo.ExportAll(filterFromQuery(r))
+	if err != nil {
+		logger.Error(r.Context(), "ExportAll bgn failed", logger.Field{"error": err.Error()})
+		sendJSON(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "message": "Gagal memuat data export BGN (Internal Server Error)"})
+		return
+	}
+	sendJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data":    items,
+		"total":   len(items),
+	})
+}
+
+// GetSantriOptions mencari kandidat data Santri untuk dialog tautan.
+func (h *Handler) GetSantriOptions(w http.ResponseWriter, r *http.Request) {
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	items, err := h.repo.FindSantriOptions(search, limit)
+	if err != nil {
+		logger.Error(r.Context(), "FindSantriOptions bgn failed", logger.Field{"error": err.Error()})
+		sendJSON(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "message": "Gagal memuat data Santri (Internal Server Error)"})
+		return
+	}
 	sendJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": items})
+}
+
+// Link menautkan / melepas tautan penerima BGN ke data Santri.
+func (h *Handler) Link(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		sendJSON(w, http.StatusBadRequest, map[string]interface{}{"success": false, "message": "ID tidak valid"})
+		return
+	}
+	var payload struct {
+		SantriID int `json:"santri_id"`
+	}
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	if payload.SantriID < 0 {
+		sendJSON(w, http.StatusBadRequest, map[string]interface{}{"success": false, "message": "Data Santri tidak valid"})
+		return
+	}
+	if err := h.repo.Link(id, payload.SantriID); err != nil {
+		logger.Error(r.Context(), "Link bgn failed", logger.Field{"error": err.Error()})
+		sendJSON(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "message": "Gagal menautkan data BGN (Internal Server Error)"})
+		return
+	}
+	msg := "Penerima BGN berhasil ditautkan ke data Santri"
+	if payload.SantriID == 0 {
+		msg = "Tautan ke data Santri dilepas"
+	}
+	sendJSON(w, http.StatusOK, map[string]interface{}{"success": true, "message": msg})
 }
 
 func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {

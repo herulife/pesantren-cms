@@ -11,6 +11,20 @@ type Recipient struct {
 	Status     bool   `json:"status"`      // true = menerima aktif
 	CreatedAt  string `json:"created_at"`
 	UpdatedAt  string `json:"updated_at"`
+
+	// Relasi opsional ke dataSantri di aplikasi (0 = belum ditautkan).
+	// Hanya-baca: tidak pernah dikirim balik lewat RecipientInput.
+	SantriID    int    `json:"santri_id"`
+	SantriName  string `json:"santri_name"`
+	SantriClass string `json:"santri_class"`
+}
+
+// SantriOption adalah kandidat/dataatri dari tabel `santri` untuk dialog tautan.
+type SantriOption struct {
+	ID    int    `json:"id"`
+	NIK   string `json:"nik"`
+	Name  string `json:"name"`
+	Class string `json:"class"`
 }
 
 type RecipientInput struct {
@@ -27,6 +41,8 @@ type Filter struct {
 	Position string
 	Status   string
 	Search   string
+	Limit    int // <=0 berarti tanpa paginasi
+	Offset   int
 }
 
 type RecipientStats struct {
@@ -36,6 +52,7 @@ type RecipientStats struct {
 	Tendik   int `json:"tendik"`
 	Active   int `json:"active"`
 	Inactive int `json:"inactive"`
+	Linked   int `json:"linked"` // penerima yang sudah ditautkan ke data Santri
 }
 
 type ImportResult struct {
