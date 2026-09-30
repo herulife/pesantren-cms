@@ -187,10 +187,72 @@ func (r *Repository) Delete(id int) error {
 // Link menautkan penerima BGN ke data Santri. Nilai 0 berarti belum ditautkan
 // atau sengaja dilepas tautan.
 func (r *Repository) Link(id int, value int) error {
-	_, err := r.db.Exec(
-		"UPDATE bgn_recipients SET "+colSantriID+" = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-		value, id)
-	return err
+	if value == 0 {
+		res, err := r.db.Exec(
+			"UPDATE "+BgnTable+" SET "+colSantriID+" = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+			id)
+		if err != nil {
+			return err
+		}
+		n, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return ErrNotFound
+		}
+		return nil
+	}
+
+	// Hanya penerima dengan posisi `santri` yang boleh ditautkan, dan ID Santri
+	// harus benar-benar ada. Query sekaligus menolak Santri yang sudah dipakai
+	// oleh penerima lain supaya relasi tetap satu-ke-satu.
+	res, err := r.db.Exec(
+		"UPDATE "+BgnTable+" SET "+colSantriID+" = ?, updated_at = CURRENT_TIMESTAMP "+
+			"WHERE id = ? AND position = 'santri' "+
+			"AND EXISTS (SELECT 1 FROM "+SantriTable+" WHERE id = ?) "+
+			"AND NOT EXISTS (SELECT 1 FROM "+BgnTable+" o WHERE o.id <> "+BgnTable+
+			".id AND o."+colSantriID+" = ?)",
+		value, id, value, value)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+
+	// Zero baris: tentukan penyebabnya agar pesan error ke pengguna akurat.
+	var position string
+	if err := r.db.QueryRow("SELECT position FROM "+BgnTable+" WHERE id = ?", id).
+		Scan(&position); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if position != "santri" {
+		return ErrLinkNotSantri
+	}
+	var exists int
+	if err := r.db.QueryRow("SELECT 1 FROM "+SantriTable+" WHERE id = ?", value).
+		Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrSantriNotFound
+		}
+		return err
+	}
+	var used int
+	if err := r.db.QueryRow("SELECT 1 FROM "+BgnTable+
+		" WHERE "+colSantriID+" = ? AND id <> ?", value, id).Scan(&used); err == nil {
+		return ErrSantriTaken
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	return ErrNotFound
 }
 
 // ImportUpsert menyisipkan batch penerima secara idempoten: baris dengan
