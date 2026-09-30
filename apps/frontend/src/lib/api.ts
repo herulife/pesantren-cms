@@ -802,9 +802,25 @@ export interface BgnRecipient {
 	status: boolean;
 	created_at: string;
 	updated_at: string;
+	// Relasi opsional ke data Santri (0 = belum ditautkan). Field baca-saja:
+	// HARUS di-Omit dari BgnRecipientInput agar tidak terkirim ke backend
+	// yang memakai strict JSON decoding (unknown field = 400).
+	santri_id: number;
+	santri_name: string;
+	santri_class: string;
 }
 
-export type BgnRecipientInput = Omit<BgnRecipient, 'id' | 'created_at' | 'updated_at'>;
+export type BgnRecipientInput = Omit<
+	BgnRecipient,
+	'id' | 'created_at' | 'updated_at' | 'santri_id' | 'santri_name' | 'santri_class'
+>;
+
+export interface BgnSantriOption {
+	id: number;
+	nik: string;
+	name: string;
+	class: string;
+}
 
 export interface BgnStats {
 	total: number;
@@ -813,22 +829,75 @@ export interface BgnStats {
 	tendik: number;
 	active: number;
 	inactive: number;
+	linked: number;
 }
 
-export async function getBgnRecipients(params: { search?: string; position?: string; status?: string } = {}) {
+export interface BgnListResult {
+	items: BgnRecipient[];
+	total: number;
+}
+
+export async function getBgnRecipients(
+	params: { search?: string; position?: string; status?: string; limit?: number; offset?: number } = {}
+): Promise<BgnListResult> {
 	try {
 		const qs = new URLSearchParams();
 		if (params.search) qs.append('search', params.search);
 		if (params.position) qs.append('position', params.position);
 		if (params.status) qs.append('status', params.status);
+		if (params.limit) qs.append('limit', String(params.limit));
+		if (params.offset) qs.append('offset', String(params.offset));
 		const res = await fetch(`${API_BASE_URL}/bgn?${qs.toString()}`, withCredentials({ cache: 'no-store' }));
+		if (!res.ok) return { items: [], total: 0 };
+		const result = await parseResponse(res);
+		return { items: extractListData<BgnRecipient>(result), total: result?.total ?? 0 };
+	} catch (error) {
+		console.error(`[API] Fetch BGN recipients error:`, error);
+		return { items: [], total: 0 };
+	}
+}
+
+// getBgnAll untuk export: seluruh baris yang cocok filter tanpa paginasi.
+export async function getBgnAllForExport(
+	params: { search?: string; position?: string; status?: string } = {}
+): Promise<BgnRecipient[]> {
+	try {
+		const qs = new URLSearchParams();
+		if (params.search) qs.append('search', params.search);
+		if (params.position) qs.append('position', params.position);
+		if (params.status) qs.append('status', params.status);
+		const res = await fetch(`${API_BASE_URL}/bgn/export?${qs.toString()}`, withCredentials({ cache: 'no-store' }));
 		if (!res.ok) return [];
 		const result = await parseResponse(res);
 		return extractListData<BgnRecipient>(result);
 	} catch (error) {
-		console.error(`[API] Fetch BGN recipients error:`, error);
+		console.error(`[API] Fetch BGN export error:`, error);
 		return [];
 	}
+}
+
+export async function getBgnSantriOptions(search: string): Promise<BgnSantriOption[]> {
+	try {
+		const qs = new URLSearchParams();
+		qs.append('limit', '20');
+		if (search) qs.append('search', search);
+		const res = await fetch(`${API_BASE_URL}/bgn/santri-options?${qs.toString()}`, withCredentials({ cache: 'no-store' }));
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		return extractListData<BgnSantriOption>(result);
+	} catch (error) {
+		console.error(`[API] Fetch BGN Santri options error:`, error);
+		return [];
+	}
+}
+
+export async function linkBgnSantri(id: number, santri_id: number) {
+	const res = await fetch(`${API_BASE_URL}/bgn/${id}/link`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ santri_id })
+	});
+	return parseResponse(res);
 }
 
 export async function getBgnStats() {
