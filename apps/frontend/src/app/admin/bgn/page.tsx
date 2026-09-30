@@ -4,21 +4,29 @@ import React, { Suspense, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getBgnRecipients,
+  getBgnAllForExport,
   getBgnStats,
+  getBgnSantriOptions,
   createBgnRecipient,
   updateBgnRecipient,
   deleteBgnRecipient,
   importBgnRecipients,
+  linkBgnSantri,
   BgnRecipient,
   BgnRecipientInput,
+  BgnSantriOption,
   BgnStats
 } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
+import { exportToExcel, exportToPDF } from '@/lib/export';
 import {
   Plus, Search, X, Pencil, Trash2, Upload, RefreshCw, Apple,
-  Users, GraduationCap, UserCog, UserCheck, UserX
+  Users, GraduationCap, UserCog, UserCheck, UserX,
+  FileSpreadsheet, FileText, Link2, Unlink, ChevronLeft, ChevronRight
 } from 'lucide-react';
+
+const PAGE_SIZE = 25;
 
 const POSITION_LABEL: Record<string, string> = {
   santri: 'Santri',
@@ -77,6 +85,18 @@ function BgnAdminPageContent() {
   const [filterPosition, setFilterPosition] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Link ke data Santri
+  const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const [linkTarget, setLinkTarget] = useState<BgnRecipient | null>(null);
+  const [linkQuery, setLinkQuery] = useState('');
+  const [linkOptions, setLinkOptions] = useState<BgnSantriOption[]>([]);
+  const [isLinking, setIsLinking] = useState(false);
+
   // Modal states
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -96,14 +116,29 @@ function BgnAdminPageContent() {
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
-    const data = await getBgnRecipients({
+    const res = await getBgnRecipients({
       search: searchQuery || undefined,
       position: filterPosition,
-      status: filterStatus
+      status: filterStatus,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE
     });
-    setItems(data);
+    setItems(res.items);
+    setTotal(res.total);
     setIsLoading(false);
+  }, [searchQuery, filterPosition, filterStatus, page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Reset ke halaman 1 whenever filter berubah agar tidak nyangkut di halaman kosong.
+  useEffect(() => {
+    setPage(1);
   }, [searchQuery, filterPosition, filterStatus]);
+
+  // Jaga agar page tidak melewati batas setelah total berubah.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   useEffect(() => {
     fetchStats();
@@ -250,6 +285,95 @@ function BgnAdminPageContent() {
   const genderLabel = (g: string) =>
     g === 'P' ? 'Perempuan' : g === 'L' ? 'Laki-laki' : '-';
 
+  const POSITION_EXPORT_LABEL: Record<string, string> = {
+    santri: 'Santri', guru: 'Guru', tendik: 'Tendik'
+  };
+
+  const exportTitle = (() => {
+    const parts: string[] = [];
+    if (filterPosition !== 'all') parts.push(`Posisi ${POSITION_EXPORT_LABEL[filterPosition] || filterPosition}`);
+    if (filterStatus !== 'all') parts.push(`Status ${filterStatus === 'aktif' ? 'Aktif' : 'Nonaktif'}`);
+    if (searchQuery) parts.push(`Cari "${searchQuery}"`);
+    return parts.length ? `Penerima BGN${parts.length ? ' (' + parts.join(', ') + ')' : ''}` : 'Penerima BGN';
+  })();
+
+  const buildExportRows = (rows: BgnRecipient[]): (string | number)[][] =>
+    rows.map((r, i) => [
+      i + 1,
+      r.name,
+      r.identity || '-',
+      r.birth_date || '-',
+      genderLabel(r.gender),
+      r.parent_name || '-',
+      POSITION_EXPORT_LABEL[r.position] || r.position,
+      r.status ? 'Aktif' : 'Nonaktif',
+      r.santri_id ? `${r.santri_name} (${r.santri_class || '-'})` : '-'
+    ]);
+
+  const EXPORT_COLUMNS = ['No', 'Nama', 'NISN/NIK', 'Tgl Lahir', 'JK', 'Orang Tua', 'Posisi', 'Status', 'Data Santri'];
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    setIsExporting(true);
+    try {
+      const rows = await getBgnAllForExport({
+        search: searchQuery || undefined,
+        position: filterPosition,
+        status: filterStatus
+      });
+      if (rows.length === 0) {
+        showToast('error', 'Tidak ada data untuk diekspor.');
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (format === 'excel') {
+        await exportToExcel(exportTitle, EXPORT_COLUMNS, buildExportRows(rows), `Penerima-BGN-${stamp}`);
+      } else {
+        await exportToPDF(exportTitle, EXPORT_COLUMNS, buildExportRows(rows), `Penerima-BGN-${stamp}`);
+      }
+      showToast('success', `${rows.length} baris berhasil diekspor ke ${format.toUpperCase()}.`);
+    } catch {
+      showToast('error', 'Gagal mengekspor data BGN.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const openLink = (it: BgnRecipient) => {
+    setLinkTarget(it);
+    setLinkQuery('');
+    setLinkOptions([]);
+    setIsLinkOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isLinkOpen) return;
+    const timer = setTimeout(async () => {
+      const opts = await getBgnSantriOptions(linkQuery);
+      setLinkOptions(opts);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [isLinkOpen, linkQuery]);
+
+  const handleLink = async (santriId: number) => {
+    if (!linkTarget) return;
+    setIsLinking(true);
+    try {
+      const res = await linkBgnSantri(linkTarget.id, santriId);
+      if (res.success) {
+        showToast('success', res.message || 'Tautan berhasil disimpan.');
+        setIsLinkOpen(false);
+        fetchItems();
+        fetchStats();
+      } else {
+        showToast('error', res.message || 'Gagal menautkan data BGN.');
+      }
+    } catch {
+      showToast('error', 'Gagal menautkan data BGN.');
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       {/* Header */}
@@ -263,7 +387,23 @@ function BgnAdminPageContent() {
             <p className="text-slate-400 text-sm font-bold">Beras Bergizi Nasional — Penerima Manfaat Pondok Pesantren Al-Maa Parung</p>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => handleExport('excel')}
+            disabled={isExporting || total === 0}
+            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Export daftar penerima ke Excel"
+          >
+            <FileSpreadsheet size={16} /> Excel
+          </button>
+          <button
+            onClick={() => handleExport('pdf')}
+            disabled={isExporting || total === 0}
+            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Export daftar penerima ke PDF"
+          >
+            <FileText size={16} /> PDF
+          </button>
           <button
             onClick={() => { setImportText(''); setIsImportOpen(true); }}
             className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all"
@@ -281,13 +421,14 @@ function BgnAdminPageContent() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           <StatsCard label="Total" value={stats.total} tone="bg-emerald-100 text-emerald-600" icon={<Apple size={22} />} />
           <StatsCard label="Santri" value={stats.santri} tone="bg-sky-100 text-sky-600" icon={<Users size={22} />} />
           <StatsCard label="Guru" value={stats.guru} tone="bg-violet-100 text-violet-600" icon={<GraduationCap size={22} />} />
           <StatsCard label="Tendik" value={stats.tendik} tone="bg-amber-100 text-amber-600" icon={<UserCog size={22} />} />
           <StatsCard label="Aktif" value={stats.active} tone="bg-green-100 text-green-600" icon={<UserCheck size={22} />} />
           <StatsCard label="Nonaktif" value={stats.inactive} tone="bg-rose-100 text-rose-600" icon={<UserX size={22} />} />
+          <StatsCard label="Tertaut" value={stats.linked ?? 0} tone="bg-indigo-100 text-indigo-600" icon={<Link2 size={22} />} />
         </div>
       )}
 
@@ -328,7 +469,7 @@ function BgnAdminPageContent() {
           <option value="nonaktif">Nonaktif</option>
         </select>
         <button
-          onClick={() => { setSearchQuery(''); setFilterPosition('all'); setFilterStatus('all'); fetchItems(); }}
+          onClick={() => { setSearchQuery(''); setFilterPosition('all'); setFilterStatus('all'); setPage(1); }}
           className="p-3 bg-white border border-slate-200 text-slate-500 rounded-2xl hover:text-emerald-600 hover:border-emerald-200 transition-all"
           title="Reset filter"
         >
@@ -365,7 +506,14 @@ function BgnAdminPageContent() {
               ) : (
                 items.map((it) => (
                   <tr key={it.id} className="border-t border-slate-50 hover:bg-slate-50/40 transition-colors">
-                    <td className="px-6 py-4 font-black text-slate-900">{it.name}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-black text-slate-900">{it.name}</div>
+                      {it.santri_id ? (
+                        <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                          <Link2 size={10} /> {it.santri_class || 'Santri'} — {it.santri_name}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-6 py-4 font-mono text-sm text-slate-500">{it.identity || '-'}</td>
                     <td className="px-6 py-4 text-slate-500 font-semibold">{it.birth_date || '-'}</td>
                     <td className="px-6 py-4 text-slate-500 font-semibold">{genderLabel(it.gender)}</td>
@@ -382,6 +530,13 @@ function BgnAdminPageContent() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openLink(it)}
+                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                          title={it.santri_id ? `Taut ke: ${it.santri_name}` : 'Tautkan ke data Santri'}
+                        >
+                          {it.santri_id ? <Unlink size={16} /> : <Link2 size={16} />}
+                        </button>
                         <button
                           onClick={() => openEdit(it)}
                           className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
@@ -404,7 +559,113 @@ function BgnAdminPageContent() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {total > PAGE_SIZE && (
+          <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">
+              Menampilkan <strong className="text-slate-900">{(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)}</strong> Dari {total} DATA
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={page <= 1 || isLoading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-[10px] font-black text-slate-600 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-colors uppercase tracking-widest shadow-sm"
+              >
+                <ChevronLeft size={16} /> Sebelumnya
+              </button>
+              <button
+                disabled={page >= totalPages || isLoading}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-[10px] font-black text-slate-600 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-colors uppercase tracking-widest shadow-sm"
+              >
+                Selanjutnya <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Link ke data Santri Modal */}
+      {isLinkOpen && linkTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsLinkOpen(false)}></div>
+          <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300 max-h-[90vh]">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                  <Link2 size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight font-outfit">Tautkan ke Santri</h3>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{linkTarget.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setIsLinkOpen(false)} className="p-2 text-slate-400 hover:text-slate-600"><X /></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 space-y-5">
+              {linkTarget.santri_id ? (
+                <div className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-indigo-50 border border-indigo-100">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Saat ini tertaut ke</p>
+                    <p className="font-black text-slate-900 truncate">{linkTarget.santri_name} <span className="text-slate-400 font-bold">({linkTarget.santri_class || '-'})</span></p>
+                  </div>
+                  <button
+                    onClick={() => handleLink(0)}
+                    disabled={isLinking}
+                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-rose-50 disabled:opacity-40 transition-all"
+                  >
+                    <Unlink size={14} /> Lepas Tautan
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 text-[11px] text-slate-500 font-bold">
+                  Belum tertaut ke data Santri. Tautan bersifat opsional — berguna agar penerima BGN bisa dicocokkan dengan data Santri di aplikasi.
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Cari Data Santri</label>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Ketik nama atau NIK..."
+                    value={linkQuery}
+                    onChange={(e) => setLinkQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {linkOptions.length === 0 ? (
+                  <p className="text-center text-slate-400 font-bold text-sm py-8">Data Santri tidak ditemukan.</p>
+                ) : (
+                  linkOptions.map((o) => (
+                    <button
+                      key={o.id}
+                      onClick={() => handleLink(o.id)}
+                      disabled={isLinking}
+                      className="w-full flex items-center justify-between gap-4 p-4 text-left rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 disabled:opacity-40 transition-all"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-black text-slate-900 truncate">{o.name}</span>
+                        <span className="block text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                          Kelas {o.class || '-'} {o.nik ? `• NIK ${o.nik}` : ''}
+                        </span>
+                      </span>
+                      <Link2 size={16} className="shrink-0 text-indigo-500" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form Modal (Add/Edit) */}
       {isFormOpen && (
