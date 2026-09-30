@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-)
+	"errors")
 
 type Handler struct {
 	repo IRepository
@@ -132,8 +132,21 @@ func (h *Handler) Link(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.Link(id, payload.SantriID); err != nil {
-		logger.Error(r.Context(), "Link bgn failed", logger.Field{"error": err.Error()})
-		sendJSON(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "message": "Gagal menautkan data BGN (Internal Server Error)"})
+		// Sentinel error dari repository dipetakan ke 4xx agar pesan ke
+		// pengguna spesifik, bukan 500 generik.
+		switch {
+		case errors.Is(err, ErrNotFound):
+			sendJSON(w, http.StatusNotFound, map[string]interface{}{"success": false, "message": "Penerima BGN tidak ditemukan"})
+		case errors.Is(err, ErrSantriNotFound):
+			sendJSON(w, http.StatusBadRequest, map[string]interface{}{"success": false, "message": "Data Santri tidak ditemukan"})
+		case errors.Is(err, ErrSantriTaken):
+			sendJSON(w, http.StatusConflict, map[string]interface{}{"success": false, "message": "Data Santri sudah ditautkan ke penerima BGN lain"})
+		case errors.Is(err, ErrLinkNotSantri):
+			sendJSON(w, http.StatusBadRequest, map[string]interface{}{"success": false, "message": "Hanya penerima BGN dengan posisi Santri yang dapat ditautkan"})
+		default:
+			logger.Error(r.Context(), "Link bgn failed", logger.Field{"error": err.Error()})
+			sendJSON(w, http.StatusInternalServerError, map[string]interface{}{"success": false, "message": "Gagal menautkan data BGN (Internal Server Error)"})
+		}
 		return
 	}
 	msg := "Penerima BGN berhasil ditautkan ke data Santri"
