@@ -291,7 +291,7 @@ const aoa = [
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-black tracking-tight text-slate-900">Import Massal Santri</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Tambahkan banyak santri sekaligus dari file Excel (.xlsx). Unduh template, isi, lalu unggah kembali.
+          Tambahkan banyak santri sekaligus dari file Excel (.xlsx). Unduh template, isi, lalu unggah kembali. Hanya format .xlsx yang diterima.
         </p>
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -317,7 +317,7 @@ const aoa = [
               </span>
               <input
                 type="file"
-                accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
