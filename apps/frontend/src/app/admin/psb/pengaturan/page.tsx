@@ -40,7 +40,7 @@ export default function PsbPengaturanPage() {
           <div className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <p className="text-sm text-slate-600">Pengaturan pembayaran PSB pindah ke Pengaturan Website agar satu pintu dengan rekening Donasi &amp; SPP.</p>
             <Link
-              href="/admin/settings"
+              href="/admin/settings?tab=No.%20Rekening"
               className="mt-3 inline-block rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-bold text-white"
             >
               Buka Pengaturan No. Rekening →
