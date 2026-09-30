@@ -526,10 +526,11 @@ func main() {
 				r.Mount("/notifications", notificationHandler.Routes())
 				r.Post("/attendance/scan", attendanceHandler.Scan)
 			})
+		})
 
+	})
 
-
-		// PHASE 4: proofs privat via handler berauth (chi memprioritaskan node
+	// PHASE 4: proofs privat via handler berauth (chi memprioritaskan node
 	// statis /uploads/proofs di atas catch-all /uploads/*).
 	// AuthMiddleware WAJIB: ServeProof membaca user dari context.
 	r.Group(func(r chi.Router) {
