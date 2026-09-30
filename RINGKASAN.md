@@ -21,10 +21,10 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:jilid64-bgnp1` | WA PSB anti-spam (hanya status bernilai + debounce 2 min + LUNAS sekali), healthy, **WAJIB `-p 8090:8080`** (nginx proxy /api/ ke 8090). Jilid 64 (BGN paginasi + export + tautan Santri) dan Jilid 63 (menu BGN), healthy, WAJIB `-p 8090:8080` karena nginx mem-proxy /api/ ke 8090. Rollback: `jilid63-bgn`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid64-bgnp1` | Kop e-raport PDF = "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel tidak lagi putih (bug `setTextColor`), healthy, `-p 3002:3000`. Jilid 64 (BGN paginasi + export Excel/PDF + tautan Santri) dan Jilid 63 (menu BGN), healthy, `-p 3002:3000`. Rollback: `jilid63-bgn`. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:jilid64-bgnp1` | Jilid 64 (BGN paginasi + export Excel/PDF + tautan Santri), Jilid 63 (menu BGN), WA PSB anti-spam (hanya status bernilai + debounce 2 menit + LUNAS sekali). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `jilid63-bgn`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid64-bgnp1` | Jilid 64 (BGN paginasi + export Excel/PDF + tautan Santri), Jilid 63 (menu BGN), kop e-raport PDF = "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel tidak lagi putih. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `jilid63-bgn`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `disc-wa`+`bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `fix-psb-current`(sebelum Jilid 61)+`jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
+| Rollback tersedia | — | backend `jilid63-bgn` (terakhir)+`disc-wa`+`bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid63-bgn` (terakhir)+`fix-psb-current`(sebelum Jilid 61)+`jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
 | DB | — | — | bgn_recipients 71 (santri 58 / guru 6 / tendik 7); santri 3; kolom baru `bgn_recipients.santri_id`, seluruhnya 0 (belum ada tautan) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
