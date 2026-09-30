@@ -3,7 +3,7 @@ package bgn
 import (
 	"database/sql"
 	"strings"
-)
+	"errors")
 
 type Repository struct {
 	db *sql.DB
