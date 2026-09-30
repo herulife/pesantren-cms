@@ -527,19 +527,8 @@ func main() {
 				r.Post("/attendance/scan", attendanceHandler.Scan)
 			})
 
-			// Uploads privat + file server publik
-			r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./public/uploads"))))
-		})
 
-			// Bukti transfer privat: middleware WAJIB karena ServeProof membaca user dari context.
-			// Chi memprioritaskan node statis /uploads/proofs di atas catch-all /uploads/*.
-			r.Group(func(r chi.Router) {
-				r.Use(auth.AuthMiddleware)
-				r.Get("/uploads/proofs/{file}", upload.ServeProof(database.DB))
-			})
-		})
 
-		// Cadangan: blok di bawah tetap dirujuk fileServer bila handler auth gagal.
 		// PHASE 4: proofs privat via handler berauth (chi memprioritaskan node
 	// statis /uploads/proofs di atas catch-all /uploads/*).
 	// AuthMiddleware WAJIB: ServeProof membaca user dari context.
