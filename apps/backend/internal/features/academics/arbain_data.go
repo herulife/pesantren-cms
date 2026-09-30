@@ -31,8 +31,8 @@ var arbainReference = []HadisArbain{
 		"Beribadah kepada Allah seakan-akan melihat-Nya. Jika tidak melihat, DIA melihat kamu.",
 		"Shahih Muslim 8", ""},
 	{6, "Salat di Masjid", "Iman & Ibadah",
-		"Barangsiapa salat di masjid yang besar, maka setiap salat yang ia kerjakan di sana "
-			+ "menjadi pembuka dan Allah akan memaafkan dosanya sampai suatu hari yang telah ditetapkan.",
+		"Barangsiapa salat di masjid yang besar, maka setiap salat yang ia kerjakan di sana " +
+			"menjadi pembuka dan Allah akan memaafkan dosanya sampai suatu hari yang telah ditetapkan.",
 		"Shahih Muslim 591", ""},
 	{7, "Jalan Menuju Ilmu", "Ilmu",
 		"Barangsiapa menempuh jalan mencari ilmu, Allah memudahkan baginya jalan menuju surga.",
@@ -68,8 +68,8 @@ var arbainReference = []HadisArbain{
 		"Bertakwa kepada Allah di mana pun kamu berada. Iringi keburukan dengan kebaikan yang menghapusnya.",
 		"Jami' at-Tirmidzi 1987", ""},
 	{18, "Memuliakan Tetangga", "Akhlak",
-		"Barangsiapa beriman kepada Allah dan hari akhir, hendaklah ia memuliakan tetangganya. "
-			+ "Sesungguhnya barangsiapa tidak memuliakan tetangganya, maka dia bukan seorang muslim.",
+		"Barangsiapa beriman kepada Allah dan hari akhir, hendaklah ia memuliakan tetangganya. " +
+			"Sesungguhnya barangsiapa tidak memuliakan tetangganya, maka dia bukan seorang muslim.",
 		"Shahih Muslim 2624", ""},
 	{19, "Menyelesaikan Sumpah", "Iman & Ibadah",
 		"Barangsiapa bersumpah dengan nama Allah, hendaklah ia menyelesaikannya.",
@@ -114,8 +114,8 @@ var arbainReference = []HadisArbain{
 		"Barangsiapa menunjukkan kebaikan, dapat pahala seperti orang yang melakukannya.",
 		"Shahih Muslim 1894", ""},
 	{33, "Menjaga Nama Baik", "Akhlak",
-		"Setiap muslim berada di bawah dua hal: jalan yang telah dilaluinya dan jalan yang akan "
-			+ "dilaluinya. Keduanya menjadi bukti terhadapnya di hari kiamat.",
+		"Setiap muslim berada di bawah dua hal: jalan yang telah dilaluinya dan jalan yang akan " +
+			"dilaluinya. Keduanya menjadi bukti terhadapnya di hari kiamat.",
 		"Shahih al-Bukhari 799", ""},
 	{34, "Tasbih Ringan", "Dzikir & Doa",
 		"Dua kalimat ringan di lidah, berat di timbangan, tercinta Allah: Subhanallah wa bihamdihi dan Subhanallah al-Azhim.",

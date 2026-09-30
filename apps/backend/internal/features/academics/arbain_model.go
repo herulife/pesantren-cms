@@ -24,17 +24,17 @@ var ArbainProgressSet = []string{ArbainStatusProses, ArbainStatusSetor, ArbainSt
 // Mirip tahfidz_progress: dipakai ustadz untuk mencatat setoran, lalu Buffer Santri
 // melihat progresnya sendiri lewat portal.
 type ArbainProgress struct {
-	ID            int    `json:"id"`
-	StudentID     int    `json:"student_id"`
-	StudentName   string `json:"student_name,omitempty"`
-	HadithNumber  int    `json:"hadith_number"`
-	HadithTitle   string `json:"hadith_title,omitempty"`
-	Category      string `json:"category,omitempty"`
-	Translation   string `json:"translation,omitempty"`
-	Source        string `json:"source,omitempty"`
-	Status        string `json:"status"`
-	Nilai         int    `json:"nilai"`
-	Notes         string `json:"notes"`
+	ID             int    `json:"id"`
+	StudentID      int    `json:"student_id"`
+	StudentName    string `json:"student_name,omitempty"`
+	HadithNumber   int    `json:"hadith_number"`
+	HadithTitle    string `json:"hadith_title,omitempty"`
+	Category       string `json:"category,omitempty"`
+	Translation    string `json:"translation,omitempty"`
+	Source         string `json:"source,omitempty"`
+	Status         string `json:"status"`
+	Nilai          int    `json:"nilai"`
+	Notes          string `json:"notes"`
 	EvaluationDate string `json:"evaluation_date"`
 }
 

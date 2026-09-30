@@ -178,7 +178,6 @@ func main() {
 	disciplineRepo := disciplines.NewRepository(database.DB)
 	disciplineHandler := disciplines.NewHandler(disciplineRepo)
 
-
 	notificationRepo := notifications.NewRepository(database.DB)
 	notificationHandler := notifications.NewHandler(notificationRepo)
 
@@ -394,7 +393,6 @@ func main() {
 				r.Delete("/users/{id}", authHandler.DeleteUser)
 				r.Mount("/settings", settingHandler.Routes())
 				r.Mount("/logs", logHandler.Routes())
-
 
 				// Wallet Admin
 				r.Post("/wallet/topup", walletHandler.TopUp)

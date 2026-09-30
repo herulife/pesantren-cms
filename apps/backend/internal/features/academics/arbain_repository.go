@@ -7,7 +7,7 @@ import (
 
 // GetAllArbainProgress mengembalikan seluruh catatan setoran Arbain.
 func (r *Repository) GetAllArbainProgress(limit, offset int) ([]ArbainProgress, error) {
-query := `
+	query := `
 		SELECT p.id, p.student_id, u.name as student_name, p.hadith_number, p.status,
 			p.nilai, p.notes, p.evaluation_date
 		FROM arbain_progress p
@@ -90,7 +90,8 @@ func (r *Repository) CreateArbainProgress(p *ArbainProgress) error {
 	if err != nil {
 		return err
 	}
-	id64, _ := res.LastInsertId(); p.ID = int(id64)
+	id64, _ := res.LastInsertId()
+	p.ID = int(id64)
 	return nil
 }
 
