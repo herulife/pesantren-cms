@@ -63,6 +63,72 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+## Jilid 65 - Hapus total fitur BGN + import ulang Santri dari master Google Sheet (30 Sep 2026, LIVE)
+
+**Order user (30 Sep):** hapus data Santri lama, bersihkan semua BGN, lalu import ulang
+Santri dari master Google Sheet.
+
+**Konteks.** Jilid 63/64 membangun fitur BGN (Penerima Manfaat Beras Bergizi Nasional),
+lalu agen sebelumnya menghapus source-nya di `7bcbf6e` (backend) & `f50912d` (frontend) —
+tetapi meninggalkan artefak: tabel `bgn_recipients_archive` (71 baris), kolom
+`santri.bgn_identity` + `santri.bgn_recipient`, dan `migrateSantriBgnColumns()` di `db.go`.
+
+**Perilaku data Student lama (58 baris) sebelum dihapus:**
+```
+parent_phone 0/58, father_phone 0/58, mother_phone 0/58  →  TIDAK ADA No HP sama sekali
+parent_name  57/58  →  wali ada, tapi hanya 1 field gabungan (tanpa pisah ayah/ibu)
+user_id 0/58, registration_id>0 = 0  →  tidak tertaut ke user/PSB mana pun
+semua tabel anak (spp_bills, iuran_bills, receipts, payment_transactions) = 0 baris
+```
+Jadi penghapusan tidak merusak nilai/tagihan/kuitansi apa pun. Backup pra-hapus:
+`data/alma-parung.db.bak-preimport-20260930-211354`.
+
+**Master sheet** (120 baris; `No | No Induk | Nama | Jenis Kelamin | Tempat,Tgl Lahir | No Telp | Email | Kelas | Status`).
+Sheet **tidak punya kolom nama wali** → 34 wali & 34 gender dari DB lama **di-carry over**
+berdasarkan pencocokan nama ternormalisasi, bukan diambil dari sheet.
+
+**Jebakan data yang ditemukan (SEMUA sudah ditangani):**
+1. **Kolom gender sheet terbalik** — 45 dari 46 baris yang cocok berbeda dengan DB lama
+   (mis. `Alisa Adriana Putri` di sheet "Laki-laki", di DB `p`). Tampaknya kolom geser satu
+   baris. → **tidak dipakai**; gender hanya dari DB lama (34 terisi), sisanya kosong.
+2. **No Induk ≠ NIK.** DB lama `nis` berisi nomor mirip NIK (`3135814666`), sedangkan
+   "No Induk" sheet bernomor sekolah (`212207015`), formatnya tidak seragam
+   (9 digit hanya 34 dari 120 baris). → dipakai apa adanya setelah spasi dibuang.
+3. **`BulkCreate` all-or-nothing** — 1 baris tidak valid → seluruh batch 400. Karena
+   `validateSantri` mewajibkan `nis` 4-20 char + `class` terisi, **19 baris dilewati**
+   (No Induk seperti `13`, `005`, `3`, `-`). Data bermasalah seperti ini **tidak boleh**
+   ditulis langsung via SQL karena akan menggagalkan validasi saat diedit lewat UI nanti.
+4. **`birth_date`**: `Tempat,Tanggal Lahir` dipecah; 2 baris tidak punya tempat lahir
+   (hanya `,18-09-2012`) → regex dibuat tempatnya opsional.
+5. **`jenjang`**: validator hanya menerima `smp`/`smk`, sedangkan data lama berisi `SMA`.
+   → kolom `jenjang` dikosongkan untuk semua baris.
+6. **`status`**: sheet "Tidak Aktif" tidak ada di whitelist (`aktif/lulus/pindah/cuti`) →
+   dipetakan ke `cuti` (3 baris di sheet, 1 yang lolos filter).
+7. **`class`**: sheet angka (`1`..`12`) → romawi (`I`..`XII`) mengikuti konvensi DB/tabel
+   `classes`. `SEMENTARA` (12) & `PPDB` (1) dipakai apa adanya.
+
+**Perubahan source (hanya 1 file):** `apps/backend/internal/platform/database/db.go`
+— `migrateSantriBgnColumns()` diganti `migrateDropBgnArtifacts()` (drop
+`bgn_recipients_archive` + `bgn_recipients` + kolom `bgn_identity`/`bgn_recipient`,
+idempoten via `schema_migrations`). Image `alma-parung-backend:jilid65-bgnclean`.
+**PENTING:** image backend lama masih berisi migrasi yang menambah kolom BGN —
+setelah kolom di-drop, **restart backend dengan image lama akan menghidupkan kembali
+kolom BGN**. Selalu deploy `jilid65-bgnclean`.
+
+**Efek samping yang perlu diketahui:** `Repository.ensureUserAccount` (dipanggil
+`BulkCreate`) membuat akun portal untuk tiap Santri. Import ini membuat **101 akun
+`role='user'`** dengan email `<nis>@almaparung.local` dan `randomPlaceholderHash()`
+(password acak → **tidak bisa login** sampai di-reset admin). `users` 7 → 108.
+
+**Hasil akhir DB:** `santri` = 101. No HP 72/101 (sebelumnya 0), wali 34/101,
+gender 34/101, tanggal lahir 101/101. Semua `user_id` tertaut ke akun portal.
+
+**Verifikasi:** `DELETE /api/santri/bulk` → 58 terhapus; `POST /api/santri/bulk` → 201
+`inserted: 101`; `GET /api/santri/` → data tersaji benar; `/api/bgn/*` → 404;
+`sqlite_master` & `PRAGMA table_info(santri)` → nol sisa BGN.
+
+---
+
 ## Jilid 64 - Fitur BGN P1: pagination + export Excel/PDF + tautan opsional ke data Santri (30 Sep 2026, LIVE)
 
 **Latar belakang.** Jilid 63 sudah menambah menu Penerima BGN + import template, tetapi
