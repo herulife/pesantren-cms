@@ -21,11 +21,11 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:jilid64-bgnp1` | Jilid 64 (BGN paginasi + export Excel/PDF + tautan Santri), Jilid 63 (menu BGN), WA PSB anti-spam (hanya status bernilai + debounce 2 menit + LUNAS sekali). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `jilid63-bgn`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid64-bgnp1` | Jilid 64 (BGN paginasi + export Excel/PDF + tautan Santri), Jilid 63 (menu BGN), kop e-raport PDF = "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel tidak lagi putih. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `jilid63-bgn`. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:jilid65-bgnclean` | Jilid 65 (hapus total BGN + import ulang Santri dari master Google Sheet). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `fix-nullsanti-v2`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:arbain-bgn2` | Jilid 64 (BGN paginasi + export), Jilid 63 (menu BGN — **sudah dihapus di source, tag image ini masih contain BGN**), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `jilid63-bgn`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `jilid63-bgn` (terakhir)+`disc-wa`+`bobot`+`kkm`+`roleB2`+`skala`+`jilid51`+`jilid48`; frontend `jilid63-bgn` (terakhir)+`fix-psb-current`(sebelum Jilid 61)+`jilid44`+`bobot`+`kkm`+`skala`+`jilid54`+`jilid53` | — |
-| DB | — | — | bgn_recipients 71 (santri 58 / guru 6 / tendik 7); santri 3; kolom baru `bgn_recipients.santri_id`, seluruhnya 0 (belum ada tautan) |
+| Rollback tersedia | — | backend `fix-nullsanti-v2`(terakhir)+`arbain-bgn`+`jilid64-bgnp1`+`jilid63-bgn`; frontend `arbain-bgn2`(terakhir)+`jilid64-bgnp1`+`jilid63-bgn` | — |
+| DB | — | — | **santri 101** (re-import dari master Google Sheet 30 Sep 2026); `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP** |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 ```
