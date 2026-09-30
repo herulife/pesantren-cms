@@ -370,6 +370,21 @@ func createTables() {
 		FOREIGN KEY (student_id) REFERENCES users(id)
 	);
 
+	CREATE TABLE IF NOT EXISTS arbain_progress (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		student_id INTEGER NOT NULL,
+		hadith_number INTEGER NOT NULL,
+		status TEXT NOT NULL DEFAULT 'proses',
+		nilai INTEGER DEFAULT 0,
+		notes TEXT DEFAULT '',
+		evaluation_date TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (student_id) REFERENCES users(id)
+	);
+
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_arbain_student_hadith
+		ON arbain_progress(student_id, hadith_number);
+
 	CREATE TABLE IF NOT EXISTS gallery (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		title TEXT NOT NULL,
@@ -1208,24 +1223,22 @@ func runMigrations() {
 			);`,
 		},
 		{
-			name: "bgn_recipients_table",
-			sql: `CREATE TABLE IF NOT EXISTS bgn_recipients (
+			name: "arbain_progress_table",
+			sql: `CREATE TABLE IF NOT EXISTS arbain_progress (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				identity TEXT DEFAULT '',
-				name TEXT NOT NULL,
-				birth_date TEXT DEFAULT '',
-				gender TEXT DEFAULT '',
-				parent_name TEXT DEFAULT '',
-				position TEXT NOT NULL DEFAULT 'santri',
-				status INTEGER NOT NULL DEFAULT 1,
-				santri_id INTEGER NOT NULL DEFAULT 0,
+				student_id INTEGER NOT NULL,
+				hadith_number INTEGER NOT NULL,
+				status TEXT NOT NULL DEFAULT 'proses',
+				nilai INTEGER DEFAULT 0,
+				notes TEXT DEFAULT '',
+				evaluation_date TEXT NOT NULL,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				FOREIGN KEY (student_id) REFERENCES users(id)
 			);`,
 		},
 		{
-			name: "bgn_recipients_identity_index",
-			sql:  `CREATE INDEX IF NOT EXISTS idx_bgn_recipients_identity ON bgn_recipients(identity);`,
+			name: "arbain_progress_student_hadith_index",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_arbain_student_hadith ON arbain_progress(student_id, hadith_number);`,
 		},
 	}
 
@@ -1238,7 +1251,7 @@ func runMigrations() {
 	}
 
 	migrateGradesUhScore()
-	migrateBgnSantriLink()
+	migrateSantriBgnColumns()
 	backfillSantriUserAccounts()
 	migrateUsersRoleCheck()
 }
@@ -1275,40 +1288,47 @@ func migrateGradesUhScore() {
 	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('grades_uh_score_column')")
 }
 
-// migrateBgnSantriLink menambahkan kolom当時の_id pada tabel bgn_recipients
-// bila belum ada (idempoten, dicatat di schema_migrations). Kolom ini hanya
-// opsional: 0 berarti penerima BGN belum ditautkan ke data Santri.
-func migrateBgnSantriLink() {
-	const col = "santri_id"
+// migrateSantriBgnColumns menambahkan kolom penanda penerima BGN pada tabel
+// Santri (data BGN dipindahkan ke tabel Santri per order user 30 Sep 2026).
+// Idempoten (dicatat di schema_migrations).
+func migrateSantriBgnColumns() {
+	const name = "santri_bgn_columns"
 	var done int
-	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='bgn_recipients_santri_link'`).Scan(&done); err != nil {
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name=?`, name).Scan(&done); err != nil {
 		return
 	}
 	if done > 0 {
 		return
 	}
-	rows, err := DB.Query(`PRAGMA table_info(bgn_recipients)`)
+	rows, err := DB.Query(`PRAGMA table_info(santri)`)
 	if err != nil {
 		return
 	}
-	var found bool
+	existing := map[string]bool{}
 	for rows.Next() {
 		var cid, notnull, pk int
-		var name, ctype string
+		var col, ctype string
 		var dflt interface{}
-		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err == nil && name == col {
-			found = true
+		if err := rows.Scan(&cid, &col, &ctype, &notnull, &dflt, &pk); err == nil {
+			existing[col] = true
 		}
 	}
 	rows.Close()
-	if !found {
-		if _, err := DB.Exec(`ALTER TABLE bgn_recipients ADD COLUMN ` + col + ` INTEGER DEFAULT 0`); err != nil {
-			log.Printf("[DB] Migration bgn_recipients_santri_link skipped: %v", err)
+	// Kolom yang ditambahkan: identitas BGN (NISN/NIK) dan status penerima.
+	add := []struct{ col, typ, dflt string }{
+		{"bgn_identity", "TEXT", "''"},
+		{"bgn_recipient", "INTEGER", "0"},
+	}
+	for _, a := range add {
+		if existing[a.col] {
+			continue
+		}
+		if _, err := DB.Exec(`ALTER TABLE santri ADD COLUMN ` + a.col + ` ` + a.typ + ` DEFAULT ` + a.dflt); err != nil {
+			log.Printf("[DB] Migration %s skipped (%s): %v", name, a.col, err)
 			return
 		}
 	}
-	_, _ = DB.Exec(`CREATE INDEX IF NOT EXISTS idx_bgn_recipients_santri_id ON bgn_recipients(` + col + `)`)
-	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('bgn_recipients_santri_link')")
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('" + name + "')")
 }
 
 // migrateUsersRoleCheck melebarkan CHECK role users agar menerima peran
