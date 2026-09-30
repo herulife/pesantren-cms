@@ -1218,6 +1218,7 @@ func runMigrations() {
 				parent_name TEXT DEFAULT '',
 				position TEXT NOT NULL DEFAULT 'santri',
 				status INTEGER NOT NULL DEFAULT 1,
+				santri_id INTEGER NOT NULL DEFAULT 0,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 			);`,
@@ -1237,6 +1238,7 @@ func runMigrations() {
 	}
 
 	migrateGradesUhScore()
+	migrateBgnSantriLink()
 	backfillSantriUserAccounts()
 	migrateUsersRoleCheck()
 }
@@ -1271,6 +1273,42 @@ func migrateGradesUhScore() {
 		}
 	}
 	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('grades_uh_score_column')")
+}
+
+// migrateBgnSantriLink menambahkan kolom当時の_id pada tabel bgn_recipients
+// bila belum ada (idempoten, dicatat di schema_migrations). Kolom ini hanya
+// opsional: 0 berarti penerima BGN belum ditautkan ke data Santri.
+func migrateBgnSantriLink() {
+	const col = "santri_id"
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='bgn_recipients_santri_link'`).Scan(&done); err != nil {
+		return
+	}
+	if done > 0 {
+		return
+	}
+	rows, err := DB.Query(`PRAGMA table_info(bgn_recipients)`)
+	if err != nil {
+		return
+	}
+	var found bool
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt interface{}
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err == nil && name == col {
+			found = true
+		}
+	}
+	rows.Close()
+	if !found {
+		if _, err := DB.Exec(`ALTER TABLE bgn_recipients ADD COLUMN ` + col + ` INTEGER DEFAULT 0`); err != nil {
+			log.Printf("[DB] Migration bgn_recipients_santri_link skipped: %v", err)
+			return
+		}
+	}
+	_, _ = DB.Exec(`CREATE INDEX IF NOT EXISTS idx_bgn_recipients_santri_id ON bgn_recipients(` + col + `)`)
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('bgn_recipients_santri_link')")
 }
 
 // migrateUsersRoleCheck melebarkan CHECK role users agar menerima peran
