@@ -25,7 +25,7 @@
 | Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:arbain-bgn2` | Jilid 64 (BGN paginasi + export), Jilid 63 (menu BGN — **sudah dihapus di source, tag image ini masih contain BGN**), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `jilid63-bgn`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `fix-nullsanti-v2`(terakhir)+`arbain-bgn`+`jilid64-bgnp1`+`jilid63-bgn`; frontend `arbain-bgn2`(terakhir)+`jilid64-bgnp1`+`jilid63-bgn` | — |
-| DB | — | — | **santri 101** (re-import dari master Google Sheet 30 Sep 2026); `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP** |
+| DB | — | — | **santri 119** (re-import dari master Google Sheet 30 Sep 2026; 18 pakai NIS sementara `TEMP0xx`); `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 126 (119 akun portal hasil import) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 ```
@@ -871,9 +871,9 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 1b. [ ] **Kelas `M YUSUF RAMADHAN` perlu dikonfirmasi** — sheet bilang kelas 1, DB lama bilang kelas **X**. Dia juga terduplikasi di sheet (2 baris, 1 orang), yang ke-2 sudah dibuang.
 1c. [ ] **2 baris tanpa kelas** (`M DESTA PRATAMA`, `ZULFA FAKHRUNNISA`) diisi `SEMENTARA` — konfirmasi ke user.
 1d. [ ] **Case nama di master sheet tidak konsisten** (ada `Aisyah Khoirunnisa` tapi juga `Alisa adriana putri` dan `AFIFAH SALMA TAZKIA`). Import took apa adanya, tidak diubah. Kalau mau dirapikan, perlu listing dari user dulu.
-2. [ ] **Password 101 akun portal hasil import belum ada** (`randomPlaceholderHash`). Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
-3. [ ] **Gender 67/101 kosong** (hanya 34 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
-4. [ ] **Wali 67/101 kosong** — master sheet tidak punya kolom nama wali. No HP (72/101) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
+2. [ ] **Password 119 akun portal hasil import belum ada** (`randomPlaceholderHash`). Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
+3. [ ] **Gender 74/119 kosong** (hanya 45 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
+4. [ ] **Wali 74/119 kosong** — master sheet tidak punya kolom nama wali. No HP (84/119) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
 5. [ ] **GitHub push GAGAL** — PAT yang tertanam di URL remote (`origin`) sudah dicabut: `Invalid username or token`. 40+ commit masih lokal. Perlu token baru / `gh auth login`, lalu `git remote set-url origin` tanpa token (lebih aman).
 6. [ ] Dokumen §2 tadinya tertinggal (menulis image `jilid64-bgnp1` padahal live sudah lain) — **sudah dikoreksi** di Jilid 65. subsided: Arbain + import Santri + fix-nullsanti **tidak pernah didokumentasikan**; hanya BGN yang tercatat. Kalau memproxy pekerjaan lanjutan, cek `git log` 30 Sep.
 7. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).
