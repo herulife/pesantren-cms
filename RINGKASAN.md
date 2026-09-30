@@ -832,19 +832,23 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 `components/PublicLayout.tsx`, `lib/donations.ts`, `lib/page-content.ts`.
 
 ## 5. TODO AKTIF
-1. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).
-2. [ ] Rotasi password SSH `H3ru@2026`.
-3. [ ] Update skor halaman `/audit`.
-4. [ ] (Opsional) KKM dinamis utk tampilan CBT & PDF predikat ikut KKM (sudah selaras via weight; cek halaman ekslusif CBT).
-5. [ ] (Baru) [lihat `HANDOFF.md` item B] Isi UH untuk nilai yang sudah ada — kalau tidak, nilai lama turun saat di-edit ulang. **Catatan 28 Sep: opsi "set bobot UH = 0" TIDAK bisa dipakai** — `weight.ValidateGradeWeights` menolak bobot 0, jadi mapel tanpa ulangan harian perlu bobot redistributed (mis. 30/30/20/20) atau backend diubah agar bobot 0 boleh.
-6. [ ] (Baru) Bobot yang tersimpan tidak memengaruhi `grades` yang sudah ada; perlu tombol/endpoint "hitung ulang nilai" bila ditanyakan user. Rencana eksekusi sudah ditulis di `HANDOFF.md` item C.
-7. [ ] Jangan hapus: `backups/*.gz|*.db`, image/tag + container agen lain (`pekerjaan-*`, `userdel-*`, `kopraport-*`, `role-separation-*`, `ai-fix*`, `santrifilter-*`), volume `clinic-os-*`, `/tmp/j28` (milik UID lain).
-8. [ ] (Baru) Minta user cek di Android/Chrome: field **Kelas** & **Status** di `/admin/kesantrian/form` kini dropdown kustom (image frontend `jilid44`) — pastikan tidak lagi "langsung nutup". Bila `<select>` native di halaman lain (mis. `/admin/school`, `/admin-bs`) juga bermasalah di Android, pola `SelectField` di `app/admin/kesantrian/form/page.tsx` bisa dipakai ulang.
-9. [ ] (Baru) `CATATAN-JILID42.md` belum diupdate untuk pekerjaan bobot / jilid43 / jilid44 / jilid45 (sudah ditangani di `HANDOFF.md` item G) — — detail lengkap ada di §4 RINGKASAN. Lengkapi atau tandai usang agar agen lain tidak mencari detail yang tidak ada di sana.
-10. [ ] (Baru) File `/tmp/pgl/inspect10.js` (milik agen lain) berisi `JWT_SECRET` hardcode — Credential ada di disk server. Sudah dilaporkan ke user; JANGAN dihapus tanpa izin karena mungkin masih dipakai agen lain.
-11. [ ] (Baru) 2 screenshot tutorial (`acad-08-presensi.png`, `acad-09-tahfidz.png`) sudah dipakai di `visualSteps` (langkah 6-7). Kalau nanti ditambah section tutorial lain, pakai pattern yang sama: redactor DOM + guard middleware, jangan asal taruh PNG ke `public/`.
-12. [ ] (Baru) 3 file `.bak-tutorial-20260928-064738` (adminDocs/help-page/middleware) sudah dihapus setelah deploy; contoh aslinya ada di riwayat git (`c125ef9`, `5a36b0d`), tidak perlu backup terpisah.
-10. [ ] (Baru) `apps/frontend/tsconfig.tsbuildinfo` dimiliki root → `tsc` selalu gagal `TS5033` untuk user `heru`. Minta owner `chown heru` file itu, atau nonaktifkan `incremental` di `tsconfig.json`.
+1. [ ] **19 Santri dari master sheet TIDAK ter-import** (No Induk < 4 char atau `-`, mis. `13`, `005`, `3`, `-`). Butuh No Induk yang benar dari user, atau keputusan sintesis NIS. Lihat Jilid 65 §7.
+2. [ ] **Password 101 akun portal hasil import belum ada** (`randomPlaceholderHash`). Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
+3. [ ] **Gender 67/101 kosong** (hanya 34 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
+4. [ ] **Wali 67/101 kosong** — master sheet tidak punya kolom nama wali. Only HP (72/101) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
+5. [ ] **GitHub push GAGAL** — PAT yang tertanam di URL remote (`origin`) sudah dicabut: `Invalid username or token`. 40+ commit masih lokal. Perlu token baru / `gh auth login`, lalu `git remote set-url origin` tanpa token (lebih aman).
+6. [ ] Dokumen §2 tadinya tertinggal (menulis image `jilid64-bgnp1` padahal live sudah lain) — **sudah dikoreksi** di Jilid 65. subsided: Arbain + import Santri + fix-nullsanti **tidak pernah didokumentasikan**; hanya BGN yang tercatat. Kalau memproxy pekerjaan lanjutan, cek `git log` 30 Sep.
+7. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).
+8. [ ] Rotasi password SSH `H3ru@2026`.
+9. [ ] Update skor halaman `/audit`.
+10. [ ] (Opsional) KKM dinamis utk tampilan CBT & PDF predikat ikut KKM (sudah selaras via weight; cek halaman ekslusif CBT).
+11. [ ] Isi UH untuk nilai yang sudah ada — kalau tidak, nilai lama turun saat di-edit ulang. **Catatan 28 Sep: opsi "set bobot UH = 0" TIDAK bisa dipakai** — `weight.ValidateGradeWeights` menolak bobot 0, jadi mapel tanpa ulangan harian perlu bobot redistributed (mis. 30/30/20/20) atau backend diubah agar bobot 0 boleh.
+12. [ ] Bobot yang tersimpan tidak memengaruhi `grades` yang sudah ada; perlu tombol/endpoint "hitung ulang nilai" bila ditanyakan user. Rencana eksekusi sudah ditulis di `HANDOFF.md` item C.
+13. [ ] Jangan hapus: `backups/*.gz|*.db`, image/tag + container agen lain (`pekerjaan-*`, `userdel-*`, `kopraport-*`, `role-separation-*`, `ai-fix*`, `santrifilter-*`), volume `clinic-os-*`, `/tmp/j28` (milik UID lain).
+14. [ ] Minta user cek di Android/Chrome: field **Kelas** & **Status** di `/admin/kesantrian/form` kini dropdown kustom (image frontend `jilid44`) — pastikan tidak lagi "langsung nutup". Bila `<select>` native di halaman lain (mis. `/admin/school`, `/admin-bs`) juga bermasalah di Android, pola `SelectField` di `app/admin/kesantrian/form/page.tsx` bisa dipakai ulang.
+15. [ ] `CATATAN-JILID42.md` belum diupdate untuk pekerjaan bobot / jilid43 / jilid44 / jilid45 — detail lengkap ada di §4 RINGKASAN. Lengkapi atau tandai usang.
+16. [ ] File `/tmp/pgl/inspect10.js` (milik agen lain) berisi `JWT_SECRET` hardcode — sudah dilaporkan ke user; JANGAN dihapus tanpa izin karena mungkin masih dipakai agen lain.
+17. [ ] 2 screenshot tutorial (`acad-08-presensi.png`, `acad-09-tahfidz.png`) sudah dipakai di `visualSteps`. Kalau menambah section tutorial lain, pakai pattern yang sama: redactor DOM + guard middleware, jangan asal taruh PNG ke `public/`.
 
 ## 6. PELAJARAN TEKNIS (jangan ulangi)
 - SQLite `modernc` + `_txlock=immediate`: tulis saat `rows` terbuka = DEADLOCK. Kumpulkan dulu, tutup, baru tulis.
