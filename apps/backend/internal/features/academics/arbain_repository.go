@@ -12,8 +12,6 @@ query := `
 			p.nilai, p.notes, p.evaluation_date
 		FROM arbain_progress p
 		JOIN users u ON u.id = p.student_id
-		LEFT JOIN santri st ON st.user_id = p.student_id
-		WHERE st.class IN (` + strings.Join(ph, ",") + `)
 		ORDER BY p.evaluation_date DESC, p.hadith_number ASC`
 	if limit > 0 {
 		query += " LIMIT ? OFFSET ?"
@@ -42,7 +40,7 @@ func (r *Repository) GetScopedArbainProgress(classes []string, limit, offset int
 		FROM arbain_progress p
 		JOIN users u ON u.id = p.student_id
 		LEFT JOIN santri st ON st.user_id = p.student_id
-		WHERE st.class IN (` + joinPlaceholders(ph) + `)
+		WHERE st.class IN (` + strings.Join(ph, ",") + `)
 		ORDER BY p.evaluation_date DESC, p.hadith_number ASC`
 	if limit > 0 {
 		query += " LIMIT ? OFFSET ?"
@@ -92,7 +90,7 @@ func (r *Repository) CreateArbainProgress(p *ArbainProgress) error {
 	if err != nil {
 		return err
 	}
-	p.ID, _ = res.LastInsertId()
+	id64, _ := res.LastInsertId(); p.ID = int(id64)
 	return nil
 }
 
