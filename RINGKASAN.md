@@ -252,6 +252,54 @@ COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''),
 **Deploy:** backend image `alma-parung-backend:disc-fix` (frontend tidak berubah, tetap `sppautofix`).
 Rollback: `alma-parung-backend-DISC-*` (image `sppautofix`) dan image `disiplinfix`.
 
+## Jilid 62 — Kop dinamis + reset warna teks di SEMUA dokumen cetak (SPP/Iuran/Logs/Kwitansi) (29 Sep 2026, LIVE)
+
+**Perintah user:** terapkan perbaikan kop e-raport ke SEMUA raport/dokumen yang bisa dicetak.
+
+**Audit:** hanya ada 2 generator PDF di frontend: `lib/export.ts` & `KwitansiModal.tsx`.
+Admin → Payments menyediakan laporan PDF utk: SPP (`SppReport.tsx`), Iuran
+(`IuranReport.tsx`), Audit Log (`admin/logs/page.tsx`) — ketiganya lewat `exportToPDF()`
+yang **hardcode** `PONDOK PESANTREN AL-MAA` + alamat salah `Jl. Raya Parung - Bogor`.
+`exportToExcel()` juga hardcode nama.
+
+**Perubahan:**
+- `lib/export.ts`
+  - Helper baru `kopInfo()` (cache `loadKopInfo()`) dan `logoDataUrl()` (cache logo);
+    dipakai juga oleh `renderKop()`.
+  - `exportToPDF` → **async**: kop = `settings.school_name`, alamat & kontak dari
+    setting, logo ditambahkan kiri-atas, warna teks eksplisit (gelap untuk kop area,
+    teal untuk judul laporan, abu untuk tanggal cetak). Tidak ada lagi string hardcode.
+  - `exportToExcel` → **async**: baris 1 = `kop.name`, + baris alamat & kontak.
+  - `renderKop` → tambah `doc.setTextColor(30,41,59)` di akhir supaya pemanggil
+    tidak mewarisi putih (tambahan defensif; bug asli sudah di-fix di Jilid 61).
+- `KwitansiModal.tsx` → **fix bug Jilid 61**: baris header PDF sempat
+  `doc.splitTextToSize(\`formatSchoolName(school.name).toUpperCase()\`, ...)` (memakai
+  template literal dgn backtick → teks literal tercetak, bukan nama). Diubah ke
+  pemanggilan fungsi asli. Backup `KwitansiModal.tsx.bak-20260929-kwitansi`.
+- Pemanggil `exportToPDF`/`exportToExcel` jadi `async` + `await`:
+  `SppReport.tsx`, `IuranReport.tsx`, `admin/logs/page.tsx`.
+- Backup: `export.ts.bak-20260929`, `SppReport.tsx.bak-20260929-*`,
+  `IuranReport.tsx.bak-20260929-*`, `logs/page.tsx.bak-20260929-*` (otomatis patch).
+
+**Deploy:** image `alma-parung-frontend:jilid62-kop-global` (built 2x: rebake pertama,
+lalu rebake kedua setelah fix kwitansi) di container `alma-parung-frontend-bobot`.
+Healthy, `/` 200, `/api/settings/public` mengembalikan nama baru.
+
+**Verifikasi (PDF asli di-generate headless dari UI live):**
+- SPP report PDF (20.352 byte): header awal = `PONDOK PESANTREN AL-MAA PARUNG BOGOR |
+  jl haji mawi gang omega desa waru parung bogor jawa-barat | +6287784423282 ·
+  ponpesalmaaparung@gmail.com · almaparung.com | Laporan Tagihan 2026-09 s/d 2026-09`.
+- Iuran report PDF (18.374 byte): kop sama dinamis, judul `Laporan Tagihan Iuran ...`.
+- E-Raport (Jilid 61) tetap: judul putih di kop hijau; teks identitas & kartu gelap.
+- Bundle ter-deploy **tidak** lagi mengandung string literal
+  `formatSchoolName(school.name).toUpperCase()` (bukti kwitansi bug backtick bersih).
+- `Pondok Pesantren Al-Maa` muncul di chunk ter-deploy (kop dinamis).
+- `tsc --noEmit` lolos.
+
+**Catatan:** string "Yayasan Pondok Pesantren Tahfidz Al-Maa" masih ada di 2 prompt AI
+artikel (`apps/backend/internal/platform/ai/gemini.go:248` & `281`) — bukan dokumen
+cetak, butuh rebuild backend; sengaja TIDAK diubah di jilid ini.
+
 ## Jilid 61 — Kop e-raport: "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel PDF tak terlihat (29 Sep 2026, LIVE)
 
 **Keluhan user (2):** (1) di preview e-raport kop bernama "yayasan", padahal harus
