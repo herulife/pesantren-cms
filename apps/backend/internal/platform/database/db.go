@@ -1251,7 +1251,7 @@ func runMigrations() {
 	}
 
 	migrateGradesUhScore()
-	migrateSantriBgnColumns()
+	migrateDropBgnArtifacts()
 	backfillSantriUserAccounts()
 	migrateUsersRoleCheck()
 }
@@ -1288,17 +1288,26 @@ func migrateGradesUhScore() {
 	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('grades_uh_score_column')")
 }
 
-// migrateSantriBgnColumns menambahkan kolom penanda penerima BGN pada tabel
-// Santri (data BGN dipindahkan ke tabel Santri per order user 30 Sep 2026).
+// migrateDropBgnArtifacts membersihkan sisa artefak BGN (Beras Bergizi
+// Nasional) yang sudah tidak dipakai: tabel bgn_recipients /
+// bgn_recipients_archive beserta indexnya, dan kolom penanda BGN pada tabel
+// Santri. Fitur BGN dihapus permanen per order user 30 Sep 2026; data BGN
+// sudah dipindahkan ke tabel Santri lalu diim ulang dari master Google Sheet.
 // Idempoten (dicatat di schema_migrations).
-func migrateSantriBgnColumns() {
-	const name = "santri_bgn_columns"
+func migrateDropBgnArtifacts() {
+	const name = "bgn_artifacts_dropped"
 	var done int
 	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name=?`, name).Scan(&done); err != nil {
 		return
 	}
 	if done > 0 {
 		return
+	}
+	for _, t := range []string{"bgn_recipients_archive", "bgn_recipients"} {
+		if _, err := DB.Exec(`DROP TABLE IF EXISTS ` + t); err != nil {
+			log.Printf("[DB] Migration %s: gagal drop tabel %s: %v", name, t, err)
+			return
+		}
 	}
 	rows, err := DB.Query(`PRAGMA table_info(santri)`)
 	if err != nil {
@@ -1314,17 +1323,12 @@ func migrateSantriBgnColumns() {
 		}
 	}
 	rows.Close()
-	// Kolom yang ditambahkan: identitas BGN (NISN/NIK) dan status penerima.
-	add := []struct{ col, typ, dflt string }{
-		{"bgn_identity", "TEXT", "''"},
-		{"bgn_recipient", "INTEGER", "0"},
-	}
-	for _, a := range add {
-		if existing[a.col] {
+	for _, col := range []string{"bgn_identity", "bgn_recipient"} {
+		if !existing[col] {
 			continue
 		}
-		if _, err := DB.Exec(`ALTER TABLE santri ADD COLUMN ` + a.col + ` ` + a.typ + ` DEFAULT ` + a.dflt); err != nil {
-			log.Printf("[DB] Migration %s skipped (%s): %v", name, a.col, err)
+		if _, err := DB.Exec(`ALTER TABLE santri DROP COLUMN ` + col); err != nil {
+			log.Printf("[DB] Migration %s: gagal drop kolom %s: %v", name, col, err)
 			return
 		}
 	}
