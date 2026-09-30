@@ -6,19 +6,24 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/components/AuthProvider';
 import {
+  ArbainProgress,
   Attendance,
   CompactUser,
+  HadisArbain,
   Grade,
   GradeWeight,
   Subject,
   TahfidzProgress,
   createSubject,
+  deleteArbain,
   deleteAttendance,
   deleteGrade,
   deleteSubject,
   deleteTahfidz,
   getAcademicKKM,
   getAcademicStudents,
+  getArbain,
+  getArbainReference,
   getAttendance,
   getAttendanceSummary,
   getGradeWeights,
@@ -34,8 +39,8 @@ import {
 import { downloadBulkStudentReportPDF, downloadStudentReportPDF, exportToExcel, exportToPDF, previewBulkStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
 import { AlertTriangle, BarChart3, BookOpen, Calendar, ClipboardList, Download, Eye, FileDown, FileSpreadsheet, LayoutDashboard, Layers3, MessageSquare, Pencil, Plus, Printer, RefreshCw, Search, Trash2, Trophy, Users, X } from 'lucide-react';
 
-type TabKey = 'dashboard' | 'grades' | 'attendance' | 'tahfidz' | 'recap' | 'reports' | 'subjects';
-type DeleteType = 'grade' | 'attendance' | 'tahfidz' | 'subject';
+type TabKey = 'dashboard' | 'grades' | 'attendance' | 'tahfidz' | 'arbain' | 'recap' | 'reports' | 'subjects';
+type DeleteType = 'grade' | 'attendance' | 'tahfidz' | 'arbain' | 'subject';
 
 const subjectInit = { name: '', category: 'Akademik', teacher_id: '0' };
 
@@ -89,6 +94,8 @@ export default function AcademicsPage() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [tahfidz, setTahfidz] = useState<TahfidzProgress[]>([]);
+  const [arbain, setArbain] = useState<ArbainProgress[]>([]);
+  const [arbainRef, setArbainRef] = useState<HadisArbain[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<CompactUser[]>([]);
   const [subjectForm, setSubjectForm] = useState(subjectInit);
@@ -103,7 +110,7 @@ export default function AcademicsPage() {
     const r = authUser?.role;
     if (!r || r === 'superadmin' || r === 'admin') return true;
     if (r === 'guru') return ['dashboard', 'grades'].includes(id);
-    if (r === 'ustadz') return ['dashboard', 'tahfidz'].includes(id);
+    if (r === 'ustadz') return ['dashboard', 'tahfidz', 'arbain'].includes(id);
     if (r === 'wali_kelas') return ['dashboard', 'grades', 'attendance', 'recap', 'reports'].includes(id);
     if (r === 'pimpinan') return true;
     return id === 'dashboard';
@@ -136,6 +143,10 @@ export default function AcademicsPage() {
       if (['dashboard', 'grades', 'recap', 'reports', 'subjects'].includes(activeTab)) setGrades(await getGrades(selectedSemester, selectedYear));
       if (activeTab === 'attendance') setAttendance(await getAttendance(selectedDate));
       if (activeTab === 'tahfidz') setTahfidz(await getTahfidz());
+      if (activeTab === 'arbain') {
+        setArbain(await getArbain());
+        setArbainRef(await getArbainReference());
+      }
     } catch {
       showToast('error', 'Gagal memuat data akademik.');
     } finally {
@@ -181,6 +192,8 @@ export default function AcademicsPage() {
   const filteredGrades = useMemo(() => grades.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.subject_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [grades, searchQuery]);
   const filteredAttendance = useMemo(() => attendance.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [attendance, searchQuery]);
   const filteredTahfidz = useMemo(() => tahfidz.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || v.surah_name.toLowerCase().includes(searchQuery.toLowerCase())), [tahfidz, searchQuery]);
+  const filteredArbain = useMemo(() => arbain.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.hadith_title || '').toLowerCase().includes(searchQuery.toLowerCase()) || String(v.hadith_number) === searchQuery), [arbain, searchQuery]);
+  const arbainLulus = filteredArbain.filter((v) => v.status === 'lulus').length;
   const semesterLabel = selectedSemester === '2' ? 'Semester 2' : 'Semester 1';
   const academicPeriodLabel = `${semesterLabel} — Tahun Ajaran ${selectedYear}`;
   const averageGrade = filteredGrades.length ? (filteredGrades.reduce((sum, item) => sum + item.final_score, 0) / filteredGrades.length).toFixed(1) : '0.0';
@@ -270,7 +283,7 @@ export default function AcademicsPage() {
   }, [studentRecaps]);
 
   const buildFormHref = (
-    type: 'grade' | 'attendance' | 'tahfidz' | 'bulk-grade' | 'bulk-edit',
+    type: 'grade' | 'attendance' | 'tahfidz' | 'arbain' | 'bulk-grade' | 'bulk-edit',
     extra: Record<string, string | number | undefined> = {},
   ) => {
     const params = new URLSearchParams({ type });
@@ -289,6 +302,7 @@ export default function AcademicsPage() {
     if (activeTab === 'grades') router.push(buildFormHref('grade'));
     if (activeTab === 'attendance') router.push(buildFormHref('attendance', { date: selectedDate }));
     if (activeTab === 'tahfidz') router.push(buildFormHref('tahfidz'));
+    if (activeTab === 'arbain') router.push(buildFormHref('arbain'));
   };
 
   const saveSubject = async (e: React.FormEvent) => {
@@ -307,6 +321,7 @@ export default function AcademicsPage() {
       if (deleteState.type === 'grade') await deleteGrade(deleteState.id);
       if (deleteState.type === 'attendance') await deleteAttendance(deleteState.id);
       if (deleteState.type === 'tahfidz') await deleteTahfidz(deleteState.id);
+      if (deleteState.type === 'arbain') await deleteArbain(deleteState.id);
       if (deleteState.type === 'subject') {
         await deleteSubject(deleteState.id);
         setSubjects(await getSubjects());
@@ -469,10 +484,10 @@ export default function AcademicsPage() {
   };
 
   const exportData = (type: 'pdf' | 'excel') => {
-    const title = activeTab === 'grades' ? 'Laporan Nilai Santri' : activeTab === 'attendance' ? 'Laporan Presensi Santri' : 'Laporan Tahfidz Santri';
-    const filename = activeTab === 'grades' ? 'laporan_nilai' : activeTab === 'attendance' ? 'laporan_presensi' : 'laporan_tahfidz';
-    const columns = activeTab === 'grades' ? ['Santri', 'Mapel', 'UTS', 'UAS', 'Tugas', 'UH', 'Akhir', 'Grade'] : activeTab === 'attendance' ? ['Santri', 'Tanggal', 'Status', 'Catatan'] : ['Santri', 'Surah', 'Juz', 'Ayat', 'Status', 'Tanggal'];
-    const rows = activeTab === 'grades' ? filteredGrades.map((v) => [v.student_name || '-', v.subject_name || '-', v.uts_score, v.uas_score, v.task_score, v.uh_score, v.final_score, v.grade_letter]) : activeTab === 'attendance' ? filteredAttendance.map((v) => [v.student_name || '-', v.date, v.status, v.notes || '-']) : filteredTahfidz.map((v) => [v.student_name || '-', v.surah_name, v.juz, `${v.start_ayat}-${v.end_ayat}`, v.status, v.evaluation_date]);
+    const title = activeTab === 'grades' ? 'Laporan Nilai Santri' : activeTab === 'attendance' ? 'Laporan Presensi Santri' : activeTab === 'arbain' ? 'Laporan Setoran Hadis Arbain' : 'Laporan Tahfidz Santri';
+    const filename = activeTab === 'grades' ? 'laporan_nilai' : activeTab === 'attendance' ? 'laporan_presensi' : activeTab === 'arbain' ? 'laporan_arbain' : 'laporan_tahfidz';
+    const columns = activeTab === 'grades' ? ['Santri', 'Mapel', 'UTS', 'UAS', 'Tugas', 'UH', 'Akhir', 'Grade'] : activeTab === 'attendance' ? ['Santri', 'Tanggal', 'Status', 'Catatan'] : activeTab === 'arbain' ? ['Santri', 'No', 'Hadis', 'Status', 'Nilai', 'Tanggal'] : ['Santri', 'Surah', 'Juz', 'Ayat', 'Status', 'Tanggal'];
+    const rows = activeTab === 'grades' ? filteredGrades.map((v) => [v.student_name || '-', v.subject_name || '-', v.uts_score, v.uas_score, v.task_score, v.uh_score, v.final_score, v.grade_letter]) : activeTab === 'attendance' ? filteredAttendance.map((v) => [v.student_name || '-', v.date, v.status, v.notes || '-']) : activeTab === 'arbain' ? filteredArbain.map((v) => [v.student_name || '-', v.hadith_number, v.hadith_title || '-', v.status, v.nilai, v.evaluation_date]) : filteredTahfidz.map((v) => [v.student_name || '-', v.surah_name, v.juz, `${v.start_ayat}-${v.end_ayat}`, v.status, v.evaluation_date]);
     if (type === 'pdf') return exportToPDF(title, columns, rows, filename);
     return exportToExcel(title, columns, rows, filename);
   };
@@ -496,6 +511,7 @@ export default function AcademicsPage() {
         { id: 'grades', label: 'Nilai', icon: BookOpen },
         { id: 'attendance', label: 'Presensi', icon: Calendar },
         { id: 'tahfidz', label: 'Tahfidz', icon: ClipboardList },
+        { id: 'arbain', label: 'Hadis Arbain', icon: ScrollText },
         { id: 'recap', label: 'Rekap Nilai', icon: BarChart3 },
         { id: 'reports', label: 'Cetak Raport', icon: FileDown },
         { id: 'subjects', label: 'Mata Pelajaran', icon: Layers3 },
@@ -514,7 +530,7 @@ export default function AcademicsPage() {
             <button onClick={() => router.push(buildFormHref('bulk-edit'))} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"><Pencil size={16} /> Edit Massal</button>
           </>}
           {activeTab === 'attendance' && <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm" />}
-          {['grades', 'attendance', 'tahfidz'].includes(activeTab) && <button onClick={openAdd} className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"><Plus size={16} /> Tambah Data</button>}
+          {['grades', 'attendance', 'tahfidz', 'arbain'].includes(activeTab) && <button onClick={openAdd} className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"><Plus size={16} /> Tambah Data</button>}
         </div>
       </div>
 
@@ -666,6 +682,37 @@ export default function AcademicsPage() {
             </tbody>
           </table>
         </div>}
+      </div>}
+
+      {activeTab === 'arbain' && <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">{[
+        { label: 'Total Setoran', value: String(filteredArbain.length), tone: 'border-sky-100 bg-sky-50/80', text: 'text-sky-700', labelTone: 'text-sky-600/80' },
+        { label: 'Lulus', value: String(arbainLulus), tone: 'border-emerald-100 bg-emerald-50/80', text: 'text-emerald-700', labelTone: 'text-emerald-600/80' },
+        { label: 'Setor', value: String(filteredArbain.filter((v) => v.status === 'setor').length), tone: 'border-amber-100 bg-amber-50/80', text: 'text-amber-700', labelTone: 'text-amber-600/80' },
+        { label: 'Proses', value: String(filteredArbain.filter((v) => v.status === 'proses').length), tone: 'border-slate-100 bg-slate-50/80', text: 'text-slate-700', labelTone: 'text-slate-500/80' },
+      ].map((card) => (
+        <div key={card.label} className={`rounded-xl border p-5 shadow-sm ${card.tone}`}>
+          <p className={`text-[10px] font-black uppercase tracking-widest ${card.labelTone}`}>{card.label}</p>
+          <p className={`mt-2 text-3xl font-black ${card.text}`}>{card.value}</p>
+        </div>
+      ))}</div>}
+
+      {activeTab === 'arbain' && <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        {isLoading ? <div className="py-24 text-center text-sm font-bold text-slate-400">Memuat data...</div> : <div className="ap-table-wrap overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th><th className="px-4 py-4">No</th><th className="px-4 py-4">Hadis</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Nilai</th><th className="px-4 py-4">Evaluasi</th><th className="px-6 py-4 text-right">Aksi</th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredArbain.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4 font-black text-sky-600">{v.hadith_number}</td><td className="px-4 py-4">{v.hadith_title || '-'}</td><td className="px-4 py-4 uppercase">{v.status}</td><td className="px-4 py-4 font-bold">{v.nilai}</td><td className="px-4 py-4">{v.evaluation_date}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('arbain', { id: v.id }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'arbain', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {!isLoading && !filteredArbain.length && <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">Belum ada setoran Hadis Arbain.</td></tr>}
+            </tbody>
+          </table>
+        </div>}
+      </div>}
+
+      {activeTab === 'arbain' && <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-6 py-4"><p className="text-sm font-black text-slate-800">Rujukan 42 Hadis Arbain Imam Nawawi</p><p className="text-xs text-slate-500">Matn (teks Arab) dapat diisi ustadz dari rujukan buku;贱&gt;deskripsi di bawah memakai terjemahan ringkas.</p></div>
+        <div className="grid grid-cols-1 gap-3 p-5 md:grid-cols-2">
+          {arbainRef.map((h) => <div key={h.number} className="rounded-lg border border-slate-100 bg-slate-50/60 p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold text-slate-800">{h.number}. {h.title}</p><span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{h.category}</span></div><p className="mt-2 text-sm text-slate-600">{h.translation}</p><p className="mt-2 text-[11px] font-semibold text-slate-400">{h.source}</p></div>)}
+        </div>
       </div>}
 
       {activeTab === 'recap' && (
