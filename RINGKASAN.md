@@ -22,9 +22,9 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend` | `alma-parung-backend:jilid65-bgnclean` | Jilid 65 (hapus total BGN + import ulang Santri dari master Google Sheet). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `fix-nullsanti-v2`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:arbain-bgn2` | Jilid 64 (BGN paginasi + export), Jilid 63 (menu BGN — **sudah dihapus di source, tag image ini masih contain BGN**), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `jilid63-bgn`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:psbrektab` | Jilid 66 (tombol No. Rekening di Pengaturan PSB deep-link ke tab No. Rekening), Jilid 65 (hapus total BGN), Jilid 64 (BGN paginasi + export — **fitur BGN sudah dihapus di source**), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `arbain-bgn2`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `fix-nullsanti-v2`(terakhir)+`arbain-bgn`+`jilid64-bgnp1`+`jilid63-bgn`; frontend `arbain-bgn2`(terakhir)+`jilid64-bgnp1`+`jilid63-bgn` | — |
+| Rollback tersedia | — | backend `fix-nullsanti-v2`(terakhir)+`arbain-bgn`+`jilid64-bgnp1`+`jilid63-bgn`; frontend `arbain-bgn2`(terakhir)+`jilid64-bgnp1`+`jilid63-bgn` | container lama: `alma-parung-backend-pre-jilid65`, `alma-parung-frontend-bobot-pre-psbrektab` |
 | DB | — | — | **santri 119** (re-import dari master Google Sheet 30 Sep 2026; 18 pakai NIS sementara `TEMP0xx`); `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 126 (119 akun portal hasil import) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
