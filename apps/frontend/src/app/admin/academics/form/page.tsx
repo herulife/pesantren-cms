@@ -4,32 +4,40 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import {
+  ArbainProgress,
   CompactUser,
+  HadisArbain,
   Subject,
+  createArbain,
   createAttendance,
   createGrade,
   createTahfidz,
   getAcademicStudents,
+  getArbain,
+  getArbainReference,
   getAttendance,
   getGrades,
   getSubjects,
   getTahfidz,
+  updateArbain,
   updateAttendance,
   updateGrade,
   updateTahfidz,
 } from '@/lib/api';
-import { ArrowLeft, BookOpen, Calendar, ClipboardList, Loader2, Pencil, Save, Users } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, ClipboardList, Loader2, Pencil, Save, ScrollText, Users } from 'lucide-react';
 
-type FormType = 'grade' | 'attendance' | 'tahfidz' | 'bulk-grade' | 'bulk-edit';
+type FormType = 'grade' | 'attendance' | 'tahfidz' | 'arbain' | 'bulk-grade' | 'bulk-edit';
 
 const gradeInit = { id: 0, student_id: '', subject_id: '', semester: '1', academic_year: '2025/2026', uts_score: '', uas_score: '', task_score: '', uh_score: '', notes: '' };
 const attendanceInit = { id: 0, student_id: '', date: new Date().toISOString().split('T')[0], status: 'hadir', notes: '' };
 const tahfidzInit = { id: 0, student_id: '', surah_name: '', juz: '', start_ayat: '', end_ayat: '', status: 'proses', musyrif_notes: '', evaluation_date: new Date().toISOString().split('T')[0] };
+const arbainInit = { id: 0, student_id: '', hadith_number: '1', status: 'proses', nilai: '0', notes: '', evaluation_date: new Date().toISOString().split('T')[0] };
 
 function titleByType(type: FormType, hasId: boolean) {
   if (type === 'grade') return hasId ? 'Edit Nilai Santri' : 'Tambah Nilai Santri';
   if (type === 'attendance') return hasId ? 'Edit Presensi Santri' : 'Tambah Presensi Santri';
   if (type === 'tahfidz') return hasId ? 'Edit Progres Tahfidz' : 'Tambah Progres Tahfidz';
+  if (type === 'arbain') return hasId ? 'Edit Setoran Hadis Arbain' : 'Tambah Setoran Hadis Arbain';
   if (type === 'bulk-grade') return 'Input Nilai Massal';
   return 'Edit Nilai Massal';
 }
@@ -38,6 +46,7 @@ function descriptionByType(type: FormType) {
   if (type === 'grade') return 'Isi nilai UTS, UAS, tugas, dan catatan santri dalam halaman penuh yang lebih lega.';
   if (type === 'attendance') return 'Kelola presensi santri tanpa popup agar input tanggal dan status lebih nyaman.';
   if (type === 'tahfidz') return 'Catat progres hafalan, juz, ayat, dan evaluasi tahfidz dalam form penuh.';
+  if (type === 'arbain') return 'Catat setoran Hadis Arbain (42 hadis Imam Nawawi) untuk setiap Buffer Santri.';
   if (type === 'bulk-grade') return 'Masukkan nilai banyak santri sekaligus seperti workflow eRapor, tanpa modal.';
   return 'Perbarui nilai banyak santri untuk satu mata pelajaran aktif dalam satu halaman.';
 }
@@ -68,6 +77,8 @@ function AcademicsFormContent() {
   const [gradeForm, setGradeForm] = useState({ ...gradeInit, semester: selectedSemester, academic_year: selectedYear });
   const [attendanceForm, setAttendanceForm] = useState({ ...attendanceInit, date: selectedDate });
   const [tahfidzForm, setTahfidzForm] = useState(tahfidzInit);
+  const [arbainForm, setArbainForm] = useState(arbainInit);
+  const [arbainRef, setArbainRef] = useState<HadisArbain[]>([]);
   const [bulkGradeMeta, setBulkGradeMeta] = useState({ subject_id: '', semester: selectedSemester, academic_year: selectedYear });
   const [bulkGradeRows, setBulkGradeRows] = useState<Array<{ student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; uh_score: string; notes: string }>>([]);
   const [bulkEditSubjectId, setBulkEditSubjectId] = useState(searchParams.get('subject_id') || '');
@@ -78,9 +89,10 @@ function AcademicsFormContent() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [subjectData, studentData] = await Promise.all([getSubjects(), getAcademicStudents()]);
+        const [subjectData, studentData, refData] = await Promise.all([getSubjects(), getAcademicStudents(), getArbainReference()]);
         setSubjects(subjectData);
         setStudents(studentData);
+        setArbainRef(refData);
 
         if (type === 'grade' && id) {
           const allGrades = await getGrades(selectedSemester, selectedYear);
@@ -126,6 +138,21 @@ function AcademicsFormContent() {
             end_ayat: String(current.end_ayat),
             status: current.status,
             musyrif_notes: current.musyrif_notes || '',
+            evaluation_date: current.evaluation_date,
+          });
+        }
+
+        if (type === 'arbain' && id) {
+          const allArbain = await getArbain();
+          const current = allArbain.find((item) => String(item.id) === id);
+          if (!current) throw new Error('Data setoran Arbain tidak ditemukan.');
+          setArbainForm({
+            id: current.id,
+            student_id: String(current.student_id),
+            hadith_number: String(current.hadith_number),
+            status: current.status,
+            nilai: String(current.nilai ?? 0),
+            notes: current.notes || '',
             evaluation_date: current.evaluation_date,
           });
         }
@@ -282,6 +309,20 @@ function AcademicsFormContent() {
         showToast('success', tahfidzForm.id ? 'Tahfidz berhasil diperbarui.' : 'Tahfidz berhasil ditambahkan.');
       }
 
+      if (type === 'arbain') {
+        const payload: Omit<ArbainProgress, 'id' | 'student_name'> = {
+          student_id: Number(arbainForm.student_id),
+          hadith_number: Number(arbainForm.hadith_number),
+          status: arbainForm.status,
+          nilai: Number(arbainForm.nilai || 0),
+          notes: arbainForm.notes,
+          evaluation_date: arbainForm.evaluation_date,
+        };
+        if (arbainForm.id) await updateArbain(arbainForm.id, payload);
+        else await createArbain(payload);
+        showToast('success', arbainForm.id ? 'Setoran Arbain berhasil diperbarui.' : 'Setoran Arbain berhasil ditambahkan.');
+      }
+
       if (type === 'bulk-grade') {
         if (!bulkGradeMeta.subject_id) throw new Error('Pilih mata pelajaran terlebih dahulu.');
         const rowsToSave = bulkGradeRows.filter((row) => row.uts_score || row.uas_score || row.task_score || row.uh_score);
@@ -359,12 +400,12 @@ function AcademicsFormContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {(type === 'grade' || type === 'attendance' || type === 'tahfidz') && (
+        {(type === 'grade' || type === 'attendance' || type === 'tahfidz' || type === 'arbain') && (
           <div className="space-y-5">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
               <div className="mb-8 flex items-center gap-3">
                 <div className="rounded-xl bg-sky-50 p-3 text-sky-600">
-                  {type === 'grade' ? <BookOpen size={20} /> : type === 'attendance' ? <Calendar size={20} /> : <ClipboardList size={20} />}
+                  {type === 'grade' ? <BookOpen size={20} /> : type === 'attendance' ? <Calendar size={20} /> : type === 'arbain' ? <ScrollText size={20} /> : <ClipboardList size={20} />}
                 </div>
                 <div>
                   <p className="text-sm font-black text-slate-900">{titleByType(type, Boolean(id))}</p>
@@ -435,6 +476,49 @@ function AcademicsFormContent() {
                   <Field label="Catatan" className="md:col-span-2">
                     <textarea rows={5} value={attendanceForm.notes} onChange={(event) => setAttendanceForm((prev) => ({ ...prev, notes: event.target.value }))} className={textAreaClass} placeholder="Catatan tambahan, alasan izin, atau keterangan musyrif..." />
                   </Field>
+                </div>
+              )}
+
+              {type === 'arbain' && (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <Field label="Santri">
+                    <select required value={arbainForm.student_id} onChange={(event) => setArbainForm((prev) => ({ ...prev, student_id: event.target.value }))} className={controlClass}>
+                      <option value="">Pilih santri</option>
+                      {students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Nomor Hadis (1-42)">
+                    <select required value={arbainForm.hadith_number} onChange={(event) => setArbainForm((prev) => ({ ...prev, hadith_number: event.target.value }))} className={controlClass}>
+                      {arbainRef.map((h) => <option key={h.number} value={h.number}>{h.number}. {h.title}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Tanggal Evaluasi">
+                    <input required type="date" value={arbainForm.evaluation_date} onChange={(event) => setArbainForm((prev) => ({ ...prev, evaluation_date: event.target.value }))} className={controlClass} />
+                  </Field>
+                  <Field label="Nilai (0-100)">
+                    <input required type="number" min="0" max="100" value={arbainForm.nilai} onChange={(event) => setArbainForm((prev) => ({ ...prev, nilai: event.target.value }))} className={controlClass} />
+                  </Field>
+                  <Field label="Status" className="md:col-span-2">
+                    <select value={arbainForm.status} onChange={(event) => setArbainForm((prev) => ({ ...prev, status: event.target.value }))} className={controlClass}>
+                      <option value="proses">Proses</option>
+                      <option value="setor">Setor</option>
+                      <option value="lulus">Lulus</option>
+                    </select>
+                  </Field>
+                  <Field label="Catatan Ustadz" className="md:col-span-2">
+                    <textarea rows={5} value={arbainForm.notes} onChange={(event) => setArbainForm((prev) => ({ ...prev, notes: event.target.value }))} className={textAreaClass} placeholder="Catatan hafalan, cacatan saat menyimak, atau arahan untuk setoran berikutnya..." />
+                  </Field>
+                  {arbainRef.length > 0 && (() => {
+                    const ref = arbainRef.find((h) => String(h.number) === String(arbainForm.hadith_number));
+                    if (!ref) return null;
+                    return (
+                      <div className="md:col-span-2 rounded-xl border border-sky-100 bg-sky-50/60 p-5">
+                        <p className="text-sm font-black text-slate-800">{ref.number}. {ref.title} <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{ref.category}</span></p>
+                        <p className="mt-2 text-sm text-slate-600">{ref.translation}</p>
+                        <p className="mt-2 text-[11px] font-semibold text-slate-400">{ref.source}</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
