@@ -1,3 +1,5 @@
+package bgn
+
 import "errors"
 
 // Sentinel error untuk tautan BGN <-> Santri. Dipetakan handler ke HTTP 4xx
