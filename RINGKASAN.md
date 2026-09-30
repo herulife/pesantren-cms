@@ -868,6 +868,23 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 - `docker run -v /tmp:/data` + `DB_PATH=/data/alma-parung.db` akan **membuat DB kosong baru** kalau nama
   filenya berbeda -> semua token 401 ("sesi tidak valid"). Mount direktori khusus, jangan `/tmp` mentah.
 - `sudo rm` file di `/tmp` milik user lain sebelum `scp` ulang; file root-owned di `/tmp` membuat scp gagal.
+- **Semua data BGN lama benar-benar kasar.** 58 Santri tanpa No HP sama sekali (`parent_phone` 0/58),
+  wali cuma 1 field gabungan tanpa pisah ayah/ibu, dan tidak ada satupun tagihan/kuitansi/rapor.
+  Kalau pengen restored, mending **import dari master Google Sheet** daripada andalkan DB lama.
+- **Kolom gender di master sheet terbalik** (45/46 baris yang cocok beda dengan DB lama, pola geser 1 baris).
+  Jangan percaya sheet tanpa cross-check ke sumber lain — gender dipakai untuk filter/laporan.
+- **`POST /api/santri/bulk` itu all-or-nothing** (1 baris invalid → 400 untuk seluruh batch) dan
+  `validateSantri` mewajibkan `nis` 4-20 char + `class` terisi. Data yang tidak lolos filter **tidak boleh**
+  dipaksa masuk lewat SQL: recordnya akan menggagalkan validasi saat diedit lewat UI.
+- **`ensureUserAccount` membuat akun portal tiap kali Santri di-create** (email `<nis>@almaparung.local`,
+  `randomPlaceholderHash()`). Import massal = akun massal. Kalau tidak diinginkan, set `user_id` NULL
+  setelah import, atau ubah `ensureUserAccount` dulu.
+- **Kolom yang di-DROP bisa dihidupkan lagi oleh image lama.** Setelah `DROP COLUMN` BGN, backend yang masih
+  jalan `migrateSantriBgnColumns` akan menambahkannya kembali saat start. Setelah drop kolom, WAJIB deploy
+  image yang sudah pakai `migrateDropBgnArtifacts` — jangan restart container dengan image lama.
+- `nohup cmd &` saja **TIDAK cukup** di environment ini: shell tool yang memanggilnya bisa di-kill saat
+  timeout dan ikut membunuh proses anak. Pakai `setsid nohup bash -c '...' </dev/null &` + `disown`,
+  lalu verifikasi jalan dengan `pgrep`.
 
 - Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
 - **chi**: memecah grup terproteksi jadi `r.Route(path, func(r chi.Router){ ... })` dengan grup READ rute spesifik + grup WRITE `r.Mount("/", h.Routes())` aman — rute spesifik menang untuk method-nya, sisanya tetap masuk mount (POST/PUT/DELETE **bukan** 405, sudah diuji 13/13). Tetap wajib uji ulang endpoint WRITE setiap kali melakukan pemecahan seperti ini.
