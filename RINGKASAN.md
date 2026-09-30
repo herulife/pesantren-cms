@@ -160,6 +160,71 @@ berjalan, bukan disusun manual. Rollback ke `jilid63-bgn` untuk kedua layanan.
   diambil dari `/tmp/pgl` di host dan di-mount sebagai `/pgl`; token lewat `/t`.
 - Backend cukup `--env-file`. Frontend produksi dijalankan tanpa mount atau env khusus.
 
+## Jilid 64b - Perbaikan fatal: egress internet semua container mati (rule iptables DOCKER-USER) (30 Sep 2026, LIVE)
+
+**Latar belakang.** Setelah deploy Jilid 64 (11:33), WA gateway tidak bisa dipakai. Log
+backend hanya menampilkan:
+```
+[WAGATE] belum ada sesi tersimpan, menunggu pairing dari admin
+```
+dan saat mencoba pairing:
+```
+gagal connect: failed to dial whatsapp web websocket: failed to send handshake
+request: Get "https://web.whatsapp.com/ws/chat": dial tcp: lookup web.whatsapp.com
+on 8.8.8.8:53: read udp 172.17.0.3:48072->8.8.8.8:53: i/o timeout
+```
+Ternyata ini **bukan** masalah WA. Semua container di VPS kehilangan akses internet.
+
+**Gejala yang terlihat.** Dari container: DNS ke 8.8.8.8 / 1.1.1.1 / 9.9.9.9 timeout, TCP
+ke 1.1.1.1:443 gagal, ping ke 1.1.1.1 gagal, `ip route get 1.1.1.1 from 172.17.0.3` ->
+`Network is unreachable`. Host sendiri normal (bisa resolve, ping, HTTPS). Container hanya
+saya bisa menjangkau gateway `172.17.0.1`. Ini juga menjadi penyebab **`docker build`
+gagal** dengan `lookup proxy.golang.org ... i/o timeout` (perlu `--network=host` sebagai
+workaround).
+
+**Akar masalah.** `/usr/local/sbin/asyukro-block-docker-iptables.sh` (systemd
+`asyukro-docker-block.service`, dijalankan tiap boot) memasang satu aturan:
+```
+iptables -I DOCKER-USER -i ens18 -j DROP
+```
+DOCKER-USER adalah chain PERTAMA di FORWARD. Aturan itu membuang **semua** paket yang
+masuk lewat interface eksternal — termasuk **balasan** (SYN-ACK, reply DNS) dari koneksi
+yang justru **dibuka oleh container itu sendiri**. Akibatnya: paket keluar di-MASQUERADE
+(9142 pkt) tapi reply-nya dibuang (531 pkt) -> semua container egress mati. Dampak:
+WA gateway tidak konek, `docker build` gagal, API luar (DAHL/AI) tidak terjangkau.
+Dibuktikan dengan counter: `DOCKER-USER` `-i ens18 -j DROP` naik 526 -> 531 pkt hanya dari
+satu percobaan `nc -z 1.1.1.1 443` dari container.
+
+**Perbaikan.** Izinkan state `RELATED,ESTABLISHED` (hanya balasan koneksi yang sudah ada)
+di **atas** baris DROP, jadi urutan DOCKER-USER sekarang:
+```
+-A DOCKER-USER -i ens18 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A DOCKER-USER -i ens18 -j DROP
+```
+Koneksi **baru** dari internet ke container (scan ke 5432/6379/9000/1025/3003/3004/3006)
+tetap jatuh ke DROP, jadi proteksi asli tidak berkurang. Script tidak diubah secara
+struktural, hanya menambahkan 1 blok; juga sudah diterapkan permanen + idempoten
+(aman dijalankan berulang) dan diverifikasi setelah `systemctl restart`.
+Backup script lama: `/usr/local/sbin/asyukro-block-docker-iptables.sh.bak-20260930`.
+
+**Verifikasi.** Dari container: `nslookup web.whatsapp.com` OK, `nslookup google.com` OK,
+`nc -z 1.1.1.1 443` OK, `wget https://web.whatsapp.com` OK. `GET /api/notifications/wa/qr`
+sekarang **HTTP 200 image/png** 1439 byte (`X-Qr-Ttl: 50`). Health produksi tetap baik
+(`/api/ready` 200, frontend 200, kedua container healthy, tidak ada restart).
+
+**Sisa pekerjaan (BUTUH ADMIN).** File sesi `/data/wagate/wa_session.db` sudah kosong
+(4096 byte, tabel `whatsmeow_device` 0 baris) dan **tidak ada backup-nya**, jadi gateway
+harus di-pairing ulang secara manual: buka `/admin/notifications`, kartu "QR pairing
+WhatsApp", pindai QR dengan WhatsApp di ponsel (atau pakai pair-code).Metode pair-code
+juga tersedia: `POST /api/notifications/wa/pair-code`. Setelah pairing, sesi baru akan
+langsung persist ke volume `/data` dan bertahan melewati restart container.
+
+**Catatan risiko (belum dikerjakan, perlu kesepakatan).** `scripts/backup.sh` hanya
+membackup `data/alma-parung.db` + `data/uploads` + config — **tidak** termasuk
+`data/wagate/`. Kalau sesi WA hilang lagi, tidak ada cara memulihkannya. Disarankan
+menambahkan `data/wagate` ke backup (dengan catatan: memulihkan sesi WhatsApp dari
+backup bisa memicu logout di perangkat lain).
+
 ## Jilid 63 — Fitur BGN: menu Penerima Manfaat Beras Bergizi Nasional + input data template (30 Sep 2026, LIVE)
 - **Backend** `internal/features/bgn/` (model.go, repository.go, handler.go): tabel baru `bgn_recipients`
   (migration `bgn_recipients_table` + index `bgn_recipients_identity_index`), kolom `identity` (NISN/NIK,
