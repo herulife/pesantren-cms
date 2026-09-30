@@ -52,6 +52,13 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/tahfidz", h.CreateTahfidz)
 	r.Put("/tahfidz/{id}", h.UpdateTahfidz)
 	r.Delete("/tahfidz/{id}", h.DeleteTahfidz)
+	// Hadis Arbain (42 hadis Arbain Imam Nawawi)
+	r.Get("/arbain/reference", h.GetArbainReference)
+	r.Get("/arbain", h.GetArbainProgress)
+	r.Get("/arbain/me", h.GetMyArbainProgress)
+	r.Post("/arbain", h.CreateArbainProgress)
+	r.Put("/arbain/{id}", h.UpdateArbainProgress)
+	r.Delete("/arbain/{id}", h.DeleteArbainProgress)
 	// Students list
 	r.Get("/students", h.GetStudents)
 	r.Get("/grades/me", h.GetMyGrades)
@@ -772,6 +779,14 @@ type IRepository interface {
 	GetScopedGrades(semester, year string, subjectIDs []int, classes []string, limit, offset int) ([]Grade, error)
 	ReportPerGuruFor(semester, year string, teacherID int) ([]PerGuruRow, error)
 	GetScopedTahfidz(classes []string, limit, offset int) ([]TahfidzProgress, error)
+	// Hadis Arbain
+	GetAllArbainProgress(limit, offset int) ([]ArbainProgress, error)
+	GetScopedArbainProgress(classes []string, limit, offset int) ([]ArbainProgress, error)
+	GetArbainProgressByStudent(studentID int) ([]ArbainProgress, error)
+	GetArbainSummaryByStudent(studentID int) (*ArbainSummary, error)
+	CreateArbainProgress(p *ArbainProgress) error
+	UpdateArbainProgress(id int, p *ArbainProgress) error
+	DeleteArbainProgress(id int) error
 	// Attendance
 	GetAttendance(date string) ([]Attendance, error)
 	CreateAttendance(a *Attendance) error
