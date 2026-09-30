@@ -51,7 +51,7 @@ export default function LogsAdminPage() {
     fetchLogs();
   }, [fetchLogs]);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     const columns = ['Waktu', 'User', 'Aksi', 'Detail', 'IP Address'];
     const rows = logs.map(l => [
       l.created_at,
@@ -60,10 +60,10 @@ export default function LogsAdminPage() {
       l.details,
       l.ip_address
     ]);
-    exportToPDF('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
+    await exportToPDF('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const columns = ['Waktu', 'User', 'Aksi', 'Detail', 'IP Address', 'User Agent'];
     const rows = logs.map(l => [
       l.created_at,
@@ -73,7 +73,7 @@ export default function LogsAdminPage() {
       l.ip_address,
       l.user_agent
     ]);
-    exportToExcel('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
+    await exportToExcel('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
   };
 
   return (

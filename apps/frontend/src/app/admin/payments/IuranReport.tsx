@@ -76,14 +76,14 @@ export default function IuranReport() {
   const exportRows = () =>
     filtered.map((r) => [r.nis || '-', r.name, r.class || '-', r.billed, r.collected, r.outstanding, statusLabel(r.status)]);
 
-  const handleExportPDF = () => {
-    exportToPDF(`Laporan Tagihan Iuran ${start} s/d ${end}`, exportColumns, exportRows().map((row) =>
+  const handleExportPDF = async () => {
+    await exportToPDF(`Laporan Tagihan Iuran ${start} s/d ${end}`, exportColumns, exportRows().map((row) =>
       row.map((v, i) => (i >= 3 && i <= 5 ? `Rp ${Number(v).toLocaleString('id-ID')}` : String(v)))
     ), 'laporan_tagihan_iuran');
   };
 
-  const handleExportExcel = () => {
-    exportToExcel(`Laporan Tagihan Iuran ${start} s/d ${end}`, exportColumns, exportRows(), 'laporan_tagihan_iuran');
+  const handleExportExcel = async () => {
+    await exportToExcel(`Laporan Tagihan Iuran ${start} s/d ${end}`, exportColumns, exportRows(), 'laporan_tagihan_iuran');
   };
 
   const selectCls = 'px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700 cursor-pointer';

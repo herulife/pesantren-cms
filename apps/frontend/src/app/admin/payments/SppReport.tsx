@@ -76,14 +76,14 @@ export default function SppReport() {
   const exportRows = () =>
     filtered.map((r) => [r.nis || '-', r.name, r.class || '-', r.spp_billed, r.iuran_billed, r.billed, r.collected, r.outstanding, statusLabel(r.status)]);
 
-  const handleExportPDF = () => {
-    exportToPDF(`Laporan Tagihan ${start} s/d ${end}`, exportColumns, exportRows().map((row) =>
+  const handleExportPDF = async () => {
+    await exportToPDF(`Laporan Tagihan ${start} s/d ${end}`, exportColumns, exportRows().map((row) =>
       row.map((v, i) => (i >= 3 && i <= 7 ? `Rp ${Number(v).toLocaleString('id-ID')}` : String(v)))
     ), 'laporan_tagihan');
   };
 
-  const handleExportExcel = () => {
-    exportToExcel(`Laporan Tagihan ${start} s/d ${end}`, exportColumns, exportRows(), 'laporan_tagihan');
+  const handleExportExcel = async () => {
+    await exportToExcel(`Laporan Tagihan ${start} s/d ${end}`, exportColumns, exportRows(), 'laporan_tagihan');
   };
 
   const selectCls = 'px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700 cursor-pointer';

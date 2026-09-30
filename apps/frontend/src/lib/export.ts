@@ -50,29 +50,63 @@ type AutoTableDoc = jsPDF & {
 };
 
 /**
- * Export data ke PDF dengan header Al-Maa
+ * Kop pondok (nama/alamat/kontak/logo) dari /api/settings/public, di-cache per sesi.
+ * Semua dokumen cetak WAJIB pakai helper ini supaya nama sekolah konsisten.
  */
-export function exportToPDF(
+async function kopInfo(): Promise<KopInfo> {
+	if (!_kopCache) _kopCache = await loadKopInfo();
+	return _kopCache;
+}
+
+async function logoDataUrl(path: string) {
+	if (_logoCache[path] === undefined) {
+		_logoCache[path] = await loadLogoDataUrl(path);
+	}
+	return _logoCache[path];
+}
+
+/**
+ * Export data ke PDF dengan kop resmi pondok (dari settings, bukan hardcode).
+ */
+export async function exportToPDF(
 	title: string,
 	columns: string[],
 	rows: (string | number)[][],
 	filename: string
 ) {
 	const doc = new jsPDF();
+	const kop = await kopInfo();
+	const logo = await logoDataUrl(kop.logoPath);
+	const hasLogo = (() => {
+		if (!logo) return false;
+		try {
+			doc.addImage(logo.dataUrl, logo.format, 14, 7, 22, 22);
+			return true;
+		} catch {
+			return false;
+		}
+	})();
+	const headW = hasLogo ? 150 : 182;
 
 	// Header pondok
+	doc.setTextColor(30, 41, 59);
 	doc.setFontSize(16);
 	doc.setFont('helvetica', 'bold');
-	doc.text('PONDOK PESANTREN AL-MAA', 105, 20, { align: 'center' });
+	doc.text(kop.name, 105, 18, { align: 'center', maxWidth: headW });
 	doc.setFontSize(10);
 	doc.setFont('helvetica', 'normal');
-	doc.text('Jl. Raya Parung - Bogor, Jawa Barat', 105, 28, { align: 'center' });
+	doc.setTextColor(71, 85, 105);
+	doc.text(doc.splitTextToSize(kop.address, headW), 105, 25, { align: 'center' });
+	doc.setFontSize(8.5);
+	doc.setTextColor(100, 116, 139);
+	doc.text(doc.splitTextToSize(kop.contact, headW), 105, 30, { align: 'center' });
 
 	// Garis pemisah
 	doc.setLineWidth(0.5);
 	doc.line(14, 33, 196, 33);
 
 	// Judul laporan
+	doc.setTextColor(15, 118, 110);
 	doc.setFontSize(13);
 	doc.setFont('helvetica', 'bold');
 	doc.text(title, 105, 42, { align: 'center' });
@@ -80,6 +114,7 @@ export function exportToPDF(
 	// Tanggal cetak
 	doc.setFontSize(8);
 	doc.setFont('helvetica', 'normal');
+	doc.setTextColor(100, 116, 139);
 	doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 14, 50);
 
 	// Tabel
@@ -251,7 +286,7 @@ export async function downloadBulkStudentReportPDF(payload: BulkStudentReportPay
 /**
  * Export data ke Excel (.xlsx)
  */
-export function exportToExcel(
+export async function exportToExcel(
 	title: string,
 	columns: string[],
 	rows: (string | number)[][],
@@ -263,8 +298,12 @@ export function exportToExcel(
 		.trim()
 		.slice(0, 31) || 'Sheet1';
 
+	const kop = await kopInfo();
 	const wsData = [
-		['PONDOK PESANTREN AL-MAA'],
+		[kop.name],
+		[kop.address],
+		[kop.contact],
+		[],
 		[`Laporan: ${title}`],
 		[`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`],
 		[],
@@ -432,12 +471,8 @@ function renderSignatures(
 }
 
 async function renderKop(doc: jsPDF, pageW: number): Promise<void> {
-	if (!_kopCache) _kopCache = await loadKopInfo();
-	const kop = _kopCache;
-	if (_logoCache[kop.logoPath] === undefined) {
-		_logoCache[kop.logoPath] = await loadLogoDataUrl(kop.logoPath);
-	}
-	const logo = _logoCache[kop.logoPath];
+	const kop = await kopInfo();
+	const logo = await logoDataUrl(kop.logoPath);
 	doc.setFillColor(16, 105, 79);
 	doc.rect(0, 0, pageW, 48, 'F');
 	let tx = 14;
@@ -463,6 +498,8 @@ async function renderKop(doc: jsPDF, pageW: number): Promise<void> {
 	doc.setDrawColor(217, 179, 106);
 	doc.setLineWidth(0.7);
 	doc.line(14, 41, pageW - 14, 41);
+	// Kop selesai: kembalikan teks ke gelap supaya pemanggil tidak mewarisi putih
+	doc.setTextColor(30, 41, 59);
 }
 
 export async function exportERaportPDF(payload: ERaportPDFPayload) {
