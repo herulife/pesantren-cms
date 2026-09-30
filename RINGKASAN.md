@@ -835,7 +835,7 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 1. [ ] **19 Santri dari master sheet TIDAK ter-import** (No Induk < 4 char atau `-`, mis. `13`, `005`, `3`, `-`). Butuh No Induk yang benar dari user, atau keputusan sintesis NIS. Lihat Jilid 65 §7.
 2. [ ] **Password 101 akun portal hasil import belum ada** (`randomPlaceholderHash`). Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
 3. [ ] **Gender 67/101 kosong** (hanya 34 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
-4. [ ] **Wali 67/101 kosong** — master sheet tidak punya kolom nama wali. Only HP (72/101) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
+4. [ ] **Wali 67/101 kosong** — master sheet tidak punya kolom nama wali. No HP (72/101) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
 5. [ ] **GitHub push GAGAL** — PAT yang tertanam di URL remote (`origin`) sudah dicabut: `Invalid username or token`. 40+ commit masih lokal. Perlu token baru / `gh auth login`, lalu `git remote set-url origin` tanpa token (lebih aman).
 6. [ ] Dokumen §2 tadinya tertinggal (menulis image `jilid64-bgnp1` padahal live sudah lain) — **sudah dikoreksi** di Jilid 65. subsided: Arbain + import Santri + fix-nullsanti **tidak pernah didokumentasikan**; hanya BGN yang tercatat. Kalau memproxy pekerjaan lanjutan, cek `git log` 30 Sep.
 7. [ ] Jilid C: akun perdana (tunggu daftar nama+email+peran dari user).
