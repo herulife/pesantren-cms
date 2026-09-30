@@ -116,16 +116,51 @@ setelah kolom di-drop, **restart backend dengan image lama akan menghidupkan kem
 kolom BGN**. Selalu deploy `jilid65-bgnclean`.
 
 **Efek samping yang perlu diketahui:** `Repository.ensureUserAccount` (dipanggil
-`BulkCreate`) membuat akun portal untuk tiap Santri. Import ini membuat **101 akun
+`BulkCreate`) membuat akun portal untuk tiap Santri. Import ini membuat **119 akun
 `role='user'`** dengan email `<nis>@almaparung.local` dan `randomPlaceholderHash()`
-(password acak → **tidak bisa login** sampai di-reset admin). `users` 7 → 108.
+(password acak → **tidak bisa login** sampai di-reset admin). `users` 7 → 126.
 
-**Hasil akhir DB:** `santri` = 101. No HP 72/101 (sebelumnya 0), wali 34/101,
-gender 34/101, tanggal lahir 101/101. Semua `user_id` tertaut ke akun portal.
+**Batch 2 — 19 baris sisa (order user: "bikin NIS sementara"):** No Indukinvalid diberi
+NIS sementara `TEMP001`..`TEMP018` (prefix sengaja dibuat jelas-bukan-asli supaya tidak
+tertukar dengan NIS sungguhan di rapor). Petakan balik No Induk asli → NIS sementara
+tersimpan di `/tmp/apcheck/temp_nis_mapping.csv` (pindah ke repo kalau masih diperlukan).
+Ada **1 duplikat di sheet**: `M.YUSUF RAMADHAN` (kelas 1) & `M. YUSUF RAMADHAN` (kelas 8)
+— nama, tempat lahir, tgl lahir (25-08-2011), No HP (089513750782) **dan** wali
+(`putri soleha`) identik, jadi 1 orang. Yang di-import satu saja (baris kelas 1).
+⚠️ Kelas di sheet (1) tidak sama dengan kelas di DB lama (**X**) — perlu dikonfirmasi user.
+2 baris tanpa kelas (`M DESTA PRATAMA`, `ZULFA FAKHRUNNISA`) → diisi `SEMENTARA`.
+
+**Hasil akhir DB:** `santri` = **119** (= 120 baris sheet − 1 duplikat). **No HP 84/119
+(sebelumnya 0/58)**, wali 45/119, gender 45/119, tanggal lahir 119/119. Semua `user_id`
+tertaut ke akun portal.
 
 **Verifikasi:** `DELETE /api/santri/bulk` → 58 terhapus; `POST /api/santri/bulk` → 201
-`inserted: 101`; `GET /api/santri/` → data tersaji benar; `/api/bgn/*` → 404;
-`sqlite_master` & `PRAGMA table_info(santri)` → nol sisa BGN.
+`inserted: 101` lalu `inserted: 18`; `GET /api/santri/` → 200 data benar; `/api/bgn/*` → 404;
+`sqlite_master` & `PRAGMA table_info(santri)` → nol sisa BGN; `schema_migrations` →
+`bgn_artifacts_dropped`. Deploy `jilid65-bgnclean`: health `healthy`, `/api/me` 200, site 200.
+
+**⚠️ INSIDEN (saya, 30 Sep ~21:53):** saat `docker run` pertama untuk `jilid65-bgnclean`
+saya **salah ketik `JWT_SECRET`** (101 vs 96 karakter) dan container itu jalan ~40 detik.
+Tercatat 0 error "signature is invalid" di container lama, sedangkan container baru mencatat
+puluhan — artinya ada token yang **ditandatangani dengan secret yang salah**, diperoleh selama
+jendela itu (kemungkinan user login / frontend auto-refresh). Secret-nya sendiri sudah
+dikoreksi (dicek `sha256` identik dengan container lama) dan tidak ada efek lain —
+password hash tidak bergantung pada `JWT_SECRET`. **Tapi sesi browser yang memakai token
+lama itu akan 401 sampai user login ulang.** Pelajaran: jangan pernah mengetik ulang secret
+manual, pakai `docker inspect ... --format` → `--env-file`.
+
+**Deploy `jilid65-bgnclean`:**
+```bash
+docker run -d --name alma-parung-backend --restart always -p 8090:8080 \
+  --env-file /tmp/apcheck/be.env \
+  -v /home/heru/alma-parung/data:/data \
+  -v /home/heru/alma-parung/data/uploads:/app/apps/backend/public/uploads \
+  alma-parung-backend:jilid65-bgnclean
+```
+Container lama disimpan sebagai `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`
+tetap ada untuk rollback). `/tmp/apcheck/be.env` **harus dibuat ulang** kalau file hilang:
+`docker inspect alma-parung-backend-pre-jilid65` → tulis `API_PORT`, `DB_PATH`,
+`DAHL_API_KEY`, `DAHL_API_URL`, `JWT_SECRET` ke env-file.
 
 ---
 
@@ -832,7 +867,10 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 `components/PublicLayout.tsx`, `lib/donations.ts`, `lib/page-content.ts`.
 
 ## 5. TODO AKTIF
-1. [ ] **19 Santri dari master sheet TIDAK ter-import** (No Induk < 4 char atau `-`, mis. `13`, `005`, `3`, `-`). Butuh No Induk yang benar dari user, atau keputusan sintesis NIS. Lihat Jilid 65 §7.
+1. [ ] **18 dari 120 baris sheet memakai NIS sementara `TEMP001`..`TEMP018`** (No Induk aslinya 1–3 karakter: `13`, `005`, `-`, `2`, ... jadi gagal validasi `nis` 4-20 char). Kalau No Induk asli dikirim user, ganti lewat UI (`/admin/kesantrian`) — **jangan** lewat SQL. Petakan balik ada di `/tmp/apcheck/temp_nis_mapping.csv`.
+1b. [ ] **Kelas `M YUSUF RAMADHAN` perlu dikonfirmasi** — sheet bilang kelas 1, DB lama bilang kelas **X**. Dia juga terduplikasi di sheet (2 baris, 1 orang), yang ke-2 sudah dibuang.
+1c. [ ] **2 baris tanpa kelas** (`M DESTA PRATAMA`, `ZULFA FAKHRUNNISA`) diisi `SEMENTARA` — konfirmasi ke user.
+1d. [ ] **Case nama di master sheet tidak konsisten** (ada `Aisyah Khoirunnisa` tapi juga `Alisa adriana putri` dan `AFIFAH SALMA TAZKIA`). Import took apa adanya, tidak diubah. Kalau mau dirapikan, perlu listing dari user dulu.
 2. [ ] **Password 101 akun portal hasil import belum ada** (`randomPlaceholderHash`). Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
 3. [ ] **Gender 67/101 kosong** (hanya 34 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
 4. [ ] **Wali 67/101 kosong** — master sheet tidak punya kolom nama wali. No HP (72/101) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
