@@ -296,7 +296,17 @@ Healthy, `/` 200, `/api/settings/public` mengembalikan nama baru.
 - `Pondok Pesantren Al-Maa` muncul di chunk ter-deploy (kop dinamis).
 - `tsc --noEmit` lolos.
 
-**Catatan:** string "Yayasan Pondok Pesantren Tahfidz Al-Maa" masih ada di 2 prompt AI
+**Catatan:** string "Yayasan Pondok Pesantren Tahfidz Al-Maa"
+**Verifikasi UH + Bobot nilai (30 Sep 2026, ternyata ALREADY LIVE):**
+Sudah ter-deploy di image backend saat ini (`fix-wa-dedup` dan `uh-bobot` = image ID sama
+`da5f62f3d6af`), jadi task "lanjut UH+bobot" = verifikasi saja:
+- `GET /api/academics/grade-weights` prod → 200 (list bobot per mapel, default 25/30/25/20).
+- `PUT /api/academics/grade-weights` body `{"items":[{subject_id, subject_name, uts_weight, uas_weight, task_weight, uh_weight}]}` → 200 (jangan pakai key `weights` → 400).
+- DB live: tabel `subject_grade_weights` ada (0 baris = pakai default), kolom `grades.uh_score` ada.
+- Calc terbukti: grade temp uts=uas=task=uh=80 → final 80.00, huruf C (bands KKM: C=(kkm), B=kkm+5, A=kkm+15), lalu dihapus.
+- Frontend (chunk ter-deploy jilid 62): input UH di `/admin/academics/form` + editor Bobot di tab akademik (UTS+UAS+Tugas+UH=100).
+- Known caveat (TODO 5&6): `final_score` grade lama TIDAK dihitung ulang otomatis; hanya berubah saat grade di-edit ulang.
+ masih ada di 2 prompt AI
 artikel (`apps/backend/internal/platform/ai/gemini.go:248` & `281`) — bukan dokumen
 cetak, butuh rebuild backend; sengaja TIDAK diubah di jilid ini.
 
