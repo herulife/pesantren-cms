@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, Apple } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -49,7 +49,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     '/admin/facilities': <Building size={18} />,
     '/admin/messages': <MessageSquare size={18} />,
     '/admin/notifications': <Bell size={18} />,
-    '/admin/bgn': <Apple size={18} />,
     '/admin/users': <UserCog size={18} />,
     '/admin/logs': <ScrollText size={18} />,
     '/admin/settings': <Settings size={18} />,
