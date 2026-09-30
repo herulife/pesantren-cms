@@ -43,7 +43,7 @@ func (r *Repository) FindAll(search, class, status string, limit, offset int) ([
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`SELECT id, nis, name, COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(photo_url,''), registration_id, user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
+	query := fmt.Sprintf(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, COALESCE(photo_url,''), user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -102,7 +102,7 @@ func (r *Repository) FindByID(id int) (*Santri, error) {
 	var s Santri
 	var userID sql.NullInt64
 	var createdAt, updatedAt sql.NullString
-	err := r.db.QueryRow(`SELECT id, nis, name, COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(photo_url,''), registration_id, user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt)
+	err := r.db.QueryRow(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, COALESCE(photo_url,''), user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func (r *Repository) FindAllScoped(search string, classes []string, status strin
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`SELECT s.id, s.nis, s.name, COALESCE(s.nickname,''), COALESCE(s.gender,''), COALESCE(s.birth_place,''), COALESCE(s.birth_date,''), COALESCE(s.address,''), COALESCE(s.class,''), COALESCE(s.jenjang,''), COALESCE(s.angkatan,''), COALESCE(s.status,''), COALESCE(s.parent_name,''), COALESCE(s.parent_phone,''), COALESCE(s.nik,''), COALESCE(s.father_name,''), COALESCE(s.father_phone,''), COALESCE(s.mother_name,''), COALESCE(s.mother_phone,''), COALESCE(s.father_occupation,''), COALESCE(s.mother_occupation,''), COALESCE(s.photo_url,''), s.registration_id, s.user_id, s.created_at, s.updated_at FROM santri s WHERE %s ORDER BY s.created_at DESC LIMIT ? OFFSET ?`, whereStr)
+	query := fmt.Sprintf(`SELECT s.id, COALESCE(s.nis,''), COALESCE(s.name,''), COALESCE(s.nickname,''), COALESCE(s.gender,''), COALESCE(s.birth_place,''), COALESCE(s.birth_date,''), COALESCE(s.address,''), COALESCE(s.class,''), COALESCE(s.jenjang,''), COALESCE(s.angkatan,''), COALESCE(s.status,''), COALESCE(s.parent_name,''), COALESCE(s.parent_phone,''), COALESCE(s.nik,''), COALESCE(s.father_name,''), COALESCE(s.father_phone,''), COALESCE(s.mother_name,''), COALESCE(s.mother_phone,''), COALESCE(s.father_occupation,''), COALESCE(s.mother_occupation,''), s.registration_id, COALESCE(s.photo_url,''), s.user_id, s.created_at, s.updated_at FROM santri s WHERE %s ORDER BY s.created_at DESC LIMIT ? OFFSET ?`, whereStr)
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -355,7 +355,7 @@ func (r *Repository) UnlinkUser(santriID int) error {
 }
 
 func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
-	rows, err := r.db.Query(`SELECT id, nis, name, COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(photo_url,''), registration_id, user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
+	rows, err := r.db.Query(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), registration_id, COALESCE(photo_url,''), user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
 	if err != nil {
 		return nil, err
 	}
