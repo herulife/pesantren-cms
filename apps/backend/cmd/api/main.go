@@ -6,6 +6,7 @@ import (
 	"almaparung-api/internal/features/attendance"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/features/autobilling"
+	"almaparung-api/internal/features/bgn"
 	"almaparung-api/internal/features/disciplines"
 	"almaparung-api/internal/features/donations"
 	"almaparung-api/internal/features/exams"
@@ -177,6 +178,9 @@ func main() {
 
 	disciplineRepo := disciplines.NewRepository(database.DB)
 	disciplineHandler := disciplines.NewHandler(disciplineRepo)
+
+	bgnRepo := bgn.NewRepository(database.DB)
+	bgnHandler := bgn.NewHandler(bgnRepo)
 
 	notificationRepo := notifications.NewRepository(database.DB)
 	notificationHandler := notifications.NewHandler(notificationRepo)
@@ -522,6 +526,12 @@ func main() {
 				r.Mount("/academics", academicHandler.Routes())
 				r.Mount("/notifications", notificationHandler.Routes())
 				r.Post("/attendance/scan", attendanceHandler.Scan)
+			})
+
+			// BGN (Beras Bergizi Nasional — penerima manfaat)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "admin", "bendahara", "panitia_psb"))
+				r.Mount("/bgn", bgnHandler.Routes())
 			})
 		})
 

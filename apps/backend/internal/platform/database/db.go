@@ -1207,6 +1207,25 @@ func runMigrations() {
 				FOREIGN KEY (subject_id) REFERENCES subjects(id)
 			);`,
 		},
+		{
+			name: "bgn_recipients_table",
+			sql: `CREATE TABLE IF NOT EXISTS bgn_recipients (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				identity TEXT DEFAULT '',
+				name TEXT NOT NULL,
+				birth_date TEXT DEFAULT '',
+				gender TEXT DEFAULT '',
+				parent_name TEXT DEFAULT '',
+				position TEXT NOT NULL DEFAULT 'santri',
+				status INTEGER NOT NULL DEFAULT 1,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);`,
+		},
+		{
+			name: "bgn_recipients_identity_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_bgn_recipients_identity ON bgn_recipients(identity);`,
+		},
 	}
 
 	for _, migration := range migrations {

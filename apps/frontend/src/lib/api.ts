@@ -791,6 +791,93 @@ export async function getFaqs(search: string = '') {
 	}
 }
 
+export interface BgnRecipient {
+	id: number;
+	identity: string;
+	name: string;
+	birth_date: string;
+	gender: string;
+	parent_name: string;
+	position: string;
+	status: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export type BgnRecipientInput = Omit<BgnRecipient, 'id' | 'created_at' | 'updated_at'>;
+
+export interface BgnStats {
+	total: number;
+	santri: number;
+	guru: number;
+	tendik: number;
+	active: number;
+	inactive: number;
+}
+
+export async function getBgnRecipients(params: { search?: string; position?: string; status?: string } = {}) {
+	try {
+		const qs = new URLSearchParams();
+		if (params.search) qs.append('search', params.search);
+		if (params.position) qs.append('position', params.position);
+		if (params.status) qs.append('status', params.status);
+		const res = await fetch(`${API_BASE_URL}/bgn?${qs.toString()}`, withCredentials({ cache: 'no-store' }));
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		return extractListData<BgnRecipient>(result);
+	} catch (error) {
+		console.error(`[API] Fetch BGN recipients error:`, error);
+		return [];
+	}
+}
+
+export async function getBgnStats() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/bgn/stats`, withCredentials({ cache: 'no-store' }));
+		if (!res.ok) return null;
+		const result = await parseResponse(res);
+		return (result?.data as BgnStats) ?? null;
+	} catch (error) {
+		console.error(`[API] Fetch BGN stats error:`, error);
+		return null;
+	}
+}
+
+export async function createBgnRecipient(data: BgnRecipientInput) {
+	const res = await fetch(`${API_BASE_URL}/bgn`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateBgnRecipient(id: number, data: Partial<BgnRecipientInput>) {
+	const res = await fetch(`${API_BASE_URL}/bgn/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteBgnRecipient(id: number) {
+	const res = await fetch(`${API_BASE_URL}/bgn/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function importBgnRecipients(items: BgnRecipientInput[]) {
+	const res = await fetch(`${API_BASE_URL}/bgn/import`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ items })
+	});
+	return parseResponse(res);
+}
+
 export async function getFacilities(params: { category?: string, search?: string } = {}) {
 	try {
 		const queryParams = new URLSearchParams();
