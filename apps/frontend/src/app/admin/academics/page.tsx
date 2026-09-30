@@ -37,7 +37,7 @@ import {
   updateGradeWeights,
 } from '@/lib/api';
 import { downloadBulkStudentReportPDF, downloadStudentReportPDF, exportToExcel, exportToPDF, previewBulkStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
-import { AlertTriangle, BarChart3, BookOpen, Calendar, ClipboardList, Download, Eye, FileDown, FileSpreadsheet, LayoutDashboard, Layers3, MessageSquare, Pencil, Plus, Printer, RefreshCw, Search, Trash2, Trophy, Users, X } from 'lucide-react';
+import { AlertTriangle, BarChart3, BookOpen, Calendar, ClipboardList, Download, Eye, FileDown, FileSpreadsheet, LayoutDashboard, Layers3, MessageSquare, Pencil, Plus, Printer, RefreshCw, ScrollText, Search, Trash2, Trophy, Users, X } from 'lucide-react';
 
 type TabKey = 'dashboard' | 'grades' | 'attendance' | 'tahfidz' | 'arbain' | 'recap' | 'reports' | 'subjects';
 type DeleteType = 'grade' | 'attendance' | 'tahfidz' | 'arbain' | 'subject';
@@ -709,7 +709,7 @@ export default function AcademicsPage() {
       </div>}
 
       {activeTab === 'arbain' && <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-6 py-4"><p className="text-sm font-black text-slate-800">Rujukan 42 Hadis Arbain Imam Nawawi</p><p className="text-xs text-slate-500">Matn (teks Arab) dapat diisi ustadz dari rujukan buku;贱&gt;deskripsi di bawah memakai terjemahan ringkas.</p></div>
+        <div className="border-b border-slate-100 px-6 py-4"><p className="text-sm font-black text-slate-800">Rujukan 42 Hadis Arbain Imam Nawawi</p><p className="text-xs text-slate-500">Matn (teks Arab) dapat diisi ustadz dari rujukan buku; deskripsi di bawah memakai terjemahan ringkas.</p></div>
         <div className="grid grid-cols-1 gap-3 p-5 md:grid-cols-2">
           {arbainRef.map((h) => <div key={h.number} className="rounded-lg border border-slate-100 bg-slate-50/60 p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold text-slate-800">{h.number}. {h.title}</p><span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{h.category}</span></div><p className="mt-2 text-sm text-slate-600">{h.translation}</p><p className="mt-2 text-[11px] font-semibold text-slate-400">{h.source}</p></div>)}
         </div>
