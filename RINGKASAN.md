@@ -63,6 +63,38 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+## Jilid 63 — Fitur BGN: menu Penerima Manfaat Beras Bergizi Nasional + input data template (30 Sep 2026, LIVE)
+- **Backend** `internal/features/bgn/` (model.go, repository.go, handler.go): tabel baru `bgn_recipients`
+  (migration `bgn_recipients_table` + index `bgn_recipients_identity_index`), kolom `identity` (NISN/NIK,
+  ≤20 char), `name`, `birth_date` (DD-MM-YYYY), `gender` (L/P), `parent_name`, `position`
+  (santri|guru|tendik), `status`. API `/api/bgn`: `GET /` (filter search/position/status), `GET /stats`
+  (total/santri/guru/tendik/active/inactive), `POST /` (create), `PUT /{id}`, `DELETE /{id}`,
+  `POST /import` (bulk idempoten — update by NISN/NIK atau by name+position bila tanpa identitas,
+  duplikat intra-batch dilewati; balasan `{added,updated,skipped}`). Guard role `superadmin, admin,
+  bendahara, panitia_psb` di `cmd/api/main.go`.
+- **Frontend**: menu `Penerima BGN` (kategori BGN, roles superadmin/admin/bendahara/panitia_psb, docRef bgn)
+  di `lib/roleMenus.ts` + icon lucide `Apple` di `components/Sidebar.tsx`; halaman baru
+  `app/admin/bgn/page.tsx` (6 kartu statistik, pencarian + filter posisi/status, tabel CRUD, modal
+  tambah/edit dengan ConfirmDialog, modal Import format `NISN/NIK;Nama;Tgl;JK(L/P);Ortu;Posisi;Status`);
+  `lib/api.ts`: getBgnRecipients/getBgnStats/createBgnRecipient/updateBgnRecipient/deleteBgnRecipient/
+  importBgnRecipients.
+- **Input data**: `data/bgn/template-penerima-manfaat-BGN-PPTQ-ALMAA.xlsx` (sheet SMP, SMA, Tenaga
+  Pendidik) dibaca parser zip-xml murni (server tidak punya pip/openpyxl). **71 penerima live**
+  (santri 58, guru 6, tendik 7; L 30, P 41; semua aktif; semua identity+tanggal). Baris 1-2 header/
+  keterangan, baris 3 "data contoh" kuning, baris rusak tanpa nama (SMA r4, Tenaga r3/r7), dan blok
+  CATATAN dilewati (26 skip). Tanggal serial Excel → DD-MM-YYYY; sheet Tenaga Pendidik menaruh posisi
+  di kolom E (bukan F) — parser menangani keduanya. Catatan: urllib diblok Cloudflare (error 1010) →
+  import via `curl` POST `/api/bgn/import` (hasil `{"added":71,"updated":0,"skipped":0}`).
+- **Deploy**: backend `alma-parung-backend:jilid63-bgn`, frontend `alma-parung-frontend:jilid63-bgn`;
+  swap container `alma-parung-backend` (8090:8080) & `alma-parung-frontend-bobot` (3002:3000).
+  Pelajaran build: `next/font` gagal fetch Google Fonts di builder default (DNS hanya mengembalikan IPv6)
+  → **wajib `docker build --network=host`** untuk image frontend.
+- **Verifikasi**: `go build` 0 error; `tsc --noEmit` 0 error; uji container (DB salinan, port 8099 &
+  FE 3007): CRUD + import dedup (added 2, skipped 1) OK; DOM headless di produksi **13/13 PASS,
+  0 console error** (menu sidebar, 6 kartu stat, tambah/edit/hapus, import via UI); live API stats
+  `{"total":71,"santri":58,"guru":6,"tendik":7,"active":71,"inactive":0}`.
+- **Backup**: `backups/pre-bgn-20260930-070239.db`; 5 file di-edit punya `.bak-jilid63` di repo.
+
 - Jilid 30–39: fondasi, donasi jujur, JWT, font/SRI/rate-limit (detail: CATATAN-JILID42.md §1–4).
 - Jilid 40: AutoSPP 4 bug (WIB, per-santri, guard due-date, WA queue) — live.
 - Jilid 41: santri manual auto-akun users + backfill — live.
