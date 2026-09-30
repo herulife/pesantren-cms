@@ -252,6 +252,65 @@ COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''),
 **Deploy:** backend image `alma-parung-backend:disc-fix` (frontend tidak berubah, tetap `sppautofix`).
 Rollback: `alma-parung-backend-DISC-*` (image `sppautofix`) dan image `disiplinfix`.
 
+## Jilid 61 — Kop e-raport: "Pondok Pesantren Al-Maa Parung Bogor" + teks di atas tabel PDF tak terlihat (29 Sep 2026, LIVE)
+
+**Keluhan user (2):** (1) di preview e-raport kop bernama "yayasan", padahal harus
+"Pondok Pesantren"; (2) "di atas tabel tulisannya engga kelihatan" (teks identitas +
+kartu statistik hilang). Lokasi: `/admin/academics` → tab **Cetak Raport** → **PREVIEW PDF**.
+
+**Akar masalah keduanya:**
+1. Kop PDF diambil dari setting `school_name` (DB) = `Yayasan almaa parung bogor`
+   (`lib/export.ts` → `loadKopInfo()` → `renderKop()`), di-`toUpperCase()` jadi
+   "YAYASAN ALMAA PARUNG BOGOR". Preview modal HTML punya string sendiri
+   ("PESANTREN ALAMPARUNG") yang tidak sinkron dengan PDF.
+2. `renderStudentReport()` di `export.ts`: setelah `doc.setTextColor(255, 255, 255)`
+   untuk judul "e-Raport Akademik Santri" (y=44, memang harus putih di atas kop hijau),
+   **warna tidak pernah di-reset**. Semua teks berikutnya ikut putih di atas latar terang
+   → "Nama Santri / Identitas / Rata-rata / Kehadiran / RATA-RATA NILAI / HADIR /
+   IZIN-SAKIT / ALPHA" praktis tak terlihat. Raport massal juga kena (fungsi yang sama).
+
+**Perubahan (3 file frontend + 1 setting DB):**
+- `apps/frontend/src/lib/export.ts` → tambah `doc.setTextColor(30, 41, 59)` tepat
+  setelah teks "e-Raport Akademik Santri"; fallback kop diubah ke
+  `PONDOK PESANTREN AL-MAA PARUNG BOGOR`.
+- `apps/frontend/src/components/KwitansiModal.tsx` → helper baru `formatSchoolName()`
+  (prefiks "Pondok Pesantren" hanya bila nama belum berawalan itu) dipakai di header
+  HTML **dan** PDF kwitansi. Tanpa ini tampil dobel "Pondok Pesantren Pondok…" karena
+  `school_name` kini sudah memuat kata "Pondok Pesantren".
+- `apps/frontend/src/app/admin/academics/page.tsx` → kop preview modal
+  `PESANTREN ALAMPARUNG` → `PONDOK PESANTREN AL-MAA PARUNG BOGOR` (sinkron dengan PDF).
+- DB `settings.school_name`: `Yayasan almaa parung bogor` →
+  `Pondok Pesantren Al-Maa Parung Bogor` (user pilih **ubah global**, jadi ikut dipakai
+  kop kwitansi, header/footer situs publik, dan PDF e-raport).
+  `/api/settings/public` sudah mengembalikan nilai baru.
+- Backup: `export.ts.bak-20260929-eraport`, `KwitansiModal.tsx.bak-20260929-eraport`,
+  `page.tsx.bak-20260929-eraport`.
+
+**Deploy:** `docker build -f Dockerfile.frontend -t alma-parung-frontend:fix-eraport-kop .`
+→ swap container `alma-parung-frontend-bobot` (`-p 3002:3000`, restart always, tanpa env
+tambahan; rewrite `/api` → `https://almaparung.com/api`). Container healthy.
+
+**Verifikasi (PDF asli di-generate headless dari `/admin/academics`, 24.705 byte):**
+- Isi kop terbaca: `PONDOK PESANTREN AL-MAA PARUNG BOGOR` + alamat/kontak dari setting.
+- Content stream PDF: judul "e-Raport Akademik Santri" tetap `1. g` (putih di atas kop
+  hijau — benar), sedangkan "Nama Santri" dan "RATA-RATA NILAI" kini
+  `0.118 0.161 0.231 rg` (RGB 30,41,59 = gelap) — sebelumnya ikut putih.
+- `/api/settings/public` → `school_name = Pondok Pesantren Al-Maa Parung Bogor`.
+- `formatSchoolName` ada di chunk ter-deploy (kwitansi tidak dobel).
+- Git auto-commit HEAD `92645c0` (academics), `89ef633` (KwitansiModal + export),
+  `0e3bc80` (export).
+
+**Catatan teknis verifikasi PDF headless (pola untuk agen penerus):** Chromium di
+server tidak punya lib sistem. Ambil paket `.deb` lalu ekstrak ke satu prefix:
+`apt-get download <paket>` → `dpkg-deb -x <deb> <prefix>` → jalankan
+`LD_LIBRARY_PATH=<prefix>/usr/lib/x86_64-linux-gnu node script.js`. Paket yang dibutuhkan
+antara lain: `libatk1.0-0t64`, `libcups2t64`, `libcairo2`, `libnss3`, `libavahi-common3`,
+`libgbm1`, `libxkbcommon0`, `libasound2t64`, `libpango-1.0-0`. Di Ubuntu Noble package
+`libcups2`/`libatk1.0-0` sudah ber-suffix `t64` (nama lama tidak punya candidate).
+Cara baca teks PDF tanpa `pdftotext` (tidak ada di server): `zlib.decompress` tiap
+`stream ... endstream`, lalu regex kurung. Intercept PDF dari `window.open()` (blob URL)
+lalu `fetch` di dalam page dan kirim basis64 ke Node.
+
 ## Jilid 60 — WA PSB tidak lagi spam: hanya status bernilai + debounce 2 menit + LUNAS sekali (29 Sep 2026, LIVE)
 
 **Permintaan user:** “kenapa ini kirim berkali2, coba kamu cek” — wali menerima WA
