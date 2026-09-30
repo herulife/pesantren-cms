@@ -46,9 +46,9 @@ func buildWhere(f Filter) (string, []interface{}) {
 		where += " AND b.status = 0"
 	}
 	if f.Search != "" {
-		where += " AND (b.name LIKE ? OR b.identity LIKE ? OR b.parent_name LIKE ?)"
+		where += " AND (b.name LIKE ? OR b.identity LIKE ? OR b.parent_name LIKE ? OR s.name LIKE ?)"
 		like := "%" + f.Search + "%"
-		args = append(args, like, like, like)
+		args = append(args, like, like, like, like)
 	}
 	return where, args
 }
