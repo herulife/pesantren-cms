@@ -530,6 +530,7 @@ function BgnAdminPageContent() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
+                        {it.position === 'santri' && (
                         <button
                           onClick={() => openLink(it)}
                           className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
@@ -537,6 +538,7 @@ function BgnAdminPageContent() {
                         >
                           {it.santri_id ? <Unlink size={16} /> : <Link2 size={16} />}
                         </button>
+                        )}
                         <button
                           onClick={() => openEdit(it)}
                           className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
