@@ -711,6 +711,40 @@ export interface TahfidzProgress {
 	evaluation_date: string;
 }
 
+export interface HadisArbain {
+	number: number;
+	title: string;
+	category: string;
+	translation: string;
+	source: string;
+	arabic: string;
+}
+
+export interface ArbainProgress {
+	id: number;
+	student_id: number;
+	student_name?: string;
+	hadith_number: number;
+	hadith_title?: string;
+	category?: string;
+	translation?: string;
+	source?: string;
+	status: string;
+	nilai: number;
+	notes: string;
+	evaluation_date: string;
+}
+
+export interface ArbainSummary {
+	total: number;
+	status: Record<string, number>;
+}
+
+export interface MyArbainResponse {
+	progress: ArbainProgress[];
+	summary: ArbainSummary;
+}
+
 export interface Exam {
 	id: number;
 	subject_id: number;
@@ -2522,6 +2556,73 @@ export async function updateTahfidz(id: number, data: Partial<TahfidzProgress>) 
 
 export async function deleteTahfidz(id: number) {
 	const res = await fetch(`${API_BASE_URL}/academics/tahfidz/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+// Hadis Arbain: rujukan 42 hadis (read-only) + catatan setoran per Buffer Santri.
+export async function getArbainReference() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/academics/arbain/reference`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as HadisArbain[];
+	} catch (e) {
+		console.error(`[API] Fetch arbain reference error:`, e);
+		return [];
+	}
+}
+
+export async function getArbain() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/academics/arbain`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as ArbainProgress[];
+	} catch (e) {
+		console.error(`[API] Fetch arbain progress error:`, e);
+		return [];
+	}
+}
+
+export async function getMyArbain() {
+	return fetchJsonWithFallback<MyArbainResponse>(
+		'/portal/academics/arbain/me',
+		['/academics/arbain/me'],
+		{
+			defaultValue: { progress: [], summary: { total: 0, status: {} } },
+			silentStatuses: [401, 403],
+			logLabel: 'Fetch my arbain progress',
+		}
+	);
+}
+
+export async function createArbain(data: Omit<ArbainProgress, 'id' | 'student_name'>) {
+	const res = await fetch(`${API_BASE_URL}/academics/arbain`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateArbain(id: number, data: Partial<ArbainProgress>) {
+	const res = await fetch(`${API_BASE_URL}/academics/arbain/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteArbain(id: number) {
+	const res = await fetch(`${API_BASE_URL}/academics/arbain/${id}`, {
 		method: 'DELETE',
 		headers: getAuthHeaders()
 	});
