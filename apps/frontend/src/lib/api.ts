@@ -792,23 +792,6 @@ export async function getFaqs(search: string = '') {
 }
 
 
-export type BgnRecipientInput = Omit<
-	BgnRecipient,
-	'id' | 'created_at' | 'updated_at' | 'santri_id' | 'santri_name' | 'santri_class'
->;
-
-
-
-
-
-// getBgnAll untuk export: seluruh baris yang cocok filter tanpa paginasi.
-
-
-
-
-
-
-
 
 export async function getFacilities(params: { category?: string, search?: string } = {}) {
 	try {
