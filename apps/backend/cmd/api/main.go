@@ -490,6 +490,8 @@ func main() {
 				r.Get("/my-receipt", paymentHandler.GetMyReceipt)
 				r.Get("/portal/raport/me", raportHandler.GetMine)
 				r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
+				r.Get("/portal/academics/arbain/me", academicHandler.GetMyArbainProgress)
+				r.Get("/portal/academics/arbain/reference", academicHandler.GetArbainReference)
 				r.Get("/attendance/token", attendanceHandler.GetToken)
 
 				// CBT Student
