@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Download, Eye, FileText, Info, Printer, RefreshCw, Sparkles, Target, TrendingUp, X } from 'lucide-react';
-import { getMyAcademicGrades, getMyAttendanceSummary, getMyTahfidz, getMyRaport, getActiveAcademicYear, currentSemester, type Grade, type TahfidzProgress, type ComputedRaport } from '@/lib/api';
+import { BookOpen, Download, Eye, FileText, Info, Printer, RefreshCw, ScrollText, Sparkles, Target, TrendingUp, X } from 'lucide-react';
+import { getMyAcademicGrades, getMyArbain, getMyAttendanceSummary, getMyTahfidz, getMyRaport, getActiveAcademicYear, currentSemester, type ArbainProgress, type Grade, type TahfidzProgress, type ComputedRaport } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { downloadStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
 
@@ -54,6 +54,7 @@ export default function PortalRaportPage() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [attendanceSummary, setAttendanceSummary] = useState<Record<string, number>>({});
   const [tahfidz, setTahfidz] = useState<TahfidzProgress[]>([]);
+  const [arbain, setArbain] = useState<ArbainProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [eraport, setEraport] = useState<ComputedRaport | null>(null);
   const [showFormula, setShowFormula] = useState(false);
@@ -73,17 +74,19 @@ export default function PortalRaportPage() {
           getActiveAcademicYear(),
           Promise.resolve(currentSemester()),
         ]);
-        const [gradesData, attendanceData, tahfidzData, eraData] = await Promise.all([
+        const [gradesData, attendanceData, tahfidzData, eraData, arbainData] = await Promise.all([
           getMyAcademicGrades(),
           getMyAttendanceSummary(),
           getMyTahfidz(),
           getMyRaport(activeSemester, activeYear),
+          getMyArbain().catch(() => ({ progress: [], summary: { total: 0, status: {} } })),
         ]);
 
         setGrades(gradesData);
         setAttendanceSummary(attendanceData);
         setTahfidz(tahfidzData);
         setEraport(eraData);
+        setArbain(arbainData.progress || []);
       } finally {
         setIsLoading(false);
       }
@@ -505,6 +508,62 @@ export default function PortalRaportPage() {
           </div>
         </section>
       </div>
+
+      <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-start gap-4 border-b border-slate-100 px-5 py-5 lg:px-6">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <ScrollText size={22} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Hadis Arbain</p>
+            <h2 className="mt-2 font-outfit text-2xl font-black tracking-tight text-slate-900">Setoran 42 Hadis Imam Nawawi</h2>
+          </div>
+        </div>
+        <div className="px-5 py-5 lg:px-6">
+          {arbain.length === 0 ? (
+            <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm font-medium text-slate-500">
+              Setoran Hadis Arbain belum diinput oleh ustadz.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[
+                  { label: 'Total Setoran', value: arbain.length, tone: 'border-slate-200 bg-slate-50 text-slate-900' },
+                  { label: 'Lulus', value: arbain.filter((i) => i.status === 'lulus').length, tone: 'border-emerald-100 bg-emerald-50 text-emerald-700' },
+                  { label: 'Setor', value: arbain.filter((i) => i.status === 'setor').length, tone: 'border-amber-100 bg-amber-50 text-amber-700' },
+                  { label: 'Proses', value: arbain.filter((i) => i.status === 'proses').length, tone: 'border-sky-100 bg-sky-50 text-sky-700' },
+                ].map((card) => (
+                  <div key={card.label} className={`rounded-xl border p-4 ${card.tone}`}>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-70">{card.label}</p>
+                    <p className="mt-2 text-2xl font-black">{card.value}</p>
+                  </div>
+                ))}
+              </div>
+              {arbain.map((item) => (
+                <div key={item.id} className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="break-words font-semibold text-slate-900">{item.hadith_number}. {item.hadith_title || 'Hadis Arbain'}</p>
+                      {item.translation && <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.translation}</p>}
+                      {item.notes && <p className="mt-2 text-sm italic text-slate-500">Catatan ustadz: {item.notes}</p>}
+                      {item.source && <p className="mt-2 text-[11px] font-semibold text-slate-400">{item.source}</p>}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                      <span className="inline-flex w-fit rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                        {item.status}
+                      </span>
+                      <span className="text-sm font-black text-slate-700">Nilai {item.nilai ?? 0}</span>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Evaluasi: {formatDateLabel(item.evaluation_date)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
         <div className="flex items-start gap-4 border-b border-slate-100 px-5 py-5 lg:px-6">
