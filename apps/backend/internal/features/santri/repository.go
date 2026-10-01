@@ -124,8 +124,8 @@ func (r *Repository) Create(s *Santri) error {
 	if err != nil {
 		return err
 	}
-	res, err := tx.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
+	res, err := tx.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, category, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
@@ -212,7 +212,7 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	stmt, err := tx.Prepare(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := tx.Prepare(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, category, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -225,7 +225,7 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 		if s.Status == "" {
 			s.Status = "aktif"
 		}
-		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
+		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				continue
