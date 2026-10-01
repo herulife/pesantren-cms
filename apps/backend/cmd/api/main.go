@@ -374,6 +374,7 @@ func main() {
 			r.Use(auth.AuthMiddleware)
 
 			r.Get("/me", authHandler.GetMe)
+			r.Put("/me/password", authHandler.ChangeMyPassword)
 			r.Get("/settings/role-permissions", settingHandler.GetRolePermissions)
 			r.With(uploadLimiter.Middleware).Post("/upload", upload.HandleUpload)
 

@@ -396,6 +396,76 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// PUT /api/me/password — user mengganti password-nya sendiri.
+// Password lama wajib cocok, jadi session yang tertinggal tidak bisa langsung
+// mengambil alih akun. Berbeda dari ResetUserPassword (reset paksa oleh admin).
+func (h *Handler) ChangeMyPassword(w http.ResponseWriter, r *http.Request) {
+	correlationID := logger.CorrelationID(r)
+
+	me, ok := GetAuthenticatedUser(r)
+	if !ok {
+		writeAPIError(w, http.StatusUnauthorized, correlationID, "Sesi tidak valid", nil)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+
+	var req validators.ChangePasswordRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	if validationErrs := validators.ValidateChangePasswordRequest(&req); len(validationErrs) > 0 {
+		writeValidationError(w, correlationID, validationErrs)
+		return
+	}
+
+	user, err := h.repo.FindByID(me.ID)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, correlationID, "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if err := h.repo.CheckPassword(user.PasswordHash, req.OldPassword); err != nil {
+		// 401 (bukan 400): password lama salah, bukan format request yang salah.
+		// Pesan sengaja tidak membedakan "salah" vs "akun tidak ada".
+		writeAPIError(w, http.StatusUnauthorized, correlationID, "Password lama tidak cocok", nil)
+		return
+	}
+
+	if err := h.repo.UpdatePassword(me.ID, req.NewPassword); err != nil {
+		logger.Error(r.Context(), "failed changing own password", logger.Field{
+			"user_id": me.ID,
+			"error":   err.Error(),
+		})
+		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal memperbarui password", nil)
+		return
+	}
+
+	// Sama seperti reset password: token_version dinaikkan sehingga SEMUA sesi
+	// (termasuk yang sedang dipakai) jadi tidak valid -> user wajib login ulang.
+	_ = h.repo.BumpTokenVersion(me.ID)
+
+	logger.RecordActivity(&me.ID, "CHANGE_OWN_PASSWORD", "Mengubah password sendiri", r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: me.ID,
+		Action: "CHANGE_OWN_PASSWORD", Entity: "user", EntityID: strconv.Itoa(me.ID),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Password berhasil diubah. Silakan login kembali.",
+		// Sesi di-terminate oleh BumpTokenVersion di atas; frontend wajib
+		// menghapus cookie lalu mengarahkan ke /login.
+		"reauth": true,
+	})
+}
+
 // GET /api/users — list staff users (superadmin/bendahara)
 func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
