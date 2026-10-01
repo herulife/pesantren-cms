@@ -311,6 +311,83 @@ export const adminDocSections: AdminDocSection[] = [
     ],
   },
   {
+    id: 'santri-data',
+    title: 'Data Santri & Import Massal',
+    category: 'Santri',
+    href: '/admin/kesantrian',
+    summary:
+      'Daftar semua santri aktif. Dari sini Anda bisa menambah satu santri, mengubah data, atau memasukkan banyak santri sekaligus dari file Excel (import massal).',
+    audience: ['Pimpinan', 'Admin', 'Panitia PSB'],
+    quickActions: [
+      'Melihat dan mencari daftar santri aktif.',
+      'Menambah santri baru satu per satu lewat tombol Tambah Santri.',
+      'Mengisi banyak santri sekaligus lewat tombol Import Massal.',
+      'Mengubah atau menghapus data santri yang sudah ada.',
+    ],
+    workflows: [
+      {
+        title: 'Cara menambah satu santri',
+        steps: [
+          'Klik menu Data Santri Aktif di sebelah kiri.',
+          'Klik tombol Tambah Santri.',
+          'Isi NIS, nama, kelas, dan data lain yang diketahui. NIS dan kelas wajib diisi.',
+          'Klik Simpan. Kalau NIS sudah dipakai, sistem akan menolak dan meminta NIS lain.',
+        ],
+      },
+      {
+        title: 'Cara import massal dari file Excel',
+        steps: [
+          'Klik menu Data Santri Aktif, lalu klik tombol Import Massal.',
+          'Klik Unduh Template untuk mengambil file Excel berisi satu baris contoh.',
+          'Isi baris di bawah contoh. Jangan ubah baris pertama karena dipakai sebagai nama kolom.',
+          'Hapus baris contoh supaya tidak ikut terimport, lalu simpan file.',
+          'Unggah kembali file itu di halaman Import Massal.',
+          'Periksa pratinjau. Kalau ada tulisan merah, perbaiki dulu di Excel lalu unggah lagi.',
+          'Kalau pratinjau sudah bersih, klik tombol Import.',
+        ],
+      },
+    ],
+    tips: [
+      'NIS harus unik. Sebelum import, pastikan tidak ada NIS yang sama dengan santri yang sudah ada.',
+      'Isi satu baris contoh dulu, cek berhasil, baru isi banyak.',
+      'Kolom yang tidak diisi boleh dikosongkan, kecuali NIS dan Kelas yang wajib.',
+    ],
+    glossary: [
+      { term: 'NIS', meaning: 'Nomor Induk Santri, nomor unik milik tiap santri. Wajib diisi dan tidak boleh sama.' },
+      { term: 'NIK', meaning: 'Nomor Induk Kependudukan 16 digit dari KTP atau KK. Opsional.' },
+      { term: 'Angkatan', meaning: 'Tahun santri masuk, contoh 2026.' },
+      { term: 'Status', meaning: 'Keadaan santri: aktif, lulus, pindah, atau cuti.' },
+      { term: 'Import Massal', meaning: 'Memasukkan banyak santri sekaligus dari satu file Excel.' },
+    ],
+    reference: {
+      title: 'Arti kolom di file Excel',
+      note:
+        'Nama kolom tidak harus persis sama (misalnya No HP Wali tetap dikenali). Kolom No. HP Wali, Tempat/Tanggal Lahir, dan NIK boleh dikosongkan. Kolom Kelas wajib diisi.',
+      columns: ['Kolom', 'Wajib?', 'Keterangan'],
+      rows: [
+        ['NIS', 'Wajib', 'Nomor induk santri, unik, 4-20 karakter.'],
+        ['Nama', 'Wajib', 'Nama lengkap santri.'],
+        ['Panggilan', 'Opsional', 'Nama panggilan sehari-hari.'],
+        ['Kelamin', 'Wajib', 'L atau P.'],
+        ['Tempat Lahir', 'Opsional', 'Kota atau kabupaten tempat lahir.'],
+        ['Tanggal Lahir', 'Opsional', 'Format YYYY-MM-DD, contoh: 2010-01-01.'],
+        ['Alamat', 'Opsional', 'Alamat tempat tinggal santri.'],
+        ['Kelas', 'Wajib', 'Contoh: VII atau VII-A.'],
+        ['Angkatan', 'Opsional', 'Tahun masuk, contoh: 2026.'],
+        ['Status', 'Opsional', 'aktif / lulus / pindah / cuti. Kosongkan jika aktif.'],
+        ['NIK', 'Opsional', 'NIK 16 digit, bila NIS sudah dipakai sebagai identitas.'],
+        ['Nama Wali', 'Opsional', 'Nama wali atau orang tua.'],
+        ['No. HP Wali', 'Opsional', 'Nomor WhatsApp wali, dipakai untuk kirim pengumuman.'],
+      ],
+    },
+    faq: [
+      { question: 'File harus format apa?', answer: 'Hanya .xlsx. Kalau memakai .xls atau .csv, file akan ditolak.' },
+      { question: 'Kenapa tombol Import tidak bisa diklik?', answer: 'Biasanya karena belum ada data terbaca atau masih ada error di pratinjau. Perbaiki dulu error merahnya.' },
+      { question: 'Kalau NIS ganda bagaimana?', answer: 'Baris dengan NIS ganda akan gagal. Ganti NIS-nya atau hapus baris itu sebelum import.' },
+      { question: 'Apakah data yang salah bisa diperbaiki setelah import?', answer: 'Bisa. Buka Data Santri Aktif, cari santrinya, lalu edit.' },
+    ],
+  },
+  {
     id: 'academics',
     title: 'Nilai & Raport (eRapor)',
     category: 'Santri',

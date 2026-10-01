@@ -220,17 +220,6 @@ export default function SantriImportPage() {
 const aoa = [
       head,
       sample,
-      [],
-      ['Keterangan:'],
-      ['NIS', 'Nomor induk santri, wajib diisi, unik, 4-20 karakter.'],
-      ['Nama', 'Nama lengkap santri, wajib diisi.'],
-      ['Kelamin', 'L atau P.'],
-      ['Kelas', 'Wajib diisi, contoh: VII atau VII-A.'],
-      ['Angkatan', 'Tahun masuk, contoh: 2026.'],
-      ['Status', 'aktif / lulus / pindah / cuti. Kosongkan jika aktif.'],
-      ['Tanggal Lahir', 'Format YYYY-MM-DD, contoh: 2010-01-01.'],
-      ['NIK', 'NIK 16 digit, opsional bila NIS sudah dipakai sebagai identitas.'],
-      ['Nama Wali / No. HP Wali', 'Isi bila tahu, opsional.'],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);

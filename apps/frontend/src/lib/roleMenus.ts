@@ -33,7 +33,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Layanan', label: 'Pesan & Inbox', href: '/admin/messages', roles: ['panitia_psb'], docRef: 'messages' },
   { category: 'Layanan', label: 'WhatsApp Gateway', href: '/admin/notifications', roles: ['superadmin', 'bendahara'], docRef: 'notifications' },
   { category: 'PSB', label: 'Data Santri (PSB)', href: '/admin/psb', roles: ['panitia_psb'], docRef: 'psb' },
-  { category: 'PSB', label: 'Data Santri Aktif', href: '/admin/kesantrian', roles: ['superadmin', 'admin', 'panitia_psb', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
+  { category: 'PSB', label: 'Data Santri Aktif', href: '/admin/kesantrian', roles: ['superadmin', 'admin', 'panitia_psb', 'pimpinan', 'wali_kelas'], docRef: 'santri-data' },
   { category: 'PSB', label: 'Pengaturan PSB', href: '/admin/psb/pengaturan', roles: ['superadmin'], docRef: 'psb' },
   { category: 'Sistem', label: 'Manajemen Pengguna', href: '/admin/users', roles: ['superadmin', 'bendahara'], docRef: 'users' },
   { category: 'Sistem', label: 'Log Sistem', href: '/admin/logs', roles: ['superadmin'], docRef: 'logs' },
