@@ -11,6 +11,7 @@ import (
 
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/finance"
+	"almaparung-api/internal/validators"
 )
 
 type Registration struct {
@@ -367,12 +368,15 @@ func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registrat
 	if parentPhone == "" {
 		parentPhone = reg.FatherPhone
 	}
-	reg.Category = strings.ToLower(strings.TrimSpace(reg.Category))
-	if reg.Category == "" {
-		reg.Category = "reguler"
-	}
-	if reg.Category != "reguler" && reg.Category != "yatim" && reg.Category != "dhuafa" {
-		return nil, ErrInvalidCategory
+	// Kosong -> "reguler"; terisi tapi tidak dikenal -> ErrInvalidCategory
+	// (perilaku lama dipertahankan, daftar nilainya yang dipakai bersama).
+	if raw := strings.TrimSpace(reg.Category); raw == "" {
+		reg.Category = validators.CategoryReguler
+	} else {
+		reg.Category = validators.NormalizeCategory(raw)
+		if reg.Category == "" {
+			return nil, ErrInvalidCategory
+		}
 	}
 	reg.ProgramChoice = strings.ToLower(strings.TrimSpace(reg.ProgramChoice))
 	if reg.ProgramChoice != "" && reg.ProgramChoice != "tahfidz" && reg.ProgramChoice != "bahasa" {
