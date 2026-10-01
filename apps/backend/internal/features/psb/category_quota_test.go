@@ -78,6 +78,7 @@ func newCategoryTestDB(t *testing.T) *sql.DB {
 		class TEXT NOT NULL,
 		angkatan TEXT,
 		status TEXT DEFAULT 'aktif',
+		category TEXT DEFAULT 'reguler',
 		parent_name TEXT,
 		parent_phone TEXT,
 		nik TEXT DEFAULT '',
