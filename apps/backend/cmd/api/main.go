@@ -375,6 +375,9 @@ func main() {
 
 			r.Get("/me", authHandler.GetMe)
 			r.Put("/me/password", authHandler.ChangeMyPassword)
+			// Avatar milik user yang sedang login (Jilid 69). Field: image.
+			r.With(uploadLimiter.Middleware).Put("/me/photo", upload.HandleMyPhoto(authRepo))
+			r.With(uploadLimiter.Middleware).Delete("/me/photo", upload.HandleDeleteMyPhoto(authRepo))
 			r.Get("/settings/role-permissions", settingHandler.GetRolePermissions)
 			r.With(uploadLimiter.Middleware).Post("/upload", upload.HandleUpload)
 

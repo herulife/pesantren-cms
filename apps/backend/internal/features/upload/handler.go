@@ -86,129 +86,102 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, header, err := r.FormFile("image")
+	// Bukti pembayaran (kind=proof) ikut lewat endpoint ini, jadi PDF harus
+	// diterima. Sanitasi gambar tetap milik SaveSanitizedImage.
+	isProof := r.FormValue("kind") == "proof"
+	subdir := ""
+	if isProof {
+		subdir = "proofs"
+	}
+
+	publicURL, err := saveUploadPayload(r, subdir, isProof)
 	if err != nil {
-		logger.Warn(r.Context(), "upload rejected missing file", logger.Field{
+		logger.Warn(r.Context(), "upload rejected", logger.Field{
 			"operation":      "upload_image",
 			"correlation_id": correlationID,
 			"user_id":        userID,
 			"error":          err.Error(),
 		})
-		sendJSONResponse(w, http.StatusBadRequest, false, "Tidak ada file yang diunggah", nil)
+		status := http.StatusBadRequest
+		if errors.Is(err, ErrAvatarTooLarge) {
+			status = http.StatusRequestEntityTooLarge
+		}
+		sendJSONResponse(w, status, false, err.Error(), nil)
 		return
-	}
-	defer file.Close()
-
-	// Baca dulu agar bisa bercabang PDF vs gambar. Form pendaftaran
-	// mengizinkan PDF (KK/ijazah/akta) sehingga backend wajib menerimanya.
-	rawUpload, err := io.ReadAll(io.LimitReader(file, maxUploadSize+1))
-	if err != nil || len(rawUpload) == 0 {
-		sendJSONResponse(w, http.StatusBadRequest, false, "File tidak terbaca", nil)
-		return
-	}
-	if int64(len(rawUpload)) > maxUploadSize {
-		sendJSONResponse(w, http.StatusBadRequest, false, "Ukuran file terlalu besar. Maksimal 5MB.", nil)
-		return
-	}
-	var source []byte
-	var format string
-	isPDF := strings.EqualFold(filepath.Ext(header.Filename), ".pdf") &&
-		len(rawUpload) > 5 && string(rawUpload[:5]) == "%PDF-" &&
-		http.DetectContentType(rawUpload) == "application/pdf"
-	if isPDF {
-		source, format = rawUpload, "pdf"
-	} else if source, format, err = sanitizeImage(bytes.NewReader(rawUpload)); err != nil {
-		logger.Warn(r.Context(), "upload rejected unsupported file", logger.Field{
-			"operation":      "upload_image",
-			"correlation_id": correlationID,
-			"user_id":        userID,
-			"filename":       header.Filename,
-			"error":          err.Error(),
-		})
-		sendJSONResponse(w, http.StatusBadRequest, false, "File harus berupa gambar JPG, JPEG, PNG, GIF, WEBP, atau PDF yang valid", nil)
-		return
-	}
-
-	uploadDir := "./public/uploads"
-	// PHASE 4: kind=proof -> subdir privat (disajikan via ServeProof berauth).
-	if r.FormValue("kind") == "proof" {
-		uploadDir = "./public/uploads/proofs"
-	}
-	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
-		logger.Error(r.Context(), "upload failed creating directory", logger.Field{
-			"operation":      "upload_image",
-			"correlation_id": correlationID,
-			"user_id":        userID,
-			"error":          err.Error(),
-		})
-		sendJSONResponse(w, http.StatusInternalServerError, false, "Tidak dapat menyiapkan penyimpanan file", nil)
-		return
-	}
-
-	ext := "." + format
-	if format == "jpeg" {
-		ext = ".jpg"
-	}
-	newFileName, err := randomFileName(ext)
-	if err != nil {
-		logger.Error(r.Context(), "upload failed generating filename", logger.Field{
-			"operation":      "upload_image",
-			"correlation_id": correlationID,
-			"user_id":        userID,
-			"error":          err.Error(),
-		})
-		sendJSONResponse(w, http.StatusInternalServerError, false, "Tidak dapat menyimpan file", nil)
-		return
-	}
-	filePath := filepath.Join(uploadDir, newFileName)
-
-	out, err := os.Create(filePath)
-	if err != nil {
-		logger.Error(r.Context(), "upload failed creating file", logger.Field{
-			"operation":      "upload_image",
-			"correlation_id": correlationID,
-			"user_id":        userID,
-			"filename":       header.Filename,
-			"error":          err.Error(),
-		})
-		sendJSONResponse(w, http.StatusInternalServerError, false, "Tidak dapat menyimpan file", nil)
-		return
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, bytes.NewReader(source))
-	if err != nil {
-		logger.Error(r.Context(), "upload failed writing file", logger.Field{
-			"operation":      "upload_image",
-			"correlation_id": correlationID,
-			"user_id":        userID,
-			"filename":       header.Filename,
-			"error":          err.Error(),
-		})
-		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal menulis file", nil)
-		return
-	}
-
-	// Kembalikan path relatif (bukan URL absolut) agar tidak mengikat satu host.
-	// URL absolut peninggalan APP_URL/localhost membuat gambar rusak di browser
-	// pengunjung (localhost menunjuk ke perangkat masing-masing). Frontend
-	// menulis ulang path ini ke origin API via normalizeApiAssetUrl.
-	publicURL := fmt.Sprintf("/uploads/%s", newFileName)
-	if r.FormValue("kind") == "proof" {
-		publicURL = fmt.Sprintf("/uploads/proofs/%s", newFileName)
 	}
 
 	logger.Info(r.Context(), "upload completed", logger.Field{
 		"operation":      "upload_image",
 		"correlation_id": correlationID,
 		"user_id":        userID,
-		"filename":       newFileName,
+		"filename":       filepath.Base(publicURL),
 		"duration_ms":    time.Since(startedAt).Milliseconds(),
 	})
 
 	sendJSONResponse(w, http.StatusCreated, true, "Upload berhasil", map[string]interface{}{
 		"url": publicURL,
 	})
+}
+
+// saveUploadPayload menyimpan satu file dari field "image". Kalau allowPDF, PDF
+// disimpan apa adanya (tanpa decode gambar); selain itu disanitasi sebagai gambar.
+func saveUploadPayload(r *http.Request, subdir string, allowPDF bool) (string, error) {
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		return "", errors.New("Tidak ada file yang diunggah")
+	}
+	defer file.Close()
+
+	raw, err := io.ReadAll(io.LimitReader(file, maxUploadSize+1))
+	if err != nil || len(raw) == 0 {
+		return "", errors.New("File tidak terbaca")
+	}
+	if int64(len(raw)) > maxUploadSize {
+		return "", ErrAvatarTooLarge
+	}
+
+	var source []byte
+	var format, ext string
+	isPDF := allowPDF &&
+		strings.EqualFold(filepath.Ext(header.Filename), ".pdf") &&
+		len(raw) > 5 && string(raw[:5]) == "%PDF-" &&
+		http.DetectContentType(raw) == "application/pdf"
+	if isPDF {
+		source, format, ext = raw, "pdf", ".pdf"
+	} else {
+		source, format, err = sanitizeImage(bytes.NewReader(raw))
+		if err != nil {
+			return "", fmt.Errorf("%w: %s", ErrAvatarUnsupported, sanitizeMessage(err))
+		}
+		ext = "." + format
+		if format == "jpeg" {
+			ext = ".jpg"
+		}
+	}
+
+	uploadDir := "./public/uploads"
+	if subdir != "" {
+		uploadDir = filepath.Join(uploadDir, subdir)
+	}
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		logger.Error(r.Context(), "upload failed creating directory", logger.Field{
+			"operation": "upload_image", "error": err.Error(),
+		})
+		return "", errors.New("Tidak dapat menyiapkan penyimpanan file")
+	}
+	name, err := randomFileName(ext)
+	if err != nil {
+		return "", errors.New("Tidak dapat menyimpan file")
+	}
+	if err := os.WriteFile(filepath.Join(uploadDir, name), source, 0o644); err != nil {
+		logger.Error(r.Context(), "upload failed writing file", logger.Field{
+			"operation": "upload_image", "error": err.Error(),
+		})
+		return "", errors.New("Gagal menulis file")
+	}
+	// Path relatif (bukan URL absolut) agar tidak mengikat satu host; frontend
+	// menulis ulang ke origin API via normalizeApiAssetUrl.
+	return "/uploads/" + subdir + "/" + name, nil
 }
 
 func sanitizeImage(file io.Reader) ([]byte, string, error) {
