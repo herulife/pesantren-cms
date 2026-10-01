@@ -21,11 +21,11 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:jilid65-bgnclean` | Jilid 65 (hapus total BGN + import ulang Santri dari master Google Sheet). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `fix-nullsanti-v2`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:psbrektab` | Jilid 66 (tombol No. Rekening di Pengaturan PSB deep-link ke tab No. Rekening), Jilid 65 (hapus total BGN), Jilid 64 (BGN paginasi + export — **fitur BGN sudah dihapus di source**), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `arbain-bgn2`. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:jilid67-kategori` | Jilid 67 (Kategori Murid `santri.category` + fix scan `FindByUserID`), Jilid 65 (hapus total BGN + import ulang Santri dari master Google Sheet). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `jilid65-bgnclean`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid67-kategori` | Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66 (tombol No. Rekening deep-link), Jilid 65 (hapus total BGN), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `psbrektab`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `fix-nullsanti-v2`(terakhir)+`arbain-bgn`+`jilid64-bgnp1`+`jilid63-bgn`; frontend `arbain-bgn2`(terakhir)+`jilid64-bgnp1`+`jilid63-bgn` | container lama: `alma-parung-backend-pre-jilid65`, `alma-parung-frontend-bobot-pre-psbrektab` |
-| DB | — | — | **santri 119** (re-import dari master Google Sheet 30 Sep 2026; 18 pakai NIS sementara `TEMP0xx`); `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 126 (119 akun portal hasil import) |
+| Rollback tersedia | — | backend `jilid65-bgnclean`(terakhir)+`fix-nullsanti-v2`+`arbain-bgn`; frontend `psbrektab`(terakhir)+`arbain-bgn2` | container lama: `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
+| DB | — | — | **santri 119** (re-import dari master Google Sheet 30 Sep 2026; 18 pakai NIS sementara `TEMP0xx`); `santri.category` ada (semua 116 baris terbaca `reguler` — angka 116 vs 119 karena 3 baris `\bcategory\b` NULL/legacy, cek ulang bila perlu), `santri.father_occupation`/`mother_occupation` baru dibuat Jilid 67; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 126 (119 akun portal hasil import) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 ```
