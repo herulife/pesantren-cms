@@ -682,6 +682,8 @@ func createTables() {
 		father_phone TEXT DEFAULT '',
 		mother_name TEXT DEFAULT '',
 		mother_phone TEXT DEFAULT '',
+		father_occupation TEXT DEFAULT '',
+		mother_occupation TEXT DEFAULT '',
 		registration_id INTEGER DEFAULT 0,
 		photo_url TEXT,
 		user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -920,7 +922,7 @@ func createTables() {
 	addColumnIfNotExists("santri", "category", "TEXT DEFAULT 'reguler'")
 	// Dua kolom ini sudah dipakai query di features/santri tapi belum pernah
 	// terdaftar di db.go (pernah ditambahkan manual ke DB prod saja), sehingga
-	// DB fresh akan gagal saat SELECTXSX. Ditambahkan di sini agar parity.
+	// DB fresh akan gagal saat SELECT. Ditambahkan di sini agar parity.
 	addColumnIfNotExists("santri", "father_occupation", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "mother_occupation", "TEXT DEFAULT ''")
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")

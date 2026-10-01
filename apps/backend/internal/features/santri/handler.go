@@ -36,6 +36,7 @@ type Santri struct {
 	Jenjang          string `json:"jenjang"`
 	Angkatan         string `json:"angkatan"`
 	Status           string `json:"status"`
+	Category         string `json:"category"`
 	ParentName       string `json:"parent_name"`
 	ParentPhone      string `json:"parent_phone"`
 	NIK              string `json:"nik"`
@@ -66,6 +67,7 @@ type SantriInput struct {
 	Jenjang          string `json:"jenjang"`
 	Angkatan         string `json:"angkatan"`
 	Status           string `json:"status"`
+	Category         string `json:"category"`
 	ParentName       string `json:"parent_name"`
 	ParentPhone      string `json:"parent_phone"`
 	NIK              string `json:"nik"`
@@ -83,7 +85,7 @@ func (in *SantriInput) toSantri() *Santri {
 	return &Santri{
 		NIS: in.NIS, Name: in.Name, Nickname: in.Nickname, Gender: in.Gender,
 		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
-		Class: in.Class, Jenjang: in.Jenjang, Angkatan: in.Angkatan, Status: in.Status,
+		Class: in.Class, Jenjang: in.Jenjang, Angkatan: in.Angkatan, Status: in.Status, Category: in.Category,
 		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
 	}
 }
