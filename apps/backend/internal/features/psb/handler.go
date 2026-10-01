@@ -223,9 +223,6 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 	} else if jl != "" {
 		errs.Add("jenjang", "Jenjang harus SMP atau SMK")
 	}
-	if !validators.IsValidCategory(req.Category) {
-		errs.Add("category", "Kategori harus Reguler, Yatim, atau Dhuafa")
-	}
 	if len(errs) == 0 {
 		return nil
 	}
