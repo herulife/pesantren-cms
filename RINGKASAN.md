@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-01 (Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-01 (Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -21,11 +21,11 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:j68-akun` | Jilid 68 (`PUT /api/me/password` — ganti password sendiri), Jilid 67 (Kategori Murid + fix scan `FindByUserID`), Jilid 65 (hapus total BGN + import ulang Santri). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `jilid65-bgnclean`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j68-akun` | Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66, kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `jilid67-kategori`. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:j69-avatar` | Jilid 69 (`PUT/DELETE /api/me/photo` + kolom `users.photo_url`), Jilid 68 (`PUT /api/me/password`), Jilid 67 (Kategori Murid + fix scan `FindByUserID`), Jilid 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `j68-akun`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j69-avatar` | Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `jilid65-bgnclean`+`fix-nullsanti-v2`+`arbain-bgn`; frontend `jilid67-kategori`(terakhir)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
-| DB | — | — | **santri 116** (status: 113 `aktif`, 2 `cuti`, 1 `lulus` — turun dari 119/126 yang tercatat Jilid 65, **selisih 3 baris belum dijelaskan**, jangan diasumsikan); `santri.category` ada, 116/116 = `reguler` (migrasi Jilid 67 hanya memberi default, kategori dari sheet tidak diimpor); `santri.father_occupation`/`mother_occupation` baru dibuat Jilid 67; tabel `registrations` **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 124 (akun portal hasil import, `TEMP0xx` tidak bisa login) |
+| Rollback tersedia | — | backend `j68-akun`(terbaru)+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j68-akun`(terbaru)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-backend-pre-j69`, `alma-parung-frontend-bobot-pre-j69` (Jilid 69); `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
+| DB | — | — | **Recount 1 Okt 2026 12:26 WIB (Jilid 69, python3 ke `data/alma-parung.db`): `santri` 103, `users` 122** — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 ```
@@ -63,6 +63,116 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 69 - Unggah foto avatar profil di `/admin/akun` (1 Okt 2026, LIVE)
+
+**Titik awal:** Jilid 68 (agen sebelumnya) memilih avatar **inisial huruf** karena
+model `User` tidak punya kolom foto sama sekali. Backend Jilid 69 sudah
+lengkap dan tercommit (9 commit `cfad845`..`1aaf895`), tapi **tidak pernah di-build,
+tidak pernah di-deploy, dan tidak pernah didokumentasikan** — working tree bersih
+sambil menyisakan kode mati. Bagian frontend juga belum ada: tidak ada UI upload,
+tidak ada helper API, `setUserPhoto()` di `AuthProvider` yatim tak terpakai.
+
+Jilid 69 menutup keduanya: **avatar inisial tetap jadi fallback**, tapi sekarang
+user bisa memasang foto sendiri.
+
+### 1. Yang sudah ada dari agen sebelumnya (tinggal dibuild)
+
+- `apps/backend/internal/features/upload/avatar.go` (baru) — `HandleMyPhoto` (PUT)
+  & `HandleDeleteMyPhoto` (DELETE). Sanitasi gambar: decode → resize → re-encode,
+  sehingga metadata EXIF (termasuk koordinat GPS) hilang. Disimpan random-name ke
+  `public/uploads/avatars/`, path relatif dikembalikan (`/uploads/avatars/<nama>`).
+- `apps/backend/internal/features/auth/repository.go` — `PhotoURL *string` di
+  `User` (json `photo_url`, sengaja tanpa `omitempty` supaya frontend bisa bedakan
+  `""` vs tidak ada), `SetPhotoURL(id, *string)`, dan scan di `FindByEmail` /
+  `FindByID` / `GetAllUsers`.
+- `apps/backend/internal/platform/database/db.go` — migrasi
+  `addColumnIfNotExists("users", "photo_url", "TEXT")`.
+- `apps/backend/cmd/api/main.go` — `PUT/DELETE /api/me/photo` (di grup auth,
+  pakai `uploadLimiter`).
+- `apps/backend/internal/features/upload/handler.go` — di-refactor supaya
+  `HandleUpload` dan avatar berbagi `SaveSanitizedImage` (satu implementasi
+  sanitasi, tidak bisa drift).(kind=proof tetap menerima PDF).
+- `apps/frontend/src/components/UserAvatar.tsx` (baru) — foto + fallback inisial,
+  dipakai `DashboardLayout` (header) & `portal/layout.tsx`.
+
+### 2. Dua bug yang tertinggal di kode agen sebelumnya
+
+Kode itu belum pernah di-tsc, jadi dua hal ini masih ada:
+
+**a. `tsc` gagal — TS1016.** `UserAvatar.tsx:23` punya
+`function initialsOf(name?: string | null, count: number)` — parameter wajib
+(`count`)menusul parameter optional (`name`), tidak sah di TypeScript. Fix:
+`name: string | null | undefined` (perilaku identik).
+
+**b. `eslint` error — `react-hooks/set-state-in-effect`.** Pola lama
+`useEffect(() => setFailed(false), [src])` untuk reset error saat foto berganti
+adalah cascading render. Diganti pola tanpa effect: simpan **path yang gagal
+dimuat**, bukan boolean — `const [failedSrc, setFailedSrc] = useState<string|null>(null)`
+lalu `const failed = failedSrc === src`. Kalau `src` berganti, `failedSrc` lama
+otomatis tidak sama dengan `src`, jadi tampil inisial tanpa reset manual.
+
+### 3. Bagian frontend yang ditambahkan
+
+**`lib/api.ts`** — dua helper (anchor: setelah `changeMyPassword`):
+
+```ts
+export async function uploadMyPhoto(file: File)   // PUT    /api/me/photo
+export async function deleteMyPhoto()              // DELETE /api/me/photo
+```
+
+`uploadMyPhoto` pakai `rawFetch` + `credentials: 'include'` seperti `uploadImage`
+(foto HP besar lewat koneksi lambat sering terputus bila ikut timeout 30 detik
+`apiFetch`).
+
+**`app/admin/akun/page.tsx`** — section **Foto Profil** di atas section Ganti Password:
+input file tersembunyi (`accept="image/jpeg,image/png,image/webp"`) → validasi tipe
+& ukuran 5MB di sisi klien → `ImageCropperModal` **aspect 1:1** (potong bujur
+sangkar, konsisten dengan `teachers/form`) → `uploadMyPhoto`. Hasilnya dikirim ke
+`setUserPhoto()` dari `AuthProvider`, jadi **header + sidebar ikut berubah tanpa
+reload halaman**. Tombol **Hapus Foto** hanya muncul kalau `photo_url` terisi, dan
+`DELETE` mengembalikan user ke inisial.
+
+Avatar besar di section Identitas Akun juga diganti dari lingkaran inisial hardcode
+jadi `<UserAvatar size="lg">`, supaya preview = avatar yang dipakai header.
+
+### 4. Cara verifikasi
+
+- `tsc --noEmit --incremental false` → **exit 0** (sebelumnya exit 2 karena TS1016).
+- `eslint` 3 berkas berubah → **0 error** (2 warning sisa sudah ada sebelumnya:
+  `no-img-element` di `UserAvatar.tsx` + `catch (e)` di `api.ts:3429`).
+- **Smoke API 22/22**, dua kali: container uji (port 8099 + salinan DB di `/tmp`) lalu
+  live. Cakupannya: 401 tanpa token (PUT & DELETE) → upload valid 200 + file benar-benar
+  ada di disk + bisa diambil via HTTP → `GET /api/me` mengembalikan `photo_url` →
+  400 file teks → 400 gambar 50x50 → **413 >5MB** → ganti foto: path berubah, file lama
+  terhapus, **tidak ada file yatim** → DELETE 200 + `photo_url` null + folder kosong →
+  DELETE lagi tetap 200 (tidak crash).
+- **Smoke UI 22/22** via playwright (chromium headless, cookie `alma_token` di-inject,
+  `LD_LIBRARY_PATH=/tmp/chromelibs/...`): modal crop terbuka → "Terapkan (Potong)" →
+  `PUT 200` → avatar jadi `<img>` `naturalWidth > 0` → header berubah tanpa reload →
+  ganti foto (path berubah) → "Hapus Foto" → `DELETE 200` → avatar & header balik
+  ke inisial → nol 4xx/5xx, nol `pageerror`.
+- Jejak smoke test dihapus: `users.photo_url` NULL semua, `data/uploads/avatars/` kosong.
+  Container uji `j69test`/`j69front` sudah `docker rm -f`.
+
+### 5. Dampak & catatan
+
+- Migrasi bersifat aditif (kolom TEXT nullable) — aman, tapi **tidak bisa di-rollback
+  lewat image lama**: image `j68-akun` tidak tahu `users.photo_url`, jadi kalau rollback
+  ke `j68-akun` kolom itu tetap ada (harmless, diabaikan).
+- `DELETE /api/me/photo` menghapus file milik user itu saja. `deleteOwnedAvatar`
+  menolak path yang tidak persis `/uploads/avatars/<nama>` dan menolak `..`, jadi
+  path rusak di DB tidak bisa menghapus file lain.
+- Avatar **tidak** kompatibel dengan `next/image` (pakai `<img>` telanjang, 36-96px).
+  Warning `no-img-element` muncul karena itu disengaja — sudah dijelaskan di
+  komentar komponen.
+- Nginx sudah benar: `location /uploads/` mem-proxy ke 8090, jadi file avatar
+  (`/uploads/avatars/...`) disajikan tanpa perlu ubah config.
+- **Pekerjaan lanjutan (§5 item 2z):** `components/Sidebar.tsx` dan
+  `components/FloatingQuickMenu.tsx` masih menggambar inisial sendiri — foto yang
+  baru diunggah **tidak muncul di sana**.
+
+"""
 
 ## Jilid 68 - Avatar profil di header + halaman "Akun Saya" (ganti password sendiri) (1 Okt 2026, LIVE)
 
@@ -1086,7 +1196,10 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 1b. [ ] **Kelas `M YUSUF RAMADHAN` perlu dikonfirmasi** — sheet bilang kelas 1, DB lama bilang kelas **X**. Dia juga terduplikasi di sheet (2 baris, 1 orang), yang ke-2 sudah dibuang.
 1c. [ ] **2 baris tanpa kelas** (`M DESTA PRATAMA`, `ZULFA FAKHRUNNISA`) diisi `SEMENTARA` — konfirmasi ke user.
 1d. [ ] **Case nama di master sheet tidak konsisten** (ada `Aisyah Khoirunnisa` tapi juga `Alisa adriana putri` dan `AFIFAH SALMA TAZKIA`). Import took apa adanya, tidak diubah. Kalau mau dirapikan, perlu listing dari user dulu.
-2. [ ] **Selisih 3 baris: `santri` 116 & `users` 124, bukan 119/126** seperti tertulis di entri Jilid 65. Diverifikasi 1 Okt 2026 lewat `python3` ke `data/alma-parung.db` (status: 113 `aktif`, 2 `cuti`, 1 `lulus`; `registrations` kosong). **Penyebabnya belum diketahui** — cek `data/alma-parung.db.bak-preimport-20260930-211354` dan `backups/alma-parung-20261001-020001.db` (backup harian 02:00) untuk mencari apakah penghapusan terjadi sebelum/sesudah snapshot. Jangan menyebut angka 119/126 sebagai fakta tanpa recount.
+2. [ ] **Angka data di §2 hasil recount 1 Okt 2026: `santri` 103 & `users` 122** (paling baru), turun dari 116/124 yang tercatat Jilid 68 dan 119/126 di Jilid 65. Log container lama menunjukkan sebagian adalah `DELETE .../santri/{id}/purge` deliberate (200) antara 09:37-11:46 + `DELETE /api/users/201` (200) 10:39 — **jadi deletion via UI/API terjadi, sisanya belum dijelaskan**. Lanjut: bandingkan `backups/alma-parung-20261001-020001.db` (126/119) vs `backups/pre-deploy-j69-avatar-20261001-121634.db` (124/105) vs live (122/103) untuk Interests kapan baris hilang. **Jangan menyebut angka lama sebagai fakta tanpa recount.**
+2z. [ ] Avatar belum dipakai di `components/Sidebar.tsx` dan `components/FloatingQuickMenu.tsx` — keduanya masih gambar inisial sendiri (bukan `UserAvatar`), jadi foto yang baru diunggah tidak muncul di sana. Pola sudah siap dipakai: `<UserAvatar name={user?.name} photoUrl={user?.photo_url} />`.
+2y. [ ] **Angka-angka lama kedaluwarsa** — §5 item 1/1b/1c/3/4 masih bicara soal 116/119 Buffer dan 74/119 gender/wali kosong; realita sekarang 103 Buffer dengan 24 `lulus`. Counting ulang perlu konfirmasi user.
+2x. [ ] 2. [ ] **Selisih 3 baris: `santri` 116 & `users` 124, bukan 119/126** seperti tertulis di entri Jilid 65. Diverifikasi 1 Okt 2026 lewat `python3` ke `data/alma-parung.db` (status: 113 `aktif`, 2 `cuti`, 1 `lulus`; `registrations` kosong). **Penyebabnya belum diketahui** — cek `data/alma-parung.db.bak-preimport-20260930-211354` dan `backups/alma-parung-20261001-020001.db` (backup harian 02:00) untuk mencari apakah penghapusan terjadi sebelum/sesudah snapshot. Jangan menyebut angka 119/126 sebagai fakta tanpa recount.
 2b. [ ] **Password akun portal hasil import belum ada** (`randomPlaceholderHash`) untuk 124 akun. Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
 3. [ ] **Gender 74/119 kosong** (hanya 45 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
 4. [ ] **Wali 74/119 kosong** — master sheet tidak punya kolom nama wali. No HP (84/119) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
