@@ -373,7 +373,7 @@ func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
 		var x Santri
 		var userID sql.NullInt64
 		var createdAt, updatedAt string
-		if err := rows.Scan(&x.ID, &x.NIS, &x.Name, &x.Nickname, &x.Gender, &x.BirthPlace, &x.BirthDate, &x.Address, &x.Class, &x.Jenjang, &x.Angkatan, &x.Status, &x.ParentName, &x.ParentPhone, &x.NIK, &x.FatherName, &x.FatherPhone, &x.MotherName, &x.MotherPhone, &x.FatherOccupation, &x.MotherOccupation, &x.RegistrationID, &x.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&x.ID, &x.NIS, &x.Name, &x.Nickname, &x.Gender, &x.BirthPlace, &x.BirthDate, &x.Address, &x.Class, &x.Jenjang, &x.Angkatan, &x.Status, &x.ParentName, &x.ParentPhone, &x.NIK, &x.FatherName, &x.FatherPhone, &x.MotherName, &x.MotherPhone, &x.FatherOccupation, &x.MotherOccupation, &x.Category, &x.RegistrationID, &x.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		if userID.Valid {
