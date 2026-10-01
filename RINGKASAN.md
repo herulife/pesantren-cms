@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-01 (Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -22,9 +22,9 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend` | `alma-parung-backend:j69-avatar` | Jilid 69 (`PUT/DELETE /api/me/photo` + kolom `users.photo_url`), Jilid 68 (`PUT /api/me/password`), Jilid 67 (Kategori Murid + fix scan `FindByUserID`), Jilid 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `j68-akun`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j70-avatar` | Jilid 70 (foto avatar tampil di sidebar admin + tombol bulat & panel menu cepat), Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j71-docs` | Jilid 71 (keterangan template import dipindah ke tutorial "Data Santri & Import Massal" + hapus xlsx statis), Jilid 70 (foto avatar tampil di sidebar admin + tombol bulat & panel menu cepat), Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `j68-akun`(terbaru)+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j68-akun`(terbaru)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-frontend-bobot-j69` (Jilid 70, image `alma-parung-frontend:j69-avatar`), `alma-parung-backend-pre-j69`, `alma-parung-frontend-bobot-pre-j69` (Jilid 69); `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
+| Rollback tersedia | — | backend `j68-akun`(terbaru)+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j68-akun`(terbaru)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-frontend-bobot-j70` (Jilid 71, image `alma-parung-frontend:j70-avatar`), `alma-parung-frontend-bobot-j69` (Jilid 70, image `alma-parung-frontend:j69-avatar`), `alma-parung-backend-pre-j69`, `alma-parung-frontend-bobot-pre-j69` (Jilid 69); `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
 | DB | — | — | **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
@@ -63,6 +63,42 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 71 - Keterangan template import santri dipindah ke tutorial (1 Okt 2026, LIVE)
+
+**Permintaan user:** template import massal santri dibuat lebih rapi — hapus blok
+"Keterangan" di file Excel yang diunduh, pindahkan penjelasannya ke tutorial.
+
+**Titik awal:**
+- `downloadTemplate()` di `/admin/kesantrian/import` menyisipkan blok
+  `['Keterangan:']` + 9 baris arti kolom ke dalam sheet "Data Santri", sehingga
+  file yang diunduh bukan cuma header + satu contoh.
+- Menu "Data Santri Aktif" masih menunjuk `docRef: 'academics'` (tutorial eRapor),
+  padahal belum ada panduan untuk Data Santri / import massal.
+
+**Perubahan:**
+- `apps/frontend/src/app/admin/kesantrian/import/page.tsx`: blok `Keterangan`
+  dibuang dari `aoa`; template kini header + 1 baris contoh saja. Kotak
+  "Kolom yang dibaca" di halaman **tetap** (tidak diminta dihapus).
+- `apps/frontend/src/lib/adminDocs.ts`: section baru `id: 'santri-data'`,
+  kategori `Santri`, judul "Data Santri & Import Massal" — memuat langkah
+  tambah satu santri + import massal, glosarium, dan tabel referensi
+  "Arti kolom di file Excel" (isi blok Keterangan yang dipindah), plus FAQ.
+- `apps/frontend/src/lib/roleMenus.ts`: `docRef` menu "Data Santri Aktif"
+  diarahkan dari `academics` ke `santri-data`.
+- `apps/frontend/public/template-import-santri-data.xlsx` (73 KB) dihapus —
+  tidak direferensikan kode; halaman membuat template sendiri lewat
+  `XLSX.writeFile` dengan nama `template-import-santri.xlsx`.
+
+**Verifikasi:** `tsc --noEmit` exit 0; eslint 3 file 0 error; image
+`alma-parung-frontend:j71-docs` ter-build; deploy port 3002 healthy. Smoke UI
+Playwright 11/11 pass: section tutorial tampil, link menu `ref=santri-data` ada,
+template terunduh 17.545 byte, dan parsing zip xlsx memastikan tidak ada string
+"Keterangan"/"Nomor induk santri" tetapi header `NIS`/`Nama` + contoh
+`Ahmad Fauzi` tetap ada. Endpoint: root 200, `/api/ready` 200,
+`/admin/kesantrian/import` 307, xlsx statis 404.
+
+**Rollback:** container `alma-parung-frontend-bobot-j70` (image `j70-avatar`).
 
 ## Jilid 70 - Foto avatar tampil di Sidebar admin + menu cepat (1 Okt 2026, LIVE)
 
