@@ -19,6 +19,12 @@ const statusOptions = [
   { value: 'cuti', label: 'Cuti' },
 ];
 
+const categoryOptions = [
+  { value: 'reguler', label: 'Reguler' },
+  { value: 'yatim', label: 'Yatim' },
+  { value: 'dhuafa', label: 'Duafa' },
+];
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FormErrors = Record<string, string>;
 
@@ -34,6 +40,7 @@ const initialForm = {
   jenjang: '',
   angkatan: '',
   status: 'aktif',
+  category: 'reguler',
   parent_name: '',
   parent_phone: '',
   father_name: '',
