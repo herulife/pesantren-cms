@@ -2,7 +2,7 @@ package santri
 
 import "testing"
 
-// validateSantri harusovirus menerima kategori kosong (default "reguler"),
+// validateSantri harus menerima kategori kosong (default "reguler"),
 // menormalkan ejaan/kapitalisasi, dan menolak nilai di luar daftar.
 func TestValidateSantriCategory(t *testing.T) {
 	cases := []struct {
