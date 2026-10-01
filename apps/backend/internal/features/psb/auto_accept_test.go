@@ -239,7 +239,7 @@ func seedPaidRegWithCategory(t *testing.T, db *sql.DB, userID int, category stri
 func readSantriCategory(t *testing.T, db *sql.DB) string {
 	t.Helper()
 	var got string
-	if err := db.QueryRow(`SELECT COALESCE(category,'') FKEFROMFG LIMIT 1`).Scan(&got); err != nil {
+	if err := db.QueryRow(`SELECT COALESCE(category,'') FROM santri LIMIT 1`).Scan(&got); err != nil {
 		t.Fatalf("read category: %v", err)
 	}
 	return got
