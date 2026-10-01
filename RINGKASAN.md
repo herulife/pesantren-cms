@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-01 (Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-01 (Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -22,9 +22,9 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend` | `alma-parung-backend:j69-avatar` | Jilid 69 (`PUT/DELETE /api/me/photo` + kolom `users.photo_url`), Jilid 68 (`PUT /api/me/password`), Jilid 67 (Kategori Murid + fix scan `FindByUserID`), Jilid 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `j68-akun`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j69-avatar` | Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j70-avatar` | Jilid 70 (foto avatar tampil di sidebar admin + tombol bulat & panel menu cepat), Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `j68-akun`(terbaru)+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j68-akun`(terbaru)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-backend-pre-j69`, `alma-parung-frontend-bobot-pre-j69` (Jilid 69); `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
+| Rollback tersedia | — | backend `j68-akun`(terbaru)+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j68-akun`(terbaru)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-frontend-bobot-j69` (Jilid 70, image `alma-parung-frontend:j69-avatar`), `alma-parung-backend-pre-j69`, `alma-parung-frontend-bobot-pre-j69` (Jilid 69); `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
 | DB | — | — | **Recount 1 Okt 2026 12:26 WIB (Jilid 69, python3 ke `data/alma-parung.db`): `santri` 103, `users` 122** — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
@@ -63,6 +63,63 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 70 - Foto avatar tampil di Sidebar admin + menu cepat (1 Okt 2026, LIVE)
+
+**Titik awal:** Jilid 69 membuat unggah/potong/hapus foto di `/admin/akun`, tapi
+avatar hanya dipakai di header dashboard dan portal. Dua komponen masih
+menampilkan inisial sendiri, dan satu klaim di §5 ternyata **salah**:
+
+- `FloatingQuickMenu.tsx` benar-benar masih inisial manual di dua tempat —
+  kepala panel saat menu dibuka, dan tombol bulat mengambang (FAB).
+- `Sidebar.tsx` **tidak punya avatar user sama sekali**. Kotak `A` di header
+  sidebar adalah logo aplikasi "Al-Maa"; footer hanya berisi tombol `Keluar`.
+  Jadi ini fitur baru (blok identitas), bukan sekadar menyalakan foto yang
+  sudah ada. Nama dan role user juga tidak terlihat di sidebar sebelumnya.
+
+**Keputusan desain** (sudah dikonfirmasi user sebelum dikerjakan):
+1. Foto ikut tampil di tombol bulat mengambang.
+2. Sidebar dapat blok identitas baru di atas tombol Keluar.
+
+**Perubahan:**
+- `UserAvatar.tsx`: tambah dua ukuran, `h10` (40px, untuk kepala panel) dan
+  `h14` (56px, untuk tombol bulat). Ukuran lama xs/sm/md/lg tidak cukup —
+  panel dan FAB punya ukuran sendiri. Menambah kunci baru lebih dapat
+  diprediksi daripada menyuruh `className` menimpa `h-8`/`h-9`: Tailwind
+  menentukan MENANG berdasarkan urutan di file CSS, bukan urutan atribut,
+  jadi timpaan seperti itu bisa berubah hasil tergantung urutan build.
+- `FloatingQuickMenu.tsx`: `const initial` dihapus; kepala panel dan FAB
+  sekarang `<UserAvatar>`. Tamu yang belum login tetap melihat ikon `LogIn`.
+- `Sidebar.tsx`: blok identitas (avatar + nama + role) di atas tombol Keluar,
+  hanya dirender kalau `user` ada.
+- `DashboardLayout.tsx`: komentar "model User tidak punya kolom foto" basi
+  sejak Jilid 69 — dikoreksi.
+
+**Kenapa backend tidak disentuh:** semua perubahan di sisi frontend saja.
+`users.photo_url` sudah ada, dan `GET /api/me` sudah mengirim `photo_url`.
+
+**Catatan penting soal smoke test:** `FloatingQuickMenu` memakai kelas
+`lg:hidden` kalau props `desktop` tidak diisi — di >=1024px tombol bulat
+**sengaja tidak terlihat** di dashboard, dan smoke test harus mengeceknya di
+viewport mobile (390x844). Dua jebakan yang sudah ketahuan saat menguji:
+- Field multipart bernama **`image`**, bukan `file`
+  (`SaveSanitizedImage(r, "image", avatarSubdir)`).
+- Backend menolak gambar **di bawah 100x100** (DESIGN.md), jadi PNG uji harus
+  dibuat >= 100x100.
+- Chromium tidak bisa jalan di host (tidak ada `libatk`); smoke UI harus
+  lewat container `mcr.microsoft.com/playwright:v1.49.0-jammy`.
+
+**Verifikasi:** `tsc --noEmit` exit 0; `eslint` 4 berkas 0 error (2 warning
+lama: `<img>` yang disengaja di `UserAvatar`, dan `exhaustive-deps` di
+`Sidebar.tsx:109`); build image sukses; smoke UI **29/29 pass** — foto muncul
+bersamaan di header + sidebar + tombol bulat + panel menu cepat (desktop dan
+mobile), semua menunjuk file yang sama, ukuran avatar sesuai (36/40/56px),
+nama & role tetap tampil, dan setelah `DELETE` semua kembali ke inisial tanpa
+sisa file.
+
+**Jejak test sudah bersih:** `users.photo_url` non-NULL = 0, folder
+`data/uploads/avatars/` kosong, tidak ada `.tmp` yatim, container uji
+`alma-parung-frontend-j70test` di-remove.
 
 ## Jilid 69 - Unggah foto avatar profil di `/admin/akun` (1 Okt 2026, LIVE)
 
@@ -1198,7 +1255,7 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 1d. [ ] **Case nama di master sheet tidak konsisten** (ada `Aisyah Khoirunnisa` tapi juga `Alisa adriana putri` dan `AFIFAH SALMA TAZKIA`). Import took apa adanya, tidak diubah. Kalau mau dirapikan, perlu listing dari user dulu.
 2. [ ] **Angka data di §2 hasil recount 1 Okt 2026: `santri` 103 & `users` 122** (paling baru), turun dari 116/124 yang tercatat Jilid 68 dan 119/126 di Jilid 65. Log container lama menunjukkan sebagian adalah `DELETE .../santri/{id}/purge` deliberate (200) antara 09:37-11:46 + `DELETE /api/users/201` (200) 10:39 — **jadi deletion via UI/API terjadi, sisanya belum dijelaskan**. Lanjut: bandingkan `backups/alma-parung-20261001-020001.db` (126/119) vs `backups/pre-deploy-j69-avatar-20261001-121634.db` (124/105) vs live (122/103) untuk melihat kapan baris hilang. **Jangan menyebut angka lama sebagai fakta tanpa recount.**
 2y. [ ] **Angka-angka lama kedaluwarsa** — §5 item 1/1b/1c/3/4 masih bicara soal 116/119 Buffer dan 74/119 gender/wali kosong; realita sekarang 103 Buffer dengan 24 `lulus`. Counting ulang perlu konfirmasi user.
-2z. [ ] Avatar belum dipakai di `components/Sidebar.tsx` dan `components/FloatingQuickMenu.tsx` — keduanya masih gambar inisial sendiri (bukan `UserAvatar`), jadi foto yang baru diunggah tidak muncul di sana. Pola sudah siap dipakai: `<UserAvatar name={user?.name} photoUrl={user?.photo_url} />`.
+2z. [x] ~~Avatar belum dipakai di Sidebar/FloatingQuickMenu~~ **SELESAI di Jilid 70.** Catatan koreksi: klaim lama ini salah separuh — `Sidebar.tsx` memang **tidak punya avatar user sama sekali** (kotak `A` di header itu logo aplikasi "Al-Maa", bukan inisial), jadi blok identitas baru ditambahkan, bukan cuma menyalakan foto.
 2b. [ ] **Password akun portal hasil import belum ada** (`randomPlaceholderHash`) untuk 124 akun. Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
 3. [ ] **Gender 74/119 kosong** (hanya 45 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
 4. [ ] **Wali 74/119 kosong** — master sheet tidak punya kolom nama wali. No HP (84/119) yang terisi. Kalau butuh nama wali, harus minta sheet tambahan atau isi manual.
