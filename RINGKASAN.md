@@ -25,7 +25,7 @@
 | Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid67-kategori` | Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66 (tombol No. Rekening deep-link), Jilid 65 (hapus total BGN), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `psbrektab`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `jilid65-bgnclean`(terakhir)+`fix-nullsanti-v2`+`arbain-bgn`; frontend `psbrektab`(terakhir)+`arbain-bgn2` | container lama: `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
-| DB | — | — | **santri 119** (re-import dari master Google Sheet 30 Sep 2026; 18 pakai NIS sementara `TEMP0xx`); `santri.category` ada (semua 116 baris terbaca `reguler` — angka 116 vs 119 karena 3 baris `\bcategory\b` NULL/legacy, cek ulang bila perlu), `santri.father_occupation`/`mother_occupation` baru dibuat Jilid 67; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 126 (119 akun portal hasil import) |
+| DB | — | — | **santri 116** (status: 113 `aktif`, 2 `cuti`, 1 `lulus` — turun dari 119/126 yang tercatat Jilid 65, **selisih 3 baris belum dijelaskan**, jangan diasumsikan); `santri.category` ada, 116/116 = `reguler` (migrasi Jilid 67 hanya memberi default, kategori dari sheet tidak diimpor); `santri.father_occupation`/`mother_occupation` baru dibuat Jilid 67; tabel `registrations` **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 124 (akun portal hasil import, `TEMP0xx` tidak bisa login) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
 ```
