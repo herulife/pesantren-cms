@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"almaparung-api/internal/validators"
 )
 
 type Repository struct {
@@ -120,6 +122,9 @@ func (r *Repository) Create(s *Santri) error {
 	if s.Status == "" {
 		s.Status = "aktif"
 	}
+	if s.Category == "" {
+		s.Category = validators.CategoryReguler
+	}
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -225,6 +230,9 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 		if s.Status == "" {
 			s.Status = "aktif"
 		}
+		if s.Category == "" {
+			s.Category = validators.CategoryReguler
+		}
 		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
@@ -259,8 +267,8 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 
 func (r *Repository) Update(s *Santri) error {
 	now := time.Now().Format("2006-01-02 15:04:05")
-	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, jenjang=?, angkatan=?, status=?, parent_name=?, parent_phone=?, nik=?, father_name=?, father_phone=?, mother_name=?, mother_phone=?, father_occupation=?, mother_occupation=?, registration_id=?, photo_url=?, updated_at=? WHERE id=?`,
-		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, now, s.ID)
+	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, jenjang=?, angkatan=?, status=?, category=?, parent_name=?, parent_phone=?, nik=?, father_name=?, father_phone=?, mother_name=?, mother_phone=?, father_occupation=?, mother_occupation=?, registration_id=?, photo_url=?, updated_at=? WHERE id=?`,
+		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, now, s.ID)
 	return err
 }
 
