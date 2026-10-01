@@ -1,12 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { changeMyPassword } from '@/lib/api';
+import { changeMyPassword, deleteMyPhoto, uploadMyPhoto } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/Toast';
-import { KeyRound, LogOut, ShieldCheck, UserRound, TriangleAlert } from 'lucide-react';
+import UserAvatar from '@/components/UserAvatar';
+import ImageCropperModal from '@/components/ImageCropperModal';
+import {
+  Camera,
+  KeyRound,
+  LogOut,
+  ShieldCheck,
+  Trash2,
+  TriangleAlert,
+  UserRound,
+} from 'lucide-react';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10';
@@ -24,7 +34,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function AccountPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, setUserPhoto } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -33,7 +43,75 @@ export default function AccountPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const initial = (user?.name || 'A').trim().charAt(0).toUpperCase();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [cropSource, setCropSource] = useState<string | null>(null);
+  const [isPhotoSaving, setIsPhotoSaving] = useState(false);
+
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Kosongkan input supaya memilih file yang sama dua kali tetap memicu onChange.
+    event.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Berkas harus berupa gambar (JPG, PNG, atau WEBP).');
+      return;
+    }
+    // Backend menolak >5MB dengan pesan sendiri; cek di sini biar user tidak
+    // menunggu upload futile di koneksi lambat.
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'Ukuran foto terlalu besar. Maksimal 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropSource(reader.result as string);
+      setIsCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoUpload = async (blob: Blob) => {
+    setIsCropperOpen(false);
+    setCropSource(null);
+    setIsPhotoSaving(true);
+    try {
+      const res = await uploadMyPhoto(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+      if (res.success && res.data?.photo_url) {
+        // setUserPhoto menyinkronkan header + sidebar tanpa reload halaman.
+        setUserPhoto(res.data.photo_url);
+        showToast('success', 'Foto profil berhasil diperbarui.');
+      } else {
+        showToast('error', res.message || 'Gagal menyimpan foto profil.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
+    } finally {
+      setIsPhotoSaving(false);
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (isPhotoSaving) return;
+    setIsPhotoSaving(true);
+    try {
+      const res = await deleteMyPhoto();
+      if (res.success) {
+        setUserPhoto(null);
+        showToast('success', 'Foto profil dihapus. Kembali ke inisial.');
+      } else {
+        showToast('error', res.message || 'Gagal menghapus foto profil.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
+    } finally {
+      setIsPhotoSaving(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -102,9 +180,12 @@ export default function AccountPage() {
 
       <section className="mb-10 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-sky-600 text-3xl font-black text-white shadow-lg shadow-sky-600/20">
-            {initial}
-          </div>
+          <UserAvatar
+            name={user?.name}
+            photoUrl={user?.photo_url}
+            size="lg"
+            className="ring-4 ring-sky-50"
+          />
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">
               Identitas Akun
@@ -120,14 +201,61 @@ export default function AccountPage() {
           </div>
         </div>
 
+        <div className="mt-6 border-t border-slate-100 pt-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoSelect}
+              className="hidden"
+            />
+            <button
+              type="button"
+              disabled={isPhotoSaving}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            >
+              <Camera size={16} />
+              {isPhotoSaving ? 'Memproses...' : user?.photo_url ? 'Ganti Foto' : 'Unggah Foto'}
+            </button>
+            {user?.photo_url ? (
+              <button
+                type="button"
+                disabled={isPhotoSaving}
+                onClick={handlePhotoDelete}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 size={16} />
+                Hapus Foto
+              </button>
+            ) : null}
+            <p className="text-xs font-medium text-slate-500">
+              Format JPG/PNG/WEBP, maksimal 5MB. Foto dipotong menjadi bujur sangkar
+              dan tampil di header serta sidebar.
+            </p>
+          </div>
+        </div>
+
         <p className="mt-6 border-t border-slate-100 pt-5 text-xs font-medium leading-6 text-slate-500">
           Nama, email, dan role dikelola oleh Super Admin lewat halaman{' '}
           <Link href="/admin/users" className="font-bold text-sky-700 underline-offset-2 hover:underline">
             Manajemen Pengguna
           </Link>
-          . Halaman ini hanya mengubah password milik akun Anda sendiri.
+          . Halaman ini hanya mengubah foto profil dan password milik akun Anda sendiri.
         </p>
       </section>
+
+      <ImageCropperModal
+        isOpen={isCropperOpen}
+        onClose={() => {
+          setIsCropperOpen(false);
+          setCropSource(null);
+        }}
+        imageSrc={cropSource}
+        onCropComplete={handlePhotoUpload}
+        aspectRatio={1}
+      />
 
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-3">

@@ -2015,6 +2015,34 @@ export async function changeMyPassword(payload: {
 	return parseResponse(res);
 }
 
+// uploadMyPhoto — user yang sedang login mengunggah avatar miliknya sendiri
+// (field multipart: image). Backend menyimpan ke /uploads/avatars/ dan menulis
+// path-nya ke users.photo_url; file lama dihapus backend setelah yang baru
+// terpasang, jadi tidak perlu cleanup di frontend.
+//
+// Pakai rawFetch (tanpa timeout 30 detik apiFetch) seperti uploadImage: foto HP
+// besar lewat koneksi lambat sering terputus di tengah jalan.
+export async function uploadMyPhoto(file: File) {
+	const formData = new FormData();
+	formData.append('image', file);
+
+	const res = await rawFetch(`${API_BASE_URL}/me/photo`, {
+		method: 'PUT',
+		body: formData,
+		credentials: 'include'
+	});
+	return parseResponse(res);
+}
+
+// deleteMyPhoto — lepas avatar; UserAvatar otomatis fallback ke inisial.
+export async function deleteMyPhoto() {
+	const res = await fetch(`${API_BASE_URL}/me/photo`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function deleteUser(id: number) {
 	const res = await fetch(`${API_BASE_URL}/users/${id}`, {
 		method: 'DELETE',
