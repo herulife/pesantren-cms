@@ -88,7 +88,7 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
    `validators.CategoryOrDefault(reg.Category)` ke kolom `santri.category` saat PSB
    `accepted`. Kuota yatim/dhuafa + cek dokumen pendukung tetap membaca `registrations.category`
    seperti sebelumnya.
-5. **`features/santri/handler.go:207`** — `validateSantri` normalkan kategori (kosong →
+5. **`features/santri/handler.go:210`** — `validateSantri` normalkan kategori (kosong →
    `reguler`, asing → error key `category`), `SantriInput.Category` ikut ke `toSantri()`.
 6. **`features/santri/repository.go:376`** — **fix bug `FindByUserID`**: `rows.Scan` punya 26
    argumen sementara query me-select 27 kolom (`category` terlewat) → `sql: expected 26
@@ -1014,7 +1014,7 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
   Jilid 67: `santri.FindByUserID` tertinggal 1 kolom. **Setelah menambah kolom di query, hitung ulang
   semua `Scan` di file itu** (`grep -c "COALESCE(" <query>` vs jumlah argumen `Scan`).
 - **Daftar nilai enum jangan diduplikasi per-file.** Jilid 67 menyatukan kategori ke
-  `validators.NormalizeCategory` + konstanta. Benefits: alias ejaan (`duafa`→`dhuafa`) dan kapitalisasi
+  `validators.NormalizeCategory` + konstanta. Manfaatnya: alias ejaan (`duafa`→`dhuafa`) dan kapitalisasi
   ditangani sekali, dan test bisa mengunci daftar yang sama. Kalau menambah enum baru, taruh di
   `validators` dari awal, jangan `if x != "a" && x != "b"` di tiap handler.
 - **Nilai enum yang tidak dinormalkan = dua sumber kebenaran.** Sheet/UI lama menulis `Duafa`, form baru
