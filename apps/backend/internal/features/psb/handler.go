@@ -199,8 +199,15 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 	if req.MotherPhone != "" && !validators.ValidatePhone(req.MotherPhone) {
 		errs.Add("mother_phone", "No HP ibu tidak valid")
 	}
-	if req.Category == "" {
-		req.Category = "reguler"
+	if rawCategory := strings.TrimSpace(req.Category); rawCategory == "" {
+		req.Category = validators.CategoryReguler
+	} else {
+		// Simpan bentuk kanonik ("dhuafa", bukan "Duafa"/"Dhuafa") supaya
+		// registrations.category dan santri.category selalu sama.
+		req.Category = validators.NormalizeCategory(rawCategory)
+		if req.Category == "" {
+			errs.Add("category", "Kategori harus Reguler, Yatim, atau Dhuafa")
+		}
 	}
 	programLower := strings.ToLower(strings.TrimSpace(req.ProgramChoice))
 	if strings.HasPrefix(programLower, "tahfidz") {
@@ -216,7 +223,7 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 	} else if jl != "" {
 		errs.Add("jenjang", "Jenjang harus SMP atau SMK")
 	}
-	if req.Category != "reguler" && req.Category != "yatim" && req.Category != "dhuafa" {
+	if !validators.IsValidCategory(req.Category) {
 		errs.Add("category", "Kategori harus Reguler, Yatim, atau Dhuafa")
 	}
 	if len(errs) == 0 {
