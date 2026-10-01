@@ -231,6 +231,9 @@ function SantriFormContent() {
             jenjang: (s as { jenjang?: string }).jenjang || '', 
             angkatan: s.angkatan || '',
             status: s.status || 'aktif',
+            // Data lama belum punya kategori; perlakukan sebagai reguler supaya
+            // dropdown tidak kosong saat form edit dibuka.
+            category: s.category || 'reguler',
             parent_name: s.parent_name || '',
             parent_phone: s.parent_phone || '',
             father_name: s.father_name || '',
@@ -270,6 +273,9 @@ function SantriFormContent() {
       jenjang: form.jenjang,
       angkatan: form.angkatan.trim(),
       status: form.status,
+      // Backend jadi default "reguler" kalau kosong, tapi kirim eksplisit
+      // supaya PUT (full-replace) tidak pernah mengosongkan kolom kategori.
+      category: form.category || 'reguler',
       parent_name: form.parent_name.trim(),
       parent_phone: form.parent_phone.trim(),
       father_name: form.father_name.trim(),
@@ -461,6 +467,19 @@ function SantriFormContent() {
                 setErrors((prev) => ({ ...prev, status: '' }));
               }}
             />
+
+            <SelectField
+              id="field-category"
+              label="Kategori"
+              className={inputClass(errors.category)}
+              value={form.category}
+              options={categoryOptions}
+              onChange={(v) => {
+                setForm((prev) => ({ ...prev, category: v }));
+                setErrors((prev) => ({ ...prev, category: '' }));
+              }}
+            />
+            {errors.category && <p className="mt-1 text-xs font-semibold text-red-500">{errors.category}</p>}
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Nama Wali</label>
