@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import FloatingQuickMenu from './FloatingQuickMenu';
+import UserAvatar from './UserAvatar';
 import { useAuth } from './AuthProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -67,9 +68,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/admin/akun"
               aria-label="Akun saya"
               title="Akun Saya"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-600 text-sm font-black text-white shadow-sm transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
             >
-              {(user?.name || 'A').trim().charAt(0).toUpperCase()}
+              <UserAvatar name={user?.name} photoUrl={user?.photo_url} />
             </Link>
           </div>
         </header>
