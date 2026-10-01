@@ -56,8 +56,9 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 	var u User
 	var createdAt string
 	var lastLoginAt sql.NullString
-	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, created_at, last_login_at FROM users WHERE email = ?", email).
-		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt)
+	var photoURL sql.NullString
+	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, created_at, last_login_at, photo_url FROM users WHERE email = ?", email).
+		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt, &photoURL)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("user not found")
@@ -71,6 +72,9 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 		if parsed, parseErr := time.Parse("2006-01-02 15:04:05", lastLoginAt.String); parseErr == nil {
 			u.LastLoginAt = &parsed
 		}
+	}
+	if photoURL.Valid && photoURL.String != "" {
+		u.PhotoURL = &photoURL.String
 	}
 	return &u, nil
 }
@@ -84,8 +88,9 @@ func (r *Repository) FindByID(id int) (*User, error) {
 	var u User
 	var createdAt string
 	var lastLoginAt sql.NullString
-	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, COALESCE(token_version,0), created_at, last_login_at FROM users WHERE id = ?", id).
-		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &u.TokenVersion, &createdAt, &lastLoginAt)
+	var photoURL sql.NullString
+	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, COALESCE(token_version,0), created_at, last_login_at, photo_url FROM users WHERE id = ?", id).
+		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &u.TokenVersion, &createdAt, &lastLoginAt, &photoURL)
 	if err == sql.ErrNoRows {
 		return nil, errors.New("user not found")
 	}
@@ -97,6 +102,9 @@ func (r *Repository) FindByID(id int) (*User, error) {
 		if parsed, parseErr := time.Parse("2006-01-02 15:04:05", lastLoginAt.String); parseErr == nil {
 			u.LastLoginAt = &parsed
 		}
+	}
+	if photoURL.Valid && photoURL.String != "" {
+		u.PhotoURL = &photoURL.String
 	}
 	return &u, nil
 }
@@ -123,6 +131,17 @@ func (r *Repository) UpdatePassword(id int, newPassword string) error {
 		return err
 	}
 	_, err = r.db.Exec("UPDATE users SET password_hash = ? WHERE id = ?", string(hash), id)
+	return err
+}
+
+// SetPhotoURL menyimpan/menghapus path avatar user. photoURL == nil berarti
+// lepaskan avatar (kembali ke inisial).
+func (r *Repository) SetPhotoURL(id int, photoURL *string) error {
+	if photoURL == nil {
+		_, err := r.db.Exec("UPDATE users SET photo_url = NULL WHERE id = ?", id)
+		return err
+	}
+	_, err := r.db.Exec("UPDATE users SET photo_url = ? WHERE id = ?", *photoURL, id)
 	return err
 }
 
@@ -161,7 +180,7 @@ func (r *Repository) CreateUser(user *User) error {
 }
 
 func (r *Repository) GetAllUsers(search string) ([]User, error) {
-	query := `SELECT id, email, COALESCE(password_hash,''), name, role, created_at, last_login_at FROM users WHERE role IN (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `SELECT id, email, COALESCE(password_hash,''), name, role, created_at, last_login_at, photo_url FROM users WHERE role IN (?, ?, ?, ?, ?, ?, ?, ?)`
 	args := []interface{}{"superadmin", "bendahara", "panitia_psb", "tim_media", "pimpinan", "wali_kelas", "guru", "ustadz"}
 
 	if search != "" {
@@ -182,7 +201,8 @@ func (r *Repository) GetAllUsers(search string) ([]User, error) {
 		var u User
 		var createdAt string
 		var lastLoginAt sql.NullString
-		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt); err != nil {
+		var photoURL sql.NullString
+		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt, &photoURL); err != nil {
 			return nil, err
 		}
 		u.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
@@ -190,6 +210,9 @@ func (r *Repository) GetAllUsers(search string) ([]User, error) {
 			if parsed, parseErr := time.Parse("2006-01-02 15:04:05", lastLoginAt.String); parseErr == nil {
 				u.LastLoginAt = &parsed
 			}
+		}
+		if photoURL.Valid && photoURL.String != "" {
+			u.PhotoURL = &photoURL.String
 		}
 		u.PasswordHash = ""
 		users = append(users, u)
