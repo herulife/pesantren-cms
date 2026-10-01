@@ -213,7 +213,6 @@ func TestAutoAcceptDuplicateGuard(t *testing.T) {
 	}
 }
 
-
 // seedPaidRegWithCategory membuat registrasi lunas+accepted dengan kategori
 // tertentu. yatim/dhuafa wajib menyertakan dokumen pendukungnya, jadi seed ini
 // ikut mengisinya kalau ada (kategori tanpa dokumen ditolak AcceptToSantri).
