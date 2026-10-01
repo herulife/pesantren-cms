@@ -1008,6 +1008,25 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 - `nohup cmd &` saja **TIDAK cukup** di environment ini: shell tool yang memanggilnya bisa di-kill saat
   timeout dan ikut membunuh proses anak. Pakai `setsid nohup bash -c '...' </dev/null &` + `disown`,
   lalu verifikasi jalan dengan `pgrep`.
+- **Jumlah argumen `rows.Scan` tidak dicek compiler** (SQL juga tidak) — menambah kolom ke `SELECT`
+  tanpa menambah variabel di `Scan` lolos `go build` + `go vet` + test yang tidak menyentuh query itu,
+  lalu balas **500** saat runtime (`sql: expected N destination arguments in Scan, not M`). Contoh nyata
+  Jilid 67: `santri.FindByUserID` tertinggal 1 kolom. **Setelah menambah kolom di query, hitung ulang
+  semua `Scan` di file itu** (`grep -c "COALESCE(" <query>` vs jumlah argumen `Scan`).
+- **Daftar nilai enum jangan diduplikasi per-file.** Jilid 67 menyatukan kategori ke
+  `validators.NormalizeCategory` + konstanta. Benefits: alias ejaan (`duafa`→`dhuafa`) dan kapitalisasi
+  ditangani sekali, dan test bisa mengunci daftar yang sama. Kalau menambah enum baru, taruh di
+  `validators` dari awal, jangan `if x != "a" && x != "b"` di tiap handler.
+- **Nilai enum yang tidak dinormalkan = dua sumber kebenaran.** Sheet/UI lama menulis `Duafa`, form baru
+  menulis `Dhuafa`; tanpa normalisasi keduanya jadi nilai berbeda di DB dan laporan tidak pernah cocok.
+  Normalisasi harus di **tulis** (payload create/update/accept), bukan hanya saat baca.
+- **Angka di dokumen bisa basi Diam-diam.** §2 RINGKASAN mengklaim `santri` 119 / `users` 126, DB live
+  1 Okt ternyata 116 / 124. Selalu recount lewat `python3` sebelum menulis angka ke dokumen atau
+  mengambil keputusan (mis. "hapus semua akun import").
+- Menjalankan test Go di host: `go` ada tapi versinya (1.22) **lebih tua** dari `go 1.26` yang diminta
+  `go.mod` → selalu lewat container `golang:1.26` dengan cache di-mount sebagai user saat ini
+  (`-u $(id -u):$(id -g) -v "$PWD/.gomodcache:/gomodcache" -v "$PWD/.gocache:/gocache"`), jangan `sudo`
+  (cache jadi root-owned, sudah pernah jadi insiden 28 Sep).
 
 - Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
 - **chi**: memecah grup terproteksi jadi `r.Route(path, func(r chi.Router){ ... })` dengan grup READ rute spesifik + grup WRITE `r.Mount("/", h.Routes())` aman — rute spesifik menang untuk method-nya, sisanya tetap masuk mount (POST/PUT/DELETE **bukan** 405, sudah diuji 13/13). Tetap wajib uji ulang endpoint WRITE setiap kali melakukan pemecahan seperti ini.
