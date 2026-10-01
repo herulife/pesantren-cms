@@ -36,6 +36,10 @@ type User struct {
 	TokenVersion int        `json:"-"`
 	CreatedAt    time.Time  `json:"created_at"`
 	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
+	// PhotoURL path relatif hasil upload avatar sendiri (Jilid 69). NULL = belum
+	// pasang foto, frontend harus fallback ke inisial. Sengaja TIDAK di-json
+	// sebagai omitempty supaya frontend bisa bedakan "" (kosong) vs tidak ada.
+	PhotoURL *string `json:"photo_url"`
 }
 
 type Repository struct {

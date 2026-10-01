@@ -826,6 +826,7 @@ func createTables() {
 	addColumnIfNotExists("news", "is_pinned", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("users", "last_login_at", "DATETIME")
 	addColumnIfNotExists("users", "token_version", "INTEGER NOT NULL DEFAULT 0")
+	addColumnIfNotExists("users", "photo_url", "TEXT")
 	addColumnIfNotExists("payment_transactions", "idempotency_key", "TEXT")
 	addColumnIfNotExists("receipts", "idempotency_key", "TEXT")
 	addColumnIfNotExists("kas_transactions", "idempotency_key", "TEXT")
