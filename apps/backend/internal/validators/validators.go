@@ -55,6 +55,51 @@ func NormalizeSemester(value string) string {
 	}
 }
 
+// Kategori scheme bantuan (kategori pendaftar & kategori Santri).
+// Satu-satunya daftar nilai yang sah untuk KEDUA tabel, supaya
+// registrations.category dan santri.category tidak pernah berbeda ejaan:
+// "yatim" (anak yatim) dan "dhuafa" (domba miskin). Nilai kosong dianggap
+// "reguler". Ejaan "duafa" diterima sebagai alias lalu dinormalkan menjadi
+// "dhuafa" supaya data dari sheet/API lama tidak ditolak.
+const (
+	CategoryReguler = "reguler"
+	CategoryYatim   = "yatim"
+	CategoryDhuafa  = "dhuafa"
+)
+
+// CategoryOptions adalah daftar nilai sah dalam urutan tampil untuk UI.
+var CategoryOptions = []string{CategoryReguler, CategoryYatim, CategoryDhuafa}
+
+// NormalizeCategory menormalkan input kategori (lowercase + trim), memetakan
+// alias "duafa" -> "dhuafa", dan mengembalikan "" kalau nilainya di luar
+// daftar sah. Pemanggil yang butuh default memakai CategoryOrDefault.
+func NormalizeCategory(value string) string {
+	switch v := strings.ToLower(strings.TrimSpace(value)); v {
+	case "":
+		return ""
+	case CategoryReguler, CategoryYatim, CategoryDhuafa:
+		return v
+	case "duafa", "dhufa", "poor":
+		return CategoryDhuafa
+	default:
+		return ""
+	}
+}
+
+// CategoryOrDefault seperti NormalizeCategory, tapi nilai kosong (atau tidak
+// dikenal) menjadi "reguler".
+func CategoryOrDefault(value string) string {
+	if v := NormalizeCategory(value); v != "" {
+		return v
+	}
+	return CategoryReguler
+}
+
+// IsValidCategory melapor apakah nilai sudah berupa kategori kanonik.
+func IsValidCategory(value string) bool {
+	return NormalizeCategory(value) != ""
+}
+
 func ValidateEmail(value string) bool {
 	if value == "" {
 		return false
