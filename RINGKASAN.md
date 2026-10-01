@@ -1158,6 +1158,29 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
   `go.mod` → selalu lewat container `golang:1.26` dengan cache di-mount sebagai user saat ini
   (`-u $(id -u):$(id -g) -v "$PWD/.gomodcache:/gomodcache" -v "$PWD/.gocache:/gocache"`), jangan `sudo`
   (cache jadi root-owned, sudah pernah jadi insiden 28 Sep).
+- **`parseResponse()` frontend me-redirect ke `/login` pada SETIAP 401.** Jadi jangan pakai 401 untuk
+  "kredensial yang kamu masukkan salah" (mis. password lama tidak cocok) — user akan terkeluar dari
+  halaman dan tidak pernah melihat pesan error-nya. Pakai 400 + `errors.<field>` supaya bisa
+  ditampilkan inline. 401 di backend cukup untuk "token tidak ada / kedaluwarsa".
+- **Cek "tombol mati" sebelum\\/selector/CSS-nya dipakai user.** Tombol `X` lama di header
+  dashboard_visible tapi selalu no-op: sidebar tertutup = `setFalse(false)`, sidebar terbuka =
+  tertutup backdrop `z-40` di atas header `z-30`. Cara cepat: cek `z-index` bertumpuk
+  (apakah ada yang menutupi) **dan** apakah state yang di-toggle sudah bernilai awal.
+- **Port 3006 sudah dipakai `tempe-webapp`** (project lain, jangan disentuh) — pakai 3008/3009
+  untuk container uji. `docker ps --format '{{.Ports}}' | grep ":$p->"` sebelum memilih port.
+- **Container uji TIDAK bisa menjangkau host lewat `172.17.0.1`** (firewall docker0) → `wget:
+  download timed out`. Pakai **docker network** bersama + nama container sebagai hostname
+  (`docker network create x && docker network connect x a && ...`), bukan IP host.
+- Frontend production **bake rewrite `/api` ke `https://almaparung.com`** saat build
+  (lihat `routes-manifest.json`), jadi container uji frontend **tetap menembak API produksi**.
+  Untuk menguji UI tanpa menyentuh produksi, taruh nginx/nginx:alpine di depan dua container uji
+  di network yang sama: `/api/` → container backend uji, sisanya → container frontend uji.
+- `next build` = **build yang paling mahal** (~15 mnt). Jalankan build backend + frontend
+  **sekaligus** di background ( dua proses `setsid nohup` terpisah + file penanda `.done`) —
+  jalan paralel, totalnya ~15 mnt bukan 25.
+- Legacy builder buffered output `docker build` (log cuma 4 baris "DEPRECATED" selama puluhan
+  menit). Jangan kira build mati — cek proses `ps aux | grep "[d]ocker build"` dan tunggu file
+  `.done`. Pesan "Install the buildx component" itu **warning**, bukan error.
 
 - Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
 - **chi**: memecah grup terproteksi jadi `r.Route(path, func(r chi.Router){ ... })` dengan grup READ rute spesifik + grup WRITE `r.Mount("/", h.Routes())` aman — rute spesifik menang untuk method-nya, sisanya tetap masuk mount (POST/PUT/DELETE **bukan** 405, sudah diuji 13/13). Tetap wajib uji ulang endpoint WRITE setiap kali melakukan pemecahan seperti ini.
