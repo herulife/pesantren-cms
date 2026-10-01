@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-01 (Jilid 67 - Kategori Murid `santri.category` jadi sumber tunggal, ikut otomatis dari PSB; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-01 (Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -21,10 +21,10 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:jilid67-kategori` | Jilid 67 (Kategori Murid `santri.category` + fix scan `FindByUserID`), Jilid 65 (hapus total BGN + import ulang Santri dari master Google Sheet). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `jilid65-bgnclean`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:jilid67-kategori` | Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66 (tombol No. Rekening deep-link), Jilid 65 (hapus total BGN), kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `psbrektab`. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:j68-akun` | Jilid 68 (`PUT /api/me/password` — ganti password sendiri), Jilid 67 (Kategori Murid + fix scan `FindByUserID`), Jilid 65 (hapus total BGN + import ulang Santri). Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `jilid65-bgnclean`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j68-akun` | Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66, kop e-raport PDF. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `jilid67-kategori`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `jilid65-bgnclean`(terakhir)+`fix-nullsanti-v2`+`arbain-bgn`; frontend `psbrektab`(terakhir)+`arbain-bgn2` | container lama: `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
+| Rollback tersedia | — | backend `jilid65-bgnclean`+`fix-nullsanti-v2`+`arbain-bgn`; frontend `jilid67-kategori`(terakhir)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
 | DB | — | — | **santri 116** (status: 113 `aktif`, 2 `cuti`, 1 `lulus` — turun dari 119/126 yang tercatat Jilid 65, **selisih 3 baris belum dijelaskan**, jangan diasumsikan); `santri.category` ada, 116/116 = `reguler` (migrasi Jilid 67 hanya memberi default, kategori dari sheet tidak diimpor); `santri.father_occupation`/`mother_occupation` baru dibuat Jilid 67; tabel `registrations` **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `users` 124 (akun portal hasil import, `TEMP0xx` tidak bisa login) |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
@@ -66,7 +66,7 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 
 ## Jilid 68 - Avatar profil di header + halaman "Akun Saya" (ganti password sendiri) (1 Okt 2026, LIVE)
 
-**Order user (setelah问他 kenapa ada ikon X di pojok kanan dashboard):** user justru
+**Order user (setelah ditanya kenapa ada ikon X di pojok kanan dashboard):** user justru
 **mau avatar profil** di titik itu. Setelah user ditanya, dipilih: **halaman baru
 `/admin/akun`**, **avatar berupa inisial huruf**, dan **tombol X yang mati dihapus**.
 
@@ -119,7 +119,7 @@ fitur foto berarti kolom DB + endpoint upload + UI. Inisial sudah konsisten dipa
 Helper API baru `changeMyPassword()` di `lib/api.ts:2002-2013`.
 
 **Tidak ada entri sidebar untuk `/admin/akun`** — itu disengaja. Menu sidebar dibangun dari
-`ROLE_MENU_DEFS` (`lib/roleMenus`) yang juga meng驱动 checkbox "Hak Akses" di Manajemen
+`ROLE_MENU_DEFS` (`lib/roleMenus`) yang juga menggerakkan checkbox "Hak Akses" di Manajemen
 Pengguna; halaman akun bersifat per-user, bukan modul per-role. `groupOfPath()`
 (`Sidebar.tsx:78-88`) mengembalikan `null` untuk path di luar katalog → tidak ada grup yang
 ter-highlight, tidak ada crash. Satu-satunya pintu masuk = avatar.
@@ -147,7 +147,7 @@ ter-highlight, tidak ada crash. Satu-satunya pintu masuk = avatar.
   `ResetUserPassword`), jadi response membawa `"reauth": true` dan frontend memanggil
   `logout()`. Aman: `POST /api/logout` (`handler.go:350`) hanya memverifikasi signature JWT
   **tanpa** mengecek `token_version`, lalu `clearAuthCookie(w)` meng-expire cookie — jadi
-  `logout()` tetap berhasil哪怕 token sudah invalid.
+  `logout()` tetap berhasil walaupun token sudah invalid.
 
 ### 5. Verifikasi
 
