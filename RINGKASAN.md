@@ -63,6 +63,62 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 67 - Kategori Murid (`santri.category`) sebagai sumber tunggal, ikut dari PSB (1 Okt 2026, LIVE)
+
+**Order user:** kategori (reguler/yatim/dhuafa) harus punya satu sumber kebenaran, tidak boleh
+`registrations.category` dan `santri.category` jadi dua nilai yang bisa berbeda.
+
+**Perubahan:**
+
+1. **`internal/validators/validators.go`** — konstanta `CategoryReguler`/`CategoryYatim`/
+   `CategoryDhuafa`, slice `CategoryOptions`, dan `NormalizeCategory` (lowercase + trim, alias
+   `duafa`/`dhufa`/`poor` → `dhuafa`, nilai asing → `""`), plus `CategoryOrDefault` dan
+   `IsValidCategory` (sekarang delegate ke `NormalizeCategory`). Sebelumnya tiap tempat punya
+   daftar literal sendiri.
+2. **`internal/platform/database/db.go`** — `addColumnIfNotExists` untuk `santri.category`
+   (`TEXT DEFAULT 'reguler'`) plus **`father_occupation` + `mother_occupation`**. Dua kolom
+   occupation itu sudah ada di model + form tapi **tidak pernah ada di skema** — parity fix,
+   bukan fitur baru. Repeat-safe, data lama otomatis dapat `'reguler'`.
+3. **`features/psb/handler.go:202`** — `validatePortalRegistration` memakai
+   `NormalizeCategory` (sekarang menerima `Duafa`/`Dhuafa`, disimpan bentuk kanonik) dan blok
+   validasi kategori yang tadinya terpisah dihapus dari bawah (sudah jadi satu jalur).
+4. **`features/psb/repository.go`** — `SaveByUserID` (`:371`) pakai `NormalizeCategory` +
+   `validators.CategoryReguler` sebagai default; **`AcceptToSantri` (`:974`)** menyalin
+   `validators.CategoryOrDefault(reg.Category)` ke kolom `santri.category` saat PSB
+   `accepted`. Kuota yatim/dhuafa + cek dokumen pendukung tetap membaca `registrations.category`
+   seperti sebelumnya.
+5. **`features/santri/handler.go:207`** — `validateSantri` normalkan kategori (kosong →
+   `reguler`, asing → error key `category`), `SantriInput.Category` ikut ke `toSantri()`.
+6. **`features/santri/repository.go:376`** — **fix bug `FindByUserID`**: `rows.Scan` punya 26
+   argumen sementara query me-select 27 kolom (`category` terlewat) → `sql: expected 26
+   destination arguments in Scan, not 27` (endpoint `GET` by user selalu 500). Sekarang scan
+   `&x.Category` ditambahkan. ⚠️ Pola yang sama sudah benar di `FindAll`/`FindByID`/`Update`
+   (`repository.go:61`, `:107`, `:320`) — kalau menambah kolom baru, **hitung ulang SEMUA
+   query Santri**, bukan cuma yang gagal saat test.
+7. **Frontend** — dropdown **Kategori** (`SelectField`, bukan `<select>` native) di
+   `app/admin/kesantrian/form/page.tsx`; `category?: string` di `lib/api.ts:3520` pada
+   interface `Santri`. Edit kirim eksplisit (`form.category || 'reguler'`) supaya `PUT`
+   full-replace tidak pernah mengosongkan kolom; record lama tanpa kategori buka dengan
+   `reguler` supaya dropdown tidak kosong.
+
+**Skema:** `santri.category` **tidak** bisa difilter lewat query params API — hanya lewat
+payload create/update (sengaja, supaya tidak ada dua jalur baca).
+
+**Verifikasi:**
+- `go test ./internal/features/psb/... ./internal/features/santri/... ./internal/validators/...`
+  → `ok` semua (test baru: `TestAutoAcceptCarriesCategoryToSantri` (5 subtest),
+  `TestAutoAcceptCategoryDefaultsToReguler`, `TestAutoAcceptCategoryAliasDuafa`,
+  `TestValidateSantriCategory` (9 kasus), `TestSantriInputCarriesCategory`).
+- `npx tsc --noEmit --incremental false` → exit 0.
+- Deploy `alma-parung-backend:jilid67-kategori` + `alma-parung-frontend:jilid67-kategori`:
+  keduanya `healthy`, `GET /` 200, `GET /api/health` 200, `/api/ready` 200.
+- DB live: `PRAGMA table_info(santri)` → `category` (`DEFAULT 'reguler'`), `father_occupation`,
+  `mother_occupation` ada; 116 baris semua `reguler` (migrasi memberi default, tidak ada
+  kategori dari sheet yang diimpor Jilid 65).
+
+---
+
 ## Jilid 66 - Tombol "No. Rekening" di Pengaturan PSB langsung ke tab No. Rekening (30 Sep 2026, LIVE)
 
 **Order user:** "di `/admin/psb/pengaturan` waktu klik setting no rekening, arahkan langsung ke
