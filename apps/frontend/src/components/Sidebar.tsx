@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
-import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
 import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown } from 'lucide-react';

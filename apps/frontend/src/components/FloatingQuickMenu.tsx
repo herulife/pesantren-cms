@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { ExternalLink, LayoutDashboard, LogIn, LogOut, UserPlus } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import UserAvatar from './UserAvatar'; // j70: foto profil, bukan inisial manual
-import UserAvatar from './UserAvatar'; // j70: foto profil, bukan inisial manual
 
 export type FloatingQuickMenuItem = {
   href?: string;
