@@ -64,6 +64,137 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
 
+## Jilid 68 - Avatar profil di header + halaman "Akun Saya" (ganti password sendiri) (1 Okt 2026, LIVE)
+
+**Order user (setelah问他 kenapa ada ikon X di pojok kanan dashboard):** user justru
+**mau avatar profil** di titik itu. Setelah user ditanya, dipilih: **halaman baru
+`/admin/akun`**, **avatar berupa inisial huruf**, dan **tombol X yang mati dihapus**.
+
+### 1. Bug yang ditemukan & dibetulkan: tombol "X" di header
+
+`components/DashboardLayout.tsx` punya tombol `aria-label="Tutup menu cepat"` di pojok kanan
+header, `onClick={() => setIsMobileSidebarOpen(false)}`, `className="... lg:hidden"`. Tombol ini
+**mati di semua kondisi**:
+
+- Sidebar tertutup (kondisi saat X terlihat — `isMobileSidebarOpen === false`):
+  `setFalse(false)` = no-op.
+- Sidebar terbuka: backdrop `DashboardLayout.tsx:20` (`z-40`) menutupi header
+  (`z-30`), jadi X tidak receive klik. Yang dipakai justru tombol X di dalam sidebar
+  (`Sidebar.tsx:141-147`, `lg:hidden`, memanggil `onClose` yang sama).
+
+Jadi ini duplikat yang tidak pernah kepakai. **Sidebar sudah punya tombol tutup sendiri** —
+`DashboardLayout.tsx` cukup pakai hamburger (`Menu`, `lg:hidden`) untuk membuka.
+
+### 2. Avatar profil (menggantikan X)
+
+`components/DashboardLayout.tsx:56-74` — header kanan kini:
+
+```tsx
+<Link href="/admin/akun" aria-label="Akun saya" title="Akun Saya"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-600
+                 text-sm font-black text-white shadow-sm transition hover:bg-sky-700
+                 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+  {(user?.name || 'A').trim().charAt(0).toUpperCase()}
+</Link>
+```
+
+Import `X` dihapus dari baris 5 (sisanya `Menu` masih dipakai). Avatar **tidak** `lg:hidden`
+— sengaja tampil di desktop juga, karena nama + role di sebelahnya disembunyikan di
+`< sm` (`hidden sm:block`).
+
+**Kenapa inisial, bukan foto:** model `User` (`features/auth/repository.go:30-39`) tidak punya
+kolom foto sama sekali — bukan di DB, bukan di JSON API, bukan di `UserData` frontend. Menambah
+fitur foto berarti kolom DB + endpoint upload + UI. Inisial sudah konsisten dipakai
+`FloatingQuickMenu.tsx:73` (`initial`), jadi tidak ada pola baru.
+
+### 3. Halaman baru `/admin/akun`
+
+`apps/frontend/src/app/admin/akun/page.tsx` (baru, ~190 baris) — dua section:
+
+1. **Identitas akun** (avatar inisial besar, nama, email, role dengan label Indonesia dari
+   `roleLabels`) + catatan bahwa nama/email/role dikelola Super Admin di `/admin/users`.
+2. **Ganti Password** — 3 field (`old_password`, `new_password`, `confirm_password`) +
+   peringatan bahwa semua sesi akan keluar.
+
+Helper API baru `changeMyPassword()` di `lib/api.ts:2002-2013`.
+
+**Tidak ada entri sidebar untuk `/admin/akun`** — itu disengaja. Menu sidebar dibangun dari
+`ROLE_MENU_DEFS` (`lib/roleMenus`) yang juga meng驱动 checkbox "Hak Akses" di Manajemen
+Pengguna; halaman akun bersifat per-user, bukan modul per-role. `groupOfPath()`
+(`Sidebar.tsx:78-88`) mengembalikan `null` untuk path di luar katalog → tidak ada grup yang
+ter-highlight, tidak ada crash. Satu-satunya pintu masuk = avatar.
+
+### 4. Backend: `PUT /api/me/password`
+
+- `validators/auth.go` — `ChangePasswordRequest{old_password, new_password, confirm_password}`
+  + `ValidateChangePasswordRequest` (≥8 karakter, harus beda dari password lama, konfirmasi
+  harus cocok). Password **tidak** di-trim — spasi bisa bagian password yang sah.
+- `features/auth/handler.go` — `ChangeMyPassword` (setelah `GetMe`): ambil user dari
+  `GetAuthenticatedUser(r)`, cocokkan password lama dengan `repo.CheckPassword`, lalu
+  `repo.UpdatePassword`. Semua method yang dipakai sudah ada di `IRepository` (`handler.go:816`)
+  jadi tidak perlu ubah interface. Audit `CHANGE_OWN_PASSWORD` + `logger.RecordActivity`
+  mengikuti pola `ResetUserPassword`.
+- `cmd/api/main.go:377` — `r.Put("/me/password", ...)` di grup `auth.AuthMiddleware`.
+
+**Dua keputusan yang perlu diingat agen penerus:**
+
+- **Password lama salah dibalas 400, bukan 401.** `parseResponse()` di
+  `frontend/src/lib/api.ts:365-372` me-redirect ke `/login` pada **SETIAP** 401. Kalau 401
+  dipakai untuk "password lama salah", user catastrophic-nya terkeluar dari halaman dan
+  kehilangan akses ke pesan error yang sebenarnya. Jadi ini ditulis sebagai validation error
+  (`errors.old_password`) supaya form bisa menampilkannya inline.
+- **Sukses = semua sesi ikut mati.** Handler memanggil `BumpTokenVersion(me.ID)` (sama seperti
+  `ResetUserPassword`), jadi response membawa `"reauth": true` dan frontend memanggil
+  `logout()`. Aman: `POST /api/logout` (`handler.go:350`) hanya memverifikasi signature JWT
+  **tanpa** mengecek `token_version`, lalu `clearAuthCookie(w)` meng-expire cookie — jadi
+  `logout()` tetap berhasil哪怕 token sudah invalid.
+
+### 5. Verifikasi
+
+Backend (container uji `akuntest` + **salinan** DB, user uji `akun.test@almaparung.local`
+dibuat hanya di salinan itu) — **10/10**:
+
+| # | Kasus | Hasil |
+|---|---|---|
+| 1 | `PUT /api/me/password` tanpa auth | 401 (route ada, bukan 404) |
+| 2 | password lama salah | 400 + `errors.old_password` |
+| 3 | password baru < 8 char | 400 + `errors.new_password` |
+| 4 | konfirmasi tidak cocok | 400 + `errors.confirm_password` |
+| 5 | sama dengan password lama | 400 + `errors.new_password` |
+| 6 | field JSON asing | 400 (`DecodeStrictJSON`) |
+| 7 | ganti sukses | 200 + `reauth: true` |
+| 8 | token lama setelah ganti | 401 (sesi benar-benar mati) |
+| 9 | login dengan password lama | gagal |
+| 10 | login dengan password baru | berhasil |
+
+Frontend (playwright + chromium headless, `LD_LIBRARY_PATH=/tmp/chromelibs/...`):
+- `/admin`: avatar `href=/admin/akun`, teks = inisial "A", `[aria-label="Tutup menu cepat"]`
+  **tidak ada** lagi, 0 page error.
+- Klik avatar → `/admin/akun`, `<h1>Akun Saya`, nama/email/role benar, 3 input password.
+- Konfirmasi berbeda → **tidak ada** request ke server (validasi klien menahan).
+- Password lama salah di form → pesan "Password lama tidak cocok" tampil **inline**,
+  tidak ter-redirect.
+- Geometri: avatar 36×36 px, `border-radius` penuh (lingkaran), di kanan header, di dalam
+  viewport — desktop 1440px (x=1368) dan mobile 390px (x=338).
+- `go build ./...` + `go vet` + `go test ./internal/validators/... ./internal/features/auth/...` → `ok`;
+  `npx tsc --noEmit --incremental false` → exit 0.
+
+Deploy: `alma-parung-backend:j68-akun` + `alma-parung-frontend:j68-akun`. Env backend
+diambil ulang dari container yang sedang jalan (`docker inspect --format '{{range .Config.Env}}'`)
+→ `/tmp/akun_be.env` — **jangan** mengetik ulang `JWT_SECRET` (insiden Jilid 65).
+Verifikasi produksi: kedua container `healthy`, `/` 200, `/api/ready` 200,
+`GET /admin/akun` tanpa cookie 307 (route ada), `PUT /api/me/password` tanpa auth 401,
+bundle memuat "Akun saya" dan **tidak** lagi memuat "Tutup menu cepat", 0 error signature.
+DB produksi **tidak** tersentuh: 116 Santri, 124 users, tidak ada user uji yang bocor.
+
+Rollback: container `alma-parung-backend-pre-j68` + `alma-parung-frontend-bobot-pre-j68`
+(keduanya image `jilid67-kategori`).
+
+**Belum diuji:** pergantian password pada akun staff **sungguhan** di produksi (butuh kredensial
+user, jadi sengaja tidak dicoba). Perilaku diuji penuh di container uji dengan user uji.
+
+---
+
 ## Jilid 67 - Kategori Murid (`santri.category`) sebagai sumber tunggal, ikut dari PSB (1 Okt 2026, LIVE)
 
 **Order user:** kategori (reguler/yatim/dhuafa) harus punya satu sumber kebenaran, tidak boleh
