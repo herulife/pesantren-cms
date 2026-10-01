@@ -13,6 +13,8 @@ interface UserData {
   email: string;
   name: string;
   role: string;
+  /** Path relatif /uploads/avatars/...; null = belum pasang foto (avatar inisial). */
+  photo_url?: string | null;
 }
 
 interface AuthContextType {
