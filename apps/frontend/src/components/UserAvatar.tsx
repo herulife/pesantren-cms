@@ -20,7 +20,7 @@ const SIZE_CLASS: Record<NonNullable<UserAvatarProps['size']>, string> = {
 
 // Inisial: 1 huruf untuk staff (sesuai versi lama header), 2 huruf untuk portal
 // (meniru perilaku lama di portal/layout.tsx).
-function initialsOf(name?: string | null, count: number) {
+function initialsOf(name: string | null | undefined, count: number) {
   return (name || '')
     .split(/\s+/)
     .filter(Boolean)
