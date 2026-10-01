@@ -24,6 +24,16 @@ type ResetUserPasswordRequest struct {
 	Password string `json:"password"`
 }
 
+// ChangePasswordRequest dipakai user untuk mengganti password-nya sendiri.
+// Password lama wajib dikirim supaya sesi yang tertinggal tidak bisa langsung
+// mengambil alih akun; ini berbeda dari ResetUserPasswordRequest yang dipakai
+// admin (reset paksa, tanpa password lama).
+type ChangePasswordRequest struct {
+	OldPassword     string `json:"old_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
 type RoleUpdateRequest struct {
 	Role string `json:"role"`
 }
@@ -105,6 +115,27 @@ func ValidateResetUserPasswordRequest(req *ResetUserPasswordRequest) ValidationE
 
 	if len(req.Password) < 8 {
 		errs.Add("password", "Password minimal 8 karakter")
+	}
+
+	return errs
+}
+
+// ValidateChangePasswordRequest memvalidasi penggantian password sendiri.
+// Password TIDAK di-trim: spasi bisa jadi bagian password yang sah, dan
+// password lama dengan spasi pun harus tetap bisa dicocokkan.
+func ValidateChangePasswordRequest(req *ChangePasswordRequest) ValidationErrors {
+	errs := ValidationErrors{}
+
+	if req.OldPassword == "" {
+		errs.Add("old_password", "Password lama wajib diisi")
+	}
+	if len(req.NewPassword) < 8 {
+		errs.Add("new_password", "Password baru minimal 8 karakter")
+	} else if req.NewPassword == req.OldPassword {
+		errs.Add("new_password", "Password baru harus berbeda dari password lama")
+	}
+	if req.ConfirmPassword != req.NewPassword {
+		errs.Add("confirm_password", "Konfirmasi password tidak cocok")
 	}
 
 	return errs
