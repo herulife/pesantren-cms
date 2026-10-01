@@ -204,6 +204,17 @@ func validateSantri(s *Santri) map[string]string {
 	if s.Status != "" && !validStatus[s.Status] {
 		errs["status"] = "Status harus aktif/lulus/pindah/cuti"
 	}
+	// Kategori mengikuti daftar yang sama dengan registrations.category (PSB),
+	// supaya tidak ada dua ejaan untuk nilai yang sama. Kosong -> "reguler"
+	// (konsisten dengan PSB), nilai != "" yang tidak dikenal -> 400.
+	if raw := strings.TrimSpace(s.Category); raw == "" {
+		s.Category = validators.CategoryReguler
+	} else {
+		s.Category = validators.NormalizeCategory(raw)
+		if s.Category == "" {
+			errs["category"] = "Kategori harus reguler, yatim, atau dhuafa"
+		}
+	}
 	if s.BirthDate != "" && !validators.ValidateDate(s.BirthDate) {
 		errs["birth_date"] = "Tanggal lahir format YYYY-MM-DD"
 	}
