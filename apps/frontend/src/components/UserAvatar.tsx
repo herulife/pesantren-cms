@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { normalizeApiAssetUrl } from '@/lib/api';
 
 interface UserAvatarProps {
@@ -41,16 +41,15 @@ function initialsOf(name: string | null | undefined, count: number) {
  * (repo juga sudah memakai <img> di beberapa halaman).
  */
 export default function UserAvatar({ name, photoUrl, size = 'sm', className = '' }: UserAvatarProps) {
-  const [failed, setFailed] = useState(false);
   const src = normalizeApiAssetUrl(photoUrl);
   const count = size === 'sm' ? 1 : 2;
-  // Reset error saat foto berganti: user baru saja pasang foto baru, jadi
-  // flag failed dari foto lama tidak boleh masih aktif.
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
+  // Simpan path yang GAGAL dimuat, bukan boolean. Kalau src berganti (foto baru),
+  // failedSrc lama otomatis tidak sama dengan src sehingga tampil inisial tanpa
+  // perlu reset manual. Pola ini menghindari setState di dalam effect.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
 
-  // src kosong = belum pasang foto. failed = file 404/hilang di server.
+  // src kosong = belum pasang foto. failed = foto ini 404/hilang di server.
   if (!src || failed) {
     return (
       <span
@@ -66,7 +65,7 @@ export default function UserAvatar({ name, photoUrl, size = 'sm', className = ''
     <img
       src={src}
       alt={`Foto profil ${name || 'pengguna'}`}
-      onError={() => setFailed(true)}
+      onError={() => setFailedSrc(src)}
       className={`${SIZE_CLASS[size]} shrink-0 rounded-full object-cover ${className}`}
     />
   );
