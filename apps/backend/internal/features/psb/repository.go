@@ -963,6 +963,11 @@ func (r *Repository) AcceptToSantri(ctx context.Context, id int) (*SantriResult,
 		}
 		parentName := firstNonEmpty(reg.ParentName, reg.FatherName, reg.MotherName)
 		parentPhone := firstNonEmpty(reg.ParentPhone, reg.FatherPhone, reg.MotherPhone)
+		// Kategori ikut naik dari pendaftar ke Santri. Tanpa ini, data
+		// "yatim"/"dhuafa" yang sudah dikumpulkan & diverifikasi di PSB hilang
+		// begitu peserta diterima. Normalisasi lewat validators yang sama dengan
+		// validasi PSB, jadi ejanannya tidak mungkin berbeda.
+		category := validators.CategoryOrDefault(reg.Category)
 		initialClass := "VII"
 		if jenjang == "smk" {
 			initialClass = "X"
@@ -974,10 +979,10 @@ func (r *Repository) AcceptToSantri(ctx context.Context, id int) (*SantriResult,
 		for nextID := maxID + 1; nextID <= maxID+1+999 && !found; nextID++ {
 			nis := fmt.Sprintf("%s%04d", year, nextID)
 			res, err := tx.ExecContext(ctx, `
-				INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, registration_id, photo_url, user_id, jenjang, created_at, updated_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aktif', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+				INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, category, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, registration_id, photo_url, user_id, jenjang, created_at, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aktif', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 			`, nis, reg.FullName, reg.Nickname, reg.Gender, reg.BirthPlace, reg.BirthDate,
-				reg.Address, initialClass, year, parentName, parentPhone, reg.NIK, reg.FatherName, reg.FatherPhone, reg.MotherName, reg.MotherPhone, id, reg.PasfotoURL, nullableUserID(reg.UserID), jenjang)
+				reg.Address, initialClass, year, category, parentName, parentPhone, reg.NIK, reg.FatherName, reg.FatherPhone, reg.MotherName, reg.MotherPhone, id, reg.PasfotoURL, nullableUserID(reg.UserID), jenjang)
 			if err != nil {
 				if strings.Contains(strings.ToLower(err.Error()), "unique") {
 					continue
