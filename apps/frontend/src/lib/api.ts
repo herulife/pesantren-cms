@@ -1999,6 +1999,22 @@ export async function resetUserPassword(id: number, password: string) {
 	return parseResponse(res);
 }
 
+// changeMyPassword — user mengganti password-nya sendiri (butuh password lama).
+// Backend menaikkan token_version sehingga SEMUA sesi jadi tidak valid, jadi
+// pemanggil wajib mengarahkan user ke /login setelah sukses.
+export async function changeMyPassword(payload: {
+	old_password: string;
+	new_password: string;
+	confirm_password: string;
+}) {
+	const res = await fetch(`${API_BASE_URL}/me/password`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
 export async function deleteUser(id: number) {
 	const res = await fetch(`${API_BASE_URL}/users/${id}`, {
 		method: 'DELETE',

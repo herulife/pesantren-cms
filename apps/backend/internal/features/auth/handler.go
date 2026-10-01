@@ -430,9 +430,21 @@ func (h *Handler) ChangeMyPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.CheckPassword(user.PasswordHash, req.OldPassword); err != nil {
-		// 401 (bukan 400): password lama salah, bukan format request yang salah.
-		// Pesan sengaja tidak membedakan "salah" vs "akun tidak ada".
-		writeAPIError(w, http.StatusUnauthorized, correlationID, "Password lama tidak cocok", nil)
+		// 400 (validation), bukan 401: password lama salah (error validasi
+		// field, bukan sesi kedaluwarsa). Jangan pakai 401 agar frontend tidak
+		// auto-redirect ke /login akibat parseResponse yang umum.
+		cid := logger.CorrelationID(r)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Correlation-ID", cid)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":        false,
+			"message":        "Validasi gagal",
+			"correlation_id": cid,
+			"errors": map[string]string{
+				"old_password": "Password lama tidak cocok",
+			},
+		})
 		return
 	}
 
