@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-09-30 (Jilid 64 - BGN P1: pagination + export Excel/PDF + tautan opsional ke data Santri; Jilid 63 menambahkan menu Penerima BGN). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-01 (Jilid 67 - Kategori Murid `santri.category` jadi sumber tunggal, ikut otomatis dari PSB; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -473,7 +473,7 @@ backup bisa memicu logout di perangkat lain).
 
 - **Rumah Keeper 28 Sep: F (tsbuildinfo) + G (dok usang) + E (redaksi secret)**
   - **F [MEKANIK]**: `apps/frontend/tsconfig.tsbuildinfo` tadinya root-owned sehingga `tsc` gagal `TS5033`
-    untuk user `heru`. Audit menemukan **24.080 file** root-owned di repo (`.gocache`/`.gomodcache` + `.bak`/backup baru) —的karena ada build Go yang dijalankan lewat `sudo`, cache-nya jadi milik root.
+    untuk user `heru`. Audit menemukan **24.080 file** root-owned di repo (`.gocache`/`.gomodcache` + `.bak`/backup baru) — karena ada build Go yang dijalankan lewat `sudo`, cache-nya jadi milik root.
     Semua `chown heru:heru` (di luar `node_modules` + `.git`) -> sisa **0**.
     Bukti perbaikan: `su heru -c "npx tsc --noEmit"` sekarang **EXIT=0** tanpa perlu `--incremental false`.
     *Aturan baru: jangan `sudo` build Go — cache jadi root-owned dan menggigit user `heru`.*
@@ -494,7 +494,7 @@ backup bisa memicu logout di perangkat lain).
     `PASS = os.environ.get("SSH_PASS")` (sekarang read-from-env), `password:` sebagai nama field JS di
     `SKILL.md`/`api.ts`/halaman users, dan fixture validator. `PASS = "Tes123456"` di
     `scripts/smoke_nik_final.py` = password akun sementara yang dibuat lalu dihapus skrip itu sendiri (risiko rendah).
-    `.env` sudah ada di `.gitignore`. **Belum**做: rotasi `JWT_SECRET` + password SSH `heru` + hapus `/tmp/pgl/inspect10.js` — semuanya butuh izin user.
+    `.env` sudah ada di `.gitignore`. **Belum** dikerjakan: rotasi `JWT_SECRET` + password SSH `heru` + hapus `/tmp/pgl/inspect10.js` — semuanya butuh izin user.
 - **Fix Kedisiplinan (`disiplinfix`, 28 Sep)**: di `/admin/disciplines` kolom "Santri" menampilkan **"Admin"**.
   Akar masalah: kolom `student_id` di `student_points`/`violation_logs` merujuk `users.id`, tapi validasi lama
   hanya `SELECT COUNT(*) FROM users WHERE id=?` (semua user lolos, termasuk akun admin/staff) dan form meminta
