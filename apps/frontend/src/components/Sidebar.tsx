@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
+import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
+import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
 import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown } from 'lucide-react';
@@ -218,8 +220,27 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         })}
       </nav>
 
-      {/* Footer / Logout */}
+      {/* Footer / Identitas + Logout */}
       <div className="p-4 border-t border-sky-900/35">
+         {/* j70: blok identitas. Kotak "A" di header sidebar adalah logo
+             aplikasi "Al-Maa", bukan avatar user — tanpa blok ini, nama dan foto
+             user sama sekali tidak terlihat di sidebar. */}
+         {user ? (
+            <div className="mb-2 flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2.5 ring-1 ring-white/5">
+               <UserAvatar
+                 name={user.name}
+                 photoUrl={user.photo_url}
+                 size="sm"
+                 className="ring-2 ring-sky-400/25"
+               />
+               <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-semibold text-white">{user.name}</p>
+                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-sky-200/60">
+                     {user.role || 'staff'}
+                  </p>
+               </div>
+            </div>
+         ) : null}
          <button 
            onClick={() => {
              logout();

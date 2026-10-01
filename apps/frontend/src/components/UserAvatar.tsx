@@ -6,7 +6,7 @@ import { normalizeApiAssetUrl } from '@/lib/api';
 interface UserAvatarProps {
   name?: string | null;
   photoUrl?: string | null;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'h10' | 'h14';
   /** Class tambahan untuk warna/ring avatar (dipakai portal: cincin putih). */
   className?: string;
 }
@@ -16,6 +16,11 @@ const SIZE_CLASS: Record<NonNullable<UserAvatarProps['size']>, string> = {
   sm: 'h-9 w-9 text-sm',
   md: 'h-16 w-16 text-xl',
   lg: 'h-24 w-24 text-3xl',
+  // j70: dua ukuran ini khusus FloatingQuickMenu — panelnya h-10 dan tombol
+  // bulatnya h-14, dan tidak ada kunci lain yang cocok. Menambah kunci di sini
+  // lebih dapat diprediksi daripada className yang menimpa h-8/h-9.
+  h10: 'h-10 w-10 text-sm',
+  h14: 'h-14 w-14 text-base',
 };
 
 // Inisial: 1 huruf untuk staff (sesuai versi lama header), 2 huruf untuk portal
@@ -33,8 +38,8 @@ function initialsOf(name: string | null | undefined, count: number) {
 /**
  * Avatar user: tampilkan foto bila ada, fallback ke inisial.
  *
- * Satu komponen dipakai oleh portal, header dashboard, sidebar, dan
- * /admin/akun supaya avatar tidak berbeda di empat tempat.
+ * Satu komponen dipakai oleh portal, header dashboard, sidebar admin, menu
+ * cepat mengambang, dan /admin/akun supaya avatar tidak berbeda di lima tempat.
  *
  * Pakai <img> telanjang, bukan next/image: avatar 36-96px, bukan konten utama,
  * dan next/image hanya menambah request ke image optimizer tanpa benefits
@@ -42,7 +47,8 @@ function initialsOf(name: string | null | undefined, count: number) {
  */
 export default function UserAvatar({ name, photoUrl, size = 'sm', className = '' }: UserAvatarProps) {
   const src = normalizeApiAssetUrl(photoUrl);
-  const count = size === 'sm' ? 1 : 2;
+  // j70: h10/h14 ikut 1 huruf supaya sama dengan tampilan FAB lama.
+  const count = size === 'sm' || size === 'h10' || size === 'h14' ? 1 : 2;
   // Simpan path yang GAGAL dimuat, bukan boolean. Kalau src berganti (foto baru),
   // failedSrc lama otomatis tidak sama dengan src sehingga tampil inisial tanpa
   // perlu reset manual. Pola ini menghindari setState di dalam effect.

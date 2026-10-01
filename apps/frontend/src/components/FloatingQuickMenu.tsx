@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ExternalLink, LayoutDashboard, LogIn, LogOut, UserPlus } from 'lucide-react';
 import { useAuth } from './AuthProvider';
+import UserAvatar from './UserAvatar'; // j70: foto profil, bukan inisial manual
+import UserAvatar from './UserAvatar'; // j70: foto profil, bukan inisial manual
 
 export type FloatingQuickMenuItem = {
   href?: string;
@@ -70,7 +72,6 @@ export default function FloatingQuickMenu({ anchor = 'right', desktop = false, i
     return () => window.removeEventListener('scroll', onScroll);
   }, [open]);
 
-  const initial = (user?.name || 'A').trim().charAt(0).toUpperCase();
   const dashboardHref = user?.role === 'user' ? '/portal' : '/admin';
   const dashboardLabel = user?.role === 'user' ? 'Ke Portal' : 'Ke Admin';
   const pos = anchor === 'left' ? 'bottom-4 left-4 md:left-6' : 'bottom-4 right-4 md:right-6';
@@ -126,9 +127,7 @@ export default function FloatingQuickMenu({ anchor = 'right', desktop = false, i
       {open && (
         <div className="w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
           <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-sky-700 text-sm font-bold text-white">
-              {initial}
-            </div>
+            <UserAvatar name={user?.name} photoUrl={user?.photo_url} size="h10" />
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-slate-800">{user?.name || 'Belum login'}</p>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
@@ -171,7 +170,7 @@ export default function FloatingQuickMenu({ anchor = 'right', desktop = false, i
         onClick={() => setOpen((o) => !o)}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-lg shadow-sky-700/30 ring-4 ring-white/40 transition-all duration-200 hover:scale-105 hover:shadow-sky-700/50 active:scale-95"
       >
-        {user ? <span className="text-base font-bold">{initial}</span> : <LogIn size={24} />}
+        {user ? <UserAvatar name={user?.name} photoUrl={user?.photo_url} size="h14" /> : <LogIn size={24} />}
       </button>
     </div>
   );

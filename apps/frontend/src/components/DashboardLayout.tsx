@@ -61,9 +61,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {user?.role || 'staff'}
               </p>
             </div>
-            {/* Avatar profil: inisial, karena model User tidak punya kolom foto.
-                Titik ini sebelumnya dipakai tombol "X" yang mati — sidebar sudah
-                punya tombol tutup sendiri di Sidebar.tsx. */}
+            {/* Avatar profil. j70: komentar lamanya ("model User tidak punya
+                kolom foto") sudah basi sejak Jilid 69 menambah users.photo_url;
+                kolom itu ada dan sudah terisi. Titik ini sebelumnya dipakai
+                tombol "X" yang mati — sidebar sudah punya tombol tutup sendiri
+                di Sidebar.tsx. */}
             <Link
               href="/admin/akun"
               aria-label="Akun saya"
