@@ -674,6 +674,7 @@ func createTables() {
 		class TEXT NOT NULL,
 		angkatan TEXT,
 		status TEXT DEFAULT 'aktif',
+		category TEXT DEFAULT 'reguler',
 		parent_name TEXT,
 		parent_phone TEXT,
 		nik TEXT DEFAULT '',
@@ -913,6 +914,15 @@ func createTables() {
 	addColumnIfNotExists("santri", "father_phone", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "father_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "nik", "TEXT DEFAULT ''")
+	// Kategori Santri: reguler | yatim | dhuafa. Kolom ini disinkronkan dari
+	// registrations.category saat pendaftar PSB naik menjadi Santri
+	// (lihat psb.AcceptToSantri), jadi ejaan nilainya harus sama dengan PSB.
+	addColumnIfNotExists("santri", "category", "TEXT DEFAULT 'reguler'")
+	// Dua kolom ini sudah dipakai query di features/santri tapi belum pernah
+	// terdaftar di db.go (pernah ditambahkan manual ke DB prod saja), sehingga
+	// DB fresh akan gagal saat SELECTXSX. Ditambahkan di sini agar parity.
+	addColumnIfNotExists("santri", "father_occupation", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "mother_occupation", "TEXT DEFAULT ''")
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 	_, _ = DB.Exec("UPDATE settings SET updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 
