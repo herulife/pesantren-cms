@@ -903,6 +903,7 @@ type IRepository interface {
 	BumpTokenVersion(id int) error
 	CheckPassword(hashedPassword, password string) error
 	UpdatePassword(id int, newPassword string) error
+	SetPhotoURL(id int, photoURL *string) error
 	CreateUser(user *User) error
 	GetAllUsers(search string) ([]User, error)
 	UpdateLastLogin(id int) error
