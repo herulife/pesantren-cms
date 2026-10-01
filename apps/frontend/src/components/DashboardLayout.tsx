@@ -2,7 +2,7 @@
 
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import FloatingQuickMenu from './FloatingQuickMenu';
 import { useAuth } from './AuthProvider';
@@ -60,14 +60,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {user?.role || 'staff'}
               </p>
             </div>
-            <button
-              type="button"
-              className="rounded-full bg-sky-600 p-2 text-white lg:hidden"
-              onClick={() => setIsMobileSidebarOpen(false)}
-              aria-label="Tutup menu cepat"
+            {/* Avatar profil: inisial, karena model User tidak punya kolom foto.
+                Titik ini sebelumnya dipakai tombol "X" yang mati — sidebar sudah
+                punya tombol tutup sendiri di Sidebar.tsx. */}
+            <Link
+              href="/admin/akun"
+              aria-label="Akun saya"
+              title="Akun Saya"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-600 text-sm font-black text-white shadow-sm transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
             >
-              <X size={16} />
-            </button>
+              {(user?.name || 'A').trim().charAt(0).toUpperCase()}
+            </Link>
           </div>
         </header>
 
