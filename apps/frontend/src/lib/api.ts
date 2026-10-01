@@ -3517,6 +3517,7 @@ export interface Santri {
 	jenjang?: string;
 	angkatan: string;
 	status: string;
+	category?: string;
 	parent_name: string;
 	parent_phone: string;
 	nik: string;
