@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-02 (Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -22,7 +22,7 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend` | `alma-parung-backend:j69-avatar` | Jilid 69 (`PUT/DELETE /api/me/photo` + kolom `users.photo_url`), Jilid 68 (`PUT /api/me/password`), Jilid 67 (Kategori Murid + fix scan `FindByUserID`), Jilid 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `j68-akun`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j71-docs` | Jilid 71 (keterangan template import dipindah ke tutorial "Data Santri & Import Massal" + hapus xlsx statis), Jilid 70 (foto avatar tampil di sidebar admin + tombol bulat & panel menu cepat), Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j73-kelas-glass` | Jilid 73 (filter+form kelas kanonik `7`-`12`+`PSB`, migrasi DB kelas, semua fitur `/admin-bs` pindah ke Glass + `/admin-bs` dihapus & di-redirect ke `/admin`), Jilid 71 (keterangan template import dipindah ke tutorial "Data Santri & Import Massal" + hapus xlsx statis), Jilid 70 (foto avatar tampil di sidebar admin + tombol bulat & panel menu cepat), Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | backend `j68-akun`(terbaru)+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j68-akun`(terbaru)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-frontend-bobot-j70` (Jilid 71, image `alma-parung-frontend:j70-avatar`), `alma-parung-frontend-bobot-j69` (Jilid 70, image `alma-parung-frontend:j69-avatar`), `alma-parung-backend-pre-j69`, `alma-parung-frontend-bobot-pre-j69` (Jilid 69); `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
 | DB | — | — | **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
@@ -63,6 +63,82 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 73 - Filter + form kelas kanonik `7`-`12` + `PSB`, Mode Classic (`/admin-bs`) dipindah penuh ke Mode Glass (2 Okt 2026, LIVE)
+
+**Order user (satu paket):** (1) filter kelas di `/admin/kesantrian` dan form
+tambah/edit Santri harus memakai kelas `7, 8, 9, 10, 11, 12, PSB`; (2) semua
+menu/fitur Mode Classic dipindah ke Mode Glass, lalu Mode Classic dihapus.
+
+### 1. Kelas kanonik di filter + form
+- Baru `apps/frontend/src/lib/kelas.ts`: `KELAS_KANONIK`, `opsiKelasForm()`,
+  `opsiKelasFilter()`. Ini sumber tunggal — filter DAN form memakai daftar yang sama.
+- Baru `apps/frontend/src/components/SelectField.tsx`: dropdown kustom hasil
+  ekstrak dari form Santri (Jilid 44). Dipakai lagi di filter `/admin/kesantrian`
+  (sebelumnya `<select>` native, yang di Android bisa nutup sendiri).
+- `app/admin/kesantrian/page.tsx`: dropdown Kelas Ganti dari select native ke
+  `SelectField`; opsi = kanonik + nilai legacy yang benar-benar muncul di data.
+- `app/admin/kesantrian/form/page.tsx`: memakai `opsiKelasForm()`; blok
+  `<select>` native + fetch `getClasses(true)` dihapus (kelas kini kanonik,
+  bukan isi tabel `classes`).
+
+### 2. Migrasi DB (1 transaksi, ada backup)
+- Dipetakan di `santri.class` DAN `classes.name`: `VII->7`, `VIII->8`, `IX->9`,
+  `X->10`, `XI->11`, `XII->12`, `PPDB->PSB`.
+- BarisSantri tersentuh: 5+16+9+3+16+14+1 = **64 baris**. Total `santri` tetap 94.
+- Backup: `backups/pre-j73-kelas-20261002-021648.db` (SQLite backup API, bukan `cp`).
+  Log: `backups/migration-j73-20261002-021648.log`.
+- **Nilai romawi `I`-`VI` + `SEMENTARA` SENGAJA TIDAK dipetakan** (tidak ada padanan
+  resmi). Agar datanya tidak hilang/hilang dari tampilan, filter & form tetap
+  menampilkan nilai lama itu dengan label `... (lama)` (hanya nilai yang ada di data).
+  Kalau nanti mau dihapus/mapping, tangani terpisah.
+- `settings.role_menu_permissions` ikut diperbarui dalam transaksi yang sama:
+  8 entri `/admin-bs` dibuang, 17 menu baru ditambahkan (superadmin 8, bendahara 8,
+  panitia_psb 1 = `/admin/school`).
+
+### 3. Mode Classic -> Mode Glass
+- Semua fitur Classic ternyata SUDAH ada di Glass; yang kurang cuma menu &routing.
+  Halaman baru (tipis, reuse komponen yang sudah ada, bukan implementasi dobel):
+  `/admin/spp` -> `payments/SppBills`, `/admin/iuran` -> `payments/IuranBills`,
+  `/admin/kasir` -> `payments/Kasir`, `/admin/laporan/tagihan` -> tab
+  `SppReport`+`IuranReport`, `/admin/laporan/transaksi` -> `payments/PayTransactions`.
+- `lib/roleMenus.ts`: 8 entri baru + `/admin-bs` dicabut; `components/Sidebar.tsx`
+  dapat 8 ikon baru; `lib/adminDocs.ts` tutorial "Tagihan SPP Otomatis" diarahkan
+  ke `/admin/spp` (bukan `/admin-bs/tagihan-spp`) dan sebutan "mode Classic" dihapus.
+- `app/admin/school/page.tsx`: ditambah tombol **Ubah** (edit nama/jenjang/wali kelas)
+  karena hanya ada di Classic. **Rename kelas tidak meng-cascade `santri.class`** —
+  sudah diberi peringatan di UI; pindah Santri lewat tab Set Kelas.
+- `middleware.ts`: `/admin-bs` dan `/admin-bs/*` di-redirect ke `/admin` (bukan 404).
+- DIHAPUS: seluruh `apps/frontend/src/app/admin-bs/` (22 file) +
+  `apps/frontend/src/components/AdminBsShell.tsx`. Caretaker: dua file `.bak-*`
+  milik agen lain ikut terhapus bersama folder (`tagihan-spp/page.tsx.pre-sppautofix`,
+  `users/page.tsx.bak-userdel`) — kalau masih dipakai, restore dari `git show`.
+
+### 4. Cara verifikasi (semua dijalankan, bukan asumsi)
+- `npx tsc --noEmit`: 0 error di `src/`. `npx eslint` 13 file: 0 error (5 warning lama).
+- Image `alma-parung-frontend:j73-kelas-glass` (Next 16.2.2), container produksi
+  `alma-parung-frontend-bobot` healthy, rollback image `j72-loginfix` +
+  container `alma-parung-frontend-bobot-pre-j73` (port 3004).
+- API (`GET /api/school/classes`) mengembalikan `10, 11, 12, 7, 8, 9, I..VI, PSB,
+  SEMENTARA` — angka sudah benar.
+- Playwright headless + cookie `alma_token` (JWT HS256 buatan, akun superadmin,
+  hanya GET): Sidebar memuat 8 menu baru & 0 link `/admin-bs`; dropdown filter kelas
+  = `Semua Kelas | 7 | 8 | 9 | 10 | 11 | 12 | PSB | III (lama) | VI (lama)`;
+  dropdown form = `-- Pilih Kelas -- | 7..12 | PSB`; 5 halaman baru HTTP 200 dengan
+  `<h1>` benar; `/admin-bs/kelas` -> `https://almaparung.com/admin`.
+  Screenshot: `/tmp/j73_filter_kelas.png`, `/tmp/j73_form_santri.png` (di server).
+
+### 5. Dampak & catatan
+- Filter kelas dulu menampilkan kelas dari item yang termuat saja (pagination),
+  jadi opsi bisa tidak lengkap. Sekarang daftar tetap + nilai legacy.
+- Menu `/admin/payments` (terpisah) tetap ada; halaman barunya dibuat agar menu
+  Classic punya padanan 1:1. Bisa disembunyikan dari role lewat Manajemen Pengguna.
+- `role_menu_permissions` di DB = sumber visibilitas menu. Role non-superadmin yang
+  tak ada di daftar perannya TIDAK akan melihat menu baru.
+- **Ada agen lain aktif di repo ini** (bekerja di `login/page.tsx`, image
+  `j72-login-center*`, 2 Okt 2026 01:55-03:20). Build paralel sempat jalan
+  bersamaan. Kalau agen itu deploy image-nya, cek dulu `git log` — kodenya sudah
+ sudah memuat semua perubahan Jilid 73, tapi image-nya bisa lebih lama dari DB.
 
 ## Jilid 71 - Keterangan template import santri dipindah ke tutorial (1 Okt 2026, LIVE)
 
