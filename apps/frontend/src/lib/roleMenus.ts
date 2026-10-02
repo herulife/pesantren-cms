@@ -11,7 +11,16 @@ export interface RoleMenuDef {
   href: string;
   roles?: string[]; // kosong = selalu tampil untuk semua staf
   docRef?: string;
+  panel?: string; // id panel di ROLE_MENU_PANELS — dirender sebagai blok
+  // navigasi terpisah di Sidebar, bukan sebagai kategori biasa
 }
+
+// Panel Sidebar: blok menu sendiri (mirip grup navigasi Mode Classic yang dulu
+// ada di /admin-bs) untuk menu yang dipindah dari Mode Classic ke Mode Glass,
+// supaya tidak tercecer di antara kategori utama.
+export const ROLE_MENU_PANELS: { id: string; label: string; hint: string }[] = [
+  { id: 'administrasi', label: 'Administrasi', hint: 'Tagihan, kasir & laporan keuangan' },
+];
 
 export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Dashboard', label: 'Dashboard Utama', href: '/admin', docRef: 'dashboard' },
@@ -20,12 +29,12 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Sistem', label: 'Absensi & Rekap Guru', href: '/admin/teachers/report', roles: ['superadmin', 'bendahara'], docRef: 'teachers' },
   { category: 'Konten & Publikasi', label: 'Data Pengajar', href: '/admin/teachers', roles: ['superadmin', 'tim_media'], docRef: 'teachers' },
   { category: 'Transaksi', label: 'Pembayaran SPP', href: '/admin/payments', roles: ['bendahara'], docRef: 'payments' },
-  { category: 'Transaksi', label: 'Tagihan SPP', href: '/admin/spp', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
-  { category: 'Transaksi', label: 'Tagihan Iuran', href: '/admin/iuran', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
-  { category: 'Transaksi', label: 'Kasir Pembayaran', href: '/admin/kasir', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Transaksi', label: 'Tagihan SPP', href: '/admin/spp', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Transaksi', label: 'Tagihan Iuran', href: '/admin/iuran', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Transaksi', label: 'Kasir Pembayaran', href: '/admin/kasir', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Kas & Laba Rugi', href: '/admin/kas', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
-  { category: 'Laporan', label: 'Laporan Tagihan', href: '/admin/laporan/tagihan', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Laporan', label: 'Laporan Tagihan', href: '/admin/laporan/tagihan', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Laporan', label: 'Laporan Transaksi', href: '/admin/laporan/transaksi', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
   { category: 'Akademik', label: 'Nilai Akademik', href: '/admin/academics', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'], docRef: 'academics' },

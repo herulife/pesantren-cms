@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
 import { getRoleMenuPermissions } from '@/lib/api';
-import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
+import { ROLE_MENU_DEFS, ROLE_MENU_PANELS } from '@/lib/roleMenus';
 import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, School, Wallet, Receipt, ScanLine, BarChart3 } from 'lucide-react';
 
 interface MenuItem {
@@ -16,6 +16,14 @@ interface MenuItem {
   href: string;
   roles?: string[]; // if empty, accessible by all staff
   docRef?: string;
+  panel?: string;
+}
+
+function isMenuActive(href: string, pathname: string, search: string): boolean {
+  const full = search ? `${pathname}?${search}` : pathname;
+  if (href === '/admin') return full === '/admin';
+  if (href.includes('?')) return full === href || full.startsWith(`${href}&`);
+  return pathname.startsWith(href);
 }
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -73,16 +81,22 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     href: d.href,
     roles: d.roles,
     docRef: d.docRef,
+    panel: d.panel,
   }));
 
   // Filter menu: daftar tersimpan mengatur penuh per role (bisa tambah
   // maupun kurang dari standar). Tanpa simpanan -> pakai standar role.
   // Catatan: backend tetap menegakkan RequireRole, jadi menu yang diberi
   // di luar jatah role-nya akan tampil tapi API-nya menolak (403).
-  const groupNames = Array.from(new Set(menuItems.map((item) => item.category)));
+  // Menu berkategori (kelompok utama) dan menu berpanel (blok navigasi sendiri)
+  // dipisah supaya panel tidak ikut tercampur ke kategori utama.
+  const groupedItems = menuItems.filter((item) => !item.panel);
+  const panelItems = menuItems.filter((item) => item.panel);
+
+  const groupNames = Array.from(new Set(groupedItems.map((item) => item.category)));
   const groups: Array<[string, typeof menuItems]> = groupNames.map((cat) => [
     cat,
-    menuItems.filter((item) => item.category === cat),
+    groupedItems.filter((item) => item.category === cat),
   ]);
 
   const groupOfPath = (path: string) => {
@@ -96,6 +110,27 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     }
     return null;
   };
+
+  const panelOfPath = (path: string) => {
+    const hit = panelItems.find((item) => {
+      const base = item.href.split('?')[0];
+      return path.startsWith(base);
+    });
+    return hit?.panel ?? null;
+  };
+
+  // Panel punya state buka/tutup sendiri, terpisah dari kategori utama,
+  // disimpan terpisah supaya tidak bentrok dengan `sidebar-cats`.
+  const [openPanels, setOpenPanels] = React.useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem('sidebar-panels');
+      if (raw) return JSON.parse(raw) as Record<string, boolean>;
+    } catch {
+      // abaikan
+    }
+    return {};
+  });
 
   const [openCats, setOpenCats] = React.useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
@@ -114,7 +149,25 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     if (active) {
       setOpenCats((prev) => (prev[active] ? prev : { ...prev, [active]: true }));
     }
+    const activePanel = panelOfPath(pathname);
+    if (activePanel) {
+      setOpenPanels((prev) => (prev[activePanel] ? prev : { ...prev, [activePanel]: true }));
+    }
   }, [pathname]);
+
+  const isPanelOpen = (panelId: string) => openPanels[panelId] ?? true;
+
+  const togglePanel = (panelId: string) => {
+    setOpenPanels((prev) => {
+      const next = { ...prev, [panelId]: !(prev[panelId] ?? true) };
+      try {
+        window.localStorage.setItem('sidebar-panels', JSON.stringify(next));
+      } catch {
+        // abaikan
+      }
+      return next;
+    });
+  };
 
   const toggleCat = (cat: string) => {
     setOpenCats((prev) => {
@@ -136,6 +189,45 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     if (saved && Array.isArray(saved)) return saved.includes(item.href);
     return hasRole(...item.roles);
   });
+
+  // Panel yang punya minimal satu menu terlihat untuk role aktif
+  const activePanels = ROLE_MENU_PANELS
+    .map((p) => ({ ...p, items: visibleItems.filter((item) => item.panel === p.id) }))
+    .filter((p) => p.items.length > 0);
+
+  const renderMenuLink = (item: MenuItem) => {
+    const isActive = isMenuActive(item.href, pathname, search);
+    return (
+      <div key={item.href} className={`flex items-center gap-2 rounded-lg transition-colors ${
+        isActive ? 'bg-gradient-to-r from-sky-500/18 via-sky-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
+      }`}>
+        <Link href={item.href} onClick={onClose} aria-current={isActive ? 'page' : undefined} aria-label={item.label} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
+          <div className={isActive ? 'text-sky-300' : 'text-slate-500'}>
+            {item.icon}
+          </div>
+          <span className={`truncate text-[12.5px] ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
+        </Link>
+
+        {item.docRef && (
+          <Link
+            href={`/admin/help?ref=${item.docRef}`}
+            onClick={onClose}
+            className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
+              isActive
+                ? 'text-sky-100 hover:bg-white/10 hover:text-white'
+                : 'text-slate-500 hover:bg-white/10 hover:text-sky-200'
+            }`}
+            title={`Buka tutorial ${item.label}`}
+            aria-label={`Buka tutorial ${item.label}`}
+          >
+            <HelpCircle size={15} />
+          </Link>
+        )}
+
+        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-sky-400 rounded-r-md"></div>}
+      </div>
+    );
+  };
 
   return (
     <aside className="flex h-full w-64 flex-col overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-sky-950 via-slate-950 to-slate-950 text-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] ring-1 ring-white/5">
@@ -182,44 +274,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               </button>
               <div className={`sb-group-items${isOpen ? ' open' : ''}`}>
                 <div className="sb-group-inner">
-              {shown.map((item) => {
-                const full = search ? `${pathname}?${search}` : pathname;
-                const isActive = item.href === '/admin'
-                  ? full === '/admin'
-                  : item.href.includes('?')
-                    ? full === item.href || full.startsWith(`${item.href}&`)
-                    : pathname.startsWith(item.href);
-                return (
-              <div key={item.href} className={`flex items-center gap-2 rounded-lg transition-colors ${
-                isActive ? 'bg-gradient-to-r from-sky-500/18 via-sky-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
-              }`}>
-                <Link href={item.href} onClick={onClose} aria-current={isActive ? 'page' : undefined} aria-label={item.label} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
-                  <div className={isActive ? 'text-sky-300' : 'text-slate-500'}>
-                    {item.icon}
-                  </div>
-                  <span className={`truncate text-[12.5px] ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
-                </Link>
-
-                {item.docRef && (
-                  <Link
-                    href={`/admin/help?ref=${item.docRef}`}
-                    onClick={onClose}
-                    className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
-                      isActive
-                        ? 'text-sky-100 hover:bg-white/10 hover:text-white'
-                        : 'text-slate-500 hover:bg-white/10 hover:text-sky-200'
-                    }`}
-                    title={`Buka tutorial ${item.label}`}
-                    aria-label={`Buka tutorial ${item.label}`}
-                >
-                  <HelpCircle size={15} />
-                </Link>
-              )}
-
-                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-sky-400 rounded-r-md"></div>}
-              </div>
-                );
-              })}
+              {shown.map((item) => renderMenuLink(item))}
                 </div>
               </div>
             </div>

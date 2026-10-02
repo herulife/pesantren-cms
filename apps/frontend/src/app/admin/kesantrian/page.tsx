@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import SelectField from '@/components/SelectField';
 import { useToast } from '@/components/Toast';
-import { opsiKelasFilter } from '@/lib/kelas';
+import { opsiKelasFilter, type KelasData } from '@/lib/kelas';
 import {
   getSantriList,
+  getSantriClasses,
   deleteSantri,
   bulkDeleteSantri,
   purgeSantri,
@@ -57,7 +58,7 @@ export default function KesantrianPage() {
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [legacyClasses, setLegacyClasses] = useState<string[]>([]);
+  const [kelasData, setKelasData] = useState<KelasData[]>([]);
   const [items, setItems] = useState<Santri[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -74,18 +75,26 @@ export default function KesantrianPage() {
   const [resetting, setResetting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Kelas kanonik (7-12 + PSB) selalu tampil. Nilai non-kanonik yang masih
-  // dipakai data (mis. "SEMENTARA") ikut dikumpulkan supaya record lamanya
-  // tetap bisa difilter, tapi tidak goodieser daftar utama.
-  const catatKelasLegacy = useCallback((rows: Santri[]) => {
+  // Opsi kelas diambil dari backend (distinct `santri.class` + jumlahnya), bukan
+  // dari baris yang sedang termuat: dulu daftar ini dibangun dari 20 baris
+  // per halaman, jadi kelas yang Santrinya tidak ada di halaman 1 tidak muncul
+  // di filter. Fallback: kalau endpoint gagal, kelas dari baris yang termuat
+  // tetap dipakai supaya dropdown tidak pernah kosong.
+  const classOptions = opsiKelasFilter(kelasData);
+
+  // Fallback: kalau endpoint kelas gagal, kelas yang terlihat di baris yang
+  // termuat tetap ikut jadi opsi, supaya dropdown tidak hanya berisi kelas
+  // kanonik. Dipakai hanya kalau kelasData masih kosong.
+  const gabungKelasDariBaris = useCallback((rows: Santri[]) => {
     const vals = rows.map((r) => (r.class || '').trim()).filter(Boolean);
-    setLegacyClasses((prev) => {
-      const merged = new Set([...prev, ...vals]);
-      return merged.size === prev.length ? prev : Array.from(merged);
+    if (vals.length === 0) return;
+    setKelasData((prev) => {
+      if (prev.length > 0) return prev;
+      const m = new Map<string, number>();
+      for (const v of vals) m.set(v, (m.get(v) ?? 0) + 1);
+      return Array.from(m, ([value, count]) => ({ value, count }));
     });
   }, []);
-
-  const classOptions = opsiKelasFilter(legacyClasses);
 
   const load = useCallback(async (opts?: { search?: string; class?: string; status?: string; offset?: number }) => {
     setLoading(true);
@@ -100,9 +109,9 @@ export default function KesantrianPage() {
     setTotal(res.total);
     setOffset(opts?.offset ?? offset);
     setSelected(new Set());
-    catatKelasLegacy(res.items);
+    gabungKelasDariBaris(res.items);
     setLoading(false);
-  }, [search, classFilter, statusFilter, offset, catatKelasLegacy]);
+  }, [search, classFilter, statusFilter, offset, gabungKelasDariBaris]);
 
   const applyQuery = useCallback(() => {
     const searchText = search.trim();
@@ -117,10 +126,10 @@ export default function KesantrianPage() {
       setTotal(res.total);
       setOffset(0);
       setSelected(new Set());
-      catatKelasLegacy(res.items);
+      gabungKelasDariBaris(res.items);
       setLoading(false);
     });
-  }, [search, classFilter, statusFilter, catatKelasLegacy]);
+  }, [search, classFilter, statusFilter, gabungKelasDariBaris]);
 
   const applySearch = useCallback(() => {
     setLoading(true);

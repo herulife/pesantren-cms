@@ -137,6 +137,7 @@ func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/my-santri", h.GetMySantri)
 	r.Get("/portal-users", h.GetPortalUsers)
+	r.Get("/classes", h.GetClasses)
 	r.Get("/", h.GetAll)
 	r.Get("/{id}", h.GetByID)
 	r.Post("/", h.Create)
