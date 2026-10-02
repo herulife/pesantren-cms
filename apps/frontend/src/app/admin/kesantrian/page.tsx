@@ -3,7 +3,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import SelectField from '@/components/SelectField';
 import { useToast } from '@/components/Toast';
+import { opsiKelasFilter } from '@/lib/kelas';
 import {
   getSantriList,
   deleteSantri,
@@ -45,6 +47,9 @@ const statusOptions = [
 
 const PAGE_SIZE = 20;
 
+const filterCls =
+  'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10';
+
 export default function KesantrianPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -52,7 +57,7 @@ export default function KesantrianPage() {
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [classOptions, setClassOptions] = useState<string[]>([]);
+  const [legacyClasses, setLegacyClasses] = useState<string[]>([]);
   const [items, setItems] = useState<Santri[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -69,6 +74,19 @@ export default function KesantrianPage() {
   const [resetting, setResetting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Kelas kanonik (7-12 + PSB) selalu tampil. Nilai non-kanonik yang masih
+  // dipakai data (mis. "SEMENTARA") ikut dikumpulkan supaya record lamanya
+  // tetap bisa difilter, tapi tidak goodieser daftar utama.
+  const catatKelasLegacy = useCallback((rows: Santri[]) => {
+    const vals = rows.map((r) => (r.class || '').trim()).filter(Boolean);
+    setLegacyClasses((prev) => {
+      const merged = new Set([...prev, ...vals]);
+      return merged.size === prev.length ? prev : Array.from(merged);
+    });
+  }, []);
+
+  const classOptions = opsiKelasFilter(legacyClasses);
+
   const load = useCallback(async (opts?: { search?: string; class?: string; status?: string; offset?: number }) => {
     setLoading(true);
     const res = await getSantriList({
@@ -82,12 +100,9 @@ export default function KesantrianPage() {
     setTotal(res.total);
     setOffset(opts?.offset ?? offset);
     setSelected(new Set());
-    if (res.items.length > 0) {
-      const classes = Array.from(new Set(res.items.map((i) => i.class).filter(Boolean))) as string[];
-      setClassOptions((prev) => Array.from(new Set([...prev, ...classes])));
-    }
+    catatKelasLegacy(res.items);
     setLoading(false);
-  }, [search, classFilter, statusFilter, offset]);
+  }, [search, classFilter, statusFilter, offset, catatKelasLegacy]);
 
   const applyQuery = useCallback(() => {
     const searchText = search.trim();
@@ -102,13 +117,10 @@ export default function KesantrianPage() {
       setTotal(res.total);
       setOffset(0);
       setSelected(new Set());
-      if (res.items.length > 0) {
-        const classes = Array.from(new Set(res.items.map((i) => i.class).filter(Boolean))) as string[];
-        setClassOptions((prev) => Array.from(new Set([...prev, ...classes])));
-      }
+      catatKelasLegacy(res.items);
       setLoading(false);
     });
-  }, [search, classFilter, statusFilter]);
+  }, [search, classFilter, statusFilter, catatKelasLegacy]);
 
   const applySearch = useCallback(() => {
     setLoading(true);
@@ -277,25 +289,28 @@ export default function KesantrianPage() {
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10"
             />
           </div>
-          <select
-            value={classFilter}
-            onChange={(e) => { setClassFilter(e.target.value); setLoading(true); }}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-sky-400 lg:w-44"
-          >
-            <option value="">Semua Kelas</option>
-            {classOptions.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setLoading(true); }}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-sky-400 lg:w-40"
-          >
-            {statusOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="lg:w-44">
+            <SelectField
+              id="filter-kelas"
+              label="Kelas"
+              className={filterCls}
+              value={classFilter}
+              placeholder="Semua Kelas"
+              options={[{ value: '', label: 'Semua Kelas' }, ...classOptions]}
+              onChange={(v) => { setClassFilter(v); setLoading(true); }}
+            />
+          </div>
+          <div className="lg:w-40">
+            <SelectField
+              id="filter-status"
+              label="Status"
+              className={filterCls}
+              value={statusFilter}
+              placeholder="Semua Status"
+              options={statusOptions}
+              onChange={(v) => { setStatusFilter(v); setLoading(true); }}
+            />
+          </div>
           <button
             onClick={applySearch}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-700"
