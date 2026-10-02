@@ -21,10 +21,10 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:j69-avatar` | Jilid 69 (`PUT/DELETE /api/me/photo` + kolom `users.photo_url`), Jilid 68 (`PUT /api/me/password`), Jilid 67 (Kategori Murid + fix scan `FindByUserID`), Jilid 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: `j68-akun`. |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j73-kelas-glass` | Jilid 73 (filter+form kelas kanonik `7`-`12`+`PSB`, migrasi DB kelas, semua fitur `/admin-bs` pindah ke Glass + `/admin-bs` dihapus & di-redirect ke `/admin`), Jilid 71 (keterangan template import dipindah ke tutorial "Data Santri & Import Massal" + hapus xlsx statis), Jilid 70 (foto avatar tampil di sidebar admin + tombol bulat & panel menu cepat), Jilid 69 (unggah/potong/hapus foto avatar di `/admin/akun`), Jilid 68 (avatar profil di header + halaman `/admin/akun`), Jilid 67 (dropdown Kategori di `/admin/kesantrian/form`), Jilid 66. Healthy, **WAJIB `-p 3002:3000`**. Rollback: `j68-akun`. |
+| Backend | `alma-parung-backend` | `alma-parung-backend:j74-kelas-panel` | Jilid 74 (`GET /api/santri/classes` = distinct `santri.class` + jumlah per kelas), Jilid 69 (`PUT/DELETE /api/me/photo` + kolom `users.photo_url`), Jilid 68 (`PUT /api/me/password`), Jilid 67, Jilid 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. Rollback: container `alma-parung-backend-pre-j74` (image `j69-avatar`) |
+| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j74-kelas-panel` | Jilid 74 (panel Sidebar **Administrasi** untuk 5 menu ex-Classic + filter kelas yang diambil dari backend lengkap dengan jumlah Santri), Jilid 73 (filter+form kelas kanonik `7`-`12`+`PSB`, migrasi DB kelas, Mode Classic pindah ke Glass), plus perbaikan `login/page.tsx` dari agen lain yang ikut ter-build di image ini. CATATAN: sebelum Jilid 74, image live adalah `j72-login-center` (progress built 2 Okt) yang isinya sudah memuat kode Jilid 73 - sekarang tidak ambigu lagi karena tag live = tag jilid terbaru. Healthy, **WAJIB `-p 3002:3000`**. Rollback: container `alma-parung-frontend-bobot-pre-j74` (image `j72-login-center`) |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | backend `j68-akun`(terbaru)+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j68-akun`(terbaru)+`psbrektab`+`arbain-bgn2` | container lama: `alma-parung-frontend-bobot-j70` (Jilid 71, image `alma-parung-frontend:j70-avatar`), `alma-parung-frontend-bobot-j69` (Jilid 70, image `alma-parung-frontend:j69-avatar`), `alma-parung-backend-pre-j69`, `alma-parung-frontend-bobot-pre-j69` (Jilid 69); `alma-parung-backend-pre-j68`, `alma-parung-frontend-bobot-pre-j68` (Jilid 68); `alma-parung-backend-pre-jilid65` (image `fix-nullsanti-v2`), `alma-parung-frontend-bobot-pre-psbrektab` (image `arbain-bgn2`) |
+| Rollback tersedia | — | container rollback terbaru: `alma-parung-backend-pre-j74` (image `j69-avatar`) + `alma-parung-frontend-bobot-pre-j74` (image `j72-login-center`); image: backend `j69-avatar`(terbaru)+`j68-akun`+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j72-login-center`(terbaru)+`j73-kelas-glass`+`j68-akun`+`psbrektab`+`arbain-bgn2`; backend `j68-akun`(terbaru)
 | DB | — | — | **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
@@ -63,6 +63,84 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 74 - Filter kelas ikut data DB (dengan jumlah) + panel Sidebar "Administrasi" untuk menu ex-Classic (2 Okt 2026, LIVE)
+
+**Order user:** (1) di filter Data Santri, daftar kelas "nggak sesuai database" -
+sesuaikan; (2) menu yang baru ditambahkan dari Mode Classic dibikin panel sendiri
+aja seperti menu Classic. Keputusan user: **data kelas tidak diubah** (nilai lama
+tetap ada di DB, hanya ditampilkan lengkap).
+
+### 1. Bug filter kelas (root cause)
+Opsi kelas di `/admin/kesantrian` dibangun dari **20 baris yang kebetulan sedang
+termuat** (`catatKelasLegacy`), bukan dari seluruh data. Akibatnya kelas yang
+Santrinya tidak ada di halaman 1 **tidak muncul di dropdown sama sekali**,
+padahal ada di DB (saat itu: `III` 8, `IV` 1, `V` 1, `VI` 13, `SEMENTARA` 7).
+
+### 2. Backend - endpoint baru
+- `features/santri/repository.go`: `ClassCount{Value,Count}` +
+  `ListClassesFromSantri(classes []string)` =
+  `SELECT TRIM(class), COUNT(*) FROM santri WHERE TRIM(COALESCE(class,'')) <> '' GROUP BY TRIM(class)`.
+  Kalau `classes` diisi (dipakai `wali_kelas`), hasil dibatasi ke kelas miliknya -
+  konsisten dengan `FindAllScoped`.
+- `features/santri/handler.go`: handler `GetClasses` + route `GET /classes`
+  (disisipkan **sebelum** `/{id}`), dan method didaftarkan di interface
+  `IRepository`. Role sama dengan `/santri`: superadmin, panitia_psb,
+  wali_kelas, pimpinan. URL jadi `GET /api/santri/classes`.
+
+### 3. Frontend
+- `lib/api.ts`: `getSantriClasses()` lewat `lmsFetch`.
+- `lib/kelas.ts`: `opsiKelasFilter(dariData: KelasData[])` menerima distinct dari
+  backend. Urutan: angka dulu (`7`..`12`), lalu `PSB`, lalu nilai lama
+  (`III`, `IV`, `SEMENTARA`, `V`, `VI`) berlabel `... (lama)`. Label memuat
+  jumlah Santri, mis. `9 · 9` dan `VI · 13 (lama)`.
+- `app/admin/kesantrian/page.tsx`: `kelasData` diisi sekali dari backend saat
+  halaman dibuka. `gabungKelasDariBaris` hanya jadi **fallback** kalau endpoint
+  gagal, supaya dropdown tidak pernah kosong.
+- `lib/roleMenus.ts`: field baru `panel?: string` + konstanta
+  `ROLE_MENU_PANELS` (id `administrasi`). Lima menu ex-Classic diberi
+  `panel: 'administrasi'`: `/admin/spp`, `/admin/iuran`, `/admin/kasir`,
+  `/admin/laporan/tagihan`, `/admin/laporan/transaksi`. `href` tidak berubah,
+  jadi `role_menu_permissions` di DB tidak perlu disentuh.
+- `components/Sidebar.tsx`: menu kategori dipisah dari menu panel. Panel
+  dirender sebagai blok navigasi sendiri (kartu, judul + keterangan + sub-nav)
+  dengan state buka/tutup sendiri (`localStorage` key `sidebar-panels`, default
+  **terbuka**). Markup item link diekstrak jadi `renderMenuLink()` +
+  `isMenuActive()` supaya kategori dan panel tidak menduplikasi kode.
+
+### 4. Verifikasi (semua dijalankan, bukan asumsi)
+- `npx tsc --noEmit --incremental false` -> **0 error di `src/`**. Error yang
+  muncul hanya di `.next/types/validator.ts` yang masih menunjuk folder
+  `admin-bs` yang dihapus Jilid 73 - artefak `.next` basi, hilang setelah build.
+- `npx eslint` 5 file -> 0 error (5 warning, semuanya lama).
+- `gofmt -l` untuk `handler.go` + `repository.go` -> kosong.
+- Backend di container uji (port 8099, salinan DB): `GET /api/santri/classes`
+  -> 12 kelas, total 94 = sama dengan `X-Total-Count` endpoint list. Tanpa
+  token -> 401.
+- Playwright headless, di container uji (port 3008) lalu di produksi:
+  - dropdown berisi 13 opsi: `Semua Kelas | 7 - 5 | 8 - 16 | 9 - 9 | 10 - 3 |
+    11 - 16 | 12 - 14 | PSB - 1 | III - 8 (lama) | IV - 1 (lama) |
+    SEMENTARA - 7 (lama) | V - 1 (lama) | VI - 13 (lama)`
+  - setelah menekan **Terapkan Filter**: 8 -> 16 baris, 9 -> 9, VI -> 13,
+    SEMENTARA -> 7, PSB -> 1. Semua cocok dengan angka di dropdown.
+  - panel "Administrasi" berisi tepat 5 menu, tidak ada link dobel; tutup/buka
+    tersimpan di `sidebar-panels` dan bertahan setelah reload.
+  - request yang dikirim: `/api/santri?class=VI&limit=20&offset=0` (bukan 200/401).
+- Produksi: `https://almaparung.com` 200, `/api/ready` 200, dua container
+  healthy. Screenshot: `/tmp/j74_sidebar_panel.png`, `/tmp/j74_filter_kelas.png`,
+  `/tmp/j74_filter_VI.png`, `/tmp/j74_panel_tutup.png`.
+- Tidak ada perubahan data -> **tidak perlu backup DB**.
+
+### 5. Dampak & catatan
+- Panel "Administrasi" berada di Sidebar **paling bawah**, setelah kategori utama.
+- Kategori **Transaksi** sekarang hanya berisi Pembayaran SPP, Kas & Laba Rugi,
+  dan Program Donasi; 5 menu tagihan/laporan pindah ke panel.
+- Menu panel tetap punya `docRef: 'payments'` jadi tombol tutorial tidak hilang.
+- **Perilaku tidak berubah:** memilih kelas di dropdown belum langsung memuat
+  data, tetap harus menekan tombol **Terapkan Filter** (perilaku lama, bukan
+  bawaan Jilid 74).
+- Container uji `j74test` + `j74fe` dan salinan DB `/tmp/j74data` sudah dihapus.
+  Container rollback `*-pre-j74` sengaja dibiarkan.
 
 ## Jilid 73 - Filter + form kelas kanonik `7`-`12` + `PSB`, Mode Classic (`/admin-bs`) dipindah penuh ke Mode Glass (2 Okt 2026, LIVE)
 
@@ -1386,6 +1464,23 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 17. [ ] 2 screenshot tutorial (`acad-08-presensi.png`, `acad-09-tahfidz.png`) sudah dipakai di `visualSteps`. Kalau menambah section tutorial lain, pakai pattern yang sama: redactor DOM + guard middleware, jangan asal taruh PNG ke `public/`.
 
 ## 6. PELAJARAN TEKNIS (jangan ulangi)
+- **Patch script dengan banyak edit ke file yang sama:** kalau tiap edit langsung
+  menulis ke disk, edit terakhir menimpa hasil edit sebelumnya (hanya sebagian
+  perubahan yang tertinggal, dan tidak selalu ketahuan). Simpan isi file di dict,
+  terapkan semua edit berurutan di atasnya, tulis sekali di akhir.
+- **Go: method baru di repository harus ikut didaftarkan di `IRepository`**
+  (di `handler.go`). Kalau tidak, `go build` gagal dengan
+  `type IRepository has no field or method ...` - dan itu baru ketahuan setelah
+  build image ~10 menit.
+- **Cek cepat format tanpa cache repo:** `docker run --rm -u 1000:1000
+  -v $PWD:/b -w /b golang:1.26 gofmt -l <file>` (cache `.gocache` di repo kadang
+  tidak bisa ditulis dari dalam container; biarkan cache internal container).
+- **Dropdown filter Kesantrian tidak otomatis memuat data.** Saat menguji lewat
+  browser, WAJIB klik tombol **Terapkan Filter**; kalau tidak, tabel tetap
+  menampilkan hasil sebelumnya dan terlihat seperti filter tidak jalan.
+- **Opsi dropdown berbasis data harus dari endpoint "distinct + count"**, bukan
+  dari baris yang sedang termuat. Pagination 20 baris selalu membuat daftar
+  opsi tidak lengkap.
 - SQLite `modernc` + `_txlock=immediate`: tulis saat `rows` terbuka = DEADLOCK. Kumpulkan dulu, tutup, baru tulis.
 - PRAGMA `foreign_keys` tak bisa diubah di dalam transaksi.
 - Placeholder `?` vs argumen Go dicek saat runtime, bukan compile — hitung manual (kasus jenjang: INSERT 25=25, UPDATE 23+id).
