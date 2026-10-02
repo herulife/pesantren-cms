@@ -27,6 +27,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Mode Classic (/admin-bs) dihapus di Jilid 73: semua fiturnya sudah ada di
+  // /admin. Bookmark lama tetap dialihkan, bukan 404.
+  if (pathname === '/admin-bs' || pathname.startsWith('/admin-bs/')) {
+    return NextResponse.redirect(new URL('/admin', request.url));
+  }
+
   return NextResponse.next();
 }
 

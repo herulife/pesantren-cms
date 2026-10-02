@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { getClasses, createClass, deleteClass, getAcademicYears, createAcademicYear, activateAcademicYear, deleteAcademicYear, getSantriList, setSantriClass, getUsers, SchoolClass, AcademicYear, Santri } from "@/lib/api";
+import { getClasses, createClass, updateClass, deleteClass, getAcademicYears, createAcademicYear, activateAcademicYear, deleteAcademicYear, getSantriList, setSantriClass, getUsers, SchoolClass, AcademicYear, Santri } from "@/lib/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
-import { Plus, Trash2, CheckCircle } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Pencil } from "lucide-react";
 
 export default function SchoolAdminPage() {
   const [tab, setTab] = useState<"classes" | "years" | "setkelas">("classes");
@@ -18,6 +18,11 @@ export default function SchoolAdminPage() {
   const [waliId, setWaliId] = useState("");
   const [waliUsers, setWaliUsers] = useState<{ id: number; name: string }[]>([]);
   const [yearName, setYearName] = useState("");
+  const [editClass, setEditClass] = useState<SchoolClass | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editJenjang, setEditJenjang] = useState("");
+  const [editWaliId, setEditWaliId] = useState("");
+  const [savingClass, setSavingClass] = useState(false);
   const [delId, setDelId] = useState<number | null>(null);
   const [delKind, setDelKind] = useState<"class" | "year">("class");
   const { showToast } = useToast();
@@ -42,6 +47,24 @@ export default function SchoolAdminPage() {
     const res = await createClass({ name, jenjang, wali_user_id: waliId ? Number(waliId) : undefined });
     if (res.success) { showToast("success", "Kelas ditambahkan."); setName(""); setJenjang(""); setWaliId(""); load(); }
     else showToast("error", res.message || "Gagal menambah kelas.");
+  };
+  const saveClass = async () => {
+    if (!editClass || !editName.trim()) return;
+    setSavingClass(true);
+    const res = await updateClass(editClass.id, {
+      name: editName.trim(),
+      jenjang: editJenjang.trim(),
+      wali_name: waliUsers.find((w) => w.id === Number(editWaliId))?.name || "",
+      wali_user_id: editWaliId ? Number(editWaliId) : 0,
+      academic_year: editClass.academic_year || "",
+      is_active: editClass.is_active,
+    });
+    setSavingClass(false);
+    if (res.success) {
+      showToast("success", "Kelas diperbarui.");
+      setEditClass(null);
+      load();
+    } else showToast("error", res.message || "Gagal memperbarui kelas.");
   };
   const addYear = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,14 +103,65 @@ export default function SchoolAdminPage() {
             <table className="w-full text-sm">
               <thead><tr className="bg-slate-50 text-left"><th className="p-3">Nama</th><th className="p-3">Jenjang</th><th className="p-3">Wali Kelas</th><th className="p-3">Aksi</th></tr></thead>
               <tbody>
-                {classes.map((c) => (
-                  <tr key={c.id} className="border-t"><td className="p-3 font-bold">{c.name}</td><td className="p-3">{c.jenjang || "-"}</td><td className="p-3">{c.wali_name || waliUsers.find(w => w.id === c.wali_user_id)?.name || "-"}</td>
-                    <td className="p-3"><button onClick={() => { setDelId(c.id); setDelKind("class"); }} className="text-rose-600"><Trash2 size={16} /></button></td></tr>
-                ))}
+                {classes.map((c) => {
+                  const editing = editClass?.id === c.id;
+                  return (
+                    <tr key={c.id} className="border-t">
+                      <td className="p-3 font-bold">
+                        {editing ? (
+                          <input value={editName} onChange={(e) => setEditName(e.target.value)} className="border rounded-lg px-2 py-1 text-sm w-32" />
+                        ) : c.name}
+                      </td>
+                      <td className="p-3">
+                        {editing ? (
+                          <input value={editJenjang} onChange={(e) => setEditJenjang(e.target.value)} placeholder="SMP/SMK" className="border rounded-lg px-2 py-1 text-sm w-24" />
+                        ) : (c.jenjang || "-")}
+                      </td>
+                      <td className="p-3">
+                        {editing ? (
+                          <select value={editWaliId} onChange={(e) => setEditWaliId(e.target.value)} className="border rounded-lg px-2 py-1 text-sm">
+                            <option value="">-- Wali kelas --</option>
+                            {waliUsers.map((u) => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
+                          </select>
+                        ) : (c.wali_name || waliUsers.find((w) => w.id === c.wali_user_id)?.name || "-")}
+                      </td>
+                      <td className="p-3">
+                        {editing ? (
+                          <span className="flex items-center gap-2">
+                            <button onClick={saveClass} disabled={savingClass} className="text-emerald-600 font-bold text-sm disabled:opacity-50">
+                              {savingClass ? "..." : "Simpan"}
+                            </button>
+                            <button onClick={() => setEditClass(null)} className="text-slate-500 font-bold text-sm">Batal</button>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-3">
+                            <button
+                              onClick={() => {
+                                setEditClass(c);
+                                setEditName(c.name);
+                                setEditJenjang(c.jenjang || "");
+                                setEditWaliId(c.wali_user_id ? String(c.wali_user_id) : "");
+                              }}
+                              title="Ubah kelas"
+                              className="text-sky-600"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button onClick={() => { setDelId(c.id); setDelKind("class"); }} className="text-rose-600"><Trash2 size={16} /></button>
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {classes.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-slate-400">Belum ada kelas. Tambahkan atau tunggu backfill otomatis dari data santri.</td></tr>}
               </tbody>
             </table>
           </div>
+          <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            Mengubah nama kelas di sini <b>tidak</b> mengubah kolom kelas pada data Santri yang sudah memakai
+            nama lama. Untuk memindahkan Santri, pakai tab <b>Set Kelas</b>.
+          </p>
         </>
       ) : tab === "years" ? (
         <>

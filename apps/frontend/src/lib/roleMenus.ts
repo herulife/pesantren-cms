@@ -16,9 +16,17 @@ export interface RoleMenuDef {
 export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Dashboard', label: 'Dashboard Utama', href: '/admin', docRef: 'dashboard' },
   { category: 'Sistem', label: 'Data Pegawai', href: '/admin/employees', roles: ['superadmin', 'bendahara'], docRef: 'teachers' },
+  { category: 'Sistem', label: 'Kelas & Tahun Ajaran', href: '/admin/school', roles: ['superadmin', 'bendahara', 'panitia_psb'], docRef: 'santri-data' },
+  { category: 'Sistem', label: 'Absensi & Rekap Guru', href: '/admin/teachers/report', roles: ['superadmin', 'bendahara'], docRef: 'teachers' },
   { category: 'Konten & Publikasi', label: 'Data Pengajar', href: '/admin/teachers', roles: ['superadmin', 'tim_media'], docRef: 'teachers' },
   { category: 'Transaksi', label: 'Pembayaran SPP', href: '/admin/payments', roles: ['bendahara'], docRef: 'payments' },
+  { category: 'Transaksi', label: 'Tagihan SPP', href: '/admin/spp', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Transaksi', label: 'Tagihan Iuran', href: '/admin/iuran', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Transaksi', label: 'Kasir Pembayaran', href: '/admin/kasir', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Transaksi', label: 'Kas & Laba Rugi', href: '/admin/kas', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
+  { category: 'Laporan', label: 'Laporan Tagihan', href: '/admin/laporan/tagihan', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Laporan', label: 'Laporan Transaksi', href: '/admin/laporan/transaksi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
   { category: 'Akademik', label: 'Nilai Akademik', href: '/admin/academics', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'], docRef: 'academics' },
   { category: 'Akademik', label: 'Project & Kegiatan', href: '/admin/project', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
@@ -38,7 +46,6 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Sistem', label: 'Manajemen Pengguna', href: '/admin/users', roles: ['superadmin', 'bendahara'], docRef: 'users' },
   { category: 'Sistem', label: 'Log Sistem', href: '/admin/logs', roles: ['superadmin'], docRef: 'logs' },
   { category: 'Sistem', label: 'Pengaturan Utama', href: '/admin/settings', roles: ['superadmin'], docRef: 'settings' },
-  { category: 'Sistem', label: 'Mode Classic', href: '/admin-bs', docRef: 'dashboard' },
   { category: 'Sistem', label: 'Tutorial', href: '/admin/help' },
 ];
 

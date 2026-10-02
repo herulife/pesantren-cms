@@ -7,7 +7,7 @@ import { useAuth } from './AuthProvider';
 import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS } from '@/lib/roleMenus';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, School, Wallet, Receipt, ScanLine, BarChart3 } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -47,6 +47,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     '/admin/kesantrian': <ClipboardList size={18} />,
     '/admin/donations': <Heart size={18} />,
     '/admin/payments': <CreditCard size={18} />,
+    '/admin/spp': <Receipt size={18} />,
+    '/admin/iuran': <Receipt size={18} />,
+    '/admin/kasir': <ScanLine size={18} />,
+    '/admin/kas': <Wallet size={18} />,
+    '/admin/school': <School size={18} />,
+    '/admin/teachers/report': <UserCheck size={18} />,
+    '/admin/laporan/tagihan': <BarChart3 size={18} />,
+    '/admin/laporan/transaksi': <BarChart3 size={18} />,
     '/admin/facilities': <Building size={18} />,
     '/admin/messages': <MessageSquare size={18} />,
     '/admin/notifications': <Bell size={18} />,
