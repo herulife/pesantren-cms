@@ -26,7 +26,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Transaksi', label: 'Kas & Laba Rugi', href: '/admin/kas', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
   { category: 'Laporan', label: 'Laporan Tagihan', href: '/admin/laporan/tagihan', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
-  { category: 'Laporan', label: 'Laporan Transaksi', href: '/admin/laporan/transaksi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
+  { category: 'Laporan', label: 'Laporan Transaksi', href: '/admin/laporan/transaksi', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
   { category: 'Akademik', label: 'Nilai Akademik', href: '/admin/academics', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'], docRef: 'academics' },
   { category: 'Akademik', label: 'Project & Kegiatan', href: '/admin/project', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },

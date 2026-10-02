@@ -3604,6 +3604,18 @@ export async function getSantriList(params: {
 	} catch (e) { console.error('[Kesantrian] list:', e); return { items: [], total: 0, limit: 20, offset: 0 }; }
 }
 
+export interface SantriClassCount {
+	value: string;
+	count: number;
+}
+
+export async function getSantriClasses(): Promise<SantriClassCount[]> {
+	try {
+		const r = await lmsFetch<SantriClassCount[]>('/santri/classes');
+		return r.data || [];
+	} catch (e) { console.error('[Kesantrian] classes:', e); return []; }
+}
+
 export async function setSantriClass(items: { id: number; class: string }[]): Promise<{ ok: boolean; message: string; updated?: number }> {
 	try {
 		const r = await lmsFetch<{ updated?: number }>('/santri/set-class', { method: 'POST', body: JSON.stringify({ items }) });

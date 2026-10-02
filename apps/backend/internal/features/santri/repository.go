@@ -412,6 +412,46 @@ func (r *Repository) SetClassBulk(items map[int]string) (int, error) {
 	return n, nil
 }
 
+// ClassCount adalah nilai kelas yang benar-benar dipakai di tabel `santri`
+// beserta jumlah baris yang memakainya.
+type ClassCount struct {
+	Value string `json:"value"`
+	Count int    `json:"count"`
+}
+
+// ListClassesFromSantri mengembalikan daftar kelas distinct di tabel `santri`
+// beserta jumlahnya, supaya opsi filter kelas selalu sama dengan isi data.
+// Kalau classes tidak kosong (dipakai wali_kelas), hasil dibatasi ke kelas
+// miliknya sendiri — konsisten dengan FindAllScoped.
+func (r *Repository) ListClassesFromSantri(classes []string) ([]ClassCount, error) {
+	table := "santri"
+	where := "TRIM(COALESCE(class,'')) <> ''"
+	args := []interface{}{}
+	if len(classes) > 0 {
+		placeholders := make([]string, len(classes))
+		for i, c := range classes {
+			placeholders[i] = "?"
+			args = append(args, c)
+		}
+		where += fmt.Sprintf(" AND TRIM(class) IN (%s)", strings.Join(placeholders, ","))
+	}
+	query := fmt.Sprintf("SELECT TRIM(class) AS c, COUNT(*) AS n FROM %s WHERE %s GROUP BY TRIM(class) ORDER BY c", table, where)
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []ClassCount{}
+	for rows.Next() {
+		var cc ClassCount
+		if err := rows.Scan(&cc.Value, &cc.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, cc)
+	}
+	return out, rows.Err()
+}
+
 func (r *Repository) BulkDelete(ids []int) (int, error) {
 	if len(ids) == 0 {
 		return 0, nil

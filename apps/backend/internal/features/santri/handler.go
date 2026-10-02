@@ -290,6 +290,30 @@ func (h *Handler) GetPortalUsers(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Daftar akun portal berhasil dimuat", users)
 }
 
+// GetClasses mengirim daftar kelas yang benar-benar ada di data (distinct
+// `santri.class` + jumlahnya). Dipakai dropdown filter di /admin/kesantrian
+// supaya opsinya tidak lagi bergantung pada baris yang kebetulan termuat.
+func (h *Handler) GetClasses(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	var scoped []string
+	if role == "wali_kelas" {
+		sc, err := scope.Resolve(database.DB, uid, role)
+		if err != nil {
+			logger.Error(r.Context(), "santri classes scope failed", logger.Field{"error": err.Error()})
+		} else {
+			scoped = sc.Classes
+		}
+	}
+	list, err := h.repo.ListClassesFromSantri(scoped)
+	if err != nil {
+		logger.Error(r.Context(), "santri classes failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat daftar kelas", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Daftar kelas berhasil dimuat", list)
+}
+
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	santri, err := h.repo.FindByID(id)

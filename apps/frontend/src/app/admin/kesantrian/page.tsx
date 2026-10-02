@@ -132,6 +132,12 @@ export default function KesantrianPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Daftar kelas untuk filter diambil sekali dari backend (distinct di DB),
+  // bukan dari baris yang kebetulan termuat di halaman.
+  useEffect(() => {
+    getSantriClasses().then(setKelasData).catch(() => {});
+  }, []);
+
   const page = Math.floor(offset / PAGE_SIZE) + 1;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

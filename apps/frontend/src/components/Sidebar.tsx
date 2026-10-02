@@ -225,6 +225,39 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             </div>
           );
         })}
+
+        {/* Panel terpisah untuk menu yang dipindah dari Mode Classic.
+            Ditaruh setelah kategori utama, sebagai blok navigasi mandiri
+            (bukan kategori) supaya mudah dikenali. */}
+        {activePanels.map((panel) => {
+          const isOpen = isPanelOpen(panel.id);
+          return (
+            <div key={panel.id} className="mt-3 rounded-xl bg-white/[0.04] p-1.5 ring-1 ring-white/10">
+              <button
+                type="button"
+                onClick={() => togglePanel(panel.id)}
+                aria-expanded={isOpen}
+                className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-white/5"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Wallet size={14} className="shrink-0 text-sky-300" />
+                  <span className="truncate text-[10.5px] font-bold uppercase tracking-widest text-sky-100/85">
+                    {panel.label}
+                  </span>
+                </span>
+                <ChevronDown size={14} className={`shrink-0 text-sky-200/50 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+              </button>
+              {isOpen && (
+                <>
+                  <p className="px-2.5 pb-1.5 text-[10px] leading-tight text-slate-500">{panel.hint}</p>
+                  <div className="space-y-0.5">
+                    {panel.items.map((item) => renderMenuLink(item))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Footer / Identitas + Logout */}
