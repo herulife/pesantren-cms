@@ -173,7 +173,7 @@ function LoginPageContent() {
         </div>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          Pondok Pesantren Tahfidzul Qur'an Al-Maa Parung
+          Pondok Pesantren Tahfidzul Qur&apos;an Al-Maa Parung
         </p>
       </motion.div>
     </div>
