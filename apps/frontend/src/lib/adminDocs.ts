@@ -830,7 +830,7 @@ export const adminDocSections: AdminDocSection[] = [
     id: 'spp-auto',
     title: 'Tagihan SPP Otomatis',
     category: 'Keuangan',
-    href: '/admin-bs/tagihan-spp',
+    href: '/admin/spp',
     image: { src: '/assets/tutorials/admin-spp.png', alt: 'Tampilan menu Tagihan SPP: form Generate dan kartu Tagihan Otomatis' },
     summary:
       'Biar tagihan SPP tiap bulan dibuat sendiri oleh sistem. Aktifkan sekali, sistem membuatkan tagihan bulan berjalan untuk semua santri aktif tanpa perlu klik Generate manual.',
@@ -845,7 +845,7 @@ export const adminDocSections: AdminDocSection[] = [
       {
         title: 'Cara mengaktifkan tagihan otomatis',
         steps: [
-          'Klik menu Tagihan SPP (mode Classic, di grup Operasional).',
+          'Klik menu Tagihan SPP (grup Transaksi).',
           'Cari kartu "Tagihan Otomatis" (tepat di bawah form Generate Tagihan).',
           'Aktifkan saklar "Aktifkan tagihan otomatis".',
           'Isi Besar SPP (nominal per santri per bulan) dan Jatuh Tempo (tanggal, contoh: 10).',
