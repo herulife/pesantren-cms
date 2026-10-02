@@ -108,6 +108,7 @@ type IRepository interface {
 	LinkUserExclusive(santriID, userID int) error
 	ResetLinkedPassword(santriID int, newPassword string) (int, error)
 	FindByUserID(userID int) ([]Santri, error)
+	ListClassesFromSantri(classes []string) ([]ClassCount, error)
 }
 
 type Handler struct {
