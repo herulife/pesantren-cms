@@ -19,7 +19,7 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - **Jilid 76: satu akun wali boleh dipakai BEBAS SANTRI.** Index unik
   `idx_santri_user_unique` di `santri(user_id)` sudah di-DROP (migration
   `santri_user_unique_drop`). Jangan pernah bikin ulang `CREATE UNIQUE INDEX` di
-  `santri(user_id)` — itu akan� 使得 satu keluarga tidak bisa berbagi 1 login.
+  `santri(user_id)` — itu akan membuat satu keluarga tidak bisa berbagi 1 login.
   `LinkUserExclusive` (route/frontend) sekarang SIBLING-SAFE; `FindByUserID`,
   `/my-santri`, `my-bills`, `my-ledger` sudah multi-Santri.
   **PENTING saat rollback:** image <= j75 akan recreate index itu saat start.
