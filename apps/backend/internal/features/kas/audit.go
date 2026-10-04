@@ -39,7 +39,9 @@ type AuditAnomaly struct {
 	Severity string `json:"severity"` // "warning" | "info"
 	Title    string `json:"title"`
 	Detail   string `json:"detail"`
-	Amount   int    `json:"amount,omitempty"`
+	Amount   int    `json:"amount,omitempty"` // nominal rupiah, 0 kalau tidak relevan
+	Count    int    `json:"count,omitempty"`  // jumlah baris, 0 kalau tidak relevan
+	Scope    string `json:"scope"`            // "periode ini" | "seluruh riwayat"
 }
 
 type Audit struct {
@@ -289,10 +291,22 @@ func (r *Repository) collectAnomalies(a *Audit, dateFrom, dateTo string) error {
 	// 1. Transaksi manual di kategori auto_source -> rawan dobel hitung.
 	if a.ExcludedCount > 0 {
 		catNames := map[string]bool{}
-		rows, err := r.db.Query(`SELECT DISTINCT c.name FROM kas_transactions t
+		qCat := `SELECT DISTINCT c.name FROM kas_transactions t
 			JOIN kas_categories c ON c.id=t.category_id
 			WHERE COALESCE(t.voided,0)=0 AND t.kind='masuk'
-			  AND COALESCE(t.category_id,0) IN (SELECT id FROM kas_categories WHERE COALESCE(is_auto_source,0)=1)`)
+			  AND COALESCE(t.category_id,0) IN (SELECT id FROM kas_categories WHERE COALESCE(is_auto_source,0)=1)`
+		catArgs := []interface{}{}
+		// Scope sama dengan ExcludedCount supaya judul dan daftar kategori
+		// tidak saling berbeda saat periode dipakai.
+		if dateFrom != "" {
+			qCat += " AND t.date >= ?"
+			catArgs = append(catArgs, dateFrom)
+		}
+		if dateTo != "" {
+			qCat += " AND t.date <= ?"
+			catArgs = append(catArgs, dateTo)
+		}
+		rows, err := r.db.Query(qCat, catArgs...)
 		if err != nil {
 			return err
 		}
@@ -310,9 +324,10 @@ func (r *Repository) collectAnomalies(a *Audit, dateFrom, dateTo string) error {
 		a.Anomalies = append(a.Anomalies, AuditAnomaly{
 			Severity: "warning",
 			Title:    fmt.Sprintf("%d transaksi dicatat di kategori \"%s\"", a.ExcludedCount, strings.Join(list, ", ")),
-			Detail: "Kategori ini punya nama yang sama dengan sumber di atas, jadi nomornya TIDAK dijumlahkan lagi supaya tidak terhitung 2x. Kalau ini memang uang yang sama dengan SPP/donasi, sudah aman. Kalau uang lain yang belum masuk hitungan mana pun, catat ulang di kategori biasa." +
-				"Kalau ini sebenarnya uang yang sama dengan SPP/donasi, aman — kalau uang lain, catat ulang di kategori biasa.",
-			Amount: a.ExcludedAmount,
+			Detail:   "Kategori ini punya nama yang sama dengan sumber di atas, jadi nomornya TIDAK dijumlahkan lagi supaya tidak terhitung 2x. Kalau ini memang uang yang sama dengan SPP/donasi, sudah aman. Kalau uang lain yang belum masuk hitungan mana pun, catat ulang di kategori biasa.",
+			Amount:   a.ExcludedAmount,
+			Count:    a.ExcludedCount,
+			Scope:    "periode ini",
 		})
 	}
 
