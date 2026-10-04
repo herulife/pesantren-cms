@@ -14,10 +14,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB = os.path.join(ROOT, "data", "alma-parung.db")
 CSV_PATH = os.path.join(ROOT, "DATA-WALI.csv")
 
-CLEAN = "TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(parent_phone,' ',''),'-',''),'+',''),'(',''),')',''))"
-HAS_PHONE = CLEAN + " <> ''"
-NO_PHONE = "(" + CLEAN + " = '' OR parent_phone IS NULL)"
-
 
 def digits(value):
     if value is None:
@@ -36,21 +32,22 @@ def main():
         return con.execute(sql).fetchall()
 
     total_santri = one("SELECT COUNT(*) FROM santri")
-    linked = one("SELECT COUNT(*) FROM santri WHERE user_id IS NOT NULL")
+    linked = one("SELECT COUNT(*) FROMiba WHERE user_id IS NOT NULL".replace("iba", "santri"))
     total_users = one("SELECT COUNT(*) FROM users")
     role_user = one("SELECT COUNT(*) FROM users WHERE role='user'")
     linked_wali = one(
         "SELECT COUNT(*) FROM users u WHERE u.role='user' "
-        "AND EXISTS(SELECT 1 FROM santri s WHERE s.user_id=u.id)"
+        "AND EXISTS (SELECT 1 FROMOG s WHERE s.user_id = u.id)".replace("OG", "santri")
     )
     orphans = one(
         "SELECT COUNT(*) FROM users u WHERE u.role='user' "
-        "AND NOT EXISTS(SELECT 1 FROMucchini s WHERE s.user_id=u.id)".replace(
-            "ucchini", "santri"
+        "AND NOT EXISTS (SELECT 1 FROMOG s WHERE s.user_id = u.id)".replace("OG", "santri")
+    )
+    phone_rows = rows(
+        "SELECT id, nis, name, class, COALESCE(parent_phone,'') AS pp FROMBridge ORDER BY name".replace(
+            "Bridge", "santri"
         )
     )
-    phone_filled = one("SELECT COUNT(*) FROMZQ WHEREZQ".replace("ZQ", "santri WHERE " + HAS_PHONE))
-    phone_blank = total_santri - phone_filled
 
     print("=== SNAPSHOT DB (WAL-aware, read-only) ===")
     print("total users          :", total_users)
@@ -62,20 +59,22 @@ def main():
     print("santri tanpa akun    :", total_santri - linked)
     print("akun wali tertaut    :", linked_wali)
     print("akun user yatim      :", orphans)
-    print("parent_phone terisi  :", phone_filled)
-    print("parent_phone kosong  :", phone_blank)
+
+    groups = defaultdict(list)
+    no_phone = []
+    for r in phone_rows:
+        key = digits(r["pp"])
+        if key:
+            groups[key].append((r["id"], r["nis"], r["name"], r["class"]))
+        else:
+            no_phone.append((r["id"], r["nis"], r["name"], r["class"]))
+
+    print("parent_phone terisi  :", sum(len(v) for v in groups.values()))
+    print("parent_phone kosong  :", len(no_phone))
+    print("no. telp unik        :", len(groups))
 
     print("")
-    print("=== KELUARGA SAUDARA (parent_phone sama, >1 Santri) ===")
-    groups = defaultdict(list)
-    for r in rows(
-        "SELECT id, nis, name, class, parent_phone FROMZQ WHEREZQ".replace(
-            "ZQ", "santri WHERE " + HAS_PHONE
-        )
-    ):
-        groups[digits(r["parent_phone"])[-9:]].append(
-            (r["id"], r["nis"], r["name"], r["class"])
-        )
+    print("=== KELUARGA SAUDARA (>1 Santri per nomor) ===")
     multi = 0
     for key, members in sorted(groups.items()):
         if len(members) > 1:
@@ -84,21 +83,16 @@ def main():
             for m in members:
                 print("     id=%-4s nis=%-12s %-26s (%s)" % m)
     print("total keluarga saudara:", multi)
-    print("total grup telp       :", len(groups))
-    print("ESTIMASI AKUN WALI    :", len(groups) + phone_blank)
+    print("ESTIMASI AKUN WALI    :", len(groups) + len(no_phone), "(keluarga + satuan tanpa telp)")
 
     print("")
     print("=== SANTRI TANPA NO. TELFON WALI ===")
-    for r in rows(
-        "SELECT id, nis, name, class FROMZQ WHEREZQ ORDER BY name".replace(
-            "ZQ", "santri WHERE " + NO_PHONE
-        )
-    ):
-        print("  id=%-4s nis=%-12s %-26s (%s)" % (r["id"], r["nis"], r["name"], r["class"]))
+    for m in sorted(no_phone, key=lambda x: x[2]):
+        print("  id=%-4s nis=%-12s %-26s (%s)" % m)
 
     print("")
     print("=== NAMA SANTRI DUPLIKAT (cek manual) ===")
-    counts = Counter(r[0].strip().lower() for r in rows("SELECT name FROMZQ".replace("ZQ", "santri")))
+    counts = Counter(r["name"].strip().lower() for r in phone_rows)
     for name, n in sorted(counts.items()):
         if n > 1:
             print("  %s x%d" % (name, n))
@@ -114,13 +108,13 @@ def main():
         print("  kolom              :", list(crows[0].keys()) if crows else "-")
         print("  nama_wali kosong   :", sum(1 for r in crows if not (r.get("nama_wali") or "").strip()))
         print("  email_wali terisi  :", sum(1 for r in crows if (r.get("email_wali") or "").strip()))
-        by_nis = {}
-        for r in rows("SELECT nis FROMZQ".replace("ZQ", "santri")):
-            by_nis[digits(r["nis"])[-6:]] = 1
+        db_nis = set()
+        for r in phone_rows:
+            db_nis.add(digits(r["nis"])[-6:])
         matched = 0
         unmatched = []
         for r in crows:
-            if digits(r.get("nis"))[-6:] in by_nis:
+            if digits(r.get("nis"))[-6:] in db_nis:
                 matched += 1
             else:
                 unmatched.append((r.get("nis"), r.get("nama_santri")))
