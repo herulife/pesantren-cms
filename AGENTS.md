@@ -10,12 +10,21 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - `apps/frontend` — Next.js 16 + React 19 + Tailwind 4. Lihat `apps/frontend/src/{app,components,lib}`.
 - Database prod: `/home/heru/alma-parung/data/alma-parung.db`, di-mount ke container sebagai `/data` (`DB_PATH=/data/alma-parung.db`). Uploads: `data/uploads` → `/app/apps/backend/public/uploads`.
 - Container (**per 1 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
-  selalu `docker ps` untuk memastikan**): `alma-parung-backend` (image `alma-parung-backend:j75-kas-audit`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-bobot`** (image `alma-parung-frontend:j75-kas-audit`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback versi sebelumnya: `alma-parung-backend-pre-j74` (image `j69-avatar`) + `alma-parung-frontend-bobot-pre-j74` (image `j72-login-center`) - jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
+  selalu `docker ps` untuk memastikan**): `alma-parung-backend` (image `alma-parung-backend:j76-wali-santri`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-bobot`** (image `alma-parung-frontend:j76-wali-santri`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback versi sebelumnya: `alma-parung-backend-pre-j74` (image `j69-avatar`) + `alma-parung-frontend-bobot-pre-j74` (image `j72-login-center`) - jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
 
 - **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
   menolak akun non-Santri dengan **422** (`ErrNotSantri`); form WAJIB pakai dropdown (filter `user_id`
   non-null). Jangan menambah endpoint yang menerima `student_id` mentah tanpa cek ke tabel `santri`.
+- **Jilid 76: satu akun wali boleh dipakai BEBAS SANTRI.** Index unik
+  `idx_santri_user_unique` di `santri(user_id)` sudah di-DROP (migration
+  `santri_user_unique_drop`). Jangan pernah bikin ulang `CREATE UNIQUE INDEX` di
+  `santri(user_id)` — itu akan� 使得 satu keluarga tidak bisa berbagi 1 login.
+  `LinkUserExclusive` (route/frontend) sekarang SIBLING-SAFE; `FindByUserID`,
+  `/my-santri`, `my-bills`, `my-ledger` sudah multi-Santri.
+  **PENTING saat rollback:** image <= j75 akan recreate index itu saat start.
+  Setelah rollback harus `DROP INDEX IF EXISTS idx_santri_user_unique`.
+
 ## 2. Dokumen yang wajib dibaca dulu
 
 - `SUMMARY_SESI.md` — memori sesi (status verified vs belum, pelajaran penting).
