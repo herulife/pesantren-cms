@@ -50,7 +50,7 @@ export default function DonationsPage() {
   }, []);
 
   const featuredCampaign = findFeaturedDonationCampaign(campaigns);
-  const allCampaigns = campaigns.slice(0, 2);
+  const allCampaigns = campaigns;
   const displayCampaigns = allCampaigns.length > 0 ? allCampaigns : [];
   const donationBankName = settings.donation_bank_name || featuredOpenDonation.bankName;
   const donationAccountNumber = settings.donation_account_number || featuredOpenDonation.accountNumber;
