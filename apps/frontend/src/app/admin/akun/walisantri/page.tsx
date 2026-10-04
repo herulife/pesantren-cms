@@ -159,9 +159,9 @@ export default function WaliSantriAccountsPage() {
 						</p>
 						<p className="mt-1 text-amber-800">
 							Data ini hasil import otomatis supaya portal wali sudah bisa dipakai.
-							Silakan ganti nama asli dan email asli wali satu per satu di tabel
-							berikut. Password awal wali sama untuk semua akun dan bisa
-							diganti sendiri setelah login.
+							Semua email masih memakai domain @almaparung.local dan harus diganti
+							ke email asli wali satu per satu di tabel berikut. Password awal
+							wali sama untuk semua akun dan bisa diganti sendiri setelah login.
 						</p>
 					</div>
 				</div>
