@@ -1,11 +1,13 @@
 package walisantri
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
-	"strings"
 
+	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/validators"
@@ -23,8 +25,14 @@ func (h *Handler) Routes() chi.Router {
 	return r
 }
 
-// GetAll: daftar akun wali + Santri-nya + akun yatim + statistik. Satu panggilan
-// supaya halaman /admin/akun/walisantri tidak perlu requestParalel.
+func writeJSON(w http.ResponseWriter, status int, success bool, msg string, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": success, "message": msg, "data": data})
+}
+
+// List: daftar akun wali + Santri-nya + akun yatim + statistik. Satu panggilan
+// supaya halaman /admin/akun/walisantri tidak perlu request paralel.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	out, err := h.repo.ListAll()
 	if err != nil {
@@ -43,7 +51,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := readBody(r)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, false, "Isi permintaan tidak valid", nil)
 		return
@@ -64,11 +72,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logger.Error(r.Context(), "walisantri update failed", logger.Field{"user_id": id, "error": err.Error()})
-		writeJSON(w, http.StatusBadRequest, false, "Gagal menyimpan akun wali", nil)
+		writeJSON(w, http.StatusBadRequest, false, err.Error(), nil)
 		return
 	}
 
-	actorID, _ := actorFrom(r)
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
 	audit.Record(r.Context(), audit.Entry{
 		RequestID: logger.CorrelationID(r), ActorID: actorID,
 		Action: "UPDATE_WALI", Entity: "user", EntityID: strconv.Itoa(id),
@@ -78,15 +86,3 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, true, "Akun wali diperbarui", nil)
 }
-
-func actorFrom(r *http.Request) (int, bool) {
-	if v := r.Header.Get("X-Actor-ID"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			return n, true
-		}
-	}
-	return 0, false
-}
-
-// trim untuk dipakai ulang saat constructing pesan.
-func trim(s string) string { return strings.TrimSpace(s) }
