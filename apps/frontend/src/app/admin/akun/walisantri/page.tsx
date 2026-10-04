@@ -62,7 +62,7 @@ export default function WaliSantriAccountsPage() {
 		if (!data) return [];
 		const needle = q.trim().toLowerCase();
 		return data.accounts.filter((a) => {
-			if (onlyPlaceholder && !a.is_placeholder) return false;
+			if (onlyPlaceholder && !a.name_placeholder) return false;
 			if (!needle) return true;
 			if (a.name.toLowerCase().includes(needle)) return true;
 			if (a.email.toLowerCase().includes(needle)) return true;
@@ -146,7 +146,7 @@ export default function WaliSantriAccountsPage() {
 				<StatCard label="Akun Wali" value={stats?.total_accounts} icon={<Users className="h-4 w-4" />} />
 				<StatCard label="Santri Tertaut" value={stats?.total_santri} />
 				<StatCard label="Keluarga (≥2 anak)" value={stats?.multi_santri} />
-				<StatCard label="Perlu Dilengkapi" value={stats?.placeholder} tone="warn" />
+				<StatCard label="Nama Karangan" value={stats?.placeholder} tone="warn" />
 				<StatCard label="Akun Yatim" value={stats?.orphan} />
 			</section>
 
@@ -155,7 +155,7 @@ export default function WaliSantriAccountsPage() {
 					<TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
 					<div className="text-sm text-amber-900">
 						<p className="font-bold">
-							{stats.placeholder} akun masih memakai nama/email sementara.
+							{stats.placeholder} akun masih memakai nama karangan.
 						</p>
 						<p className="mt-1 text-amber-800">
 							Data ini hasil import otomatis supaya portal wali sudah bisa dipakai.
@@ -184,7 +184,7 @@ export default function WaliSantriAccountsPage() {
 						onChange={(e) => setOnlyPlaceholder(e.target.checked)}
 						className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
 					/>
-					Hanya yang perlu dilengkapi
+					Hanya nama karangan
 				</label>
 			</div>
 
@@ -251,15 +251,20 @@ export default function WaliSantriAccountsPage() {
 										</ul>
 									</td>
 									<td className="px-4 py-3">
-										{a.is_placeholder ? (
+										{a.name_placeholder ? (
 											<span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
 												<AlertTriangle className="h-3 w-3" />
-												Perlu dilengkapi
+												Nama karangan
 											</span>
 										) : (
 											<span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">
 												<BadgeCheck className="h-3 w-3" />
-												Lengkap
+												Nama asli
+											</span>
+										)}
+										{a.needs_note && (
+											<span className="mt-1 block text-xs leading-4 text-amber-700">
+												{a.needs_note}
 											</span>
 										)}
 										{a.last_login_at && (
