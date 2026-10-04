@@ -151,3 +151,31 @@ func ValidateRoleUpdateRequest(req *RoleUpdateRequest) ValidationErrors {
 	}
 	return errs
 }
+
+// WaliUpdateRequest dipakai endpoint /api/wali-santri/{id} untuk mengganti nama
+// + email akun wali. Ini yang membuat data karangan bisa diganti admin kapan
+// saja tanpa membuat akun baru.
+type WaliUpdateRequest struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func ValidateWaliUpdateRequest(req *WaliUpdateRequest) ValidationErrors {
+	errs := ValidationErrors{}
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = NormalizeEmail(req.Email)
+
+	if req.Name == "" {
+		errs.Add("name", "Nama wali wajib diisi")
+	} else if len([]rune(req.Name)) > 120 {
+		errs.Add("name", "Nama wali maksimal 120 karakter")
+	}
+	if req.Email == "" {
+		errs.Add("email", "Email wajib diisi")
+	} else if !ValidateEmail(req.Email) {
+		errs.Add("email", "Format email tidak valid")
+	} else if len(req.Email) > 190 {
+		errs.Add("email", "Email terlalu panjang")
+	}
+	return errs
+}
