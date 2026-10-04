@@ -16,6 +16,11 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
   menolak akun non-Santri dengan **422** (`ErrNotSantri`); form WAJIB pakai dropdown (filter `user_id`
   non-null). Jangan menambah endpoint yang menerima `student_id` mentah tanpa cek ke tabel `santri`.
+- **Login pakai cookie HttpOnly, bukan header Bearer.** `POST /api/login` mengembalikan
+  `{success, user}` (BUKAN `token`), token dikirim lewat `Set-Cookie: alma_token=...`.
+  Untuk smoke test WAJIB pakai `curl -c <jar>` lalu `curl -b <jar>`; kalau pakai
+  `Authorization: Bearer` akan selalu gagal walau password benar. Response endpoint
+  bisa berupa object `{data: [...]}` - jangan langsung `len()`.
 - **Jilid 76: satu akun wali boleh dipakai BEBAS SANTRI.** Index unik
   `idx_santri_user_unique` di `santri(user_id)` sudah di-DROP (migration
   `santri_user_unique_drop`). Jangan pernah bikin ulang `CREATE UNIQUE INDEX` di
