@@ -19,15 +19,18 @@ type Santri struct {
 // Account adalah satu akun wali + semua Santri yang terlihat oleh wali itu.
 // SeveralSantri = saudara, satu login cukup untuk semua anaknya.
 type Account struct {
-	UserID        int      `json:"user_id"`
-	Name          string   `json:"name"`
-	Email         string   `json:"email"`
-	Whatsapp      string   `json:"whatsapp"`
-	Role          string   `json:"role"`
-	IsPlaceholder bool     `json:"is_placeholder"`
-	NeedsNote     string   `json:"needs_note,omitempty"`
-	LastLoginAt   string   `json:"last_login_at,omitempty"`
-	Santri        []Santri `json:"santri"`
+	UserID   int    `json:"user_id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Whatsapp string `json:"whatsapp"`
+	Role     string `json:"role"`
+	// IsPlaceholder = email masih @almaparung.local hasil import.
+	IsPlaceholder bool `json:"is_placeholder"`
+	// NamePlaceholder = nama masih karangan "Wali <nama Santri>".
+	NamePlaceholder bool     `json:"name_placeholder"`
+	NeedsNote       string   `json:"needs_note,omitempty"`
+	LastLoginAt     string   `json:"last_login_at,omitempty"`
+	Santri          []Santri `json:"santri"`
 }
 
 // Orphan adalah akun role=user yang tidak tertaut ke Santri mana pun.
@@ -60,6 +63,13 @@ func NewRepository(db *sql.DB) *Repository { return &Repository{db: db} }
 // bisa langsung melihat mana data yang masih perlu diganti data asli.
 const placeholderPrefix = "wali"
 
+// isPlaceholderName menandai nama karangan hasil import. Import wali membuat
+// nama "Wali <nama Santri>" kalau nama wali asli tidak tersedia di DB. Ini
+// hanya sinyal untuk tampilan; kolom name tetap sumber kebenaran.
+func isPlaceholderName(name string) bool {
+	return strings.HasPrefix(strings.TrimSpace(name), "Wali ")
+}
+
 func isPlaceholderEmail(email string) bool {
 	e := strings.ToLower(strings.TrimSpace(email))
 	return strings.HasPrefix(e, placeholderPrefix+"") && strings.HasSuffix(e, "@almaparung.local")
@@ -89,6 +99,7 @@ func (r *Repository) ListAll() (*List, error) {
 		}
 		a.Santri = []Santri{}
 		a.IsPlaceholder = isPlaceholderEmail(a.Email)
+		a.NamePlaceholder = isPlaceholderName(a.Name)
 		index[a.UserID] = len(out.Accounts)
 		out.Accounts = append(out.Accounts, a)
 	}
@@ -143,9 +154,11 @@ func (r *Repository) ListAll() (*List, error) {
 		if len(a.Santri) > 1 {
 			out.Stats.MultiSantri++
 		}
-		if a.IsPlaceholder || strings.TrimSpace(a.Name) == "" {
+		if a.NamePlaceholder || strings.TrimSpace(a.Name) == "" {
 			out.Stats.Placeholder++
-			a.NeedsNote = "Nama wali & email masih data sementara - ganti dengan data asli"
+			a.NeedsNote = "Nama wali masih karangan - ganti dengan nama asli"
+		} else if a.IsPlaceholder {
+			a.NeedsNote = "Email masih @almaparung.local - ganti dengan email asli"
 		}
 	}
 	out.Stats.Orphan = len(out.Orphans)
