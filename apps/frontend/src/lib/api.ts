@@ -3839,7 +3839,7 @@ export async function deleteAcademicYear(id: number) {
   return parseResponse(res);
 }
 
-export interface KasCategory { id: number; code: string; name: string; kind: string; creator?: string; updater?: string; created_at: string; }
+export interface KasCategory { id: number; code: string; name: string; kind: string; creator?: string; updater?: string; created_at: string; is_auto_source?: number; }
 export async function updateKasCategory(id: number, data: { name: string; kind: string }) {
   const res = await fetch(`${API_BASE_URL}/kas/categories/${id}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
   return parseResponse(res);
