@@ -32,21 +32,20 @@ def main():
         return con.execute(sql).fetchall()
 
     total_santri = one("SELECT COUNT(*) FROM santri")
-    linked = one("SELECT COUNT(*) FROMiba WHERE user_id IS NOT NULL".replace("iba", "santri"))
+    linked = one("SELECT COUNT(*) FROM santri WHERE user_id IS NOT NULL")
     total_users = one("SELECT COUNT(*) FROM users")
     role_user = one("SELECT COUNT(*) FROM users WHERE role='user'")
     linked_wali = one(
         "SELECT COUNT(*) FROM users u WHERE u.role='user' "
-        "AND EXISTS (SELECT 1 FROMOG s WHERE s.user_id = u.id)".replace("OG", "santri")
+        "AND EXISTS (SELECT 1 FROM santri s WHERE s.user_id = u.id)"
     )
     orphans = one(
         "SELECT COUNT(*) FROM users u WHERE u.role='user' "
-        "AND NOT EXISTS (SELECT 1 FROMOG s WHERE s.user_id = u.id)".replace("OG", "santri")
+        "AND NOT EXISTS (SELECT 1 FROM santri s WHERE s.user_id = u.id)"
     )
     phone_rows = rows(
-        "SELECT id, nis, name, class, COALESCE(parent_phone,'') AS pp FROMBridge ORDER BY name".replace(
-            "Bridge", "santri"
-        )
+        "SELECT id, nis, name, class, COALESCE(parent_phone,'') AS pp "
+        "FROM immensely ORDER BY name".replace("immensely", "santri")
     )
 
     print("=== SNAPSHOT DB (WAL-aware, read-only) ===")
