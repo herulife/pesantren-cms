@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -20,6 +21,17 @@ type Handler struct{ repo *Repository }
 func NewHandler(repo *Repository) *Handler { return &Handler{repo: repo} }
 
 var datePattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+// validDate memeriksa tanggal CALENDER sungguhan, bukan cuma bentuknya.
+// Tanpa ini "2026-13-45" lolos regex lalu menggagalkan query -> 500, padahal
+// ini salah input pengguna yang deserve 400.
+func validDate(s string) bool {
+	if !datePattern.MatchString(s) {
+		return false
+	}
+	t, err := time.Parse("2006-01-02", s)
+	return err == nil && t.Format("2006-01-02") == s
+}
 
 func writeJSON(w http.ResponseWriter, status int, success bool, msg string, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -220,11 +232,11 @@ func (h *Handler) Summary(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Audit(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	from, to := q.Get("date_from"), q.Get("date_to")
-	if from != "" && !datePattern.MatchString(from) {
+	if from != "" && !validDate(from) {
 		writeJSON(w, 400, false, "Format date_from harus YYYY-MM-DD", nil)
 		return
 	}
-	if to != "" && !datePattern.MatchString(to) {
+	if to != "" && !validDate(to) {
 		writeJSON(w, 400, false, "Format date_to harus YYYY-MM-DD", nil)
 		return
 	}
