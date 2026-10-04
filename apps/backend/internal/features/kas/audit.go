@@ -344,15 +344,14 @@ func (r *Repository) collectAnomalies(a *Audit, dateFrom, dateTo string) error {
 			Title:    fmt.Sprintf("%d donasi menunggu verifikasi", pendCount),
 			Detail:   "Belum masuk total pemasukan. Verifikasi di menu Donasi agar ikut terhitung.",
 			Amount:   int(pendAmount),
+			Count:    pendCount,
+			Scope:    "seluruh riwayat",
 		})
 	}
 
 	// 3. Pembayaran PSB Rp0 / status tidak wajar.
-	var zeroCount, paidCount int
+	var zeroCount int
 	if err := r.db.QueryRow(`SELECT COUNT(*) FROM psb_payments WHERE COALESCE(amount,0)<=0`).Scan(&zeroCount); err != nil {
-		return err
-	}
-	if err := r.db.QueryRow(`SELECT COUNT(*) FROM psb_payments WHERE status='paid'`).Scan(&paidCount); err != nil {
 		return err
 	}
 	if zeroCount > 0 {
@@ -360,7 +359,8 @@ func (r *Repository) collectAnomalies(a *Audit, dateFrom, dateTo string) error {
 			Severity: "warning",
 			Title:    fmt.Sprintf("%d pembayaran PSB bernilai Rp0", zeroCount),
 			Detail:   "Nominal nol tidak bisa jadi bukti lunas. Periksa di menu PSB.",
-			Amount:   zeroCount,
+			Count:    zeroCount,
+			Scope:    "seluruh riwayat",
 		})
 	}
 
@@ -376,7 +376,8 @@ func (r *Repository) collectAnomalies(a *Audit, dateFrom, dateTo string) error {
 			Severity: "warning",
 			Title:    fmt.Sprintf("%d tagihan SPP statusnya tidak cocok dengan pembayarannya", mismatch),
 			Detail:   "Status \"lunas\" tapi belum ada pembayaran, atau sebaliknya. Perlu diperiksa manual.",
-			Amount:   mismatch,
+			Count:    mismatch,
+			Scope:    "seluruh riwayat",
 		})
 	}
 
@@ -390,7 +391,8 @@ func (r *Repository) collectAnomalies(a *Audit, dateFrom, dateTo string) error {
 			Severity: "info",
 			Title:    fmt.Sprintf("%d tagihan SPP melebihi nominal tagihan", over),
 			Detail:   "Biasanya karena uang bulat dibulatkan ke atas. Tidak salah, tapi perlu diketahui.",
-			Amount:   over,
+			Count:    over,
+			Scope:    "seluruh riwayat",
 		})
 	}
 
