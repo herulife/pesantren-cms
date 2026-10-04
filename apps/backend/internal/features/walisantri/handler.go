@@ -10,7 +10,7 @@ import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
-	"almaparung-api/internal/platform/validators"
+	"almaparung-api/internal/validators"
 	"github.com/go-chi/chi/v5"
 )
 

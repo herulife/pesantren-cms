@@ -19,15 +19,15 @@ type Santri struct {
 // Account adalah satu akun wali + semua Santri yang terlihat oleh wali itu.
 // SeveralSantri = saudara, satu login cukup untuk semua anaknya.
 type Account struct {
-	UserID       int       `json:"user_id"`
-	Name         string    `json:"name"`
-	Email        string    `json:"email"`
-	Whatsapp     string    `json:"whatsapp"`
-	Role         string    `json:"role"`
+	UserID        int      `json:"user_id"`
+	Name          string   `json:"name"`
+	Email         string   `json:"email"`
+	Whatsapp      string   `json:"whatsapp"`
+	Role          string   `json:"role"`
 	IsPlaceholder bool     `json:"is_placeholder"`
-	NeedsNote    string    `json:"needs_note,omitempty"`
-	LastLoginAt  string    `json:"last_login_at,omitempty"`
-	Santri       []Santri  `json:"santri"`
+	NeedsNote     string   `json:"needs_note,omitempty"`
+	LastLoginAt   string   `json:"last_login_at,omitempty"`
+	Santri        []Santri `json:"santri"`
 }
 
 // Orphan adalah akun role=user yang tidak tertaut ke Santri mana pun.
