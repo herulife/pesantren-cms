@@ -1952,6 +1952,78 @@ export async function getAvailableSantriAccounts(search: string = '', includeId:
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Akun Wali Santri (Jilid 76)
+// Satu akun wali bisa punya BEBAS SANTRI (saudara satu keluarga berbagi 1
+// login), jadi daftar di bawah selalu berupa array anak per akun.
+// ---------------------------------------------------------------------------
+export interface WaliSantri {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+}
+
+export interface WaliAccount {
+	user_id: number;
+	name: string;
+	email: string;
+	whatsapp: string;
+	role: string;
+	is_placeholder: boolean;
+	needs_note?: string;
+	last_login_at?: string;
+	santri: WaliSantri[];
+}
+
+export interface WaliOrphan {
+	user_id: number;
+	name: string;
+	email: string;
+}
+
+export interface WaliStats {
+	total_accounts: number;
+	total_santri: number;
+	placeholder: number;
+	orphan: number;
+	multi_santri: number;
+}
+
+export interface WaliList {
+	accounts: WaliAccount[];
+	orphans: WaliOrphan[];
+	stats: WaliStats;
+}
+
+export async function getWaliSantriAccounts(): Promise<WaliList | null> {
+	try {
+		const r = await lmsFetch<WaliList>('/wali-santri');
+		return r.success ? r.data : null;
+	} catch (e) {
+		console.error('[API] Fetch wali santa accounts error:', e);
+		return null;
+	}
+}
+
+export async function updateWaliSantriAccount(
+	userId: number,
+	payload: { name: string; email: string }
+): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wali-santri/${userId}`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		});
+		return { ok: r.success, message: r.message };
+	} catch (e) {
+		return {
+			ok: false,
+			message: e instanceof Error ? e.message : 'Gagal memperbarui akun wali'
+		};
+	}
+}
+
 export async function linkSantriAccount(id: number, user_id: number): Promise<{ ok: boolean; message: string }> {
 	try {
 		const r = await lmsFetch(`/santri/${id}/link-user-exclusive`, { method: 'PUT', body: JSON.stringify({ user_id }) });
