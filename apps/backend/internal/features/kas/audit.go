@@ -133,6 +133,7 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 
 	for _, s := range a.Sources {
 		a.TotalIncome += s.Amount
+		a.CountIn += s.Count
 	}
 
 	// Pengeluaran: semua kategori, tidak ada pengecualian (tidak ada sumber
@@ -309,7 +310,7 @@ func (r *Repository) collectAnomalies(a *Audit, dateFrom, dateTo string) error {
 		a.Anomalies = append(a.Anomalies, AuditAnomaly{
 			Severity: "warning",
 			Title:    fmt.Sprintf("%d transaksi dicatat di kategori \"%s\"", a.ExcludedCount, strings.Join(list, ", ")),
-			Detail: "Kategori namesake dengan sumber di atas. Nominal ini TIDAK dijumlahkan lagi supaya tidak terhitung 2x. " +
+			Detail: "Kategori ini punya nama yang sama dengan sumber di atas, jadi nomornya TIDAK dijumlahkan lagi supaya tidak terhitung 2x. Kalau ini memang uang yang sama dengan SPP/donasi, sudah aman. Kalau uang lain yang belum masuk hitungan mana pun, catat ulang di kategori biasa." +
 				"Kalau ini sebenarnya uang yang sama dengan SPP/donasi, aman — kalau uang lain, catat ulang di kategori biasa.",
 			Amount: a.ExcludedAmount,
 		})
