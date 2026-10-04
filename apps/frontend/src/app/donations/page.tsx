@@ -390,7 +390,7 @@ export default function DonationsPage() {
       </section>
 
       {/* MOBILE STICKY CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0rem))] shadow-[0_-8px_24px_rgba(0,0,0,0.08)] md:hidden">
         <a
           href="#program-donasi"
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-700"
