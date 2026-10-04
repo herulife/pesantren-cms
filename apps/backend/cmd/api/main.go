@@ -423,6 +423,13 @@ func main() {
 				r.Mount("/kas", kasHandler.Routes())
 			})
 
+			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
+			// daftar ini memuat email/nama wali (data pribadi orang tua).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Mount("/wali-santri", waliSantriHandler.Routes())
+			})
+
 			// Master Sekolah (kelas + tahun ajaran).
 			// READ (kelas + tahun ajaran) dibuka ke semua role operasional: form
 			// Kesantrian & halaman raport milik wali_kelas/pimpinan memanggil
