@@ -17,13 +17,13 @@ import (
 
 // AuditSource adalah satu sumber pemasukan, lengkap dengan asal tabelnya.
 type AuditSource struct {
-	Key      string `json:"key"`
-	Label    string `json:"label"`
-	Amount   int    `json:"amount"`
-	Count    int    `json:"count"`
-	Origin   string `json:"origin"`  // "otomatis" | "manual"
-	Table    string `json:"table"`   // sumber tabel, ditampilkan ke user
-	Warning  string `json:"warning,omitempty"`
+	Key     string `json:"key"`
+	Label   string `json:"label"`
+	Amount  int    `json:"amount"`
+	Count   int    `json:"count"`
+	Origin  string `json:"origin"` // "otomatis" | "manual"
+	Table   string `json:"table"`  // sumber tabel, ditampilkan ke user
+	Warning string `json:"warning,omitempty"`
 }
 
 // AuditRow adalah baris pendukung sebuah sumber (untuk drill-down).
@@ -45,22 +45,22 @@ type AuditAnomaly struct {
 }
 
 type Audit struct {
-	DateFrom     string         `json:"date_from,omitempty"`
-	DateTo       string         `json:"date_to,omitempty"`
-	Sources      []AuditSource  `json:"sources"`
-	TotalIncome  int            `json:"total_income"`
-	Expense      int            `json:"expense"`
-	Balance      int            `json:"balance"`
-	CountIn      int            `json:"count_in"`
-	CountOut     int            `json:"count_out"`
+	DateFrom    string        `json:"date_from,omitempty"`
+	DateTo      string        `json:"date_to,omitempty"`
+	Sources     []AuditSource `json:"sources"`
+	TotalIncome int           `json:"total_income"`
+	Expense     int           `json:"expense"`
+	Balance     int           `json:"balance"`
+	CountIn     int           `json:"count_in"`
+	CountOut    int           `json:"count_out"`
 	// ExcludedAmount = nominal yang sengaja TIDAK masuk total_income karena
 	// kategori kas-nya auto_source (sudah terhitung di sumber aslinya).
 	// Ditampilkan terpisah supaya bendahara tidak mengira uangnya hilang.
-	ExcludedAmount int            `json:"excluded_amount"`
-	ExcludedCount  int            `json:"excluded_count"`
-	ExcludedRows   []AuditRow     `json:"excluded_rows"`
+	ExcludedAmount int                   `json:"excluded_amount"`
+	ExcludedCount  int                   `json:"excluded_count"`
+	ExcludedRows   []AuditRow            `json:"excluded_rows"`
 	Rows           map[string][]AuditRow `json:"rows"`
-	Anomalies      []AuditAnomaly `json:"anomalies"`
+	Anomalies      []AuditAnomaly        `json:"anomalies"`
 }
 
 func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {

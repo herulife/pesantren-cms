@@ -1,15 +1,15 @@
 package kas
 
 import (
-	"database/sql"
-	"errors"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -176,7 +176,7 @@ func (h *Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		ActorID: currentUserID(r), ActorRole: actorRole,
 		Action: "CREATE_KAS", Entity: "kas_transaction", EntityID: strconv.FormatInt(id, 10),
 		After: map[string]interface{}{"amount": req.Amount, "kind": req.Kind},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	writeJSON(w, 201, true, "Transaksi kas berhasil dicatat", map[string]interface{}{"id": id})
 }
@@ -197,7 +197,7 @@ func (h *Handler) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 		ActorID: currentUserID(r), ActorRole: actorRole,
 		Action: "VOID_KAS", Entity: "kas_transaction", EntityID: strconv.Itoa(id),
 		After: map[string]interface{}{"voided": true, "reason": reason},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	writeJSON(w, 200, true, "Transaksi dibatalkan (void, riwayat dipertahankan)", nil)
 }

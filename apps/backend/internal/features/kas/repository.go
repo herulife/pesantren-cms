@@ -1,8 +1,8 @@
 package kas
 
 import (
-	"errors"
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 )
@@ -25,19 +25,19 @@ type Category struct {
 var ErrKasDuplicate = errors.New("transaksi sudah dicatat sebelumnya")
 
 type Transaction struct {
-	ID         int       `json:"id"`
-	Code       string    `json:"code"`
-	Date       string    `json:"date"`
-	Kind       string    `json:"kind"`
-	CategoryID int       `json:"category_id"`
-	Category   string    `json:"category,omitempty"`
-	Amount     int       `json:"amount"`
-	Method     string    `json:"method"`
-	Notes      string    `json:"notes"`
-	CreatedBy  int       `json:"created_by"`
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
-	Creator    string    `json:"creator,omitempty"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID             int       `json:"id"`
+	Code           string    `json:"code"`
+	Date           string    `json:"date"`
+	Kind           string    `json:"kind"`
+	CategoryID     int       `json:"category_id"`
+	Category       string    `json:"category,omitempty"`
+	Amount         int       `json:"amount"`
+	Method         string    `json:"method"`
+	Notes          string    `json:"notes"`
+	CreatedBy      int       `json:"created_by"`
+	IdempotencyKey string    `json:"idempotency_key,omitempty"`
+	Creator        string    `json:"creator,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type Summary struct {
