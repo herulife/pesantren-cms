@@ -31,7 +31,8 @@ func setupAuthTestDB(t *testing.T) *sql.DB {
 		role TEXT NOT NULL,
 		token_version INTEGER DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		last_login_at DATETIME
+		last_login_at DATETIME,
+		photo_url TEXT
 	);`
 	if _, err := db.Exec(schema); err != nil {
 		t.Fatalf("failed to create schema: %v", err)
