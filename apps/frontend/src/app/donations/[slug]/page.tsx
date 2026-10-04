@@ -482,7 +482,7 @@ export default function DonationDetailPage() {
             </div>
 
             <div className="overflow-hidden rounded-[2rem] border border-sky-100 bg-white shadow-[0_30px_80px_-40px_rgba(59,130,246,0.35)]">
-              <div className="relative h-[480px] bg-slate-100">
+              <div className="relative h-[280px] sm:h-[360px] lg:h-[480px] bg-slate-100">
                 {imageUrl ? (
                   <Image
                     src={imageUrl}
