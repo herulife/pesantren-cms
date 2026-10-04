@@ -14,7 +14,8 @@ import (
 // bukan cuma ke schema buangan di unit test.
 //
 // Contoh:
-//   WALI_TEST_DB=/home/heru/alma-parung/data/scratch.db go test ./internal/features/walisantri/ -run ListAll -v
+//
+//	WALI_TEST_DB=/home/heru/alma-parung/data/scratch.db go test ./internal/features/walisantri/ -run ListAll -v
 func TestListAllAgainstRealDatabase(t *testing.T) {
 	dbPath := os.Getenv("WALI_TEST_DB")
 	if dbPath == "" {
