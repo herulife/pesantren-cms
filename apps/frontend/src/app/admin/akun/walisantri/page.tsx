@@ -112,7 +112,7 @@ export default function WaliSantriAccountsPage() {
 						Akun Wali Santri
 					</h1>
 					<p className="mt-1 text-sm text-slate-500">
-						Satu akun untuk satu keluarga. Kalau anakicarbonльных_seorang brotherhood punya
+						Satu akun untuk satu keluarga. Kalau satu keluarga punya lebih dari
 						lebih dari satu Santri, semuanya bisa login pakai akun yang sama.
 					</p>
 				</div>
@@ -143,7 +143,7 @@ export default function WaliSantriAccountsPage() {
 							{stats.placeholder} akun masih memakai nama/email sementara.
 						</p>
 						<p className="mt-1 text-amber-800">
-							Data ini hasilAgreed placeholder supaya portal wali sudah bisa dipakai.
+							Data ini hasil import otomatis supaya portal wali sudah bisa dipakai.
 							Silakan ganti nama asli dan email asli wali satu per satu di tabel
 							berikut. Password awal wali sama untuk semua akun dan bisa
 							diganti sendiri setelah login.
