@@ -275,7 +275,7 @@ func buildPlan(db *sql.DB) ([]Account, Stats, error) {
 			note = "NAMA PLACEHOLDER - ganti dari /admin/akun/walisantri"
 		}
 		if len(members) > 1 {
-			note += " | keluarga %d Santri" % len(members)
+			note += fmt.Sprintf(" | keluarga %d Santri", len(members))
 		}
 
 		accounts = append(accounts, Account{
