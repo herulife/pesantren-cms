@@ -16,6 +16,7 @@ import {
   Trash2,
   TriangleAlert,
   UserRound,
+  Users,
 } from 'lucide-react';
 
 const inputClass =
@@ -348,6 +349,22 @@ export default function AccountPage() {
             </button>
           </div>
         </form>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-black text-slate-900">Akun Wali Santri</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Lihat dan ubah nama serta email wali yang dipakai untuk login portal. Satu akun
+          untuk satu keluarga, jadi kalau satu keluarga punya lebih dari satu Santri,
+          semuanya tertaut ke satu akun.
+        </p>
+        <Link
+          href="/admin/akun/walisantri"
+          className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+        >
+          <Users size={16} />
+          Kelola Akun Wali Santri
+        </Link>
       </section>
     </div>
   );

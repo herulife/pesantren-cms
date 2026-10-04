@@ -26,6 +26,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Dashboard', label: 'Dashboard Utama', href: '/admin', docRef: 'dashboard' },
   { category: 'Sistem', label: 'Data Pegawai', href: '/admin/employees', roles: ['superadmin', 'bendahara'], docRef: 'teachers' },
   { category: 'Sistem', label: 'Kelas & Tahun Ajaran', href: '/admin/school', roles: ['superadmin', 'bendahara', 'panitia_psb'], docRef: 'santri-data' },
+  { category: 'Sistem', label: 'Akun Wali Santri', href: '/admin/akun/walisantri', roles: ['superadmin', 'bendahara'], docRef: 'santri-data' },
   { category: 'Sistem', label: 'Absensi & Rekap Guru', href: '/admin/teachers/report', roles: ['superadmin', 'bendahara'], docRef: 'teachers' },
   { category: 'Konten & Publikasi', label: 'Data Pengajar', href: '/admin/teachers', roles: ['superadmin', 'tim_media'], docRef: 'teachers' },
   { category: 'Transaksi', label: 'Pembayaran SPP', href: '/admin/payments', roles: ['bendahara'], docRef: 'payments' },
