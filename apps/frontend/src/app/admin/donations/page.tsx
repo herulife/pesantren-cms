@@ -678,11 +678,11 @@ export default function DonationsAdminPage() {
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDonorModalOpen(false)}></div>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative shrink-0 overflow-hidden">
             <form onSubmit={handleSaveDonor}>
-              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center">
+              <div className="px-5 sm:px-10 py-6 sm:py-8 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="text-2xl font-black text-slate-900 uppercase font-outfit tracking-tight">{editingDonor ? 'Ubah Donatur' : 'Tambah Donatur'}</h3>
                 <button type="button" onClick={() => setIsDonorModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
               </div>
-              <div className="p-10 space-y-6">
+              <div className="p-5 sm:p-10 space-y-6">
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Nama Donatur *</label>
                   <input
@@ -722,7 +722,7 @@ export default function DonationsAdminPage() {
                   ></textarea>
                 </div>
               </div>
-              <div className="px-10 py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+              <div className="px-5 sm:px-10 py-6 sm:py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
                 <button
                   type="button"
                   onClick={() => setIsDonorModalOpen(false)}
@@ -747,11 +747,11 @@ export default function DonationsAdminPage() {
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsTxModalOpen(false)}></div>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative shrink-0 overflow-hidden">
             <form onSubmit={handleSaveTx}>
-              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center">
+              <div className="px-5 sm:px-10 py-6 sm:py-8 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="text-2xl font-black text-slate-900 uppercase font-outfit tracking-tight">{editingTx ? 'Ubah Transaksi' : 'Catat Transaksi'}</h3>
                 <button type="button" onClick={() => setIsTxModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
               </div>
-              <div className="p-10 space-y-6">
+              <div className="p-5 sm:p-10 space-y-6">
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Program Kampanye *</label>
                   <select
@@ -850,7 +850,7 @@ export default function DonationsAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className="px-10 py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+              <div className="px-5 sm:px-10 py-6 sm:py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
                 <button
                   type="button"
                   onClick={() => setIsTxModalOpen(false)}
