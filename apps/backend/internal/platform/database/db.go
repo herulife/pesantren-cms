@@ -1176,7 +1176,11 @@ func runMigrations() {
 			sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_status ON wa_notifications(status);`,
 		},
 		{
-			name: "santri_user_unique",
+			// Jilid 76: satu akun wali boleh dipakai BEBAS SANTRI se-JAKARTA
+			// (sibling satu keluarga berbagi 1 login). Sebelumnya
+			// idx_santri_user_unique melarang itu. Query performance tetap
+			// aman karena idx_santri_user (non-unique) sudah ada di atas.
+			name: "santri_user_unique_drop",
 			sql:  `DROP INDEX IF EXISTS idx_santri_user_unique;`,
 		},
 		{
