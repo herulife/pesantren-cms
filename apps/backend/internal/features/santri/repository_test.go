@@ -129,7 +129,7 @@ func TestLinkUserExclusiveAllowsSiblingSharing(t *testing.T) {
 	}
 
 	var shared int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM notori WHERE user_id = ?`, portalID).Scan(&shared); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM santri WHERE user_id = ?`, portalID).Scan(&shared); err != nil {
 		t.Fatalf("count shared failed: %v", err)
 	}
 	if shared != 3 {
