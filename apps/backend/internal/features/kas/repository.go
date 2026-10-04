@@ -15,6 +15,11 @@ type Category struct {
 	Creator   string    `json:"creator,omitempty"`
 	Updater   string    `json:"updater,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
+	// IsAutoSource = 1 berarti nama kategori ini sama dengan salah satu sumber
+	// otomatis (SPP/Iuran/Donasi). Nominal di kategori ini SENGAJA tidak
+	// dijumlahkan ke KasIncome supaya tidak dobel (Jilid 75). Frontend memakai
+	// flag ini untuk memberi peringatan sebelum bendahara menyimpan transaksi.
+	IsAutoSource int `json:"is_auto_source"`
 }
 
 var ErrKasDuplicate = errors.New("transaksi sudah dicatat sebelumnya")
@@ -52,7 +57,7 @@ type Repository struct{ db *sql.DB }
 func NewRepository(db *sql.DB) *Repository { return &Repository{db: db} }
 
 func (r *Repository) ListCategories(kind string) ([]Category, error) {
-	q := `SELECT c.id, c.code, c.name, c.kind, COALESCE(u1.name,''), COALESCE(u2.name,''), c.created_at FROM kas_categories c LEFT JOIN users u1 ON u1.id=c.created_by LEFT JOIN users u2 ON u2.id=c.updated_by`
+	q := `SELECT c.id, c.code, c.name, c.kind, COALESCE(u1.name,''), COALESCE(u2.name,''), c.created_at, COALESCE(c.is_auto_source,0) FROM kas_categories c LEFT JOIN users u1 ON u1.id=c.created_by LEFT JOIN users u2 ON u2.id=c.updated_by`
 	args := []interface{}{}
 	if kind == "masuk" || kind == "keluar" {
 		q += ` WHERE kind=?`
@@ -67,7 +72,7 @@ func (r *Repository) ListCategories(kind string) ([]Category, error) {
 	out := []Category{}
 	for rows.Next() {
 		var c Category
-		if err := rows.Scan(&c.ID, &c.Code, &c.Name, &c.Kind, &c.Creator, &c.Updater, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Code, &c.Name, &c.Kind, &c.Creator, &c.Updater, &c.CreatedAt, &c.IsAutoSource); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
