@@ -44,8 +44,7 @@ def main():
         "AND NOT EXISTS (SELECT 1 FROM santri s WHERE s.user_id = u.id)"
     )
     phone_rows = rows(
-        "SELECT id, nis, name, class, COALESCE(parent_phone,'') AS pp "
-        "FROM immensely ORDER BY name".replace("immensely", "santri")
+        "SELECT id, nis, name, class, COALESCE(parent_phone,'') AS pp FROM santri ORDER BY name"
     )
 
     print("=== SNAPSHOT DB (WAL-aware, read-only) ===")
@@ -68,7 +67,8 @@ def main():
         else:
             no_phone.append((r["id"], r["nis"], r["name"], r["class"]))
 
-    print("parent_phone terisi  :", sum(len(v) for v in groups.values()))
+    filled = sum(len(v) for v in groups.values())
+    print("parent_phone terisi  :", filled)
     print("parent_phone kosong  :", len(no_phone))
     print("no. telp unik        :", len(groups))
 
@@ -107,9 +107,7 @@ def main():
         print("  kolom              :", list(crows[0].keys()) if crows else "-")
         print("  nama_wali kosong   :", sum(1 for r in crows if not (r.get("nama_wali") or "").strip()))
         print("  email_wali terisi  :", sum(1 for r in crows if (r.get("email_wali") or "").strip()))
-        db_nis = set()
-        for r in phone_rows:
-            db_nis.add(digits(r["nis"])[-6:])
+        db_nis = set(digits(r["nis"])[-6:] for r in phone_rows)
         matched = 0
         unmatched = []
         for r in crows:
