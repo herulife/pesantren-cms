@@ -64,6 +64,98 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
 
+## Jilid 76 - Akun Wali Santri: satu akun per keluarga + halaman `/admin/akun/walisantri` (4 Okt 2026, LIVE)
+
+**Order user:** isi data wali dari `DATA-WALI.csv` (boleh ngarang), harus bisa diedit
+setelahwards, supaya wali bisa masuk portal wali Santri. Daftar akunnya ditulis di
+`/admin/akun walisantri`.
+
+### Keputusan yang dikunci user
+- Satu akun wali per **keluarga**: saudara bisa login pakai 1 akun dan melihat semua
+  Santri-nya.
+- Password awal **sama untuk semua** wali, dibuat saat import, wali bisa ganti sendiri.
+- Santri tanpa data wali dapat **placeholder** dan ditandai perlu dilengkapi.
+- Akun `role=user` yatim **tidak dihapus**, hanya ditampilkan.
+
+### Temuan arsitektur (blocker, sudah diputuskan user untuk proceed)
+DB punya `CREATE UNIQUE INDEX idx_santri_user_unique ON santri(user_id)`, artinya satu
+akun **hanya boleh** tertaut ke 1 Santri. Ini bertabrakan dengan "satu akun per keluarga".
+Riset: `FindByUserID()`, `GET /my-santri`, query `my-bills`/`my-ledger`
+(`JOINxon s.user_id`), dan `portal/payment-spp` **sudah** multi-Santri-ready. Yang masih
+asumsi 1:1 hanya 2 endpoint tautan admin + migration index.
+User menyetujui: **drop index** (bukan mundur ke 1 akun per Santri).
+
+### Perubahan
+**Skema (paling penting):**
+- `db.go` migration `santri_user_unique` -> `santri_user_unique_drop`
+  (`DROP INDEX IF EXISTS idx_santri_user_unique`). Performa aman karena index
+  non-unique `idx_santri_user` sudah ada.
+- **Rollback ke image lama akan membuat index kembali** (image <= j75 masih
+  `CREATE UNIQUE INDEX`). Setelah rollback, index WAJIB di-drop ulang sebelum
+  dipakai lagi, kalau tidak multi-Santri tidak akan bisa disimpan.
+
+**Backend:**
+- `internal/features/santri/accounts.go` - `LinkUserExclusive` tetap demi kompatibilitas
+  route/frontend tapi **tidak lagi eksklusif** (sekarang: akun harus ada + `role='user'`).
+  `FindAvailablePortalUsers` sekarang menampilkan akun yang **sudah** tertaut, supaya
+  admin bisa menggabungkan saudara.
+- `internal/features/walisantri/` (baru) - `GET /api/wali-santri` + `PUT /api/wali-santri/{id}`
+  (`{name,email}`). List mengembalikan akun + semua Santri-nya + akun yatim + statistik.
+  `RequireRole("superadmin","bendahara")`. Validasi di `validators.WaliUpdateRequest`.
+  Email duplicate -> 409, error DB tidak pernah dibocorkan ke response.
+- `cmd/importwali/main.go` (baru) - import wali. **Default dry-run**, satu transaksi,
+  password wajib lewat `WALI_INITIAL_PASSWORD` / `-password-file` (tidak disimpan di
+  repo), laporan kredensial mode 0600, `assertPortalAccount` menolak akun staff,
+  idempoten.
+
+**Frontend:**
+- `lib/api.ts` - tipe + `getWaliSantriAccounts` / `updateWaliSantriAccount`.
+- `app/admin/akun/walisantri/page.tsx` (baru) - statistik, search, filter nama karangan,
+  inline edit nama/email, badge nama karangan vs nama asli, daftar akun yatim.
+  Guard role di UI (backend tetap yang menegakkan).
+- `lib/roleMenus.ts` - menu "Akun Wali Santri" (superadmin, bendahara).
+- `app/admin/akun/page.tsx` - link ke halaman tersebut.
+
+**Data (dipakai di produksi):**
+- Grouping pakai `parent_phone` **penuh** dari DB, bukan `no_hp_wali` di CSV (kolom CSV
+  cuma 9 digit terakhir sehingga 84 dari 90 baris bentrok antar-ayah).
+- Dari 95 Santri jadi **89 akun wali**: 77 satuan + 5 keluarga (11 Santri) + 7 tanpa HP
+  yang **satu akun per Santri** (HP kosong tidak boleh digabung hanya karena nama wali sama).
+- 6 akun lama jadi yatim (20 -> 26), tidak dihapus.
+- 53 dari 89 nama wali memakai data asli (`parent_name`); 36 masih karangan
+  ("Wali <nama Santri>"). Semua email masih `@almaparung.local` dan harus diganti.
+- Email placeholder: `wali<9 digit terakhir>@almaparung.local`, atau
+  `wali-santri<id>@almaparung.local` bila tanpa HP. 0 duplikat, 0 bentrok dengan user lama.
+- Duplikat `Naila Fithriyya Aziz` (id 134 kelas VI + id 147 kelas SEMENTARA) sengaja
+  TIDAK digabung (beda status/HP) -> dua akun, flagged buat dicek admin.
+
+### Verifikasi
+- `go build ./...` + `go vet ./...` bersih; `go test ./...` semua hijau
+  (`features/auth` ikut hijau setelah schema test-nya ditambah kolom `photo_url` yang
+  tertinggal dari Jilid 69 - pre-existing, bukan efek jilid ini).
+- Test baru: `TestLinkUserExclusiveAllowsSiblingSharing`,
+  `TestLinkUserExclusiveStillRejectsStaff`,
+  `TestFindAvailablePortalUsersShowsLinkedAccounts`.
+- `TestListAllAgainstRealDatabase` (integration, skip kalau `WALI_TEST_DB` kosong)
+  terhadap snapshot WAL-aware produksi: 89 akun / 95 Santri / 5 keluarga / 26 yatim.
+- Import dry-run lalu `-apply` di produksi (setelah backup). Verifikasi ulang:
+  95 Santri tertaut, 89 akun wali, 0 email duplikat.
+- **Login nyata sungguhan:** `wali386353505@almaparung.local` -> 200, `GET /api/my-santri`
+  mengembalikan **2** Santri (Aisyah Hasna Sofiyah + Azuma Zayanfaqiha),
+  `GET /api/my-bills` mengembalikan **2** tagihan. Bukti sibling sharing jalan end-to-end.
+- `npx tsc --noEmit --incremental false` bersih; `npm run build` sukses.
+
+### Catatan operasional
+- Backup pra-import: `data/alma-parung.db.bak-prej76-20261004-120532` (Online Backup API,
+  WAL-aware, `integrity_check` = ok).
+- Laporan kredensial (BERISI PASSWORD AWAL, mode 0600): `data/wali-akun.csv`.
+  Jangan di-commit dan jangan dibagikan mentah - hapus setelah didistribusikan.
+- Password awal dibaca dari `/tmp/wali-pw.txt` (mode 0600), tidak pernah dicetak ke log.
+- `.dockerignore` ditambah `.gocache/`, `.gomodcache/`, `__pycache__/`, `*.tsbuildinfo`
+  (4.7 GB cache ikut jadi build context -> build backend gagal "closed pipe").
+- Script audit: `scripts/wali_audit_snapshot.py` (read-only) dan
+  `scripts/wali_plan_preview.py` (cek collision email sebelum import).
+
 ## Jilid 75 - Papan Kas: audit satu sumber, anti dobel-hitung, panel "Perlu Perhatian" (4 Okt 2026, LIVE)
 
 **Order user:** bikin Papan Kas yang "bisa dipantau manusia" — total dengan
