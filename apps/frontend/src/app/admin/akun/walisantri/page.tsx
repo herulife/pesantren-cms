@@ -8,6 +8,7 @@ import {
 	WaliList,
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import { useAuth } from '@/components/AuthProvider';
 import {
 	AlertTriangle,
 	BadgeCheck,
@@ -26,6 +27,9 @@ type EditDraft = { name: string; email: string };
 
 export default function WaliSantriAccountsPage() {
 	const { showToast } = useToast();
+	const { user, loading: authLoading } = useAuth();
+	// Backend juga menegakkan RequireRole, jadi ini hanya pesan ramah.
+	const allowed = user?.role === 'superadmin' || user?.role === 'bendahara';
 	const [data, setData] = useState<WaliList | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [q, setQ] = useState('');
@@ -50,8 +54,9 @@ export default function WaliSantriAccountsPage() {
 
 	// eslint-disable-next-line react-hooks/set-state-in-effect
 	useEffect(() => {
+		if (authLoading || !allowed) return;
 		void load();
-	}, [load]);
+	}, [load, authLoading, allowed]);
 
 	const filtered = useMemo(() => {
 		if (!data) return [];
@@ -106,6 +111,16 @@ export default function WaliSantriAccountsPage() {
 
 	return (
 		<div className="space-y-6">
+			{!authLoading && !allowed ? (
+				<div className="rounded-2xl border border-rose-200 bg-rose-50 p-10 text-center">
+					<TriangleAlert className="mx-auto h-8 w-8 text-rose-600" />
+					<p className="mt-3 text-base font-black text-rose-900">Akses ditolak</p>
+					<p className="mt-1 text-sm text-rose-700">
+						Halaman ini hanya untuk Super Admin dan Bendahara.
+					</p>
+				</div>
+			) : (
+			<>
 			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h1 className="text-2xl font-black tracking-tight text-slate-900">
@@ -313,6 +328,8 @@ export default function WaliSantriAccountsPage() {
 						))}
 					</div>
 				</section>
+			)}
+			</>
 			)}
 		</div>
 	);
