@@ -1177,7 +1177,7 @@ func runMigrations() {
 		},
 		{
 			name: "santri_user_unique",
-			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_santri_user_unique ON santri(user_id);`,
+			sql:  `DROP INDEX IF EXISTS idx_santri_user_unique;`,
 		},
 		{
 			name: "normalize_semester_1",
