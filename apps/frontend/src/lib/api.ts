@@ -3889,6 +3889,36 @@ export async function getKasSummary(date_from = "", date_to = ""): Promise<KasSu
   } catch (e) { console.error("[API] Fetch kas summary error:", e); return null; }
 }
 
+export interface KasAuditSource { key: string; label: string; amount: number; count: number; origin: string; table: string; }
+export interface KasAuditRow { id: number; date: string; label: string; detail: string; amount: number; }
+export interface KasAuditAnomaly { severity: string; title: string; detail: string; amount?: number; count?: number; scope: string; }
+export interface KasAudit {
+  date_from?: string;
+  date_to?: string;
+  sources: KasAuditSource[];
+  total_income: number;
+  expense: number;
+  balance: number;
+  count_in: number;
+  count_out: number;
+  excluded_amount: number;
+  excluded_count: number;
+  excluded_rows: KasAuditRow[];
+  rows: Record<string, KasAuditRow[]>;
+  anomalies: KasAuditAnomaly[];
+}
+
+export async function getKasAudit(date_from = "", date_to = ""): Promise<KasAudit | null> {
+  try {
+    const q = new URLSearchParams();
+    if (date_from) q.set("date_from", date_from);
+    if (date_to) q.set("date_to", date_to);
+    const res = await fetch(`${API_BASE_URL}/kas/audit?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || null) as KasAudit | null;
+  } catch (e) { console.error("[API] Fetch kas audit error:", e); return null; }
+}
+
 export interface PerGuruRow { teacher_id: number; teacher_name: string; subject_count: number; subjects: string; student_count: number; grade_count: number; avg_final: number; }
 export async function getReportPerGuru(params: { semester?: string; year?: string } = {}) {
   try {
