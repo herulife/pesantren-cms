@@ -154,7 +154,7 @@ func (h *Handler) LinkUserExclusiveHandler(w http.ResponseWriter, r *http.Reques
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "LINK_SANTRI_USER", Entity: "santri", EntityID: strconv.Itoa(id),
 		After: map[string]interface{}{"user_id": req.UserID},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, "Akun santri berhasil ditautkan. Wali login memakai akun ini.", nil)
 }
@@ -194,7 +194,7 @@ func (h *Handler) ResetSantriPassword(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "RESET_SANTRI_PASSWORD", Entity: "santri", EntityID: strconv.Itoa(id),
 		After: map[string]interface{}{"user_id": uid},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, "Password akun santri direset. Sampaikan password baru ke wali.", nil)
 }
