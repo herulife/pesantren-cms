@@ -16,6 +16,7 @@ import (
 	"almaparung-api/internal/features/invoices"
 	"almaparung-api/internal/features/iuran"
 	"almaparung-api/internal/features/kas"
+	"almaparung-api/internal/features/walisantri"
 	"almaparung-api/internal/features/logs"
 	"almaparung-api/internal/features/messages"
 	"almaparung-api/internal/features/news"
@@ -165,6 +166,9 @@ func main() {
 
 	kasRepo := kas.NewRepository(database.DB)
 	kasHandler := kas.NewHandler(kasRepo)
+
+	waliSantriRepo := walisantri.NewRepository(database.DB)
+	waliSantriHandler := walisantri.NewHandler(waliSantriRepo)
 
 	hrRepo := hr.NewRepository(database.DB)
 	hrHandler := hr.NewHandler(hrRepo)
