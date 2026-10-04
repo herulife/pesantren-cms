@@ -36,14 +36,19 @@ def main():
 
     groups = defaultdict(list)
     for r in rows:
-        groups[digits(r["pp"])].append(r)
+        key = digits(r["pp"])
+        if key == "":
+            # Tanpa nomor HP tidak boleh digabung: satu akun per Santri,
+            # walau nama walinya kebetulan sama.
+            key = "solo:%d" % r["id"]
+        groups[key].append(r)
 
     plan = []
     for key, members in groups.items():
-        if key:
-            email = "wali%s@almaparung.local" % key[-9:]
+        if key.startswith("solo:"):
+            email = "wali-santri%d@almaparung.local" % members[0]["id"]
         else:
-            email = "wali-santri%d@almaparung.local" % min(x["id"] for x in members)
+            email = "wali%s@almaparung.local" % key[-9:]
         plan.append((key, email, members))
 
     emails = [p[1] for p in plan]
@@ -79,12 +84,10 @@ def main():
     print("")
     print("=== 7 AKUN TANPA NO. HP (placeholder) ===")
     for key, email, members in plan:
-        if key:
+        if not key.startswith("solo:"):
             continue
         m = members[0]
-        print(
-            "%-42s %-26s wali=%r" % (email, m["name"], m["pn"])
-        )
+        print("%-44s %-26s wali=%r" % (email, m["name"], m["pn"]))
 
     con.close()
 
