@@ -135,7 +135,7 @@ func main() {
 	}
 
 	fmt.Println("")
-	fmt.Println("=== IMPORT SELESAI (dry-run: tidak) ===")
+	fmt.Println("=== IMPORT SELESAI ===")
 
 	if *reportPath != "" {
 		if err := writeReport(*reportPath, accounts, password); err != nil {
