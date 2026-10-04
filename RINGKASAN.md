@@ -67,7 +67,7 @@ Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungs
 ## Jilid 76 - Akun Wali Santri: satu akun per keluarga + halaman `/admin/akun/walisantri` (4 Okt 2026, LIVE)
 
 **Order user:** isi data wali dari `DATA-WALI.csv` (boleh ngarang), harus bisa diedit
-setelahwards, supaya wali bisa masuk portal wali Santri. Daftar akunnya ditulis di
+nanti, supaya wali bisa masuk portal wali Santri. Daftar akunnya ditulis di
 `/admin/akun walisantri`.
 
 ### Keputusan yang dikunci user
@@ -81,8 +81,8 @@ setelahwards, supaya wali bisa masuk portal wali Santri. Daftar akunnya ditulis 
 DB punya `CREATE UNIQUE INDEX idx_santri_user_unique ON santri(user_id)`, artinya satu
 akun **hanya boleh** tertaut ke 1 Santri. Ini bertabrakan dengan "satu akun per keluarga".
 Riset: `FindByUserID()`, `GET /my-santri`, query `my-bills`/`my-ledger`
-(`JOINxon s.user_id`), dan `portal/payment-spp` **sudah** multi-Santri-ready. Yang masih
-asumsi 1:1 hanya 2 endpoint tautan admin + migration index.
+(`JOIN s.user_id`), dan `portal/payment-spp` **sudah** multi-Santri-ready. Yang
+masih asumsi 1:1 hanya 2 endpoint tautan admin + migration index.
 User menyetujui: **drop index** (bukan mundur ke 1 akun per Santri).
 
 ### Perubahan
