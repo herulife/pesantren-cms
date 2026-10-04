@@ -113,7 +113,7 @@ export default function WaliSantriAccountsPage() {
 					</h1>
 					<p className="mt-1 text-sm text-slate-500">
 						Satu akun untuk satu keluarga. Kalau satu keluarga punya lebih dari
-						lebih dari satu Santri, semuanya bisa login pakai akun yang sama.
+						satu Santri, semuanya bisa login pakai akun yang sama.
 					</p>
 				</div>
 				<button
