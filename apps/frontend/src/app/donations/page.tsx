@@ -38,8 +38,6 @@ export default function DonationsPage() {
         setCampaigns(data.filter((c) => c.is_active));
         setSettings(s);
         setStats(st);
-        setCampaigns(data.filter((c) => c.is_active));
-        setSettings(s);
         setError(null);
       } catch (e) {
         console.error('Error fetching campaigns:', e);
