@@ -10,7 +10,7 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - `apps/frontend` — Next.js 16 + React 19 + Tailwind 4. Lihat `apps/frontend/src/{app,components,lib}`.
 - Database prod: `/home/heru/alma-parung/data/alma-parung.db`, di-mount ke container sebagai `/data` (`DB_PATH=/data/alma-parung.db`). Uploads: `data/uploads` → `/app/apps/backend/public/uploads`.
 - Container (**per 1 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
-  selalu `docker ps` untuk memastikan**): `alma-parung-backend` (image `alma-parung-backend:j74-kelas-panel`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-bobot`** (image `alma-parung-frontend:j74-kelas-panel`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback versi sebelumnya: `alma-parung-backend-pre-j74` (image `j69-avatar`) + `alma-parung-frontend-bobot-pre-j74` (image `j72-login-center`) - jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
+  selalu `docker ps` untuk memastikan**): `alma-parung-backend` (image `alma-parung-backend:j75-kas-audit`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-bobot`** (image `alma-parung-frontend:j75-kas-audit`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback versi sebelumnya: `alma-parung-backend-pre-j74` (image `j69-avatar`) + `alma-parung-frontend-bobot-pre-j74` (image `j72-login-center`) - jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
 
 - **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
