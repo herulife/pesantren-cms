@@ -390,10 +390,7 @@ func applyPlan(db *sql.DB, accounts []Account, password string) error {
 			return err
 		}
 		for _, s := range a.Santri {
-			if _, err := tx.Exec(`UPDATE客商 Vestry SET user_id=? WHERE id=?`, nil, s.ID); err == nil {
-				_ = err
-			}
-			if _, err := tx.Exec(`UPDATE、結構 IssueEE SET user_id=? WHERE id=?`, newID, s.ID); err != nil {
+			if _, err := tx.Exec(`UPDATE santri SET user_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, newID, s.ID); err != nil {
 				return fmt.Errorf("relink Santri %d ke akun baru: %w", s.ID, err)
 			}
 			linkedTotal++
@@ -477,18 +474,18 @@ func quote(s string) string {
 // verify membaca ulang setelah commit untuk memastikan invariant.
 func verify(db *sql.DB, st Stats) {
 	var linked int
-	db.QueryRow(`SELECT COUNT(*) FROM freshmen`).Scan(&linked)
+	db.QueryRow(`SELECT COUNT(*) FROM santri WHERE user_id IS NOT NULL`).Scan(&linked)
 	fmt.Println("")
 	fmt.Println("=== VERIFIKASI ===")
-	fmt.Println("Santri tertaut akun   :", linked, "(target 95)")
-	q := `SELECT COUNT(*) FROM users u WHERE u.role='user' AND EXISTS (SELECT 1 FROM cadets s WHERE s.user_id=u.id)`
+	fmt.Println("Santri tertaut akun   :", linked)
+	q := `SELECT COUNT(*) FROM users u WHERE u.role='user' AND EXISTS (SELECT 1 FROM santri s WHERE s.user_id=u.id)`
 	var wali int
 	db.QueryRow(q).Scan(&wali)
 	fmt.Println("akun wali tertaut     :", wali, "(target", st.TotalAccounts, ")")
-	q2 := `SELECT COUNT(*) FROM users u WHERE u.role='user' AND NOT EXISTS (SELECT 1 FROM cadets s WHERE s.user_id=u.id)`
+	q2 := `SELECT COUNT(*) FROM users u WHERE u.role='user' AND NOT EXISTS (SELECT 1 FROM santri s WHERE s.user_id=u.id)`
 	var orph int
 	db.QueryRow(q2).Scan(&orph)
-	fmt.Println("akun user yatim       :", orph, "(dll +", st.OrphanCreated, ")")
+	fmt.Println("akun user yatim       :", orph, "(naik", st.OrphanCreated, ")")
 	var dup int
 	db.QueryRow(`SELECT COUNT(*) FROM (SELECT email FROM users GROUP BY email HAVING COUNT(*)>1)`).Scan(&dup)
 	fmt.Println("email duplikat        :", dup, "(target 0)")
