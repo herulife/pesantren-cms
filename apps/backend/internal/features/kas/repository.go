@@ -213,7 +213,12 @@ func (r *Repository) Summary(dateFrom, dateTo string) (*Summary, error) {
 		args = append(args, dateTo)
 	}
 	s := &Summary{}
-	q := `SELECT COALESCE(SUM(CASE WHEN kind='masuk' THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='keluar' THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='masuk' THEN 1 ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='keluar' THEN 1 ELSE 0 END),0) FROM kas_transactions WHERE ` + strings.Join(where, " AND ")
+	// Kategori kas yang ditandai auto_source (nama SPP/Iuran/Donasi) SENGAJA
+	// dikeluarkan dari kas_income: nominal di situ sudah dihitung lewat
+	// SppIncome/IuranIncome/DonasiIncome dari tabel aslinya. Kalau ikut
+	// dihitung, Income = Spp + Iuran + Donasi + Kas akan dobel (Jilid 75).
+	notAuto := ` AND COALESCE(category_id,0) NOT IN (SELECT id FROM kas_categories WHERE COALESCE(is_auto_source,0)=1)`
+	q := `SELECT COALESCE(SUM(CASE WHEN kind='masuk' THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='keluar' THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='masuk' THEN 1 ELSE 0 END),0), COALESCE(SUM(CASE WHEN kind='keluar' THEN 1 ELSE 0 END),0) FROM kas_transactions WHERE ` + strings.Join(where, " AND ") + notAuto
 	if err := r.db.QueryRow(q, args...).Scan(&s.KasIncome, &s.Expense, &s.CountIn, &s.CountOut); err != nil {
 		return nil, err
 	}
