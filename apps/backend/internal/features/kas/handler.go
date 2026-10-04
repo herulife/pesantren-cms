@@ -229,6 +229,8 @@ func (h *Handler) Audit(w http.ResponseWriter, r *http.Request) {
 	}
 	a, err := h.repo.Audit(from, to)
 	if err != nil {
+		// Detail error hanya ke log server: jangan bocorkan pesan SQL ke klien.
+		log.Printf("[Kas] audit gagal date_from=%q date_to=%q: %v", from, to, err)
 		writeJSON(w, 500, false, "Gagal memuat data audit kas", nil)
 		return
 	}
