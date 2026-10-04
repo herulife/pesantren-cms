@@ -73,7 +73,7 @@ func (r *Repository) ListAll() (*List, error) {
 		COALESCE(u.last_login_at,'')
 		FROM users u
 		WHERE u.role='user'
-		  AND EXISTS (SELECT 1 FROMsantri s WHERE s.user_id=u.id)
+		  AND EXISTS (SELECT 1 FROM santri s WHERE s.user_id=u.id)
 		ORDER BY u.name COLLATE NOCASE`)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (r *Repository) ListAll() (*List, error) {
 
 	// Tahapan 2: semua Santri yang tertaut, dikelompokkan lewat map.
 	srows, err := r.db.Query(`SELECT s.user_id, s.id, s.nis, s.name, COALESCE(s.class,'')
-		FROMsantri s WHERE s.user_id IS NOT NULL ORDER BY s.name COLLATE NOCASE`)
+		FROM s WHERE s.user_id IS NOT NULL ORDER BY s.name COLLATE NOCASE`)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (r *Repository) ListAll() (*List, error) {
 	// Tahap 3: akun yatim + statistik.
 	orows, err := r.db.Query(`SELECT u.id, u.name, u.email FROM users u
 		WHERE u.role='user'
-		  AND NOT EXISTS (SELECT 1 FROMsantri s WHERE s.user_id=u.id)
+		  AND NOT EXISTS (SELECT 1 FROM s WHERE s.user_id=u.id)
 		ORDER BY u.id`)
 	if err != nil {
 		return nil, err
