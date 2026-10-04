@@ -94,8 +94,8 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 
 	// --- 3. Donasi terverifikasi (otomatis dari donations) ---
 	// donF HARUS pakai alias "d." karena donation_campaigns juga punya kolom
-// created_at; tanpa ini query drill-down donasi gagal "ambiguous column".
-donF, donA := dateFilter("d.created_at", dateFrom, dateTo)
+	// created_at; tanpa ini query drill-down donasi gagal "ambiguous column".
+	donF, donA := dateFilter("d.created_at", dateFrom, dateTo)
 	var donFloat float64
 	var donCount int
 	if err := r.db.QueryRow(
