@@ -56,8 +56,13 @@ func (r *Repository) FindAvailablePortalUsers(search string, includeID int) ([]P
 	return users, rows.Err()
 }
 
-// LinkUserExclusive menautkan santri ke akun portal dengan jaminan 1 akun =
-// 1 santri. Menolak bila akun sudah dipakai santri lain.
+// LinkUserExclusive menautkan Santri ke akun portal.
+
+// Jilid 76: nama fungsi dipertahankan demi kompatibilitas route + frontend,
+// tapi TIDAK lagi eksklusif. Satu akun wali boleh dipakai banyak Santri
+// (saudara satu keluarga berbagi 1 login) karena index unik
+// idx_santri_user_unique sudah di-drop. Yang ditegakkan sekarang: akun harus
+// ada dan role='user' (akun staff tidak bisa dipakai sebagai wali).
 func (r *Repository) LinkUserExclusive(santriID, userID int) error {
 	var exists int
 	if err := r.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ? AND role = 'user'`, userID).Scan(&exists); err != nil {
@@ -65,13 +70,6 @@ func (r *Repository) LinkUserExclusive(santriID, userID int) error {
 	}
 	if exists == 0 {
 		return sql.ErrNoRows
-	}
-	var other int
-	if err := r.db.QueryRow(`SELECT COUNT(*) FROM santri WHERE user_id = ? AND id != ?`, userID, santriID).Scan(&other); err != nil {
-		return err
-	}
-	if other > 0 {
-		return ErrUserAlreadyLinked
 	}
 	_, err := r.db.Exec(`UPDATE santri SET user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, userID, santriID)
 	return err
