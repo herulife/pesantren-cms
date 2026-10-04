@@ -64,6 +64,86 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
 
+## Jilid 75 - Papan Kas: audit satu sumber, anti dobel-hitung, panel "Perlu Perhatian" (4 Okt 2026, LIVE)
+
+**Order user:** bikin Papan Kas yang "bisa dipantau manusia" — total dengan
+perhitungan yang terlihat, filter periode berlaku untuk ringkasan + tabel,
+drill-down ke baris pembentuk, daftar hal yang perlu diperhatikan, dan peringatan sebelum
+mencatat transaksi yang rawan dobel-hitung.
+
+**Temuan audit DB produksi (angka dibaca WAL-aware, lihat catatan bawah):**
+- SPP konsisten: `spp_bills.paid_amount` = `payment_transactions`(SPP) = Rp5.150.000,
+  11 tagihan lunas, 0 payment yatim, 0 status-vs-pembayaran tidak cocok, 0 lebih bayar.
+- `iuran_bills` masih 0 baris.
+- 2 donasi Rp200.000 masih `pending` → belum masuk hitungan (memang benar).
+- `psb_payments` #20 (`KWI-2026/000025`, registration_id=55) `amount=0`, `status=paid`,
+  sedangkan tabel `registrations` kosong → tidak bisa jadi bukti lunas.
+- **Akar masalah dobel-hitung:** ada transaksi `kas_transactions` #2 kategori "Donasi"
+  Rp5.000.000 ("renovasi mesjid") sementara campaign "OPEN DONASI RENOVASI MESJID"
+  tercatat 0 terverifikasi. Kalau kategori "Donasi" ikut dijumlahkan lewat
+  `KasIncome` DAN `DonasiIncome`, nominal yang sama terhitung 2x begitu donasi
+  diverifikasi.
+
+**Perubahan backend** (`apps/backend/internal/features/kas/`):
+- `audit.go` (BARU): `GET /api/kas/audit?date_from&date_to` → `Audit{Sources[],
+  TotalIncome, Expense, Balance, CountIn/Out, ExcludedRows[], Rows{}, Anomalies[]}`.
+  `Sources` = SPP / Iuran / Donasi (otomatis) + Kas manual; `Rows` = baris
+  pendukung per sumber untuk drill-down; `Anomalies` = 5 pemeriksaan berbahasa manusia.
+- `repository.go`: kolom `is_auto_source` ditambahkan ke `kas_categories` (migrasi
+  di `internal/platform/database/db.go`), menandai kategori bernama SPP/Iuran/Donasi/
+  donation/pembayaran spp. `Summary()` mengecualikan kategori itu dari `KasIncome`
+  supaya `Income = SPP + Iuran + Donasi + Kas` tidak dobel. `CountIn` diperbaiki:
+  sebelumnya hanya menghitung baris kas manual (0), jadi kartu menulis
+  "Pemasukan (0)" padahal Income Rp5.150.000 — sekarang kas manual + bill SPP +
+  bill Iuran + donasi terverifikasi. `Category.IsAutoSource` diekspos ke JSON.
+- `handler.go`: route `GET /audit` + `validDate()` (validasi tanggal kalender
+  sungguhan) + log detail error hanya ke server (`log.Printf`), tidak ke klien.
+
+**Perubahan frontend:**
+- `src/lib/api.ts`: `getKasAudit()`, tipe `KasAudit/KasAuditSource/KasAuditRow/
+  KasAuditAnomaly`, `KasCategory.is_auto_source`.
+- `src/app/admin/kas/page.tsx`: dirombak jadi 3 tab (**Papan Kas** default,
+  Transaksi, Kategori). Kartu besar menampilkan `Pemasukan / Pengeluaran / Saldo`
+  dengan penjumlahan yang terlihat eksplisit di bawah Saldo; tabel "Dari mana
+  pemasukan ini berasal" bisa diklik per sumber untuk drill-down; blok
+  "Tidak dijumlahkan" untuk transaksi yang sudah ter-exclude; panel
+  "Perlu Perhatian" (anomali + peringatan saldo minus); filter periode
+  (Dari/Sampai + preset Bulan ini/Bulan lalu/Semua) yang berlaku untuk audit
+  DAN daftar transaksi; peringatan di form dan badge "tidak dijumlahkan" di
+  tabel transaksi bila kategori auto-source dipilih; label "(otomatis)" di
+  dropdown kategori.
+
+**Cara verifikasi (semua dijalankan, bukan asumsi):**
+- Snapshot DB via SQLite Online Backup API → container uji `:8097`, `GET /api/kas/audit`
+  memakai data produksi nyata: total Rp5.150.000 (SPP saja), `count_in` 11,
+  saldo Rp-5.103.000, `excluded` Rp5.000.000/1 baris. Invarian terpenuhi:
+  `total_income == Σsources`, `count_in == Σcount`, `saldo == masuk − keluar`.
+- Guard input: `date_from=2026-13-45` → 400, `abc` → 400, `2026-01-01 OR 1=1` → 400.
+- Periode: Agustus 2026 → 200 (sebelum fix ini 500 `ambiguous column: created_at`).
+- `npx tsc --noEmit --incremental false` → exit 0. `go build`/`go vet`/`gofmt` bersih.
+- Produksi: `/api/ready` 200, `/api/kas/audit` 401 tanpa login (auth aktif), kedua
+  container healthy.
+
+**Dampak ke pengguna:** angka pemasukan di `/admin/kas` turun drastis (Rp9.650.000 →
+Rp5.150.000) karena transaksi "Donasi" Rp5.000.000 tidak lagi dijumlahkan ganda.
+Angka BARU lebih benar. Transaksi tidak dihapus — tetap terlihat, ditandai
+"tidak dijumlahkan". Saldo produksi sekarang **minus Rp5.103.000** karena
+pengeluaran Rp10.253.000 (8 baris) melampaui pemasukan.
+
+**Belum dikerjakan (menunggu keputusan user):** apa itu transaksi kas "Donasi"
+Rp5.000.000 itu — apakah uang yang sama dengan campaign renovasi mesjid (aman,
+cukup dibiarkan sebagai exclude) atau uang lain yang belum masuk hitungan
+mana pun (perlu dicat ulang ke kategori biasa).
+
+**⚠ Pelajaran metodologi (penting untuk agen berikutnya):** DB produksi SQLite
+ber-**WAL**. Membaca dengan `sqlite3 ... ?mode=ro` atau menyalin file `.db` saja
+menghasilkan **snapshot basi** karena isi `-wal` (4,1 MB saat itu) tidak ikut.
+Akibatnya angka SPP/pengeluaran yang saya laporkan lebih dulu (10 tagihan /
+Rp4.650.000; pengeluaran Rp4.180.000) **SALAH**. Angka benar: 11 tagihan /
+Rp5.150.000; pengeluaran Rp10.253.000. **Selalu** pakai `src.backup(dst)` dari
+koneksi normal (atau `VACUUM INTO`) untuk snapshot konsisten. Backup DB juga
+saya buat dengan cara itu: `data/alma-parung.db.bak-prej75-20261004-084956`.
+
 ## Jilid 74 - Filter kelas ikut data DB (dengan jumlah) + panel Sidebar "Administrasi" untuk menu ex-Classic (2 Okt 2026, LIVE)
 
 **Order user:** (1) di filter Data Santri, daftar kelas "nggak sesuai database" -
