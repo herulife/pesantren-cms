@@ -20,7 +20,7 @@ import (
 // ErrUserAlreadyLinked: tidak lagi dipakai sebagai penolak. Sejak Jilid 76 satu
 // akun wali boleh dipakai banyak Santri (saudara berbagi 1 login), jadi
 // variabel ini dipertahankan hanya supaya kompilasi tidak breakage.
-var ErrUserAlreadyLinked = fmt.Errorf("akun sudah dipakaiisentaraSantri lain")
+var ErrUserAlreadyLinked = fmt.Errorf("akun sudah dipakai Santri lain")
 
 // FindAvailablePortalUsers mengembalikan akun portal (role='user') yang bisa
 // dipakai untuk Santri ini.
