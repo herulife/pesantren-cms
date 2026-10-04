@@ -44,6 +44,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/transactions", h.CreateTransaction)
 	r.Delete("/transactions/{id}", h.DeleteTransaction)
 	r.Get("/summary", h.Summary)
+	r.Get("/audit", h.Audit)
 	return r
 }
 
@@ -209,4 +210,27 @@ func (h *Handler) Summary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, true, "Ringkasan kas berhasil dimuat", s)
+}
+
+// Audit menyuplai Papan Kas: rincian per sumber, baris pendukung, dan daftar
+// anomali dalam satu panggilan (Jilid 75). Validasi tanggal memakai pola yang
+// sama dengan Summary supaya input polluting tidak bisa sneaking masuk lewat
+// query string (?date_from=... OR 1=1).
+func (h *Handler) Audit(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	from, to := q.Get("date_from"), q.Get("date_to")
+	if from != "" && !datePattern.MatchString(from) {
+		writeJSON(w, 400, false, "Format date_from harus YYYY-MM-DD", nil)
+		return
+	}
+	if to != "" && !datePattern.MatchString(to) {
+		writeJSON(w, 400, false, "Format date_to harus YYYY-MM-DD", nil)
+		return
+	}
+	a, err := h.repo.Audit(from, to)
+	if err != nil {
+		writeJSON(w, 500, false, "Gagal memuat data audit kas", nil)
+		return
+	}
+	writeJSON(w, 200, true, "Data audit kas berhasil dimuat", a)
 }
