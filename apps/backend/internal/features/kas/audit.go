@@ -93,11 +93,13 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 	}
 
 	// --- 3. Donasi terverifikasi (otomatis dari donations) ---
-	donF, donA := dateFilter("created_at", dateFrom, dateTo)
+	// donF HARUS pakai alias "d." karena donation_campaigns juga punya kolom
+// created_at; tanpa ini query drill-down donasi gagal "ambiguous column".
+donF, donA := dateFilter("d.created_at", dateFrom, dateTo)
 	var donFloat float64
 	var donCount int
 	if err := r.db.QueryRow(
-		`SELECT COALESCE(SUM(amount),0), COUNT(*) FROM donations WHERE status='verified'`+donF, donA...).
+		`SELECT COALESCE(SUM(d.amount),0), COUNT(*) FROM donations d WHERE d.status='verified'`+donF, donA...).
 		Scan(&donFloat, &donCount); err != nil {
 		return nil, err
 	}
