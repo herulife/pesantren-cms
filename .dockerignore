@@ -18,3 +18,8 @@ backups/
 apps/frontend/.env*
 deploy/darussunnah/data/
 deploy/
+# cache build lokal (besar, tidak perlu di image)
+.gocache/
+.gomodcache/
+__pycache__/
+*.tsbuildinfo
