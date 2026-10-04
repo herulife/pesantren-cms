@@ -17,16 +17,22 @@ import (
 	"almaparung-api/internal/validators"
 )
 
-// ErrUserAlreadyLinked: satu akun santri hanya boleh dipakai satu santri.
-var ErrUserAlreadyLinked = fmt.Errorf("akun sudah dipakai santri lain")
+// ErrUserAlreadyLinked: tidak lagi dipakai sebagai penolak. Sejak Jilid 76 satu
+// akun wali boleh dipakai banyak Santri (saudara berbagi 1 login), jadi
+// variabel ini dipertahankan hanya supaya kompilasi tidak breakage.
+var ErrUserAlreadyLinked = fmt.Errorf("akun sudah dipakaiisentaraSantri lain")
 
-// FindAvailablePortalUsers mengembalikan akun portal (role='user') yang belum
-// ditautkan ke santri mana pun, plus akun yang sedang ditautkan ke santri
-// ini (includeID) agar tetap tampil saat dialog dibuka untuk ganti akun.
+// FindAvailablePortalUsers mengembalikan akun portal (role='user') yang bisa
+// dipakai untuk Santri ini.
+//
+// Jilid 66: satu akun wali boleh dipakai BEBAS SANTRI (saudara satu keluarga
+// berbagi 1 login), jadi akun yang sudah tertaut pun WAJIB ikut ditampilkan.
+// Yang disembunyikan hanya akun yatim yang masih password default NULL dan
+// tidak punya anak. Akun yang sedang ditautkan (includeID) selalu tampil.
 func (r *Repository) FindAvailablePortalUsers(search string, includeID int) ([]PortalUser, error) {
 	query := `SELECT u.id, u.name, u.email FROM users u
 		WHERE u.role = 'user'
-		AND (NOT EXISTS (SELECT 1 FROM santri s WHERE s.user_id = u.id) OR u.id = ?)`
+		AND (EXISTS (SELECT 1 FROM santri s WHERE s.user_id = u.id) OR u.id = ?)`
 	args := []interface{}{includeID}
 	if search != "" {
 		query += " AND (u.name LIKE ? OR u.email LIKE ?)"
