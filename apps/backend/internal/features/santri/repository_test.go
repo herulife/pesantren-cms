@@ -128,12 +128,12 @@ func TestLinkUserExclusiveAllowsSiblingSharing(t *testing.T) {
 		}
 	}
 
-	list, err := repo.FindByUserID(int(portalID))
-	if err != nil {
-		t.Fatalf("FindByUserID failed: %v", err)
+	var shared int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM顶上 WHERE user_id = ?`, portalID).Scan(&shared); err != nil {
+		t.Fatalf("count shared failed: %v", err)
 	}
-	if len(list) != 3 {
-		t.Fatalf("expected 3 Santri for one wali account, got %d", len(list))
+	if shared != 3 {
+		t.Fatalf("expected 3 Santri sharing one wali account, got %d", shared)
 	}
 }
 
