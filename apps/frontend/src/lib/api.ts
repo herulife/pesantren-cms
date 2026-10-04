@@ -1971,6 +1971,7 @@ export interface WaliAccount {
 	whatsapp: string;
 	role: string;
 	is_placeholder: boolean;
+	name_placeholder: boolean;
 	needs_note?: string;
 	last_login_at?: string;
 	santri: WaliSantri[];
