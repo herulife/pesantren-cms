@@ -72,7 +72,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logger.Error(r.Context(), "walisantri update failed", logger.Field{"user_id": id, "error": err.Error()})
-		writeJSON(w, http.StatusBadRequest, false, err.Error(), nil)
+		writeJSON(w, http.StatusInternalServerError, false, "Gagal memperbarui akun wali", nil)
 		return
 	}
 
