@@ -29,6 +29,13 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   `/my-santri`, `my-bills`, `my-ledger` sudah multi-Santri.
   **PENTING saat rollback:** image <= j75 akan recreate index itu saat start.
   Setelah rollback harus `DROP INDEX IF EXISTS idx_santri_user_unique`.
+- **Jilid 78: `GET /api/santri/export` untuk export Excel/PDF — endpoint tanpa
+  paginasi.** Kalau menambah endpoint static di `chi`, daftarkan SEBELUM
+  `r.Get("/{id}")` (route param akan menelannya). Role `wali_kelas` dibatasi
+  kelasnya lewat `scope.Resolve`, dan **fail-closed**: `restrictClasses=true`
+  dengan daftar kelas kosong menghasilkan 0 baris, BUKAN semua data. Jangan
+  memakai `len(classes) == 0` sebagai arti "semua" — 3 akun wali_kelas di DB
+  punya `classes.wali_user_id = NULL` dan akan dapat seluruh data.
 
 ## 2. Dokumen yang wajib dibaca dulu
 
