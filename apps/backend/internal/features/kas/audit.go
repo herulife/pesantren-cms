@@ -35,6 +35,19 @@ type AuditRow struct {
 	Amount int    `json:"amount"`
 }
 
+// AuditExpenseGroup = pengeluaran dikelompokkan per kategori kas.
+//
+// Jilid 80 (laporan Laba Rugi). Sebelumnyafrontend harus menjumlahkan
+// pengeluaran sendiri dari /kas/transactions — padahal endpoint itu limited
+// 50 baris, jadi Laba Rugi bisa meleset begitu data tumbuh. Angka resmi
+// sekarang dihitung di sini, satu sumber kebenaran bersama Audit.Expense.
+type AuditExpenseGroup struct {
+	CategoryID int    `json:"category_id"` // 0 = transaksi tanpa kategori
+	Label      string `json:"label"`
+	Amount     int    `json:"amount"`
+	Count      int    `json:"count"`
+}
+
 type AuditAnomaly struct {
 	Severity string `json:"severity"` // "warning" | "info"
 	Title    string `json:"title"`
@@ -61,6 +74,8 @@ type Audit struct {
 	ExcludedRows   []AuditRow            `json:"excluded_rows"`
 	Rows           map[string][]AuditRow `json:"rows"`
 	Anomalies      []AuditAnomaly        `json:"anomalies"`
+	// ExpenseGroups = pengeluaran per kategori, bahan laporan Laba Rugi.
+	ExpenseGroups []AuditExpenseGroup `json:"expense_groups"`
 }
 
 func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
