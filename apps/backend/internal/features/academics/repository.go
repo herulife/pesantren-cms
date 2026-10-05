@@ -135,7 +135,7 @@ func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]G
 			args = append(args, year)
 		}
 	}
-	query += " ORDER BY u.name ASC"
+	query += " ORDER BY COALESCE(s.name,u.name) ASC"
 	if limit > 0 {
 		query += " LIMIT ? OFFSET ?"
 		args = append(args, limit, offset)
@@ -313,7 +313,7 @@ func (r *Repository) GetAttendance(date string) ([]Attendance, error) {
 		FROM attendance a
 		JOIN users u ON a.student_id = u.id
 		WHERE a.date = ?
-		ORDER BY u.name ASC
+		ORDER BY COALESCE(s.name,u.name) ASC
 	`
 	rows, err := r.db.Query(query, date)
 	if err != nil {
