@@ -3715,6 +3715,33 @@ export async function getSantriClasses(): Promise<SantriClassCount[]> {
 	} catch (e) { console.error('[Kesantrian] classes:', e); return []; }
 }
 
+/**
+ * Baris export "Data Santri": seluruh kolom `santri` PLUS data akun portal
+ * yang tertaut lewat `santri.user_id`. `password_hash` tidak pernah ikut.
+ */
+export interface SantriExportRow extends Santri {
+	has_account: boolean;
+	user_id: number;
+	account_name: string;
+	account_email: string;
+	account_role: string;
+	account_whatsapp: string;
+	last_login_at: string;
+}
+
+/**
+ * Ambil SEMUA data santri tanpa paginasi untuk keperluan export Excel/PDF.
+ * Berbeda dengan `getSantriList` yang hanya satu halaman (20 baris).
+ * Query param sengaja kosong: endpoint ini mengabaikan search/status karena
+ * yang dibutuhkan adalah data lengkap.
+ */
+export async function getSantriExport(): Promise<SantriExportRow[]> {
+	try {
+		const r = await lmsFetch<{ items: SantriExportRow[] }>('/santri/export');
+		return r.data?.items || [];
+	} catch (e) { console.error('[Kesantrian] export:', e); return []; }
+}
+
 export async function setSantriClass(items: { id: number; class: string }[]): Promise<{ ok: boolean; message: string; updated?: number }> {
 	try {
 		const r = await lmsFetch<{ updated?: number }>('/santri/set-class', { method: 'POST', body: JSON.stringify({ items }) });
