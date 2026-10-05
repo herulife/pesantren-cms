@@ -108,7 +108,7 @@ type IRepository interface {
 	LinkUserExclusive(santriID, userID int) error
 	ResetLinkedPassword(santriID int, newPassword string) (int, error)
 	FindByUserID(userID int) ([]Santri, error)
-	ExportAll(classes []string) ([]ExportRow, error)
+	ExportAll(classes []string, restrictClasses bool) ([]ExportRow, error)
 	ListClassesFromSantri(classes []string) ([]ClassCount, error)
 }
 

@@ -136,13 +136,15 @@ func (r *Repository) queryExport(whereStr string, args []interface{}) ([]ExportR
 // TANPA filter search/status, karena permintaannya adalah seluruh data.
 //
 // Pembatasan kelas tetap berlaku: role wali_kelas hanya boleh mengunduh kelas
-// miliknya, sama seperti saat membuka daftar.
+// miliknya, sama seperti saat membuka daftar. Kalau penugasan kelasnya kosong
+// di DB, hasilnya KOSONG (fail-closed), bukan semua data.
 func (h *Handler) ExportAll(w http.ResponseWriter, r *http.Request) {
 	role, _ := auth.GetAuthenticatedRole(r.Context())
 	uid, _ := auth.GetAuthenticatedUserID(r.Context())
 
 	var classes []string
-	if role == "wali_kelas" {
+	restrict := role == "wali_kelas"
+	if restrict {
 		sc, err := scope.Resolve(database.DB, uid, role)
 		if err != nil {
 			logger.Error(r.Context(), "santri export scope failed",
@@ -154,7 +156,7 @@ func (h *Handler) ExportAll(w http.ResponseWriter, r *http.Request) {
 		classes = sc.Classes
 	}
 
-	list, err := h.repo.ExportAll(classes)
+	list, err := h.repo.ExportAll(classes, restrict)
 	if err != nil {
 		logger.Error(r.Context(), "santri export failed", logger.Field{"error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memuat data", nil)
