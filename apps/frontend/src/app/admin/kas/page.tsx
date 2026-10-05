@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { getKasCategories, createKasCategory, updateKasCategory, getKasTransactions, createKasTransaction, deleteKasTransaction, getKasAudit, KasCategory, KasTransaction, KasAudit } from "@/lib/api";
+import { exportToPDF, exportToExcel } from "@/lib/export";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
-import { Plus, Trash2, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronDown, ChevronUp, FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 
 function fmtRp(n: number) { return "Rp " + (n || 0).toLocaleString("id-ID"); }
 function todayStr() { return new Date().toISOString().split("T")[0]; }
@@ -14,7 +15,18 @@ function lastMonthRange() {
   return { from: from.toISOString().split("T")[0], to: to.toISOString().split("T")[0] };
 }
 
+// Batas keras endpoint /kas/transactions (handler menolak limit > 200).
+const TX_LIMIT = 200;
+
 type Tab = "papan" | "tx" | "cat";
+
+/**
+ * Laba Rugi disusun dari angka audit, BUKAN dari dijumlahkan ulang di frontend.
+ * expense_groups sengaja dipakai supaya penjumlahannya tidak pernah meleset dari
+ * audit.expense (backend yang mengunci kedua angka itu).
+ */
+type LRKind = "section" | "income" | "expense" | "total" | "result";
+type LRLine = { kind: LRKind; label: string; count: number; amount: number };
 
 export default function KasAdminPage() {
   const [tab, setTab] = useState<Tab>("papan");
