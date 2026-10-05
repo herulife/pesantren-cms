@@ -45,6 +45,7 @@ func newKasTestDB(t *testing.T) *sql.DB {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		santri_id INTEGER,
 		period TEXT DEFAULT '',
+		amount INTEGER DEFAULT 0,
 		paid_amount INTEGER DEFAULT 0,
 		status TEXT DEFAULT '',
 		paid_at DATETIME
@@ -132,9 +133,10 @@ func TestAuditExpenseGroupsJumlahHarusCocokDenganTotal(t *testing.T) {
 		t.Fatalf("Audit: %v", err)
 	}
 
-	// 100000+50000+250000+20000+50000 = 470000 (voided & periode lain tidak ikut).
-	if a.Expense != 470000 {
-		t.Fatalf("Expense = %d, want 470000", a.Expense)
+	// Tanpa periode semua tanggal ikut: 100000+50000+250000+20000+50000+444444
+	// (2026-09-30). Yang voided (777777) TIDAK ikut.
+	if a.Expense != 914444 {
+		t.Fatalf("Expense = %d, want 914444", a.Expense)
 	}
 
 	total := 0
@@ -145,16 +147,15 @@ func TestAuditExpenseGroupsJumlahHarusCocokDenganTotal(t *testing.T) {
 		t.Fatalf("jumlah ExpenseGroups = %d, harus sama dengan Expense %d", total, a.Expense)
 	}
 
-	// Urut nominal descending, Operasional (150000) sebelum ATK (270000)? tidak:
-	// ATK 270000 harus lebih dulu.
+	// Urut nominal descending.
 	if len(a.ExpenseGroups) != 3 {
 		t.Fatalf("jumlah group = %d, want 3 (Operasional, ATK, Tanpa kategori)", len(a.ExpenseGroups))
 	}
-	if a.ExpenseGroups[0].Label != "ATK" || a.ExpenseGroups[0].Amount != 270000 || a.ExpenseGroups[0].Count != 2 {
-		t.Errorf("group[0] = %+v, want ATK/270000/2", a.ExpenseGroups[0])
+	if a.ExpenseGroups[0].Label != "Operasional" || a.ExpenseGroups[0].Amount != 594444 || a.ExpenseGroups[0].Count != 3 {
+		t.Errorf("group[0] = %+v, want Operasional/594444/3", a.ExpenseGroups[0])
 	}
-	if a.ExpenseGroups[1].Label != "Operasional" || a.ExpenseGroups[1].Amount != 150000 || a.ExpenseGroups[1].Count != 2 {
-		t.Errorf("group[1] = %+v, want Operasional/150000/2", a.ExpenseGroups[1])
+	if a.ExpenseGroups[1].Label != "ATK" || a.ExpenseGroups[1].Amount != 270000 || a.ExpenseGroups[1].Count != 2 {
+		t.Errorf("group[1] = %+v, want ATK/270000/2", a.ExpenseGroups[1])
 	}
 	if a.ExpenseGroups[2].Label != "Tanpa kategori" || a.ExpenseGroups[2].Amount != 50000 || a.ExpenseGroups[2].CategoryID != 0 {
 		t.Errorf("group[2] = %+v, want Tanpa kategori/50000/id0", a.ExpenseGroups[2])
