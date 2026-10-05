@@ -175,6 +175,33 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 	}
 	a.Balance = a.TotalIncome - a.Expense
 
+	// Pengeluaran per kategori (Laba Rugi). Pakai expWhere/expArgs yang SAMA
+	// dengan total di atas supaya penjumlahan baris selalu cocok dengan
+	// a.Expense. Kalau difilter berbeda, Laba Rugi bisa tidak balance.
+	a.ExpenseGroups = []AuditExpenseGroup{}
+	expGroupQuery := `SELECT COALESCE(t.category_id,0), COALESCE(c.name,'Tanpa kategori'), ` +
+		`COALESCE(SUM(t.amount),0), COUNT(*) FROM kas_transactions t ` +
+		`LEFT JOIN kas_categories c ON c.id=t.category_id WHERE ` +
+		strings.Join(expWhere, " AND ") + ` GROUP BY COALESCE(t.category_id,0), c.name ` +
+		`ORDER BY 3 DESC, 2 ASC`
+	expGroupRows, err := r.db.Query(expGroupQuery, expArgs...)
+	if err != nil {
+		return nil, err
+	}
+	for expGroupRows.Next() {
+		var g AuditExpenseGroup
+		if err := expGroupRows.Scan(&g.CategoryID, &g.Label, &g.Amount, &g.Count); err != nil {
+			expGroupRows.Close()
+			return nil, err
+		}
+		a.ExpenseGroups = append(a.ExpenseGroups, g)
+	}
+	if err := expGroupRows.Err(); err != nil {
+		expGroupRows.Close()
+		return nil, err
+	}
+	expGroupRows.Close()
+
 	// --- Baris pendukung: SPP ---
 	if rows, err := r.auditRowsSpp(sppF, sppA); err == nil {
 		a.Rows["spp"] = rows
