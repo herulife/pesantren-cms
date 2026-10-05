@@ -65,6 +65,7 @@ export default function KesantrianPage() {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [exporting, setExporting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<null | { mode: 'single' | 'bulk'; id?: number }>(null);
   const [confirmPurge, setConfirmPurge] = useState<Santri | null>(null);
   const [purging, setPurging] = useState(false);
@@ -295,6 +296,13 @@ export default function KesantrianPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
+            onClick={() => exportData('excel')}
+            disabled={exporting}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+          >
+            <FileSpreadsheet size={16} /> {exporting ? 'Menyiapkan...' : 'Export Excel'}
+          </button>
+          <button
             onClick={() => router.push('/admin/kesantrian/import')}
             className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-700 transition hover:bg-sky-100"
           >
@@ -362,15 +370,17 @@ export default function KesantrianPage() {
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <button
               onClick={() => exportData('pdf')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100"
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
             >
-              <FileText size={14} /> Export PDF
+              <FileText size={14} /> {exporting ? 'Menyiapkan...' : 'Export PDF'}
             </button>
             <button
               onClick={() => exportData('excel')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100"
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
             >
-              <FileSpreadsheet size={14} /> Export Excel
+              <FileSpreadsheet size={14} /> {exporting ? 'Menyiapkan...' : 'Export Excel'}
             </button>
             <button
               onClick={() => setConfirmDelete({ mode: 'bulk' })}
