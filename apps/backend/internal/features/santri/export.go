@@ -63,21 +63,26 @@ type ExportRow struct {
 // kelas, dipakai role yang memang berhak melihat semua data.
 //
 // Catatan: `password_hash` tidak pernah ikut dan tidak boleh ditambahkan.
-func (r *Repository) ExportAll(classes []string) ([]ExportRow, error) {
-	// Pemanggil yang membatasi kelas (wali_kelas) mengirim daftar kelasnya.
-	// Kalau daftarnya kosong, hasilnya harus kosong juga - bukan semua data.
-	// Slice kosong berarti "semua kelas", hanya untuk role yang memang berhak.
-	where := []string{"1=1"}
-	var args []interface{}
-	if classes != nil {
+func (r *Repository) ExportAll(classes []string, restrictClasses bool) ([]ExportRow, error) {
+	// `restrictClasses` = true berarti pemanggil adalah role yang hanya berhak
+	// melihat kelas tertentu (wali_kelas). Fail-closed: daftar kelas kosong
+	// berarti hasil kosong, BUKAN semua data._slice kosong hanya berarti
+	// "semua kelas" kalau restrictClasses=false (role akses penuh).
+	if restrictClasses {
 		if len(classes) == 0 {
 			return []ExportRow{}, nil
 		}
-		where = []string{"s.class IN (" + placeholders(len(classes)) + ")"}
+		where := []string{"s.class IN (" + placeholders(len(classes)) + ")"}
+		args := make([]interface{}, 0, len(classes))
 		for _, c := range classes {
 			args = append(args, c)
 		}
+		return r.queryExport(strings.Join(where, " AND "), args)
 	}
+	return r.queryExport("1=1", nil)
+}
+
+func (r *Repository) queryExport(whereStr string, args []interface{}) ([]ExportRow, error) {
 	whereStr := strings.Join(where, " AND ")
 
 	query := fmt.Sprintf(`SELECT
