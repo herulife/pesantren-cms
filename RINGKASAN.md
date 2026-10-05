@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-05 (**Jilid 79 - Perbaiki tab "Log Transaksi" donasi yang kosong (4 pending tidak pernah tampil, `collected_amount` selalu 0) + pisah DTO admin/publik + proteksi bukti transfer saat edit; Jilid 78b - bersih-bersih storage: 58G -> 37G terpakai (82G free), 11 dangling image + 23 image lama + 3 container uji dihapus, chain rollback tinggal j78->j77->j76; Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-05 (**Jilid 79 - Perbaiki tab "Log Transaksi" donasi yang kosong (4 pending tidak pernah tampil, `collected_amount` selalu 0) + pisah DTO admin/publik + proteksi bukti transfer saat edit; Jilid 78b - bersih-bersih storage: 58G -> 37G terpakai (82G free), 11 dangling image + 23 image lama + 3 container uji dihapus, chain rollback (per 5 Okt, sebelum Jilid 79) j78->j77->j76; Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -188,6 +188,27 @@ tombol "Verifikasi Dana" ditekan.
   + file penanda `.done`. `nohup` saja TIDAK cukup: kalau perintah launch ikut
   ke-terminate oleh timeout tool, anak prosesnya ikut mati di tengah build
   (terjadi 5 Okt: `go mod download` selesai lalu build berhenti di step 5).
+
+### Deploy Jilid 79 (live, image `j79-donasi-pending`)
+| | Container | Image | Port | Rollback (stopped) |
+|---|---|---|---|---|
+| Backend | `alma-parung-backend-j79` | `alma-parung-backend:j79-donasi-pending` | 8090:8080 | `alma-parung-backend-pre-j79` (j78-export-santri) |
+| Frontend | `alma-parung-frontend-j79` | `alma-parung-frontend:j79-donasi-pending` | 3002:3000 | `alma-parung-frontend-pre-j79` (j78-export-santri) |
+
+Rollback j78 masih utuh, jadi chain: **j79 -> j78 -> j77 -> j76** (image j75/j74
+tetap hilang sejak §4 Jilid 78b).
+
+Smoke via domain live (5 Okt, ~22:20):
+```
+/api/ready 200 | /login 200 | /donations 200 | /donations/oven-donasi-beras-10 200
+/ 200 | /psb 200 | /kontak 200 | /admin/kesantrian 307 (tanpa sesi - normal)
+with session   : /admin/donations 200 | /admin/kesantrian 200 | /admin/kas 200
+without session: /admin/donations 307 -> /login ; /api/donations/list 401
+/api/donations/list (sesi bendahara) -> 4 baris pending  ✓
+/api/donations/stats (publik)        -> total_donors 0, total_verified_amount 0
+```
+`total_donors 0` itu BENAR: statistik publik hanya menghitung yang sudah
+verified, dan memang belum ada yang diverifikasi.
 
 ## Jilid 78b - Bersih-bersih storage (5 Okt 2026, LIVE)
 
@@ -2079,7 +2100,7 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 10. [ ] (Opsional) KKM dinamis utk tampilan CBT & PDF predikat ikut KKM (sudah selaras via weight; cek halaman ekslusif CBT).
 11. [ ] Isi UH untuk nilai yang sudah ada — kalau tidak, nilai lama turun saat di-edit ulang. **Catatan 28 Sep: opsi "set bobot UH = 0" TIDAK bisa dipakai** — `weight.ValidateGradeWeights` menolak bobot 0, jadi mapel tanpa ulangan harian perlu bobot redistributed (mis. 30/30/20/20) atau backend diubah agar bobot 0 boleh.
 12. [ ] Bobot yang tersimpan tidak memengaruhi `grades` yang sudah ada; perlu tombol/endpoint "hitung ulang nilai" bila ditanyakan user. Rencana eksekusi sudah ditulis di `HANDOFF.md` item C.
-13. [ ] Jangan hapus: `backups/*.gz|*.db`, image/tag + container agen lain (`pekerjaan-*`, `userdel-*`, `kopraport-*`, `role-separation-*`, `ai-fix*`, `santrifilter-*`), volume `clinic-os-*`, `/tmp/j28` (milik UID lain), `.gomodcache` + `.gocache`, dan base image build (`golang:1.26`, `golang:1.26-alpine`, `node:20-alpine`, `nginx:alpine`). **Kecuali ada perintah user: pada 5 Okt 2026 user menyetujui penghapusan 23 image lama + 3 container uji (lihat §4 Jilid 78b) - chain rollback tinggal j78->j77->j76, sudah tidak bisa ke j75/j74.**
+13. [ ] Jangan hapus: `backups/*.gz|*.db`, image/tag + container agen lain (`pekerjaan-*`, `userdel-*`, `kopraport-*`, `role-separation-*`, `ai-fix*`, `santrifilter-*`), volume `clinic-os-*`, `/tmp/j28` (milik UID lain), `.gomodcache` + `.gocache`, dan base image build (`golang:1.26`, `golang:1.26-alpine`, `node:20-alpine`, `nginx:alpine`). **Kecuali ada perintah user: pada 5 Okt 2026 user menyetujui penghapusan 23 image lama + 3 container uji (lihat §4 Jilid 78b) - chain rollback (per 5 Okt, sebelum Jilid 79) j78->j77->j76, sudah tidak bisa ke j75/j74.**
 14. [ ] Minta user cek di Android/Chrome: field **Kelas** & **Status** di `/admin/kesantrian/form` kini dropdown kustom (image frontend `jilid44`) — pastikan tidak lagi "langsung nutup". Bila `<select>` native di halaman lain (mis. `/admin/school`, `/admin-bs`) juga bermasalah di Android, pola `SelectField` di `app/admin/kesantrian/form/page.tsx` bisa dipakai ulang.
 15. [ ] `CATATAN-JILID42.md` belum diupdate untuk pekerjaan bobot / jilid43 / jilid44 / jilid45 — detail lengkap ada di §4 RINGKASAN. Lengkapi atau tandai usang.
 16. [ ] File `/tmp/pgl/inspect10.js` (milik agen lain) berisi `JWT_SECRET` hardcode — sudah dilaporkan ke user; JANGAN dihapus tanpa izin karena mungkin masih dipakai agen lain.
