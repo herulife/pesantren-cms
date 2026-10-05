@@ -768,7 +768,7 @@ func (h *Handler) GetStudents(w http.ResponseWriter, r *http.Request) {
 // hanya dipanggil sekali per simpan.
 func santriExists(id int) bool {
 	var n int
-	if err := database.DB.QueryRow(`SELECT COUNT(*) FROM Buffer WHERE id = ?`.replace("Buffer", "santri"), id).Scan(&n); err != nil {
+	if err := database.DB.QueryRow(`SELECT COUNT(*) FROM santri WHERE id = ?` , id).Scan(&n); err != nil {
 		return false
 	}
 	return n > 0

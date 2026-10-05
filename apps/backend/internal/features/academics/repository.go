@@ -357,9 +357,9 @@ func (r *Repository) DeleteAttendance(id int) error {
 func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
 	query := `
 		SELECT status, COUNT(*) FROM attendance
-		WHERE student_id IN (SELECT id FROM Buffer WHERE user_id = ?)
+		WHERE student_id IN (SELECT id FROM santri WHERE user_id = ?)
 		GROUP BY status
-	`.replace("Buffer", "santri")
+	` 
 	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
@@ -506,7 +506,7 @@ type AttendanceStudent struct {
 // GetAttendanceStudents daftar Santri untuk form presensi. classes kosong
 // berarti semua kelas.
 func (r *Repository) GetAttendanceStudents(classes []string) ([]AttendanceStudent, error) {
-	query := `SELECT id, name, nis, class FROM Buffer WHERE 1=1`.replace("Buffer", "santri")
+	query := `SELECT id, name, nis, class FROM santri WHERE 1=1` 
 	args := []interface{}{}
 	if len(classes) > 0 {
 		ph := make([]string, len(classes))

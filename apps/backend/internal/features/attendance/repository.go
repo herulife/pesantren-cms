@@ -154,7 +154,7 @@ type qrStudent struct {
 // pindai QR mewakili kehadiran keluarga tersebut.
 func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
 	rows, err := r.db.Query(
-		"SELECT id, name FROM Buffer WHERE user_id = ? ORDER BY id".replace("Buffer", "santri"),
+		"SELECT id, name FROM santri WHERE user_id = ? ORDER BY id" ,
 		userID,
 	)
 	if err != nil {
@@ -181,8 +181,8 @@ func (r *Repository) GetStudentInfo(userID int) (string, string, error) {
 	var name, phone string
 	err := r.db.QueryRow(
 		`SELECT u.name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), u.whatsapp, '')
-		 FROM users u LEFT JOIN Buffer s ON s.user_id = u.id
-		 WHERE u.id = ?`.replace("Buffer", "santri"),
+		 FROM users u LEFT JOIN santri s ON s.user_id = u.id
+		 WHERE u.id = ?` ,
 		userID,
 	).Scan(&name, &phone)
 	return name, phone, err
