@@ -1870,8 +1870,14 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 1b. [ ] **Kelas `M YUSUF RAMADHAN` perlu dikonfirmasi** — sheet bilang kelas 1, DB lama bilang kelas **X**. Dia juga terduplikasi di sheet (2 baris, 1 orang), yang ke-2 sudah dibuang.
 1c. [ ] **2 baris tanpa kelas** (`M DESTA PRATAMA`, `ZULFA FAKHRUNNISA`) diisi `SEMENTARA` — konfirmasi ke user.
 1d. [ ] **Case nama di master sheet tidak konsisten** (ada `Aisyah Khoirunnisa` tapi juga `Alisa adriana putri` dan `AFIFAH SALMA TAZKIA`). Import took apa adanya, tidak diubah. Kalau mau dirapikan, perlu listing dari user dulu.
-2. [ ] **Angka data di §2 hasil recount 1 Okt 2026: `santri` 101 & `users` 122** (paling baru, recount 14:20), turun dari 116/124 yang tercatat Jilid 68 dan 119/126 di Jilid 65. Log container lama menunjukkan sebagian adalah `DELETE .../santri/{id}/purge` deliberate (200) antara 09:37-11:46 + `DELETE /api/users/201` (200) 10:39 — **jadi deletion via UI/API terjadi, sisanya belum dijelaskan.** Pencatatan Jilid 70 (14:20): `santri` turun lagi 103 -> 101; log container backend merekam `DELETE /api/santri/169` (13:15:54) dan `DELETE /api/santri/171` (13:16:48), keduanya 200 — **2 baris ini sekarang TERJELASKAN**. Selisih 116/119 -> 101 masih belum dijelaskan seluruhnya. Lanjut: bandingkan `backups/alma-parung-20261001-020001.db` (126/119) vs `backups/pre-deploy-j69-avatar-20261001-121634.db` (124/105) vs live (122/103) untuk melihat kapan baris hilang. **Jangan menyebut angka lama sebagai fakta tanpa recount.**
-2y. [ ] **Angka-angka lama kedaluwarsa** — §5 item 1/1b/1c/3/4 masih bicara soal 116/119 Buffer dan 74/119 gender/wali kosong; realita sekarang 103 Buffer dengan 24 `lulus`. Counting ulang perlu konfirmasi user.
+2. [ ] **Angka data berubah terus dan SUDAH KEDALUWARSA lagi.** Recount 5 Okt 2026
+   (Jilid 78, `python3` + endpoint `/api/santri/export`): **`santri` 58**, dan 58
+   di antaranya punya akun portal tertaut. Update: 1 Okt `santri` 101 & `users` 122** (paling baru, recount 14:20), turun dari 116/124 yang tercatat Jilid 68 dan 119/126 di Jilid 65. Log container lama menunjukkan sebagian adalah `DELETE .../santri/{id}/purge` deliberate (200) antara 09:37-11:46 + `DELETE /api/users/201` (200) 10:39 — **jadi deletion via UI/API terjadi, sisanya belum dijelaskan.** Pencatatan Jilid 70 (14:20): `santri` turun lagi 103 -> 101; log container backend merekam `DELETE /api/santri/169` (13:15:54) dan `DELETE /api/santri/171` (13:16:48), keduanya 200 — **2 baris ini sekarang TERJELASKAN**. Selisih 116/119 -> 101 masih belum dijelaskan seluruhnya. Lanjut: bandingkan `backups/alma-parung-20261001-020001.db` (126/119) vs `backups/pre-deploy-j69-avatar-20261001-121634.db` (124/105) vs live (122/103) untuk melihat kapan baris hilang. **Jangan menyebut angka lama sebagai fakta tanpa recount.**
+2y. [ ] **Angka-angka lama kedaluwarsa** — §5 item 1/1b/1c/3/4 masih bicara soal
+   116/119 Buffer, 74/119 gender/wali kosong, dst. Sekarang hanya 58 Santri.
+   **Jangan mengulang klaim angka lama; recount dulu** (`python3` atau
+   `GET /api/santri/export`, yang mengembalikan seluruh baris). Counting ulang
+   per kategori perlu konfirmasi user.
 2z. [x] ~~Avatar belum dipakai di Sidebar/FloatingQuickMenu~~ **SELESAI di Jilid 70.** Catatan koreksi: klaim lama ini salah separuh — `Sidebar.tsx` memang **tidak punya avatar user sama sekali** (kotak `A` di header itu logo aplikasi "Al-Maa", bukan inisial), jadi blok identitas baru ditambahkan, bukan cuma menyalakan foto.
 2b. [ ] **Password akun portal hasil import belum ada** (`randomPlaceholderHash`) untuk 124 akun. Kalau wali perlu login, admin harus reset password per akun (menu reset password sudah ada: `POST /api/santri/{id}/reset-password`).
 3. [ ] **Gender 74/119 kosong** (hanya 45 yang carry-over dari DB lama) — kolom gender di master sheet terbalik, jadi tidak dipakai. Perlu sumber gender yang benar.
@@ -1892,20 +1898,20 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
 
 ## 6. PELAJARAN TEKNIS (jangan ulangi)
 - **Daftar filter yang kosong bukan "semua".** `if len(classes) == 0 { semua }`
- 看似 group-member-filter aman, tapi untuk role yang **belum ditugaskan** (`wali_kelas`
-  dengan `classes.wali_user_id = NULL`) justru memberi seluruh data. Fail-closed:
-  keputusan "semua vs tidak punya akses" harus datang dari **role**
-  (`restrictClasses bool`), bukan dari panjang slice. Pola yang sudah ada di
-  `FindAllScoped` dan `GetAttendanceSummary` juga fail-closed. Terlihat di Jilid 78
-  hanya karena 3 akun `wali_kelas` masih `NULL` - kalau semuanya sudah ditugaskan,
-  bug ini lolos ke produksi.
+  kelihatan aman karena "tidak difilter berarti semua", tapi untuk role yang
+  **belum ditugaskan** (`wali_kelas` dengan `classes.wali_user_id = NULL`) justru
+  memberi seluruh data. Fail-closed: keputusan "semua vs tidak punya akses"
+  harus datang dari **role** (`restrictClasses bool`), bukan dari panjang slice.
+  Pola di `FindAllScoped` dan `GetAttendanceSummary` juga fail-closed. Terlihat di
+  Jilid 78 hanya karena 3 akun `wali_kelas` masih `NULL` - kalau semuanya sudah
+  ditugaskan, bug ini lolos ke produksi.
 - **Route static harus didaftarkan SEBELUM route param di `chi`.** `r.Get("/{id}")`
   akan menelan `/export`; daftarkan `r.Get("/export")` di atasnya (lihat `wire_go.py`
   dari agen sebelumnya - sudah pakai asserts untuk ini).
-- **Verifikasi "berapa baris sebenarnya" harus lewat endpoint, bukandefined angka di
-  dokumen.** Count di UI turun dari 20 (1 halaman) ke 58 (semua data) - dua-duanya
-  "berhasil" dari sisi UI, jadi screenshot saja tidak cukup; yang menentukan isi
-  file .xlsx dibaca ulang (`sheet1.xml` = 64 baris = 6 kop + 58 data).
+- **Verifikasi "berapa baris sebenarnya" harus lewat endpoint, bukan angka yang
+  tertulis di dokumen.** Export lama mengexport 20 baris (1 halaman) dan yang baru
+  58 - dua-duanya "berhasil" dari sisi UI, jadi toast saja tidak cukup; isi file
+  .xlsx dibaca ulang (`sheet1.xml` = 64 baris = 6 baris kop + 58 data).
 - **Patch script dengan banyak edit ke file yang sama:** kalau tiap edit langsung
   menulis ke disk, edit terakhir menimpa hasil edit sebelumnya (hanya sebagian
   perubahan yang tertinggal, dan tidak selalu ketahuan). Simpan isi file di dict,
