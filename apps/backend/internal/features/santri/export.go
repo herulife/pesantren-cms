@@ -59,15 +59,15 @@ type ExportRow struct {
 // ExportAll mengembalikan SEMUA data santri tanpa paginasi, supaya Excel di
 // sisi frontend tidak perlu mengambil halaman demi halaman.
 //
-// `classes` membatasi hasil untuk role wali_kelas. Slice kosong berarti semua
-// kelas, dipakai role yang memang berhak melihat semua data.
+// `classes` + `restrictClasses` membatasi hasil untuk role wali_kelas.
+// `restrictClasses=false` berarti role akses penuh (semua kelas).
 //
 // Catatan: `password_hash` tidak pernah ikut dan tidak boleh ditambahkan.
 func (r *Repository) ExportAll(classes []string, restrictClasses bool) ([]ExportRow, error) {
 	// `restrictClasses` = true berarti pemanggil adalah role yang hanya berhak
 	// melihat kelas tertentu (wali_kelas). Fail-closed: daftar kelas kosong
-	// berarti hasil kosong, BUKAN semua data._slice kosong hanya berarti
-	// "semua kelas" kalau restrictClasses=false (role akses penuh).
+	// berarti hasil kosong, BUKAN semua data. "Semua kelas" hanya berlaku
+	// kalau restrictClasses=false (role akses penuh).
 	if restrictClasses {
 		if len(classes) == 0 {
 			return []ExportRow{}, nil
@@ -83,8 +83,6 @@ func (r *Repository) ExportAll(classes []string, restrictClasses bool) ([]Export
 }
 
 func (r *Repository) queryExport(whereStr string, args []interface{}) ([]ExportRow, error) {
-	whereStr := strings.Join(where, " AND ")
-
 	query := fmt.Sprintf(`SELECT
 		s.id,
 		COALESCE(s.nis,''), COALESCE(s.name,''), COALESCE(s.nickname,''),
