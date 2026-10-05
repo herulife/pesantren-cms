@@ -106,7 +106,7 @@ func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
 		SELECT status, COUNT(*) FROM attendance
 		WHERE student_id IN (SELECT id FROM Buffer WHERE user_id = ?)
 		GROUP BY status
-	`.replace("Buffer", "santri")
+	`
 	rows, err := r.db.Query(query, userID)""",
     "ringkasan agregat per akun portal",
 )
@@ -153,7 +153,7 @@ type IRepository interface {
 // hanya dipanggil sekali per simpan.
 func santriExists(id int) bool {
 	var n int
-	if err := database.DB.QueryRow(`SELECT COUNT(*) FROM Buffer WHERE id = ?`.replace("Buffer", "santri"), id).Scan(&n); err != nil {
+	if err := database.DB.QueryRow(`SELECT COUNT(*) FROM Buffer WHERE id = ?`, id).Scan(&n); err != nil {
 		return false
 	}
 	return n > 0
@@ -229,7 +229,7 @@ type AttendanceStudent struct {
 // GetAttendanceStudents daftar Santri untuk form presensi. classes kosong
 // berarti semua kelas.
 func (r *Repository) GetAttendanceStudents(classes []string) ([]AttendanceStudent, error) {
-	query := `SELECT id, name, nis, class FROM Buffer WHERE 1=1`.replace("Buffer", "santri")
+	query := `SELECT id, name, nis, class FROM Buffer WHERE 1=1`
 	args := []interface{}{}
 	if len(classes) > 0 {
 		ph := make([]string, len(classes))
@@ -351,7 +351,7 @@ type qrStudent struct {
 // pindai QR mewakili kehadiran keluarga tersebut.
 func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
 	rows, err := r.db.Query(
-		"SELECT id, name FROM Buffer WHERE user_id = ? ORDER BY id".replace("Buffer", "santri"),
+		"SELECT id, name FROM Buffer WHERE user_id = ? ORDER BY id",
 		userID,
 	)
 	if err != nil {
@@ -388,7 +388,7 @@ func (r *Repository) GetStudentInfo(userID int) (string, string, error) {
 	err := r.db.QueryRow(
 		`SELECT u.name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), u.whatsapp, '')
 		 FROM users u LEFT JOIN Buffer s ON s.user_id = u.id
-		 WHERE u.id = ?`.replace("Buffer", "santri"),
+		 WHERE u.id = ?`,
 		userID,
 	).Scan(&name, &phone)
 	return name, phone, err
@@ -440,7 +440,7 @@ patch(
     "apps/backend/internal/features/auth/repository.go",
     """		{query: "DELETE FROM attendance WHERE student_id = ?", args: []interface{}{id}},""",
     """		// Presensi dikunci ke Santri.id, jadi ikutkan seluruh Santri milik akun.
-		{query: "DELETE FROM attendance WHERE student_id IN (SELECT id FROM Buffer WHERE user_id = ?)".replace("Buffer", "santri"), args: []interface{}{id}},""",
+		{query: "DELETE FROM attendance WHERE student_id IN (SELECT id FROM Buffer WHERE user_id = ?)", args: []interface{}{id}},""",
     "cascade hapus akun ikut hapus presensi Santri-nya",
 )
 
