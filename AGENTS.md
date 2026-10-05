@@ -83,9 +83,11 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
     `apps/frontend/src/app/portal/documents/page.tsx`, `apps/frontend/src/app/portal/page.tsx`,
     dan `apps/frontend/src/app/portal/payment/page.tsx` (agar upload dokumen & pembayaran tetap bisa).
   - JANGAN mengembalikan pemilih "Program Unggulan" / jangan jadikan `program_choice` wajib lagi.
-  - Image frontend terkunci: `alma-parung-frontend:fix-psb-current`
-    (= `fix-psb-upload-nopicker`). Image lama yang mengandung picker (`fix-psb-upload`,
-    frontend `disc-wa`) sudah dihapus dari mesin.
+  - ~~Image frontend terkunci: `fix-psb-current` (= `fix-psb-upload-nopicker`)~~
+    **SUDAH DIHAPUS 5 Okt 2026** (bersih-bersih storage, §4). Jangan写的 rujukan
+    image itu lagi. Yang benar sekarang: **frontend live = `j78-export-santri`**,
+    dan memuat kode tanpa picker. Kalau perlu image lama, build ulang dari
+    `git log` — bukan `docker pull`.
   - Verifikasi (29 Sep 2026): `/portal/program` tanpa Program Unggulan, upload dokumen tetap
     201/200 end-to-end.
 ## 5. Riwayat perubahan penting sesi ini (Sep 2026)
