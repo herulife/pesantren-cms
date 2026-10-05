@@ -116,7 +116,7 @@ func (r *Repository) DeleteSubject(id int) error {
 // Grades
 func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]Grade, error) {
 	query := `
-		SELECT g.id, g.student_id, u.name as student_name, g.subject_id, s.name as subject_name,
+		SELECT g.id, g.student_id, COALESCE(s.name,u.name) as student_name, g.subject_id, s.name as subject_name,
 		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score,
 		       g.final_score, g.grade_letter, g.notes, g.created_at
 		FROM grades g
@@ -309,9 +309,10 @@ func (r *Repository) GetAttendance(date string) ([]Attendance, error) {
 		date = time.Now().Format("2006-01-02")
 	}
 	query := `
-		SELECT a.id, a.student_id, u.name as student_name, COALESCE(u.whatsapp, '') as student_phone, a.date, a.status, a.notes
+		SELECT a.id, a.student_id, COALESCE(s.name,u.name) as student_name, COALESCE(u.whatsapp, '') as student_phone, a.date, a.status, a.notes
 		FROM attendance a
 		JOIN users u ON a.student_id = u.id
+		LEFT JOIN santri s ON s.user_id = a.student_id
 		WHERE a.date = ?
 		ORDER BY COALESCE(s.name,u.name) ASC
 	`
@@ -372,7 +373,7 @@ func (r *Repository) GetAttendanceSummary(studentID int) (map[string]int, error)
 // Tahfidz
 func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, u.name as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE(s.name,u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		ORDER BY t.evaluation_date DESC
@@ -413,7 +414,7 @@ func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error)
 
 func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, u.name as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE(s.name,u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		WHERE t.student_id = ?
