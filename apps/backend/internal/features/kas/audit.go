@@ -157,27 +157,32 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 
 	// Pengeluaran: semua kategori, tidak ada pengecualian (tidak ada sumber
 	// otomatis untuk pengeluaran).
-	expWhere := []string{"COALESCE(voided,0) = 0", "kind='keluar'"}
+	//
+	// Semua kolom di-prefix "t." karena expWhere dipakai ulang oleh query
+	// pengelompokan per kategori yang JOIN ke kas_categories — dan
+	// kas_categories juga punya kolom "kind". Tanpa prefix, SQL gagal
+	// "ambiguous column name: kind".
+	expWhere := []string{"COALESCE(t.voided,0) = 0", "t.kind='keluar'"}
 	expArgs := []interface{}{}
 	if dateFrom != "" {
-		expWhere = append(expWhere, "date >= ?")
+		expWhere = append(expWhere, "t.date >= ?")
 		expArgs = append(expArgs, dateFrom)
 	}
 	if dateTo != "" {
-		expWhere = append(expWhere, "date <= ?")
+		expWhere = append(expWhere, "t.date <= ?")
 		expArgs = append(expArgs, dateTo)
 	}
 	if err := r.db.QueryRow(
-		`SELECT COALESCE(SUM(amount),0), COUNT(*) FROM kas_transactions WHERE `+
+		`SELECT COALESCE(SUM(t.amount),0), COUNT(*) FROM kas_transactions t WHERE `+
 			strings.Join(expWhere, " AND "), expArgs...).
 		Scan(&a.Expense, &a.CountOut); err != nil {
 		return nil, err
 	}
 	a.Balance = a.TotalIncome - a.Expense
 
-	// Pengeluaran per kategori (Laba Rugi). Pakai expWhere/expArgs yang SAMA
-	// dengan total di atas supaya penjumlahan baris selalu cocok dengan
-	// a.Expense. Kalau difilter berbeda, Laba Rugi bisa tidak balance.
+	// Pengeluaran per kategori (bahan laporan Laba Rugi). expWhere/expArgs yang
+	// SAMA dipakai supaya penjumlahan baris selalu cocok dengan a.Expense;
+	// kalau difilter berbeda, Laba Rugi bisa tidak balance.
 	a.ExpenseGroups = []AuditExpenseGroup{}
 	expGroupQuery := `SELECT COALESCE(t.category_id,0), COALESCE(c.name,'Tanpa kategori'), ` +
 		`COALESCE(SUM(t.amount),0), COUNT(*) FROM kas_transactions t ` +
