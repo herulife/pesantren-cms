@@ -90,16 +90,15 @@ export default function DonationsAdminPage() {
     return () => clearTimeout(timer);
   }, [searchQuery, activeTab, filterStatus, campaignFilter, typeFilter, fetchData]);
 
-  // Statistik "Kontributor Teridentifikasi" dihitung sekali dari daftar penuh,
-  // tidak ikut tab/search/filter.
-  useEffect(() => {
-    getDonations().then(setAllDonations);
-  }, []);
-
-  // Dipakai ulang setiap kali transaksi berubah (verify/edit/hapus/tambah).
+  // Daftar penuh tanpa filter, hanya untuk kartu "Kontributor Teridentifikasi".
+  // Sengaja dipisah dari `donations` yang ikut terfilter tab + search + status.
   const refreshAllDonations = useCallback(() => {
     getDonations().then(setAllDonations);
   }, []);
+
+  useEffect(() => {
+    refreshAllDonations();
+  }, [refreshAllDonations]);
 
   const identifiedDonors = useMemo(() => {
     const names = allDonations
