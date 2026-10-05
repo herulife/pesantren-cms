@@ -494,6 +494,54 @@ export async function getAcademicStudents() {""",
 )
 
 
+# ---------------------------------------------------------------------------
+# Fix Jilid 77a: PurgeSantri masih menghapus attendance dengan kunci users.id
+# ---------------------------------------------------------------------------
+# attendance.student_id sudah menunjuk santri(id) sejak Jilid 77, tapi purge.go
+# masih menaruh attendance di blok 1 (kunci users.id). Akibatnya:
+#   1. DATA LOSS: id Santri dan id user tumpang tindih, jadi purge Santri X
+#      (akun uid=U) menghapus presensi milik Santri U yang lain.
+#   2. GAGAL: presensi milik Santri X tidak terhapus, lalu
+#      DELETE FROM santri ditolak FK attendance.student_id.
+# Di produksi ini terbukti menewaskan 6 baris presensi milik Santri 162 dan
+# 178 yang keduanya masih hidup. Attendance dipindah ke blok 2 (kunci
+# Santri.id).
+
+ATT_UID_LINE = '\t\t\t"attendance":       `DELETE FROM attendance WHERE student_id=?`,\n'
+SPP_LINE = '\t\t"spp_bills":            `DELETE FROM spp_bills WHERE santri_id=?`,\n'
+ATT_SANTRI_LINE = '\t\t"attendance":         `DELETE FROM attendance WHERE student_id=?`,\n'
+KOMENTAR_2 = "\t// 2. Keuangan milik santri"
+KOMENTAR_BARU = (
+    "\t// CATATAN Jilid 77: attendance.student_id menunjuk santri(id), BUKAN\n"
+    "\t// users.id. Karena itu attendance dihapus pada blok 2 (kunci Santri.id),\n"
+    "\t// bukan pada blok 1. Kalau salah blok, satu akun wali yang punya 2 anak\n"
+    "\t// bisa menghapus presensi anaknya yang lain (id Santri dan id user tumpang\n"
+    "\t// tindih), dan purge milik Santri berpresensi gagal karena FK.\n\n"
+    + KOMENTAR_2
+)
+
+patch(
+    "apps/backend/internal/features/santri/purge.go",
+    ATT_UID_LINE,
+    "",
+    "attendance dikeluarkan dari blok users (kunci uid)",
+)
+
+patch(
+    "apps/backend/internal/features/santri/purge.go",
+    SPP_LINE,
+    ATT_SANTRI_LINE + SPP_LINE,
+    "attendance masuk blok Santri (kunci Santri.id)",
+)
+
+patch(
+    "apps/backend/internal/features/santri/purge.go",
+    KOMENTAR_2,
+    KOMENTAR_BARU,
+    "komentar penjelas supaya tidak diubah lagi",
+)
+
+
 def apply(dry_run):
     changed = failed = 0
     for rel, old, new, note in PATCHES:
