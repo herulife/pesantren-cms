@@ -243,26 +243,43 @@ export default function KesantrianPage() {
     }
   };
 
-  const exportData = (format: 'pdf' | 'excel') => {
+  const exportData = async (format: 'pdf' | 'excel') => {
     const columns = ['NIS', 'Nama', 'Panggilan', 'Kelamin', 'Kelas', 'Angkatan', 'Status', 'Nama Wali', 'No. HP Wali'];
-    const rows = items.map((s) => [
-      s.nis,
-      s.name,
-      s.nickname || '-',
-      genderLabel(s.gender),
-      s.class,
-      s.angkatan || '-',
-      s.status,
-      s.parent_name || '-',
-      s.parent_phone || '-',
-    ]);
-    const suffix = search || classFilter || statusFilter ? ' (filtered)' : '';
-    if (format === 'pdf') {
-      exportToPDF(`Data Santri${suffix}`, columns, rows, `Data-Santri-AlMaa-${Date.now()}`);
-    } else {
-      exportToExcel(`Data Santri${suffix}`, columns, rows, `Data-Santri-AlMaa-${Date.now()}`);
+    setExporting(true);
+    try {
+      // Export harus memakai data LENGKAP, bukan `items` yang cuma 1 halaman
+      // (20 baris). Endpoint /santri/export tidak dipaginasi.
+      const all = await getSantriExport();
+      // Kalau ada baris terpilih, export hanya yang terpilih - sesuai label
+      // toolbar "N santri dipilih".
+      const sumber = selected.size > 0 ? all.filter((s) => selected.has(s.id)) : all;
+      if (sumber.length === 0) {
+        showToast('error', 'Tidak ada data untuk diexport.');
+        return;
+      }
+      const rows = sumber.map((s) => [
+        s.nis,
+        s.name,
+        s.nickname || '-',
+        genderLabel(s.gender),
+        s.class,
+        s.angkatan || '-',
+        s.status,
+        s.parent_name || '-',
+        s.parent_phone || '-',
+      ]);
+      const scope = selected.size > 0 ? ` (${sumber.length} dipilih)` : '';
+      if (format === 'pdf') {
+        await exportToPDF(`Data Santri${scope}`, columns, rows, `Data-Santri-AlMaa-${Date.now()}`);
+      } else {
+        await exportToExcel(`Data Santri${scope}`, columns, rows, `Data-Santri-AlMaa-${Date.now()}`);
+      }
+      showToast('success', `${sumber.length} data santri berhasil diexport ke ${format.toUpperCase()}`);
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Gagal menyiapkan data export.');
+    } finally {
+      setExporting(false);
     }
-    showToast('success', `Data santri berhasil diexport ke ${format.toUpperCase()}`);
   };
 
   return (
