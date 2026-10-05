@@ -189,16 +189,19 @@ func (r *Repository) studentsByUserID(userID int) ([]qrStudent, error) {
 	return out, rows.Err()
 }
 
-// studentByUniqueName mencocokkan akun portal dengan santri yang belum
-// tertaut lewat user_id dan namanya sama persis. Kalau nama tersebut muncul
-// lebih dari sekali, kembalikan kosong supaya pemindai tidak salah.absen.
+// studentByUniqueName mencocokkan akun portal dengan Santri yang namanya
+// sama persis. Fallback ini diperlukan untuk akun portal lama yang masih
+// punya riwayat presensi, tetapi Santri-nya sudah ditautkan ke akun wali.
+//
+// Nama yang cocok lebih dari satu ditolak dengan pesan jelas supaya
+// pemindai tidak pernah salah absen.
 func (r *Repository) studentByUniqueName(userID int) ([]qrStudent, error) {
 	rows, err := r.db.Query(
 		"SELECT s.id, s.name FROM santri s "+
 			"JOIN users u ON u.name = s.name "+
-			"WHERE u.id = ? AND (s.user_id IS NULL OR s.user_id = 0 OR s.user_id = ?) "+
+			"WHERE u.id = ? "+
 			"ORDER BY s.id",
-		userID, userID,
+		userID,
 	)
 	if err != nil {
 		return nil, err
