@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-05 (**Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-05 (**Jilid 78b - bersih-bersih storage: 58G -> 37G terpakai (82G free), 11 dangling image + 23 image lama + 3 container uji dihapus, chain rollback tinggal j78->j77->j76; Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -63,6 +63,69 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 78b - Bersih-bersih storage (5 Okt 2026, LIVE)
+
+### Jadi apa masalahnya
+Disk **tidak sedang full**: 124G total, 50% terpakai (58G), 60G free. Jadi ini
+permintaan "--bersihkan yang tidak dipakai", bukan darurat. Angka sebelum ->
+sesudah: **58G -> 37G terpakai, 82G free**.
+
+### Yang dihapus (semua diverifikasi tidak dipakai sebelum dihapus)
+| Item | Ukuran | Cara verifikasi aman |
+|---|---|---|
+| 11 dangling image (`<none>`) | 1.76GB | tidak ada satu pun image-ID-nya dipakai container (`docker inspect $(docker ps -aq) --format '{{.Image}}'`) |
+| 23 image lama `alma-parung-*` (j68-j76, jilid67, fix-*, disc-*, disiplinfix, sppautofix, jilid44/47) | ~14GB | bukan image rollback §2; `docker image prune` tidak cukup karena bertag, jadi `docker rmi` per tag |
+| 3 container uji lama: `j44cmp` (3004), `j47test` (3003), `dreamy_burnell` (unhealthy, image `sppautofix`) | - | sudah 6-7 hari, tidak direferensikan container/image lain; port 3003/3004 memang catatan §6 bilang bebas untuk uji |
+| `/tmp` milik `heru`: `gocache-heru`, `j77-api{,2..5}` (binary 46MB x5), `j77_smoke`, `j77_prodtest`, `j77_test`, `j77_apipurge`, `j77_purge_test`, `j69_cmp`, `j69data`, `j64d-*`, `*.db` uji | ~1GB | `for d in *; do stat -c '%U'` -> hanya yang owner `heru` |
+
+### Yang SENGAJA tidak dihapus (atas izin user)
+- **`/tmp/next-backup-*` (552MB) + `/tmp/j28` (775MB)** - milik user `alma`,
+  dan `AGENTS.md` §5 item 13 eksplisit melindungi `/tmp/j28`.
+- **`.gomodcache` (2.8GB) + `.gocache` (1.5GB)** di repo - cache build Go,
+  dihapus berarti build berikutnya download ulang semua modul.
+- **`backups/` (363M)** - dilindungi `AGENTS.md` §5 item 13.
+- **`golang:1.26`, `golang:1.26-alpine`, `node:20-alpine`, `nginx:alpine`** -
+  base image untuk build backend/frontend dan gerbang uji.
+- **Volume `clinic-os_*`** - milik project lain (`klinik`).
+- **`tempe-webapp`, `alma-store`** - project lain.
+
+### Image yang tersisa (17 total, 7.9GB)
+Live: `j78-export-santri` (backend + frontend). Rollback: `j77-purge-attendance-v2`,
+`j77-attendance-santri`, `j76-wali-santri`. Sisanya base image + project lain.
+
+### ⚠️ Konsekuensi yang harus diketahui
+**Chain rollback sekarang hanya bisa 1 langkah.** Sebelumnya bisa 4
+(pre-j78 -> pre-j77 -> pre-j75 -> pre-j74). Sekarang: pre-j78 (j77) dan
+pre-j77 (j76) masih ada; **j75 dan j74 sudah hilang**, jadi kalau Jilid 79/80
+gagal dan pre-j78 juga bermasalah, tidak ada jalan mundur lebih jauh tanpa
+`git checkout` + build ulang.
+
+`AGENTS.md` §5b sebelumnya menyuruh "image frontend terkunci =
+`fix-psb-current`" - image itu sudah dihapus, rujukan itu **sudah dikoreksi**
+menjadi `j78-export-santri`. Kode `/portal/program` tetap tanpa Program Unggulan
+(verifikasi: `program_choice: ''` masih ada di `page.tsx:92`).
+
+### Verifikasi setelah bersih-bersih
+```
+docker ps        -> 10 container, semua healthy (kecuali tempe-webapp tanpa healthcheck)
+GET /api/ready   -> 200
+GET :3002/admin/kesantrian -> 307 (butuh sesi, normal)
+df -h /          -> 124G total, 37G terpakai, 82G free (31%)
+```
+
+### Pelajaran
+- **`docker image prune` hanya hapus `<none>`.** Image lama yang sudah bertag
+  (`j75-kas-audit` dst) tetap memakan ~14GB - harus `docker rmi <tag>`.
+- **Cek dependensi image SEBELUM hapus**, jangan mengandalkan `docker system df`
+  yang kolom "CONTAINERS"-nya meniru status. Yang benar: bandingkan
+  `docker images -q` dengan `docker inspect $(docker ps -aq) --format '{{.Image}}'`.
+- **`/tmp` pada VPS multi-user bercampur.** Selalu filter per owner
+  (`stat -c '%U'`) sebelum `rm`, jangan `rm -rf /tmp/*`.
+- Berkas container di `/tmp` (mis. `j77_smoke/wagate/wa_session.db`) root-owned
+  => `Permission denied` untuk `heru`; hapus lewat container alpine
+  (`docker run --rm -v DIR:/x alpine sh -c "rm -rf /x/*"`), sama seperti
+  pelajaran §6 soal berkas root-owned.
 
 ## Jilid 78 - Export Data Santri: endpoint `/api/santri/export` + tombol export (5 Okt 2026, LIVE)
 
