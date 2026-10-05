@@ -43,11 +43,16 @@ func newKasTestDB(t *testing.T) *sql.DB {
 
 	CREATE TABLE spp_bills (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		santri_id INTEGER,
+		period TEXT DEFAULT '',
 		paid_amount INTEGER DEFAULT 0,
 		paid_at DATETIME
 	);
 	CREATE TABLE iuran_bills (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		santri_id INTEGER,
+		name TEXT DEFAULT '',
+		period TEXT DEFAULT '',
 		paid_amount INTEGER DEFAULT 0,
 		paid_at DATETIME
 	);
@@ -71,7 +76,7 @@ func newKasTestDB(t *testing.T) *sql.DB {
 	);
 	CREATE TABLE santri (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		nama TEXT DEFAULT ''
+		name TEXT DEFAULT ''
 	);
 	CREATE TABLE users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
