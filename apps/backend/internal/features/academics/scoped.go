@@ -41,7 +41,7 @@ func (r *Repository) GetScopedGrades(semester, year string, subjectIDs []int, cl
 		}
 		query += " AND st.class IN (" + strings.Join(ph, ",") + ")"
 	}
-	query += " ORDER BY u.name ASC"
+	query += " ORDER BY s.name ASC"
 	if limit > 0 {
 		query += " LIMIT ? OFFSET ?"
 		args = append(args, limit, offset)
@@ -85,7 +85,7 @@ func (r *Repository) GetStudentsByClasses(classes []string) ([]struct {
 		ph[i] = "?"
 		args[i] = c
 	}
-	query := "SELECT u.id, u.name, u.email FROM santri s JOIN users u ON u.id = s.user_id WHERE u.role = 'user' AND s.class IN (" + strings.Join(ph, ",") + ") ORDER BY u.name ASC"
+	query := "SELECT u.id, s.name, u.email FROM santri s JOIN users u ON u.id = s.user_id WHERE u.role = 'user' AND s.class IN (" + strings.Join(ph, ",") + ") ORDER BY s.name ASC"
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
