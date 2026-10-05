@@ -82,7 +82,6 @@ func (r *Repository) PurgeSantri(id int) (map[string]int64, error) {
 			"grades":           `DELETE FROM grades WHERE student_id=?`,
 			"raports":          `DELETE FROM raports WHERE student_id=?`,
 			"kesantrian_aspek": `DELETE FROM kesantrian_aspek WHERE student_id=?`,
-			"attendance":       `DELETE FROM attendance WHERE student_id=?`,
 			"tahfidz_progress": `DELETE FROM tahfidz_progress WHERE student_id=?`,
 			"student_points":   `DELETE FROM student_points WHERE student_id=?`,
 			"violation_logs":   `DELETE FROM violation_logs WHERE student_id=?`,
@@ -104,8 +103,14 @@ func (r *Repository) PurgeSantri(id int) (map[string]int64, error) {
 		}
 	}
 
+	// CATATAN Jilid 77: attendance.student_id menunjuk santri(id), BUKAN
+	// users.id. Karena itu attendance dihapus pada blok 2 (kunci santri.id),
+	// bukan pada blok 1. Kalau salah blok, satu akun wali yang punya 2 anak
+	// bisa menghapus presensi anaknya yang lain (id Santri dan id user tumpang
+	// tindih), dan purge milik Santri berpresensi gagal karena FK.
 	// 2. Keuangan milik santri (kunci santri.id) — termasuk yang sudah dibayar.
 	for key, q := range map[string]string{
+		"attendance":         `DELETE FROM attendance WHERE student_id=?`,
 		"spp_bills":            `DELETE FROM spp_bills WHERE santri_id=?`,
 		"iuran_bills":          `DELETE FROM iuran_bills WHERE santri_id=?`,
 		"payment_transactions": `DELETE FROM payment_transactions WHERE santri_id=?`,
