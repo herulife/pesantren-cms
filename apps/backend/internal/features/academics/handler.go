@@ -574,6 +574,11 @@ func (h *Handler) CreateAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.CreateAttendance(&a); err != nil {
+		if isDuplicateAttendance(err) {
+			writeJSONResponse(w, http.StatusConflict, false,
+				"Santri ini sudah punya presensi pada tanggal tersebut", nil)
+			return
+		}
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
@@ -593,6 +598,11 @@ func (h *Handler) UpdateAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.UpdateAttendance(id, &a); err != nil {
+		if isDuplicateAttendance(err) {
+			writeJSONResponse(w, http.StatusConflict, false,
+				"Santri ini sudah punya presensi pada tanggal tersebut", nil)
+			return
+		}
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
@@ -762,6 +772,18 @@ func (h *Handler) GetStudents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSONResponse(w, http.StatusOK, true, "Data santri berhasil dimuat", students)
+}
+
+// isDuplicateAttendance mengenali pelanggaran unique index
+// idx_attendance_student_date (student_id, date). Tanpa ini duplikat akan
+// dianggap 500 padahal itu kondisi bisnis yang wajar.
+func isDuplicateAttendance(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "unique constraint failed") &&
+		strings.Contains(msg, "attendance")
 }
 
 // santriExists dipakai validateAttendance. Cache tidak perlu: endpoint ini
