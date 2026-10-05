@@ -46,6 +46,7 @@ func newKasTestDB(t *testing.T) *sql.DB {
 		santri_id INTEGER,
 		period TEXT DEFAULT '',
 		paid_amount INTEGER DEFAULT 0,
+		status TEXT DEFAULT '',
 		paid_at DATETIME
 	);
 	CREATE TABLE iuran_bills (
