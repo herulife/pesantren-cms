@@ -22,6 +22,21 @@ Perubahan
 Modul nilai/tahfidz/arbain sengaja TIDAK disentuh: mereka masih memakai
 users.id dan datanya kosong, jadi tidak perlu risiko sekarang.
 
+Catatan penting
+---------------
+* Script ini **sekali jalan**, bukan idempoten. Sebagian besar patch() memakai
+  pola `old in src -> replace`, sehingga dijalankan dua kali bisa menyisipkan
+  baris ganda (mis. route atau key map literal duplikat) dan Go gagal compile.
+  Selalu pakai `--dry-run` dulu, dan jangan menjalankan ulang pada repo yang
+  sudah dipatch.
+* Pengecualian: `patch_purge_attendance()` (fix Jilid 77a) sengaja dibuat
+  idempoten dan aman dijalankan berkali-kali.
+* Dua perbaikan yang dikerjakan manual TIDAK tercakup di sini dan akan tampil
+  sebagai [GAGAL] pada --dry-run (artinya sudah terpasang, bukan error):
+    - QR: presensi dicatat per Santri milik akun
+    - notifikasi WA memakai nomor wali dari Santri
+  Sumber kebenaran tetap file Go, bukan script ini.
+
 Cara pakai: python3 apply_jilid77_code.py [--dry-run]
 """
 
