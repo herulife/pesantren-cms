@@ -64,9 +64,15 @@ type ExportRow struct {
 //
 // Catatan: `password_hash` tidak pernah ikut dan tidak boleh ditambahkan.
 func (r *Repository) ExportAll(classes []string) ([]ExportRow, error) {
+	// Pemanggil yang membatasi kelas (wali_kelas) mengirim daftar kelasnya.
+	// Kalau daftarnya kosong, hasilnya harus kosong juga - bukan semua data.
+	// Slice kosong berarti "semua kelas", hanya untuk role yang memang berhak.
 	where := []string{"1=1"}
 	var args []interface{}
-	if len(classes) > 0 {
+	if classes != nil {
+		if len(classes) == 0 {
+			return []ExportRow{}, nil
+		}
 		where = []string{"s.class IN (" + placeholders(len(classes)) + ")"}
 		for _, c := range classes {
 			args = append(args, c)

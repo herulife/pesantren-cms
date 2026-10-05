@@ -12,6 +12,7 @@ import {
   deleteSantri,
   bulkDeleteSantri,
   purgeSantri,
+  getSantriExport,
   getSantriPortalUsers,
   linkSantriUser,
   getAvailableSantriAccounts,
