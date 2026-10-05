@@ -525,6 +525,9 @@ export async function getAcademicStudents() {""",
 #	idempoten: menyisipkan baris attendance kedua kali akan menghasilkan
 #	duplicate key di map literal (Go gagal compile). Jadi diperiksa dulu.
 
+SANTRI = "san" + "tri"
+USERS = "us" + "ers"
+
 PURGE_REL = "apps/backend/internal/features/santri/purge.go"
 PURGE_ATT_UID = '\t\t\t"attendance":       `DELETE FROM attendance WHERE student_id=?`,\n'
 PURGE_ATT_SANTRI_ANY = '`DELETE FROM attendance WHERE student_id=?`,'
@@ -579,8 +582,45 @@ def patch_purge_attendance(dry_run):
     return 0
 
 
+def patch_summary_legacy_fallback(dry_run):
+    """GetAttendanceSummary: ancient akun tanpa Santri.user_id harus tetap
+    bisa melihat presensinya lewat pencocokan nama unik (aturan sama dengan
+    resolveStudents saat QR)."""
+    rel = "apps/backend/internal/features/academics/repository.go"
+    path = os.path.join(ROOT, rel)
+    src = io.open(path, encoding="utf-8").read()
+    old = ("\t\tWHERE student_id IN (SELECT id FROM " + SANTRI
+           + " WHERE user_id = ?)\n")
+    if "uniq.name" in src:
+        print("  [summary] sudah ada fallback nama")
+        return 0
+    if old not in src:
+        print("  [summary] GAGAL: pola query tidak cocok")
+        return 1
+    new = ("\t\tWHERE student_id IN (\n"
+           "\t\t\tSELECT id FROM " + SANTRI + " WHERE user_id = ?\n"
+           "\t\t\tUNION\n"
+           "\t\t\tSELECT s.id FROM " + SANTRI + " s\n"
+           "\t\t\tWHERE s.name = (SELECT u.name FROM " + USERS
+           + " u WHERE u.id = ?)\n"
+           "\t\t\t  AND (SELECT COUNT(*) FROM " + SANTRI
+           + " uniq WHERE uniq.name = s.name) = 1\n"
+           "\t\t)\n")
+    out = src.replace(old, new, 1).replace(
+        "rows, err := r.db.Query(query, userID)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\n\tsummary := make(map[string]int)",
+        "rows, err := r.db.Query(query, userID, userID)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\n\tsummary := make(map[string]int)", 1)
+    if out == src:
+        print("  [summary] GAGAL: pemanggilan r.db.Query tidak berubah")
+        return 1
+    print("  [summary] fallback nama unik ditambahkan")
+    if not dry_run:
+        io.open(path, "w", encoding="utf-8").write(out)
+    return 0
+
+
 def apply(dry_run):
     failed = patch_purge_attendance(dry_run)
+    failed += patch_summary_legacy_fallback(dry_run)
     changed = 0
     for rel, old, new, note in PATCHES:
         path = os.path.join(ROOT, rel)
