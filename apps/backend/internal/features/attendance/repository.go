@@ -150,7 +150,7 @@ type qrStudent struct {
 }
 
 // resolveStudents memetakan akun portal ke Santri yang Dimiliki akun itu.
-// Akun wali dengan beberapa anak akanMEAmpilkan seluruh anaknya, sebab satu
+// Akun wali dengan beberapa anak akan menampilkan seluruh anaknya, sebab satu
 // pindai QR mewakili kehadiran keluarga tersebut.
 func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
 	rows, err := r.db.Query(
@@ -176,7 +176,7 @@ func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
 }
 
 // GetStudentInfo mengembalikan nama + nomor wali dari tabel Santri agar
-// notifikasi WhatsApp tetap terkirim Even jika akun portal tidak punya nomor.
+// notifikasi WhatsApp tetap terkirim walaupun akun portal tidak punya nomor.
 func (r *Repository) GetStudentInfo(userID int) (string, string, error) {
 	var name, phone string
 	err := r.db.QueryRow(

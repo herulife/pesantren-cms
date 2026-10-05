@@ -163,7 +163,7 @@ func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]G
 func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 	query := `
 		SELECT g.id, g.student_id, g.subject_id, s.name as subject_name,
-		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score, 
+		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score,
 		       g.final_score, g.grade_letter, g.notes, g.created_at
 		FROM grades g
 		JOIN subjects s ON g.subject_id = s.id
@@ -359,7 +359,7 @@ func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
 		SELECT status, COUNT(*) FROM attendance
 		WHERE student_id IN (SELECT id FROM santri WHERE user_id = ?)
 		GROUP BY status
-	` 
+	`
 	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
@@ -506,7 +506,7 @@ type AttendanceStudent struct {
 // GetAttendanceStudents daftar Santri untuk form presensi. classes kosong
 // berarti semua kelas.
 func (r *Repository) GetAttendanceStudents(classes []string) ([]AttendanceStudent, error) {
-	query := `SELECT id, name, nis, class FROM santri WHERE 1=1` 
+	query := `SELECT id, name, nis, class FROM santri WHERE 1=1`
 	args := []interface{}{}
 	if len(classes) > 0 {
 		ph := make([]string, len(classes))
