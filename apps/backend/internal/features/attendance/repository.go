@@ -154,7 +154,7 @@ type qrStudent struct {
 // pindai QR mewakili kehadiran keluarga tersebut.
 func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
 	rows, err := r.db.Query(
-		"SELECT id, name FROM santri WHERE user_id = ? ORDER BY id" ,
+		"SELECT id, name FROM santri WHERE user_id = ? ORDER BY id",
 		userID,
 	)
 	if err != nil {

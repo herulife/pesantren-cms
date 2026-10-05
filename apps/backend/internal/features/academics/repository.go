@@ -2,6 +2,7 @@ package academics
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"almaparung-api/internal/platform/weight"
