@@ -497,53 +497,76 @@ export async function getAcademicStudents() {""",
 # ---------------------------------------------------------------------------
 # Fix Jilid 77a: PurgeSantri masih menghapus attendance dengan kunci users.id
 # ---------------------------------------------------------------------------
-# attendance.student_id sudah menunjuk santri(id) sejak Jilid 77, tapi purge.go
-# masih menaruh attendance di blok 1 (kunci users.id). Akibatnya:
-#   1. DATA LOSS: id Santri dan id user tumpang tindih, jadi purge Santri X
-#      (akun uid=U) menghapus presensi milik Santri U yang lain.
-#   2. GAGAL: presensi milik Santri X tidak terhapus, lalu
-#      DELETE FROM santri ditolak FK attendance.student_id.
-# Di produksi ini terbukti menewaskan 6 baris presensi milik Santri 162 dan
-# 178 yang keduanya masih hidup. Attendance dipindah ke blok 2 (kunci
-# Santri.id).
+#|attendance.student_id sudah menunjuk santri(id) sejak Jilid 77, tapi purge.go
+#	masih menaruh attendance di blok 1 (kunci users.id). Akibatnya:
+#	  1. DATA LOSS: id Santri dan id user tumpang tindih, jadi purge Santri X
+#	     (akun uid=U) menghapus presensi milik Santri U yang lain.
+#	  2. GAGAL: presensi milik Santri X tidak terhapus, lalu
+#	     DELETE FROM Santri ditolak FK attendance.student_id.
+#	Di produksi ini terbukti menewaskan 6 baris presensi milik Santri 162 dan
+#	178 yang keduanya masih hidup.
+#
+#	purge.go tidak memakai patch() biasa karena transformation-nya tidak
+#	idempoten: menyisipkan baris attendance kedua kali akan menghasilkan
+#	duplicate key di map literal (Go gagal compile). Jadi diperiksa dulu.
 
-ATT_UID_LINE = '\t\t\t"attendance":       `DELETE FROM attendance WHERE student_id=?`,\n'
-SPP_LINE = '\t\t"spp_bills":            `DELETE FROM spp_bills WHERE santri_id=?`,\n'
-ATT_SANTRI_LINE = '\t\t"attendance":         `DELETE FROM attendance WHERE student_id=?`,\n'
-KOMENTAR_2 = "\t// 2. Keuangan milik santri"
-KOMENTAR_BARU = (
+PURGE_REL = "apps/backend/internal/features/santri/purge.go"
+PURGE_ATT_UID = '\t\t\t"attendance":       `DELETE FROM attendance WHERE student_id=?`,\n'
+PURGE_ATT_SANTRI_ANY = '`DELETE FROM attendance WHERE student_id=?`,'
+PURGE_BLOCK2_OPEN = '\tfor key, q := range map[string]string{\n'
+PURGE_KOMENTAR_2 = "\t// 2. Keuangan milik santri"
+PURGE_KOMENTAR_BARU = (
     "\t// CATATAN Jilid 77: attendance.student_id menunjuk santri(id), BUKAN\n"
     "\t// users.id. Karena itu attendance dihapus pada blok 2 (kunci Santri.id),\n"
     "\t// bukan pada blok 1. Kalau salah blok, satu akun wali yang punya 2 anak\n"
     "\t// bisa menghapus presensi anaknya yang lain (id Santri dan id user tumpang\n"
     "\t// tindih), dan purge milik Santri berpresensi gagal karena FK.\n\n"
-    + KOMENTAR_2
+    + PURGE_KOMENTAR_2
 )
 
-patch(
-    "apps/backend/internal/features/santri/purge.go",
-    ATT_UID_LINE,
-    "",
-    "attendance dikeluarkan dari blok users (kunci uid)",
-)
 
-patch(
-    "apps/backend/internal/features/santri/purge.go",
-    SPP_LINE,
-    ATT_SANTRI_LINE + SPP_LINE,
-    "attendance masuk blok Santri (kunci Santri.id)",
-)
+def patch_purge_attendance(dry_run):
+    """Pindahkan hapus attendance dari blok users (uid) ke blok Santri (id)."""
+    path = os.path.join(ROOT, PURGE_REL)
+    src = io.open(path, encoding="utf-8").read()
+    out = src
+    steps = []
 
-patch(
-    "apps/backend/internal/features/santri/purge.go",
-    KOMENTAR_2,
-    KOMENTAR_BARU,
-    "komentar penjelas supaya tidak diubah lagi",
-)
+    # 1. Buang baris attendance versi blok 1 (kunci uid).
+    if PURGE_ATT_UID in out:
+        out = out.replace(PURGE_ATT_UID, "", 1)
+        steps.append("hapus attendance dari blok users (kunci uid)")
+    else:
+        steps.append("blok users sudah bersih")
+
+    # 2. Pastikan attendance ada di blok 2 (kunci Santri.id), tapi hanya sekali.
+    if out.count(PURGE_ATT_SANTRI_ANY) == 0:
+        i = out.index(PURGE_BLOCK2_OPEN) + len(PURGE_BLOCK2_OPEN)
+        out = (out[:i] + '\t\t"attendance":         `DELETE FROM attendance WHERE student_id=?`,\n'
+               + out[i:])
+        steps.append("tambah attendance ke blok Santri (kunci Santri.id)")
+    else:
+        steps.append("blok Santri sudah punya attendance (%d kemunculan)"
+                     % out.count(PURGE_ATT_SANTRI_ANY))
+
+    # 3. Komentar penjelas.
+    if PURGE_KOMENTAR_2 in out and "CATATAN Jilid 77" not in out:
+        out = out.replace(PURGE_KOMENTAR_2, PURGE_KOMENTAR_BARU, 1)
+        steps.append("tambah komentar penjelas")
+    else:
+        steps.append("komentar sudah ada")
+
+    for step in steps:
+        print("  [purge] %s" % step)
+    if out != src and not dry_run:
+        io.open(path, "w", encoding="utf-8").write(out)
+        print("  [purge] ditulis ke %s" % PURGE_REL)
+    return 0
 
 
 def apply(dry_run):
-    changed = failed = 0
+    failed = patch_purge_attendance(dry_run)
+    changed = 0
     for rel, old, new, note in PATCHES:
         path = os.path.join(ROOT, rel)
         if not os.path.exists(path):
