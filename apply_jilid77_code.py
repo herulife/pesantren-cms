@@ -31,11 +31,15 @@ Catatan penting
   sudah dipatch.
 * Pengecualian: `patch_purge_attendance()` (fix Jilid 77a) sengaja dibuat
   idempoten dan aman dijalankan berkali-kali.
-* Dua perbaikan yang dikerjakan manual TIDAK tercakup di sini dan akan tampil
-  sebagai [GAGAL] pada --dry-run (artinya sudah terpasang, bukan error):
+* Empat perbaikan TIDAK lagi cocok dengan pola patch() dan akan tampil sebagai
+  [GAGAL] pada --dry-run. itu artinya sudah terpasang, bukan error:
     - QR: presensi dicatat per Santri milik akun
     - notifikasi WA memakai nomor wali dari Santri
+    - ringkasan agregat per akun portal (query-nya sudah diubah oleh
+      patch_summary_legacy_fallback)
   Sumber kebenaran tetap file Go, bukan script ini.
+* Fungsi yang idempoten (aman dijalankan ulang): patch_purge_attendance() dan
+  patch_summary_legacy_fallback().
 
 Cara pakai: python3 apply_jilid77_code.py [--dry-run]
 """

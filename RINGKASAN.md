@@ -21,7 +21,7 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend-j77` | `alma-parung-backend:j77-purge-attendance` | **Jilid 77** (`attendance.student_id` -> `santri(id)` + unique index `idx_attendance_student_date(student_id,date)`; endpoint baru `GET /api/academics/attendance/students`; `GetAttendanceSummary` menjumlahkan semua Santri milik satu akun; QR scan mencatat semua anak sebuah akun; duplikat presensi -> HTTP 409), Jilid 76 (`GET/PUT /api/wali-santri` + halaman `/admin/akun/walisantri`; satu akun wali boleh untuk banyak Santri - index unik `idx_santri_user_unique` sudah di-drop), Jilid 75, 74, 69, 68, 67, 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. **Rollback j77: container `alma-parung-backend-pre-j77` (image `j76-wali-santri`) SUDAH di-stop. JANGAN simply restart tanpa rollback DB, lihat §4 Jilid 77. Rollback lain: `alma-parung-backend-pre-j75` (image `j74-kelas-panel`), lalu `alma-parung-backend-pre-j74` (image `j69-avatar`) |
+| Backend | `alma-parung-backend-j77` | `alma-parung-backend:j77-purge-attendance-v2` | **Jilid 77** (`attendance.student_id` -> `santri(id)` + unique index `idx_attendance_student_date(student_id,date)`; endpoint baru `GET /api/academics/attendance/students`; `GetAttendanceSummary` menjumlahkan semua Santri milik satu akun; QR scan mencatat semua anak sebuah akun; duplikat presensi -> HTTP 409), Jilid 76 (`GET/PUT /api/wali-santri` + halaman `/admin/akun/walisantri`; satu akun wali boleh untuk banyak Santri - index unik `idx_santri_user_unique` sudah di-drop), Jilid 75, 74, 69, 68, 67, 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. **Rollback j77: container `alma-parung-backend-pre-j77` (image `j76-wali-santri`) SUDAH di-stop. JANGAN simply restart tanpa rollback DB, lihat §4 Jilid 77. Rollback lain: `alma-parung-backend-pre-j75` (image `j74-kelas-panel`), lalu `alma-parung-backend-pre-j74` (image `j69-avatar`) |
 | Frontend | `alma-parung-frontend-j77` | `alma-parung-frontend:j77-attendance-santri` | **Jilid 77** (form presensi `/admin/academics/form` memakai endpoint `getAttendanceStudents()` sehingga dropdown menampilkan Santri.id + kelas; dropdown nilai/tahfidz/arbain tetap `users.id`), Jilid 76 (`/admin/akun/walisantri`), Jilid 75 (`/admin/kas` Papan Kas), Jilid 74 (panel Sidebar Administrasi), Jilid 73 (kelas kanonik). Healthy, **WAJIB `-p 3002:3000`**. **Rollback j77: container `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`) SUDAH di-stop** (container rollback harus di-stop dulu sebelum port 3002 bisa dipakai lagi). Rollback lain: `alma-parung-frontend-bobot-pre-j75`, lalu `-pre-j74` |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | container rollback Jilid 77: `alma-parung-backend-pre-j77` (image `j76-wali-santri`, **stopped**) + `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`, **stopped**). Pendahulu: `alma-parung-backend-pre-j75` + `alma-parung-frontend-bobot-pre-j75` (image `j74-kelas-panel`). **Catatan: rollback ke <= j76 wajibellumpar balik DB ke skema `users(id)` dulu, lihat §4 Jilid 77** |
@@ -121,6 +121,17 @@ deleted.attendance = 3   (hanya milik Santri 165)
 presensi Santri 140  = 3   (UTUH, tadinya ikut terhapus)
 orphan = 0 | FK check = hanya psb_payments lama | integrity ok
 ```
+
+### Bonus: ringkasan akun legacy ikut diperbaiki
+`GetAttendanceSummary` awalnya hanya aggregating lewat `santri.user_id`, sehingga
+**5 akun lama** (`users.id` 147, 148, 151, 155, 156) melihat ringkasan **kosong**
+padahal punya 4 baris presensi (Santri-nya sudah dipetakan lewat nama saat
+migrasi). Query-nya sekarang memakai `UNION` dengan fallback nama unik - aturan
+yang sama dengan `resolveStudents` saat pindai QR, jadi tidak ada dua kebenaran.
+
+Diverifikasi setelah deploy (`j77-purge-attendance-v2`): kelima akun mengembalikan
+`{"hadir": 4}`, wali multi-anak tetap `{"hadir": 8}` (tanpa dobel hitung karena
+`UNION` menghapus duplikat), dan `attendance` tidak berubah jadi 224.
 
 ### Pelajaran untuk Jilid berikutnya
 Setiap kali `attendance.student_id` berubah makna, **cari SEMUA tempat yang
