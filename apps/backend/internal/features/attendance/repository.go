@@ -110,12 +110,10 @@ func (r *Repository) ValidateAndRecordAttendance(token string) (int, string, err
 
 	var names []string
 	recorded := 0
-	already := 0
 	for _, stu := range students {
 		names = append(names, stu.name)
 		var existingID int
 		if err := tx.QueryRow("SELECT id FROM attendance WHERE student_id = ? AND date = ?", stu.id, today).Scan(&existingID); err == nil {
-			already++
 			continue
 		}
 		if _, err := tx.Exec(
@@ -123,7 +121,6 @@ func (r *Repository) ValidateAndRecordAttendance(token string) (int, string, err
 			stu.id, today,
 		); err != nil {
 			if strings.Contains(err.Error(), "UNIQUE constraint failed: attendance") {
-				already++
 				continue
 			}
 			return 0, "", err
@@ -137,7 +134,6 @@ func (r *Repository) ValidateAndRecordAttendance(token string) (int, string, err
 	if err := tx.Commit(); err != nil {
 		return 0, "", err
 	}
-	_ = already
 	studentName = strings.Join(names, ", ")
 	return userID, studentName, nil
 }
@@ -147,10 +143,33 @@ type qrStudent struct {
 	name string
 }
 
-// resolveStudents memetakan akun portal ke Santri yang Dimiliki akun itu.
+// resolveStudents memetakan akun portal ke Santri yang dimiliki akun itu.
 // Akun wali dengan beberapa anak akan menampilkan seluruh anaknya, sebab satu
 // pindai QR mewakili kehadiran keluarga tersebut.
+//
+// Sebagian akun lama tidak punya baris santri.user_id yang mengarah ke
+// mereka, padahal riwayat presensinya memakai akun tersebut. Untuk akun
+// seperti ini kita jatuh ke pencocokan nama, sama seperti aturan migrasi data,
+// dan hanya diterima bila namanya unik.
 func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
+	out, err := r.studentsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(out) > 0 {
+		return out, nil
+	}
+	out, err = r.studentByUniqueName(userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(out) == 0 {
+		return nil, errors.New("akun ini belum terhubung ke data Santri")
+	}
+	return out, nil
+}
+
+func (r *Repository) studentsByUserID(userID int) ([]qrStudent, error) {
 	rows, err := r.db.Query(
 		"SELECT id, name FROM santri WHERE user_id = ? ORDER BY id",
 		userID,
@@ -167,8 +186,37 @@ func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
 		}
 		out = append(out, s)
 	}
-	if len(out) == 0 {
-		return nil, errors.New("akun ini belum terhubung ke data Santri")
+	return out, rows.Err()
+}
+
+// studentByUniqueName mencocokkan akun portal dengan santri yang belum
+// tertaut lewat user_id dan namanya sama persis. Kalau nama tersebut muncul
+// lebih dari sekali, kembalikan kosong supaya pemindai tidak salah.absen.
+func (r *Repository) studentByUniqueName(userID int) ([]qrStudent, error) {
+	rows, err := r.db.Query(
+		"SELECT s.id, s.name FROM santri s "+
+			"JOIN users u ON u.name = s.name "+
+			"WHERE u.id = ? AND (s.user_id IS NULL OR s.user_id = 0 OR s.user_id = ?) "+
+			"ORDER BY s.id",
+		userID, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []qrStudent{}
+	for rows.Next() {
+		var s qrStudent
+		if err := rows.Scan(&s.id, &s.name); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(out) > 1 {
+		return nil, errors.New("nama akun ini cocok dengan beberapa Santri, hubungi admin")
 	}
 	return out, nil
 }
