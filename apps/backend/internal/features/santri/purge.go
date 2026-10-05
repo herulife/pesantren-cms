@@ -110,7 +110,7 @@ func (r *Repository) PurgeSantri(id int) (map[string]int64, error) {
 	// tindih), dan purge milik Santri berpresensi gagal karena FK.
 	// 2. Keuangan milik santri (kunci santri.id) — termasuk yang sudah dibayar.
 	for key, q := range map[string]string{
-		"attendance":         `DELETE FROM attendance WHERE student_id=?`,
+		"attendance":           `DELETE FROM attendance WHERE student_id=?`,
 		"spp_bills":            `DELETE FROM spp_bills WHERE santri_id=?`,
 		"iuran_bills":          `DELETE FROM iuran_bills WHERE santri_id=?`,
 		"payment_transactions": `DELETE FROM payment_transactions WHERE santri_id=?`,
@@ -190,7 +190,7 @@ func (h *Handler) Purge(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
 		Action: "PURGE_SANTRI", Entity: "santri", EntityID: strconv.Itoa(id),
 		After: map[string]interface{}{"deleted": counts},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	total := int64(0)
 	for _, n := range counts {
