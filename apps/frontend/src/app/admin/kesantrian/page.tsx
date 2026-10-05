@@ -369,14 +369,14 @@ export default function KesantrianPage() {
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <button
-              onClick={() => exportData('pdf')}
+              onClick={() => exportData('pdf', 'selected')}
               disabled={exporting}
               className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
             >
               <FileText size={14} /> {exporting ? 'Menyiapkan...' : 'Export PDF'}
             </button>
             <button
-              onClick={() => exportData('excel')}
+              onClick={() => exportData('excel', 'selected')}
               disabled={exporting}
               className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
             >
