@@ -182,7 +182,7 @@ func (r *Repository) GetStudentInfo(userID int) (string, string, error) {
 	err := r.db.QueryRow(
 		`SELECT u.name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), u.whatsapp, '')
 		 FROM users u LEFT JOIN santri s ON s.user_id = u.id
-		 WHERE u.id = ?` ,
+		 WHERE u.id = ? ORDER BY s.id LIMIT 1`,
 		userID,
 	).Scan(&name, &phone)
 	return name, phone, err
