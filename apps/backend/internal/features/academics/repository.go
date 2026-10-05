@@ -356,12 +356,23 @@ func (r *Repository) DeleteAttendance(id int) error {
 // adalah akun portal (users.id) supaya pemanggil lama - raport dan ringkasan
 // wali - tetap bekerja; semua Santri milik akun tersebut ikut dihitung.
 func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
+	// Akun lama (dibuat sebelum Jilid 76) belum punya baris Santri.user_id,
+	// jadi hanya bisa dikenali lewat nama. Pencocokan nama HANYA dipakai bila
+	// nama itu unik di tabel Santri; kalau ambigu, akun itu sengaja diabaikan
+	// agar tidak salah menghitung presensi orang lain. Aturan ini sama dengan
+	// fallback resolveStudents saat pindai QR.
 	query := `
 		SELECT status, COUNT(*) FROM attendance
-		WHERE student_id IN (SELECT id FROM santri WHERE user_id = ?)
+		WHERE student_id IN (
+			SELECT id FROM santri WHERE user_id = ?
+			UNION
+			SELECT s.id FROM santri s
+			WHERE s.name = (SELECT u.name FROM users u WHERE u.id = ?)
+			  AND (SELECT COUNT(*) FROM santri uniq WHERE uniq.name = s.name) = 1
+		)
 		GROUP BY status
 	`
-	rows, err := r.db.Query(query, userID)
+	rows, err := r.db.Query(query, userID, userID)
 	if err != nil {
 		return nil, err
 	}
