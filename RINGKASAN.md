@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-04 (Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-05 (Jilid 77 - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -21,10 +21,10 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend` | `alma-parung-backend:j76-wali-santri` | Jilid 76 (`GET/PUT /api/wali-santri` + halaman `/admin/akun/walisantri`; **satu akun wali boleh untuk banyak Santri** - index unik `idx_santri_user_unique` sudah di-drop), Jilid 75 (`GET /api/kas/audit` + `kas_categories.is_auto_source` anti dobel-hitung; `Summary.CountIn` diperbaiki), Jilid 74 (`GET /api/santri/classes` = distinct `santri.class` + jumlah per kelas), Jilid 69 (`PUT/DELETE /api/me/photo` + kolom `users.photo_url`), Jilid 68 (`PUT /api/me/password`), Jilid 67, Jilid 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. **Rollback j76: image `alma-parung-backend:j75-kas-audit` (container sudah dihapus, recreate manual). PENTING: image <= j75 akan membuat `idx_santri_user_unique` LAGI saat start -> multi-Santri tidak bisa disimpan. Setelah rollback, drop ulang index itu (`DROP INDEX IF EXISTS idx_santri_user_unique`).** Rollback lain: container `alma-parung-backend-pre-j75` (image `j74-kelas-panel`), lalu `alma-parung-backend-pre-j74` (image `j69-avatar`) |
-| Frontend | `alma-parung-frontend-bobot` | `alma-parung-frontend:j76-wali-santri` | Jilid 76 (`/admin/akun/walisantri`: daftar akun wali per keluarga, inline edit nama/email, badge nama karangan, daftar akun yatim), Jilid 75 (`/admin/kas` jadi Papan Kas: total + penjumlahan terlihat, filter periode, drill-down per sumber, panel "Perlu Perhatian", peringatan kategori otomatis), Jilid 74 (panel Sidebar **Administrasi** untuk 5 menu ex-Classic + filter kelas yang diambil dari backend lengkap dengan jumlah Santri), Jilid 73 (filter+form kelas kanonik `7`-`12`+`PSB`, migrasi DB kelas, Mode Classic pindah ke Glass), plus perbaikan `login/page.tsx` dari agen lain yang ikut ter-build di image ini. CATATAN: sebelum Jilid 74, image live adalah `j72-login-center` (progress built 2 Okt) yang isinya sudah memuat kode Jilid 73 - sekarang tidak ambigu lagi karena tag live = tag jilid terbaru. Healthy, **WAJIB `-p 3002:3000`**. **Rollback j76: container `alma-parung-frontend-bobot-pre-j76` (image `j75-kas-audit`).** Lalu `alma-parung-frontend-bobot-pre-j75` (image `j74-kelas-panel`), lalu `alma-parung-frontend-bobot-pre-j74` (image `j72-login-center`) |
+| Backend | `alma-parung-backend-j77` | `alma-parung-backend:j77-attendance-santri` | **Jilid 77** (`attendance.student_id` -> `santri(id)` + unique index `idx_attendance_student_date(student_id,date)`; endpoint baru `GET /api/academics/attendance/students`; `GetAttendanceSummary` menjumlahkan semua Santri milik satu akun; QR scan mencatat semua anak sebuah akun; duplikat presensi -> HTTP 409), Jilid 76 (`GET/PUT /api/wali-santri` + halaman `/admin/akun/walisantri`; satu akun wali boleh untuk banyak Santri - index unik `idx_santri_user_unique` sudah di-drop), Jilid 75, 74, 69, 68, 67, 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. **Rollback j77: container `alma-parung-backend-pre-j77` (image `j76-wali-santri`) SUDAH di-stop. JANGAN simply restart tanpa rollback DB, lihat §4 Jilid 77. Rollback lain: `alma-parung-backend-pre-j75` (image `j74-kelas-panel`), lalu `alma-parung-backend-pre-j74` (image `j69-avatar`) |
+| Frontend | `alma-parung-frontend-j77` | `alma-parung-frontend:j77-attendance-santri` | **Jilid 77** (form presensi `/admin/academics/form` memakai endpoint `getAttendanceStudents()` sehingga dropdown menampilkan Santri.id + kelas; dropdown nilai/tahfidz/arbain tetap `users.id`), Jilid 76 (`/admin/akun/walisantri`), Jilid 75 (`/admin/kas` Papan Kas), Jilid 74 (panel Sidebar Administrasi), Jilid 73 (kelas kanonik). Healthy, **WAJIB `-p 3002:3000`**. **Rollback j77: container `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`) SUDAH di-stop** (container rollback harus di-stop dulu sebelum port 3002 bisa dipakai lagi). Rollback lain: `alma-parung-frontend-bobot-pre-j75`, lalu `-pre-j74` |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
-| Rollback tersedia | — | container rollback terbaru: `alma-parung-backend-pre-j75` (image `j74-kelas-panel`) + `alma-parung-frontend-bobot-pre-j75` (image `j74-kelas-panel`); image: backend `j69-avatar`(terbaru)+`j68-akun`+`jilid65-bgnclean`+`fix-nullsanti-v2`; frontend `j72-login-center`(terbaru)+`j73-kelas-glass`+`j68-akun`+`psbrektab`+`arbain-bgn2`; backend `j68-akun`(terbaru)
+| Rollback tersedia | — | container rollback Jilid 77: `alma-parung-backend-pre-j77` (image `j76-wali-santri`, **stopped**) + `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`, **stopped**). Pendahulu: `alma-parung-backend-pre-j75` + `alma-parung-frontend-bobot-pre-j75` (image `j74-kelas-panel`). **Catatan: rollback ke <= j76 wajibellumpar balik DB ke skema `users(id)` dulu, lihat §4 Jilid 77** |
 | DB | — | — | **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
 
 Deploy backend (catatan: JWT dari `.env`, DAHL key tetap):
@@ -63,6 +63,94 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 77 - Presensi pakai `santri.id` (bukan `users.id`) +dropdown Santri per-Santri (5 Okt 2026, LIVE)
+
+### Masalah
+`attendance.student_id` menunjuk `users.id` (akun portal), padahal **satu akun wali
+bisa punya beberapa Santri** (fitur Jilid 76). Akibatnya:
+- Nama yang tampil di daftar presensi bisa salah (ikut nama akun wali).
+- Dua saudara dari satu akun saling menimpa: unique index lama hanya
+  `student_id` sehingga hanya satu anak yang bisa punya presensi.
+- `GetAttendanceSummary` hanya menjumlahkan satu anak.
+
+### Keputusan desain: hanya modul attendance yang diubah
+Tabel lain **tetap** memakai `users.id`: `grades`, `tahfidz_progress`,
+`student_points`, `violation_logs`, `exam_sessions`, `kesantrian_aspek`,
+`raports`, `project_assessments`, `arbain_progress`. Mengubah semuanya adalah
+refactor lintas modul dengan risiko tinggi, jadi Jilid 77 sengaja sempit:
+- `GET /api/academics/students` (dipakai nilai/tahfidz/arbain) **tidak berubah**.
+- Ditambah endpoint baru `GET /api/academics/attendance/students` yang mengembalikan
+  `{id, name, email, class, nis}` dengan `id = Santri.id` (dibatasi kelas untuk
+  role `wali_kelas`).
+- `GetAttendanceSummary` **tetap menerima `users.id`** lalu menjumlahkan semua
+  Santri milik akun tersebut, supaya raport dan ringkasan wali lama tetap jalan.
+
+### Perubahan kode
+- `internal/platform/database/db.go`: FK `attendance.student_id` ->
+  `santri(id)`; entri migrasi `attendance_student_date_index` jadi
+  `CREATE UNIQUE INDEX ... ON attendance(student_id, date DESC)`.
+- `internal/features/academics/repository.go`:
+  `GetAttendance` JOIN `santri s ON s.id = a.student_id`; `GetAttendanceSummary`
+  agregat lewat `SELECT id FROM santri WHERE user_id = ?`; baru
+  `GetAttendanceStudents(classes []string)`.
+- `internal/features/academics/handler.go`: route baru, `validateAttendance`
+  menolak `student_id` yang bukan Santri (tahan input `users.id`), dan
+  `isDuplicateAttendance` mengubah pelanggaran unique index jadi **HTTP 409**
+  ("Santri ini sudah punya presensi pada tanggal tersebut") bukan 500.
+- `internal/features/attendance/repository.go`: `ValidateAndRecordAttendance`
+  menerjemahkan akun -> Santri lewat `resolveStudents`; **satu pindai QR mencatat
+  semua anak** sebuah akun. `resolveStudents` pakai `santri.user_id`, lalu jatuh ke
+  pencocokan **nama unik** untuk akun lama yang tidak tertaut. Nama yang cocok >1
+  ditolak dengan pesan jelas (terjadi pada "Naila Fithriyya Aziz" yang ada 2x).
+- `internal/features/auth/repository.go`: hapus akun ikut menghapus presensi
+  **seluruh Santri** milik akun itu.
+- Frontend: `AttendanceStudent` + `getAttendanceStudents()` di `lib/api.ts`,
+  dropdown form presensi memakai daftar itu (`nama (kelas)`).
+
+### Migrasi data (`apply_jilid77_migrate.py`, sudah dijalankan)
+Rebuild tabel attendance: 168 baris, `inserted=168 skipped=0`, FK `santri(id)`,
+unique index aktif, orphan 0, `integrity ok`. Flag `attendance_student_santri_v1`
++ dideteksi juga dari schema, jadi **aman dijalankan ulang**.
+
+Pemetaan 56 akun -> 56 Santri, 1:1 semua (0 konflik, 0 ambigu):
+- 52 akun dengan tepat 1 anak -> dipetakan langsung.
+- `155 -> 180` dan `156 -> 181` lewat nama unik (akun lama tanpa `santri.user_id`).
+- `127 -> 152` dan `150 -> 175` lewat eliminasi (akun ini punya 2 anak).
+
+Rekonsiliasi: 168/168 baris lama punya pasangan, `id`/`date`/`status`/`notes`
+tetap identik.
+
+### ⚠️ WAJIB BACA: urutan deploy & cara rollback
+Migrasi harus **sebelum** deploy kode baru. Kalau tidak, insert `santri.id`
+ditolak FK.
+
+- Backup pra-migrasi: `data/alma-parung.db.pre-j77-20261005-112504`
+  (1658880 byte, integrity ok) + backup otomatis script
+  `data/alma-parung.db.bak-jilid77-20261005-112510`.
+- Urutan yang dipakai: backup (sqlite `backup()` API, WAJIB karena DB pakai WAL)
+  -> `docker stop` backend -> migrasi -> verifikasi -> container image baru.
+- **Rollback ke j76 tidak boleh tanpa membalik DB.** Image j76 menulis
+  `users.id`, sedangkan tabel kini menunjuk `santri(id)`, jadi data jadi salah.
+  Urutan rollback: hentikan backend -> kembalikan
+  `data/alma-parung.db.pre-j77-20261005-112504` (pakai `cp`, file sudah diproteksi
+  dari `-wal` setelah backend berhenti) -> jalankan container
+  `alma-parung-backend-pre-j77` -> frontend `alma-parung-frontend-bobot-pre-j77`
+  (harus `docker start`, port 3002 masih dipegang selama container itu hidup).
+
+### Verifikasi produksi (setelah deploy)
+`/api/academics/attendance/students` 200, 95 Santri, semua id valid & unik.
+Presensi 1-3 Okt 2026: 56 baris per tanggal, nama unik, semua id = `santri.id`.
+`/api/academics/students` tetap 95 dan id-nya `users.id` (tanpa regresi).
+Buat presensi 200, duplikat 409, hapus 200, baris uji sudah dibersihkan.
+QR akun yatim (155) -> Santri 180; QR wali 2 anak (150) -> 2 anak tercatat;
+scan ulang token ditolak. 0 panic/error di log.
+
+### Catatan semantic
+Ringkasan untuk akun wali 2 anak jadi 2x jumlah hari (mis. 6 untuk 3 hari),
+karena kini dijumlahkan per anak. Ini konsekuensi "satu akun = semua anak" dan
+ disengaja. Akun wali yang tidak pernah merekam presensi (mis. 89, 94) tetap
+ summarised kosong - itu data asli, bukan bug.
 
 ## Jilid 76 - Akun Wali Santri: satu akun per keluarga + halaman `/admin/akun/walisantri` (4 Okt 2026, LIVE)
 
