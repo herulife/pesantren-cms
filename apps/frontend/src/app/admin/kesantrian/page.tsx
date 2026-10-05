@@ -245,16 +245,16 @@ export default function KesantrianPage() {
     }
   };
 
-  const exportData = async (format: 'pdf' | 'excel') => {
+  const exportData = async (format: 'pdf' | 'excel', mode: 'all' | 'selected' = 'all') => {
     const columns = ['NIS', 'Nama', 'Panggilan', 'Kelamin', 'Kelas', 'Angkatan', 'Status', 'Nama Wali', 'No. HP Wali'];
     setExporting(true);
     try {
       // Export harus memakai data LENGKAP, bukan `items` yang cuma 1 halaman
       // (20 baris). Endpoint /santri/export tidak dipaginasi.
       const all = await getSantriExport();
-      // Kalau ada baris terpilih, export hanya yang terpilih - sesuai label
-      // toolbar "N santri dipilih".
-      const sumber = selected.size > 0 ? all.filter((s) => selected.has(s.id)) : all;
+      // Mode 'selected' dipakai tombol di toolbar "N santri dipilih";
+      // tombol di header selalu mengexport semua data.
+      const sumber = mode === 'selected' ? all.filter((s) => selected.has(s.id)) : all;
       if (sumber.length === 0) {
         showToast('error', 'Tidak ada data untuk diexport.');
         return;
@@ -270,7 +270,7 @@ export default function KesantrianPage() {
         s.parent_name || '-',
         s.parent_phone || '-',
       ]);
-      const scope = selected.size > 0 ? ` (${sumber.length} dipilih)` : '';
+      const scope = mode === 'selected' ? ` (${sumber.length} dipilih)` : '';
       if (format === 'pdf') {
         await exportToPDF(`Data Santri${scope}`, columns, rows, `Data-Santri-AlMaa-${Date.now()}`);
       } else {
