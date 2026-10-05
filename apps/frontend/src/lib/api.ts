@@ -3983,13 +3983,14 @@ export async function createKasCategory(data: { name: string; kind: string }) {
   const res = await fetch(`${API_BASE_URL}/kas/categories`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
   return parseResponse(res);
 }
-export async function getKasTransactions(params: { date_from?: string; date_to?: string; kind?: string; category_id?: number } = {}) {
+export async function getKasTransactions(params: { date_from?: string; date_to?: string; kind?: string; category_id?: number; limit?: number } = {}) {
   try {
     const q = new URLSearchParams();
     if (params.date_from) q.set("date_from", params.date_from);
     if (params.date_to) q.set("date_to", params.date_to);
     if (params.kind) q.set("kind", params.kind);
     if (params.category_id) q.set("category_id", String(params.category_id));
+    if (params.limit) q.set("limit", String(params.limit));
     const res = await fetch(`${API_BASE_URL}/kas/transactions?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
     const result = await parseResponse(res);
     return (result.data || []) as KasTransaction[];
@@ -4017,6 +4018,7 @@ export async function getKasSummary(date_from = "", date_to = ""): Promise<KasSu
 export interface KasAuditSource { key: string; label: string; amount: number; count: number; origin: string; table: string; }
 export interface KasAuditRow { id: number; date: string; label: string; detail: string; amount: number; }
 export interface KasAuditAnomaly { severity: string; title: string; detail: string; amount?: number; count?: number; scope: string; }
+export interface KasAuditExpenseGroup { category_id: number; label: string; amount: number; count: number; }
 export interface KasAudit {
   date_from?: string;
   date_to?: string;
@@ -4031,6 +4033,7 @@ export interface KasAudit {
   excluded_rows: KasAuditRow[];
   rows: Record<string, KasAuditRow[]>;
   anomalies: KasAuditAnomaly[];
+  expense_groups: KasAuditExpenseGroup[];
 }
 
 export async function getKasAudit(date_from = "", date_to = ""): Promise<KasAudit | null> {
