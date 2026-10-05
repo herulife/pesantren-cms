@@ -502,6 +502,7 @@ type AttendanceStudent struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Class string `json:"class"`
+	NIS   string `json:"nis"`
 }
 
 // GetAttendanceStudents daftar Santri untuk form presensi. classes kosong
@@ -530,7 +531,7 @@ func (r *Repository) GetAttendanceStudents(classes []string) ([]AttendanceStuden
 		if err := rows.Scan(&s.ID, &s.Name, &nis, &s.Class); err != nil {
 			return nil, err
 		}
-		s.Email = nis.String
+		s.NIS = nis.String
 		out = append(out, s)
 	}
 	return out, nil

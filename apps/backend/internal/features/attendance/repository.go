@@ -137,10 +137,8 @@ func (r *Repository) ValidateAndRecordAttendance(token string) (int, string, err
 	if err := tx.Commit(); err != nil {
 		return 0, "", err
 	}
+	_ = already
 	studentName = strings.Join(names, ", ")
-	if already > 0 && recorded == 0 {
-		return 0, "", errors.New("santri sudah terabsen hari ini")
-	}
 	return userID, studentName, nil
 }
 

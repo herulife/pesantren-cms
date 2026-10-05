@@ -354,7 +354,7 @@ func createTables() {
 		status TEXT NOT NULL DEFAULT 'hadir',
 		notes TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (student_id) REFERENCES Santri(id)
+		FOREIGN KEY (student_id) REFERENCES santri(id)
 	);
 
 	CREATE TABLE IF NOT EXISTS tahfidz_progress (
