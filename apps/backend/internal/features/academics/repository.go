@@ -309,12 +309,13 @@ func (r *Repository) GetAttendance(date string) ([]Attendance, error) {
 		date = time.Now().Format("2006-01-02")
 	}
 	query := `
-		SELECT a.id, a.student_id, COALESCE(s.name,u.name) as student_name, COALESCE(u.whatsapp, '') as student_phone, a.date, a.status, a.notes
+		SELECT a.id, a.student_id, s.name as student_name,
+		       COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as student_phone,
+		       a.date, a.status, a.notes
 		FROM attendance a
-		JOIN users u ON a.student_id = u.id
-		LEFT JOIN santri s ON s.user_id = a.student_id
+		JOIN santri s ON s.id = a.student_id
 		WHERE a.date = ?
-		ORDER BY COALESCE(s.name,u.name) ASC
+		ORDER BY s.name ASC
 	`
 	rows, err := r.db.Query(query, date)
 	if err != nil {
@@ -350,9 +351,16 @@ func (r *Repository) DeleteAttendance(id int) error {
 	return err
 }
 
-func (r *Repository) GetAttendanceSummary(studentID int) (map[string]int, error) {
-	query := `SELECT status, COUNT(*) FROM attendance WHERE student_id = ? GROUP BY status`
-	rows, err := r.db.Query(query, studentID)
+// GetAttendanceSummary menjumlahkan presensi seorang Santri. Parametriknya
+// adalah akun portal (users.id) supaya pemanggil lama - raport dan ringkasan
+// wali - tetap bekerja; semua Santri milik akun tersebut ikut dihitung.
+func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
+	query := `
+		SELECT status, COUNT(*) FROM attendance
+		WHERE student_id IN (SELECT id FROM Buffer WHERE user_id = ?)
+		GROUP BY status
+	`.replace("Buffer", "santri")
+	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -483,6 +491,48 @@ func (r *Repository) GetStudents() ([]struct {
 		students = append(students, s)
 	}
 	return students, nil
+}
+
+// AttendanceStudent adalah satu Santri untuk form presensi. Modul presensi
+// memakai Santri.id, bukan users.id, supaya dua saudara dari satu akun wali
+// tidak saling menimpa.
+type AttendanceStudent struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Class string `json:"class"`
+}
+
+// GetAttendanceStudents daftar Santri untuk form presensi. classes kosong
+// berarti semua kelas.
+func (r *Repository) GetAttendanceStudents(classes []string) ([]AttendanceStudent, error) {
+	query := `SELECT id, name, nis, class FROM Buffer WHERE 1=1`.replace("Buffer", "santri")
+	args := []interface{}{}
+	if len(classes) > 0 {
+		ph := make([]string, len(classes))
+		for i, c := range classes {
+			ph[i] = "?"
+			args = append(args, c)
+		}
+		query += " AND class IN (" + strings.Join(ph, ",") + ")"
+	}
+	query += " ORDER BY class ASC, name ASC"
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []AttendanceStudent{}
+	for rows.Next() {
+		var s AttendanceStudent
+		var nis sql.NullString
+		if err := rows.Scan(&s.ID, &s.Name, &nis, &s.Class); err != nil {
+			return nil, err
+		}
+		s.Email = nis.String
+		out = append(out, s)
+	}
+	return out, nil
 }
 
 type PerGuruRow struct {

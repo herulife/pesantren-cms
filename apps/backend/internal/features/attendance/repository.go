@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -93,35 +94,96 @@ func (r *Repository) ValidateAndRecordAttendance(token string) (int, string, err
 		return 0, "", errors.New("token sudah kedaluwarsa, silakan refresh QR code")
 	}
 
-	// Token is valid! Now record attendance with transaction to avoid race
+	// Token valid. Presensi disimpan per Santri, jadi akun yang dipindai
+	// harus diterjemahkan ke Santri-nya terlebih dahulu.
+	students, err := r.resolveStudents(userID)
+	if err != nil {
+		return 0, "", err
+	}
+
 	today := time.Now().Format("2006-01-02")
 	tx, err := r.db.Begin()
 	if err != nil {
 		return 0, "", err
 	}
 	defer tx.Rollback()
-	var existingID int
-	err = tx.QueryRow("SELECT id FROM attendance WHERE student_id = ? AND date = ?", userID, today).Scan(&existingID)
-	if err == nil {
-		return userID, studentName, errors.New("santri sudah terabsen hari ini")
-	}
-	_, err = tx.Exec("INSERT INTO attendance (student_id, date, status, notes) VALUES (?, ?, 'hadir', 'Absen via QR Scan')", userID, today)
-	if err != nil {
-		if err.Error() == "UNIQUE constraint failed: attendance.student_id, attendance.date" || err.Error() == "UNIQUE constraint failed: attendance.student_id" {
-			return userID, studentName, errors.New("santri sudah terabsen hari ini")
+
+	var names []string
+	recorded := 0
+	already := 0
+	for _, stu := range students {
+		names = append(names, stu.name)
+		var existingID int
+		if err := tx.QueryRow("SELECT id FROM attendance WHERE student_id = ? AND date = ?", stu.id, today).Scan(&existingID); err == nil {
+			already++
+			continue
 		}
-		return 0, "", err
+		if _, err := tx.Exec(
+			"INSERT INTO attendance (student_id, date, status, notes) VALUES (?, ?, 'hadir', 'Absen via QR Scan')",
+			stu.id, today,
+		); err != nil {
+			if strings.Contains(err.Error(), "UNIQUE constraint failed: attendance") {
+				already++
+				continue
+			}
+			return 0, "", err
+		}
+		recorded++
+	}
+	if recorded == 0 {
+		return 0, "", errors.New("santri sudah terabsen hari ini")
 	}
 	_, _ = tx.Exec("DELETE FROM user_qr_tokens WHERE token_hash = ? OR token_hash = ?", hashStr, token)
 	if err := tx.Commit(); err != nil {
 		return 0, "", err
 	}
-
+	studentName = strings.Join(names, ", ")
+	if already > 0 && recorded == 0 {
+		return 0, "", errors.New("santri sudah terabsen hari ini")
+	}
 	return userID, studentName, nil
 }
 
+type qrStudent struct {
+	id   int
+	name string
+}
+
+// resolveStudents memetakan akun portal ke Santri yang Dimiliki akun itu.
+// Akun wali dengan beberapa anak akanMEAmpilkan seluruh anaknya, sebab satu
+// pindai QR mewakili kehadiran keluarga tersebut.
+func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
+	rows, err := r.db.Query(
+		"SELECT id, name FROM Buffer WHERE user_id = ? ORDER BY id".replace("Buffer", "santri"),
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []qrStudent{}
+	for rows.Next() {
+		var s qrStudent
+		if err := rows.Scan(&s.id, &s.name); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	if len(out) == 0 {
+		return nil, errors.New("akun ini belum terhubung ke data Santri")
+	}
+	return out, nil
+}
+
+// GetStudentInfo mengembalikan nama + nomor wali dari tabel Santri agar
+// notifikasi WhatsApp tetap terkirim Even jika akun portal tidak punya nomor.
 func (r *Repository) GetStudentInfo(userID int) (string, string, error) {
 	var name, phone string
-	err := r.db.QueryRow("SELECT name, COALESCE(whatsapp, '') FROM users WHERE id = ?", userID).Scan(&name, &phone)
+	err := r.db.QueryRow(
+		`SELECT u.name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), u.whatsapp, '')
+		 FROM users u LEFT JOIN Buffer s ON s.user_id = u.id
+		 WHERE u.id = ?`.replace("Buffer", "santri"),
+		userID,
+	).Scan(&name, &phone)
 	return name, phone, err
 }

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import {
   ArbainProgress,
+  AttendanceStudent,
   CompactUser,
   HadisArbain,
   Subject,
@@ -16,6 +17,7 @@ import {
   getArbain,
   getArbainReference,
   getAttendance,
+  getAttendanceStudents,
   getGrades,
   getSubjects,
   getTahfidz,
@@ -73,6 +75,9 @@ function AcademicsFormContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [students, setStudents] = useState<CompactUser[]>([]);
+  // Modul presensi memakai Santri.id (bukan akun portal) supaya dua saudara
+  // dari satu akun wali tetap bisa dipilih terpisah.
+  const [attendanceStudents, setAttendanceStudents] = useState<AttendanceStudent[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [gradeForm, setGradeForm] = useState({ ...gradeInit, semester: selectedSemester, academic_year: selectedYear });
   const [attendanceForm, setAttendanceForm] = useState({ ...attendanceInit, date: selectedDate });
@@ -93,6 +98,10 @@ function AcademicsFormContent() {
         setSubjects(subjectData);
         setStudents(studentData);
         setArbainRef(refData);
+
+        if (type === 'attendance') {
+          setAttendanceStudents(await getAttendanceStudents());
+        }
 
         if (type === 'grade' && id) {
           const allGrades = await getGrades(selectedSemester, selectedYear);
@@ -459,7 +468,7 @@ function AcademicsFormContent() {
                   <Field label="Santri">
                     <select required value={attendanceForm.student_id} onChange={(event) => setAttendanceForm((prev) => ({ ...prev, student_id: event.target.value }))} className={controlClass}>
                       <option value="">Pilih santri</option>
-                      {students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+                      {attendanceStudents.map((student) => <option key={student.id} value={student.id}>{student.name} ({student.class})</option>)}
                     </select>
                   </Field>
                   <Field label="Tanggal">

@@ -251,7 +251,8 @@ func (r *Repository) DeleteUser(id int) (err error) {
 		{query: "DELETE FROM student_points WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM violation_logs WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM grades WHERE student_id = ?", args: []interface{}{id}},
-		{query: "DELETE FROM attendance WHERE student_id = ?", args: []interface{}{id}},
+		// Presensi dikunci ke Santri.id, jadi ikutkan seluruh Santri milik akun.
+		{query: "DELETE FROM attendance WHERE student_id IN (SELECT id FROM Buffer WHERE user_id = ?)".replace("Buffer", "santri"), args: []interface{}{id}},
 		{query: "DELETE FROM tahfidz_progress WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM payments WHERE user_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM registrations WHERE user_id = ?", args: []interface{}{id}},

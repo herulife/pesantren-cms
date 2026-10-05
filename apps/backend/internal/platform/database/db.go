@@ -354,7 +354,7 @@ func createTables() {
 		status TEXT NOT NULL DEFAULT 'hadir',
 		notes TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (student_id) REFERENCES users(id)
+		FOREIGN KEY (student_id) REFERENCES Santri(id)
 	);
 
 	CREATE TABLE IF NOT EXISTS tahfidz_progress (
@@ -1032,7 +1032,7 @@ func runMigrations() {
 		},
 		{
 			name: "attendance_student_date_index",
-			sql:  `CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance(student_id, date DESC);`,
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance(student_id, date DESC);`,
 		},
 		{
 			name: "grades_student_subject_index",

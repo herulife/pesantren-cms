@@ -664,6 +664,18 @@ export interface CompactUser {
 	email: string;
 }
 
+/**
+ * Santri untuk form presensi. Berbeda dengan CompactUser yang id-nya akun
+ * portal (users.id), di sini id adalah Santri.id supaya dua saudara dari satu
+ * akun wali tetap dapat dipilih terpisah.
+ */
+export interface AttendanceStudent {
+	id: number;
+	name: string;
+	nis: string;
+	class: string;
+}
+
 export interface Subject {
 	id: number;
 	name: string;
@@ -2744,6 +2756,20 @@ export async function deleteArbain(id: number) {
 		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
+}
+
+export async function getAttendanceStudents() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/academics/attendance/students`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as AttendanceStudent[];
+	} catch (e) {
+		console.error(`[API] Fetch attendance students error:`, e);
+		return [];
+	}
 }
 
 export async function getAcademicStudents() {
