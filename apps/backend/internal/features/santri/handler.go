@@ -108,6 +108,7 @@ type IRepository interface {
 	LinkUserExclusive(santriID, userID int) error
 	ResetLinkedPassword(santriID int, newPassword string) (int, error)
 	FindByUserID(userID int) ([]Santri, error)
+	ExportAll(classes []string) ([]ExportRow, error)
 	ListClassesFromSantri(classes []string) ([]ClassCount, error)
 }
 
@@ -140,6 +141,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/portal-users", h.GetPortalUsers)
 	r.Get("/classes", h.GetClasses)
 	r.Get("/", h.GetAll)
+	r.Get("/export", h.ExportAll)
 	r.Get("/{id}", h.GetByID)
 	r.Post("/", h.Create)
 	r.Post("/bulk", h.BulkCreate)
