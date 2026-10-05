@@ -158,3 +158,75 @@ func TestDeleteDonorNullsDonations(t *testing.T) {
 		t.Fatalf("expected donor_id NULL after delete, got %+v", list[0].DonorID)
 	}
 }
+
+// Verifikasi donasi harus menaikkan collected_amount kampanye — itulah angka
+// "% terkumpul" yang selama ini diam-diam 0 karena tak ada pending yang bisa
+// pernah sampai ke UI (Jilid 79).
+func TestVerifyDonationIncreasesCollectedAmount(t *testing.T) {
+	repo := NewRepository(newDonationsTestDB(t))
+
+	campaigns, err := repo.FindAllCampaigns(true, "")
+	if err != nil || len(campaigns) == 0 {
+		t.Fatalf("FindAllCampaigns = %d, err=%v", len(campaigns), err)
+	}
+	campaignID := campaigns[0].ID
+	if campaigns[0].CollectedAmount != 0 {
+		t.Fatalf("precondition: collected_amount = %v, want 0", campaigns[0].CollectedAmount)
+	}
+
+	id, err := repo.CreateDonation(&Donation{CampaignID: campaignID, DonorName: "Bpk Feri", Amount: 564545, Type: "Infak"})
+	if err != nil {
+		t.Fatalf("CreateDonation returned error: %v", err)
+	}
+	if err := repo.VerifyDonation(int(id), 1); err != nil {
+		t.Fatalf("VerifyDonation returned error: %v", err)
+	}
+
+	after, _ := repo.FindAllCampaigns(true, "")
+	if after[0].CollectedAmount != 564545 {
+		t.Fatalf("collected_amount = %v, want 564545", after[0].CollectedAmount)
+	}
+
+	// Verifikasi ulang tidak boleh menambah dua kali.
+	if err := repo.VerifyDonation(int(id), 1); err != nil {
+		t.Fatalf("second VerifyDonation returned error: %v", err)
+	}
+	after, _ = repo.FindAllCampaigns(true, "")
+	if after[0].CollectedAmount != 564545 {
+		t.Fatalf("collected_amount after re-verify = %v, want 564545 (idempotent)", after[0].CollectedAmount)
+	}
+}
+
+// Form edit admin tidak mengirim balik proof_url. Kalau update menimpa kolom
+// itu dengan string kosong, bukti transfer hilang permanen.
+func TestUpdateDonationKeepsExistingProofURL(t *testing.T) {
+	repo := NewRepository(newDonationsTestDB(t))
+
+	id, err := repo.CreateDonation(&Donation{
+		CampaignID: 1, DonorName: "Bpk Feri", DonorPhone: "081281718972",
+		Amount: 100000, Type: "Infak", PaymentMethod: "transfer",
+		ProofURL: "bukti-transfer.jpg", Notes: "catatan asli",
+	})
+	if err != nil {
+		t.Fatalf("CreateDonation returned error: %v", err)
+	}
+
+	// Payload form edit: tidak ada proof_url (ProofURL = "").
+	if err := repo.UpdateDonation(&Donation{
+		ID: int(id), CampaignID: 1, DonorName: "Bpk Feri (diedit)",
+		DonorPhone: "081281718972", Amount: 150000, Type: "Infak", PaymentMethod: "transfer",
+	}); err != nil {
+		t.Fatalf("UpdateDonation returned error: %v", err)
+	}
+
+	list, _ := repo.FindAllDonations(0, "", "", "")
+	if len(list) != 1 {
+		t.Fatalf("expected 1 donation, got %d", len(list))
+	}
+	if list[0].ProofURL != "bukti-transfer.jpg" {
+		t.Fatalf("proof_url wiped by edit: %q", list[0].ProofURL)
+	}
+	if list[0].Amount != 150000 || list[0].DonorName != "Bpk Feri (diedit)" {
+		t.Fatalf("edit did not apply: %+v", list[0])
+	}
+}

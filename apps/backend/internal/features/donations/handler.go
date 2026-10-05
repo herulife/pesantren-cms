@@ -1,12 +1,12 @@
 package donations
 
 import (
-	"context"
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -69,26 +69,60 @@ func (h *Handler) GetCampaigns(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Daftar program donasi berhasil dimuat", list)
 }
 
+// parseDonationFilters membaca query param list donasi yang dipakai kedua route.
+func parseDonationFilters(r *http.Request) (campaignID int, status, search, donationType string) {
+	campaignID, _ = strconv.Atoi(r.URL.Query().Get("campaign_id"))
+	status = r.URL.Query().Get("status")
+	search = r.URL.Query().Get("search")
+	donationType = r.URL.Query().Get("type")
+	return
+}
+
+// GetDonations = endpoint PUBLIK (main.go:371, tanpa auth).
+// Hanya donasi verified yang keluar, tanpa PII — lihat toPublicList.
 func (h *Handler) GetDonations(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
-	logger.Info(r.Context(), "donations list started", logger.Field{"operation": "donations_list"})
-	campaignID, _ := strconv.Atoi(r.URL.Query().Get("campaign_id"))
-	status := r.URL.Query().Get("status")
-	search := r.URL.Query().Get("search")
-	donationType := r.URL.Query().Get("type")
+	logger.Info(r.Context(), "donations list started", logger.Field{"operation": "donations_list_public"})
+	campaignID, status, search, donationType := parseDonationFilters(r)
 
 	list, err := h.repo.FindAllDonations(campaignID, status, search, donationType)
 	if err != nil {
-		logger.Error(r.Context(), "donations list failed", logger.Field{"operation": "donations_list", "error": err.Error()})
+		logger.Error(r.Context(), "donations list failed", logger.Field{"operation": "donations_list_public", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
 	logger.Info(r.Context(), "donations list completed", logger.Field{
-		"operation":   "donations_list",
+		"operation":   "donations_list_public",
 		"count":       len(list),
 		"duration_ms": time.Since(startedAt).Milliseconds(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, "Daftar donasi berhasil dimuat", toPublicList(list))
+}
+
+// GetDonationsAdmin = endpoint ADMIN (mounted di /donations/list, wajib auth +
+// role superadmin/bendahara). Mengembalikan pending + verified supaya tab
+// "Log Transaksi" bisa bekerja: verifikasi, ubah, hapus.
+//
+// Filter status di DTO publik sejak commit 37ddd16 (14 Sep) ikut
+// nyangkut ke route ini, jadi 4 donasi pending tidak pernah sampai ke UI dan
+// collected_amount kampanye tidak pernah bergerak. Fix Jilid 79.
+func (h *Handler) GetDonationsAdmin(w http.ResponseWriter, r *http.Request) {
+	startedAt := time.Now()
+	logger.Info(r.Context(), "donations list started", logger.Field{"operation": "donations_list_admin"})
+	campaignID, status, search, donationType := parseDonationFilters(r)
+
+	list, err := h.repo.FindAllDonations(campaignID, status, search, donationType)
+	if err != nil {
+		logger.Error(r.Context(), "donations list failed", logger.Field{"operation": "donations_list_admin", "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	logger.Info(r.Context(), "donations list completed", logger.Field{
+		"operation":   "donations_list_admin",
+		"count":       len(list),
+		"duration_ms": time.Since(startedAt).Milliseconds(),
+	})
+	sendJSONResponse(w, http.StatusOK, true, "Daftar donasi berhasil dimuat", toAdminList(list))
 }
 
 func parseEndDate(raw json.RawMessage) (*time.Time, error) {
@@ -270,7 +304,7 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 		RequestID: logger.CorrelationID(r), ActorID: adminID, ActorRole: actorRole,
 		Action: "VERIFY_DONATION", Entity: "donation", EntityID: strconv.Itoa(id),
 		After: map[string]interface{}{"status": "verified"},
-		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, "Donasi berhasil diverifikasi dan notifikasi dikirim", nil)
 }
@@ -459,7 +493,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/campaigns", h.Create)
 	r.Put("/campaigns/{id}", h.Update)
 	r.Delete("/campaigns/{id}", h.Delete)
-	r.Get("/list", h.GetDonations)
+	r.Get("/list", h.GetDonationsAdmin)
 	r.Post("/list", h.CreateDonation)
 	r.Put("/list/{id}", h.UpdateDonation)
 	r.Delete("/list/{id}", h.DeleteDonation)

@@ -553,10 +553,9 @@ export interface Donation {
 	donor_phone: string;
 	amount: number;
 	type?: string;
-	message: string;
 	payment_method: string;
 	status: string;
-	donation_date: string;
+	verified_at?: string | null;
 	notes?: string;
 	created_at: string;
 }

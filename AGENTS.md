@@ -57,6 +57,17 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - OTP (`features/otp`): 6 digit, hash SHA-256, TTL 10 mnt, cooldown 60 dtk, maks 5x coba; kirim via `whatsapp.SendMessage`. Endpoint publik rate-limited: `POST /api/otp/request|verify`.
 - Invoice (`features/invoices`): provider-agnostik; webhook `POST /api/invoices/webhook` verifikasi HMAC-SHA256 header `X-Signature` (`INVOICE_WEBHOOK_SECRET`); idempoten via `gateway_tx_id` (replay→200, konflik→409).
 - WhatsApp (`platform/whatsapp/sender.go`): teks saja via antrean `wagate`; template pakai `PortalBaseURL()` (dari `APP_URL`) — jangan hardcode domain. Status: `GET /api/notifications/wa/status` (butuh login). Gateway konek sebagai 081932506078.
+- **Donasi: DTO publik JANGAN dipakai untuk endpoint admin** (fix Jilid 79). Dua
+  handler, dua aturan berbeda:
+  - `GET /api/donations` (publik, `main.go:371`) -> `GetDonations` -> `toPublicList`:
+    hanya `verified`, tanpa PII.
+  - `GET /api/donations/list` (admin, di balik `auth.RequireRole("superadmin","bendahara")`)
+    -> `GetDonationsAdmin` -> `toAdminList`: pending + verified, boleh `donor_phone`,
+    `payment_method`, `notes`, `donor_id`; tetap TIDAK `proof_url`/`verified_by`
+    (bukti lewat route berauth `/uploads/proofs/{file}`).
+  - Rumus: field yang DTO buang = field yang form edit tidak boleh kirim balik.
+    `Repository.UpdateDonation` memakai `proof_url = CASE WHEN ? = '' THEN proof_url
+    ELSE ? END` supaya edit tidak menghapus bukti transfer.
 - Settings: key-value; endpoint publik difilter allowlist di `settings/handler.go GetPublic` — **key baru untuk portal HARUS masuk allowlist**. Key rekening: `donation_*`, `psb_payment_*`, `spp_*`.
 - Kwitansi frontend: `src/components/KwitansiModal.tsx` (`KwitansiTx`, `terbilang`, `downloadKwitansiPDF` via jsPDF). Logo = `settings.web_logo_url` fallback `/assets/img/logo-alama.jpg` (sama seperti Navbar). Dipakai 5+ halaman — jaga kompatibilitas props.
 - Skrip `scripts/smoke_nik_final.py` masih versi lama (rute/payload lama) — perbaiki dulu sebelum dipakai.

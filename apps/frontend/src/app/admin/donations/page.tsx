@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getCampaigns, getDonations, deleteCampaign, verifyDonation, Campaign, Donation, getDonors, createDonor, updateDonor, deleteDonor, Donor, createDonation, updateDonation, deleteDonation } from '@/lib/api';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -12,6 +12,10 @@ import Link from 'next/link';
 export default function DonationsAdminPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
+  // Berisi SEMUA transaksi tanpa filter — hanya untuk kartu statistik di atas
+  // tab. Kalau kartu ikut memakai `donations`, angkanya ikut berubah saat tab /
+  // pencarian / filter status diganti (dan selalu 0 di tab lain).
+  const [allDonations, setAllDonations] = useState<Donation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // UI States
@@ -81,10 +85,28 @@ export default function DonationsAdminPage() {
   // Handle Debounced Search
   useEffect(() => {
     const timer = setTimeout(() => {
-        fetchData();
+      fetchData();
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery, activeTab, filterStatus, campaignFilter, typeFilter, fetchData]);
+
+  // Statistik "Kontributor Teridentifikasi" dihitung sekali dari daftar penuh,
+  // tidak ikut tab/search/filter.
+  useEffect(() => {
+    getDonations().then(setAllDonations);
+  }, []);
+
+  // Dipakai ulang setiap kali transaksi berubah (verify/edit/hapus/tambah).
+  const refreshAllDonations = useCallback(() => {
+    getDonations().then(setAllDonations);
+  }, []);
+
+  const identifiedDonors = useMemo(() => {
+    const names = allDonations
+      .map((d) => d.donor_name?.trim())
+      .filter((n): n is string => Boolean(n));
+    return new Set(names).size;
+  }, [allDonations]);
 
   const handleDelete = async () => {
     if (!selectedId) return;
@@ -98,6 +120,7 @@ export default function DonationsAdminPage() {
       if (res.success) {
         showToast('success', deleteTarget === 'donor' ? 'Donatur berhasil dihapus.' : deleteTarget === 'donation' ? 'Transaksi berhasil dihapus.' : 'Kampanye berhasil dihapus.');
         fetchData();
+        refreshAllDonations();
         setIsDeleteOpen(false);
       } else {
         showToast('error', res.message || 'Gagal menghapus data.');
@@ -135,6 +158,7 @@ export default function DonationsAdminPage() {
         showToast('success', editingDonor ? 'Donatur berhasil diperbarui.' : 'Donatur berhasil ditambahkan.');
         setIsDonorModalOpen(false);
         fetchData();
+        refreshAllDonations();
       } else {
         showToast('error', res.message || 'Gagal menyimpan donatur.');
       }
@@ -194,6 +218,7 @@ export default function DonationsAdminPage() {
         showToast('success', editingTx ? 'Transaksi berhasil diperbarui.' : 'Transaksi berhasil dicatat.');
         setIsTxModalOpen(false);
         fetchData();
+        refreshAllDonations();
       } else {
         showToast('error', res.message || 'Gagal menyimpan transaksi.');
       }
@@ -208,6 +233,7 @@ export default function DonationsAdminPage() {
       if (res.success) {
         showToast('success', 'Donasi berhasil diverifikasi!');
         fetchData();
+        refreshAllDonations();
       } else {
         showToast('error', 'Gagal memverifikasi donasi.');
       }
@@ -309,7 +335,7 @@ export default function DonationsAdminPage() {
           <div className="w-14 h-14 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 mb-6 border border-sky-100 shadow-inner">
              <Users size={28} />
           </div>
-          <div className="text-3xl font-black text-slate-900 mb-1 font-outfit">{donations.length >= 10 ? donations.length : `0${donations.length}`}</div>
+          <div className="text-3xl font-black text-slate-900 mb-1 font-outfit">{identifiedDonors >= 10 ? identifiedDonors : `0${identifiedDonors}`}</div>
           <div className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Kontributor Teridentifikasi</div>
         </div>
       </div>

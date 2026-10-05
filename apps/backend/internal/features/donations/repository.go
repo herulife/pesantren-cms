@@ -191,9 +191,16 @@ func (r *Repository) UpdateDonation(d *Donation) error {
 	if status == "verified" {
 		return errDonationLocked
 	}
+	// proof_url tidak pernah dihapus diam-diam: form edit admin tidak mengirim
+	// balik proof_url, jadi string kosong berarti "tidak diubah", bukan "hapus".
+	// Bukti transfer sakral — begitu hilang tidak ada sumbernya lagi.
 	_, err = r.db.Exec(`
-		UPDATE donations SET campaign_id = ?, donor_id = ?, donor_name = ?, donor_phone = ?, amount = ?, type = ?, payment_method = ?, proof_url = ?, notes = ? WHERE id = ?`,
-		d.CampaignID, nullableInt(d.DonorID), d.DonorName, d.DonorPhone, d.Amount, d.Type, d.PaymentMethod, d.ProofURL, d.Notes, d.ID)
+		UPDATE donations SET campaign_id = ?, donor_id = ?, donor_name = ?, donor_phone = ?, amount = ?, type = ?, payment_method = ?,
+			proof_url = CASE WHEN ? = '' THEN proof_url ELSE ? END,
+			notes = ?
+		WHERE id = ?`,
+		d.CampaignID, nullableInt(d.DonorID), d.DonorName, d.DonorPhone, d.Amount, d.Type, d.PaymentMethod,
+		d.ProofURL, d.ProofURL, d.Notes, d.ID)
 	return err
 }
 

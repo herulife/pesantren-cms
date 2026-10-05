@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-05 (**Jilid 78b - bersih-bersih storage: 58G -> 37G terpakai (82G free), 11 dangling image + 23 image lama + 3 container uji dihapus, chain rollback tinggal j78->j77->j76; Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-05 (**Jilid 79 - Perbaiki tab "Log Transaksi" donasi yang kosong (4 pending tidak pernah tampil, `collected_amount` selalu 0) + pisah DTO admin/publik + proteksi bukti transfer saat edit; Jilid 78b - bersih-bersih storage: 58G -> 37G terpakai (82G free), 11 dangling image + 23 image lama + 3 container uji dihapus, chain rollback tinggal j78->j77->j76; Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -63,6 +63,131 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 79 - Perbaiki tab "Log Transaksi" donasi yang kosong (5 Okt 2026, LIVE)
+
+### Gejalanya
+User buka `/admin/donations` -> tab **Log Transaksi** -> **tabelnya kosong**, padahal
+DB punya 4 transaksi Rp 864.545. Dropdown filter "Menunggu (Pending)" juga selalu
+kosong. Efek lanjutan: `collected_amount` semua kampanye masih **Rp 0** dan rekap
+**Kas** belum menghitung donasi.
+
+### Akar masalahnya
+Commit `37ddd16` (14 Sep, "fix(pii-upload)") menambah filter PII untuk donasi.
+Filter status `!= verified`-damai untuk **halaman publik**, tapi handler yang sama
+juga dipakai endpoint **admin**:
+
+| Route | Handler | Hasil |
+|---|---|---|
+| `GET /api/donations` (publik, `main.go:371`) | `GetDonations` | hanya verified - benar |
+| `GET /api/donations/list` (admin, `main.go:422`, role bendahara/superadmin) | `GetDonations` | hanya verified - **SALAH** |
+
+`handler.go` memanggil `toPublicList(list)` yang di `dto.go:34` membuang `pending`.
+Jadi kode UI untuk "MENUNGGU" + tombol **Verifikasi Dana** (`page.tsx:605-635`)
+sudah ada tapi **tidak akan pernah dieksekusi** - datanya hilang sebelum sampai
+frontend. Endpoints `/donations/stats` dan halaman publik konsisten, jadi tidak
+ada yang complained duluan.
+
+### Yang diperbaiki
+1. **Pisah handler.** `GetDonations` (publik, tetap `toPublicList`) vs
+   `GetDonationsAdmin` (baru, `toAdminList` - tanpa filter status). Route
+   `/donations/list` sekarang menunjuk ke yang admin.
+2. **DTO admin baru** (`DonationAdminDTO`): pending + verified, plus `donor_phone`,
+   `payment_method`, `notes`, `donor_id`, `verified_at` - TANPA `proof_url` dan
+   `verified_by`. Bukti transfer tetap hanya lewat route berauth
+   `/uploads/proofs/{file}` sesuai `37ddd16`.
+3. **Cegah kehilangan bukti transfer** (`repository.go UpdateDonation`). Form edit
+   admin tidak pernah mengirim balik `proof_url`, sementara SQL lama menimpa kolom
+   itu apa adanya -> **mengedit satu transaksi menghapus bukti transfernya**.
+   Sekarang `proof_url = CASE WHEN ? = '' THEN proof_url ELSE ? END`.
+4. **Kartu "Kontributor Teridentifikasi"** dihitung dari daftar penuh (dedup nama)
+   memakai state `allDonations`, bukan dari `donations` yang ikut terfilter tab +
+   search (sebelumnya selalu `00` di luar tab Log Transaksi).
+
+### Test (semua hijau)
+`apps/backend/internal/features/donations/` - 9 test:
+- `dto_test.go`: admin list memuat pending, DTO admin membawa field edit, DTO
+  admin tidak membocorkan `proof_url`/`verified_by` (dicek di level JSON), publik
+  menyembunyikan pending.
+- `repository_test.go`: `TestVerifyDonationIncreasesCollectedAmount` (termasuk
+  idempoten saat verifikasi ulang), `TestUpdateDonationKeepsExistingProofURL`.
+
+### Temuan sampingan: `GET /api/donations` sudah lama mati (401)
+`main.go:371` mendaftarkan `r.Get("/donations", ...)` sebagai "publik", tapi
+`main.go:422` melakukan `r.Mount("/donations", donationHandler.Routes())` di dalam
+grup `auth.AuthMiddleware` + `RequireRole("bendahara")`. chi tidak panic (Mount
+memeriksa pola `/donations*`, bukan `/donations` exact), tapi saat request datang
+**node mount menang** -> 401 untuk anonim. Terbukti:
+
+```
+GET /api/donations/campaigns  -> 200   (static, menang)
+GET /api/donations/stats      -> 200   (static, menang)
+GET /api/donations            -> 401   (kena mount berauth)
+```
+
+Jadi handler publik `GetDonations` praktis tidak terjangkau, dan tidak ada frontend
+yang memakainya (hanya `/donations/list`, `/donations/campaigns`,
+`/donations/stats`). **Belum diubah di Jilid 79** karena tidak dibutuhkan -
+frontend publik tidak pernah consume daftar transaksi. Kalau suatu saat Needed,
+pakai prefix berbeda (mis. `/public/donations`) daripada relies onregistration
+order yang rapuh ini.
+
+### Verifikasi setelah deploy (21:35, container `alma-parung-backend-j79`)
+Token dites pakai JWT HS256 yang di-mint lokal dari `JWT_SECRET` container +
+`token_version` user superadmin — **tanpa reset password** (dilarang `AGENTS.md` §4).
+
+```
+GET /api/donations/list           (bendahara)  -> 4 baris, pending ikut  ✓ (dulu 0)
+GET /api/donations/list?status=pending        -> 4 baris               ✓ (dulu 0)
+GET /api/donations/list?status=verified       -> 0 baris               ✓
+GET /api/donations/list?campaign_id=10        -> 4 baris               ✓
+GET /api/donations/list?search=feri           -> 2 baris               ✓
+field PII di DTO admin: proof_url/verified_by -> tidak ada             ✓
+field edit: donor_phone/payment_method/notes/donor_id -> lengkap        ✓
+```
+
+Uji round-trip preservasi bukti transfer (donasi uji id 5, lalu dihapus):
+```
+POST   /donations/list  {proof_url:"uji-bukti.jpg"}      -> tersimpan
+PUT    /donations/list/5 tanpa proof_url (form admin)     -> "uji-bukti.jpg" MASIH ADA ✓
+                                                            nominal & notes terupdate ✓
+DELETE /donations/list/5                                  -> bersih, 4 donasi asli utuh
+```
+
+**4 donasi asli TIDAK diverifikasi** - itu keputusan bendahara, bukan agen.
+`collected_amount` campaign 10 masih Rp 0 dan `donor_count` masih 0 sampai
+tombol "Verifikasi Dana" ditekan.
+
+### Backup
+`backups/pre-j79-donasi-pending-20261005-213253.db` (1.7MB, integrity ok).
+**Penting:** `cp` file `.db` saja menghasilkan backup yang **hilang 1 baris**
+(3 dari 4 donasi) karena DB jalan mode WAL. Backup benar harus lewat API
+`sqlite3.Connection.backup()` (atau `VACUUM INTO`) — sudah dipakai di Jilid 79.
+
+### Pelajaran
+- **Satu handler dipakai dua purpose dengan aturan berbeda = bom waktu.**
+ _filter_ "semua status" hanya cocok untuk admin; filter "verified only" hanya
+  cocok untuk publik. Kalau suatu saat butuh daftar donasi lain, jangan reuse
+  `toPublicList`.
+- **Perbaikan "tambah DTO" hampir selalu berarti ada UI yang selama ini diam-diam
+  mati.** Cari kode UI yang tidak akan pernah dieksekusi (`d.status !==
+  'verified'` -> tombol verify) - itu bukti endpoint-nya salah, bukan UI-nya.
+- **Endpoint admin yang pakai DTO publik = kebocoran data DAN data hilang.**
+  Kalau DTO publik sengaja membuang `donor_phone`, sementara form edit admin
+  membulatkan-balik field itu lalu SQL-nya menimpa -> nomor HP donatur terhapus
+  saat admin mengedit. Cek dua arah: apa yang DTO buang, apa yang form kirim.
+- **Backup DB prod wajib lewat API `sqlite3`, bukan `cp`.** `cp data/alma-parung.db`
+ jorok: mode WAL meninggalkan commit terakhir di `*.db-wal`, jadi backup
+  terlihat "berhasil" tapi isinya kurang. Di Jilid 79 backup `cp` hanya berisi 3
+  dari 4 donasi. Pakai `sqlite3.connect(src).backup(sqlite3.connect(dst))`.
+- **Route chi: `r.Get("/x", ...)` dan `r.Mount("/x", ...)` bisa hidup berdampingan
+  tanpa panic, tapi yang menang saat request = node mount.** Kalau `Mount` ada di
+  dalam grup ber-`AuthMiddleware`, route "publik" dengan prefix sama jadi 401
+  tanpa error sama sekali.
+- **Build image di VPS ini bisa 15-20 menit.** Jalankan dengan `setsid nohup ... &`
+  + file penanda `.done`. `nohup` saja TIDAK cukup: kalau perintah launch ikut
+  ke-terminate oleh timeout tool, anak prosesnya ikut mati di tengah build
+  (terjadi 5 Okt: `go mod download` selesai lalu build berhenti di step 5).
 
 ## Jilid 78b - Bersih-bersih storage (5 Okt 2026, LIVE)
 
