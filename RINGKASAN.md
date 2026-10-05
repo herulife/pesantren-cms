@@ -64,6 +64,95 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
 
+## Jilid 78 - Export Data Santri: endpoint `/api/santri/export` + tombol export (5 Okt 2026, LIVE)
+
+### Masalah
+Tombol Export PDF/Excel di `/admin/kesantrian` memakai state `items`, yaitu
+**hanya 1 halaman (20 baris)** dari `getSantriList` yang dipaginasi. Jadi file
+yang diunduh berisi 20 baris saja padahal total Santri 58. Selain itu tombol
+export hanya muncul kalau ada baris terpilih, padahal tidak ada cara export
+seluruh data.
+
+### Perubahan backend
+- `internal/features/santri/export.go` (baru):
+  - `ExportRow` = seluruh kolom `santri` (26) PLUS data akun portal dari
+    `LEFT JOIN users` (`has_account`, `user_id`, `account_name/email/role/whatsapp`,
+    `last_login_at`). `password_hash` tidak pernah ikut.
+  - `Repository.ExportAll(classes []string, restrictClasses bool)` - satu
+    round-trip, tanpa paginasi/search/status.
+  - `Handler.ExportAll` - route `GET /export`, role `wali_kelas` dibatasi
+    lewat `scope.Resolve` seperti `GetAll`.
+- `handler.go`: `ExportAll` masuk `IRepository` + route didaftarkan **sebelum**
+  `r.Get("/{id}")` supaya tidak tertangkap route param.
+- Tidak ada perubahan skema DB, jadi **rollback cukup ganti container**.
+
+### Dua perbaikan tambahan saat review
+1. **Route wajib sebelum `/{id}`.** Kalau tidak, `chi` mencocokkan `/export`
+   sebagai `id` dan balasnya 400/500, bukan 404.
+2. **Fail-closed untuk `wali_kelas`.** Versi pertama memakai `len(classes)==0`
+   sebagai "semua kelas". Ternyata 3 akun `wali_kelas` di DB punya
+   `classes.wali_user_id = NULL`, jadi `sc.Classes` kosong - artinya kode itu
+   memberi **seluruh data** ke wali kelas yang belum ditugaskan. Dipecah jadi
+   `restrictClasses bool`: `true` + daftar kosong = hasil kosong,
+   `false` (admin/superadmin) = semua kelas. Ini pola yang sama dengan
+   `FindAllScoped` (`if len(classes) == 0 { return [] }`).
+
+### Perubahan frontend
+- `lib/api.ts`: `SantriExportRow` + `getSantriExport()` memanggil
+  `/santri/export`.
+- `app/admin/kesantrian/page.tsx`: `exportData()` jadi `async`, mengambil data
+  lengkap dari endpoint baru. Signature `exportData(format, mode)`:
+  `mode='selected'` (tombol toolbar, pakai label "N santri dipilih") atau
+  `'all'` (tombol baru di **header**, yang selalu export semua data).
+  State `exporting` disable tombol + teks "Menyiapkan..." selama fetch;
+  `await` pada `exportToPDF`/`exportToExcel` (keduanya async).
+
+### Verifikasi (dijalankan, bukan asumsi)
+`go build`, `go vet`, `go test ./internal/features/santri/` (container
+`golang:1.26`), `tsc --noEmit --incremental false`, `gofmt` bersih.
+
+Uji di container uji (`j78test` port 8099 + `j78fe` 3008 + nginx `j78gw` 3009
+di network `j78net`, DB salinan), lalu **diulang di produksi**:
+
+```
+GET /api/santri/export -> 200, items=58, total=58 (jumlah DB 58)
+konsistensi vs DB (nis/name/class 58 baris): 0 selisih, id unik
+LEFT JOIN users: email/role cocok, password_hash tidak ada di payload
+param acak (?limit=5&offset=100&search=zzz) -> tetap 58 (memang tanpa paginasi)
+tanpa token -> 401 (route /export tidak tertangkap /{id})
+wali_kelas 205 (kelas '7') -> 5 baris;  207 (kelas '8') -> 16 baris;
+  209 (tanpa penugasan) -> 0 baris (fail-closed, bukan 58)
+endpoint lama /santri (20) + /santri/classes tetap 200, tanpa regresi
+0 panic/error di log backend
+```
+
+UI (playwright headless, production `https://almaparung.com`):
+```
+/admin/kesantrian -> 200, tabel 20 baris (tetap paginasi)
+klik "Export Excel" (header) -> GET /api/santri/export 200 items=58
+  file Data-Santri-AlMaa-*.xlsx 37711 byte, sheet 64 baris (6 kop + 58 data)
+  toast "58 data santri berhasil diexport ke EXCEL"
+pilih 2 baris -> export toolbar -> 17926 byte, sheet 8 baris (6 kop + 2 data)
+  toast "2 data santri berhasil diexport ke EXCEL"
+0 pageerror / requestfailed
+```
+
+Backup pra-deploy: `backups/pre-j78-export-20261005-194008.db` (1687552 byte).
+
+### Dampak & catatan
+- Image: `alma-parung-backend:j78-export-santri`, `alma-parung-frontend:j78-export-santri`.
+  Container rollback: `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`) +
+  `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`), keduanya
+  **sudah di-stop** karena memegang port 8090/3002. **Rollback j78 TIDAK perlu
+  membalik DB** (tidak ada migrasi).
+- **Pelajaran:** "daftar filter kosong" punya dua arti yang bertolak (semua data
+  vs tidak punya akses). Ambil keputusan itu dari **role**, bukan dari
+  `len(slice)`. Bug ini tidak muncul saat semua akun wali_kelas sudah punya
+  penugasan - hanya terlihat karena 3 akun-nya masih `NULL`.
+- Angka live saat Jilid 78 (recount via python3): `santri` **58** (bukan 101/116
+  yang tertulis di §2 - sudah tidak berlaku lagi), 58 di antaranya punya akun
+  portal tertaut.
+
 ## Jilid 77a - FIX FATAL: `PurgeSantri` menghapus presensi milik Santri LAIN (5 Okt 2026, LIVE)
 
 ### Apa yang terjadi
