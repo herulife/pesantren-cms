@@ -108,6 +108,7 @@ func (r *Repository) PurgeSantri(id int) (map[string]int64, error) {
 	// bukan pada blok 1. Kalau salah blok, satu akun wali yang punya 2 anak
 	// bisa menghapus presensi anaknya yang lain (id Santri dan id user tumpang
 	// tindih), dan purge milik Santri berpresensi gagal karena FK.
+
 	// 2. Keuangan milik santri (kunci santri.id) — termasuk yang sudah dibayar.
 	for key, q := range map[string]string{
 		"attendance":           `DELETE FROM attendance WHERE student_id=?`,
