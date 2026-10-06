@@ -28,7 +28,9 @@ func main() {
 		log.Fatal(err)
 	}
 	var cols []string
-	type cinfo struct{ cid, name, typ string }
+	type cinfo struct {
+		name, typ string
+	}
 	var infos []cinfo
 	var cid, pk int
 	var name, typ, notnull, dflt string
@@ -36,7 +38,7 @@ func main() {
 		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
 			log.Fatal(err)
 		}
-		infos = append(infos, cinfo{cid: cid, name: name, typ: typ})
+		infos = append(infos, cinfo{name: name, typ: typ})
 		cols = append(cols, name)
 	}
 	rows.Close()
