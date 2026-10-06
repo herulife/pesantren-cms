@@ -21,8 +21,8 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend-j80` | `alma-parung-backend:j80-laba-rugi` | **Jilid 80** (field baru `expense_groups` untuk Laba Rugi). Rollback: `alma-parung-backend-pre-j80` (Jilid 79) |
-| Frontend | `alma-parung-frontend-j80` | `alma-parung-frontend:j80-laba-rugi` | **Jilid 80** (restyle penuh `/admin/kas` + tab Laba Rugi + export PDF/Excel). Rollback: `alma-parung-frontend-pre-j80` (Jilid 79) |
+| Backend | `alma-parung-backend-j81` | `alma-parung-backend:j81-batalkan-verifikasi` | **Jilid 81** (tombol Batalkan Verifikasi donasi + `wa_sent` anti-WA-dobel). Rollback: `alma-parung-backend-pre-j81` (**j80-laba-rugi**, stopped) |
+| Frontend | `alma-parung-frontend-j81` | `alma-parung-frontend:j81-batalkan-verifikasi` | **Jilid 81** (tombol Batalkan Verifikasi di tab Log Transaksi donasi). Rollback: `alma-parung-frontend-pre-j81` (**j80-laba-rugi**, stopped) |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | container rollback Jilid 78: `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`, **stopped**) + `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`, **stopped**), tanpa perlu rollback DB. Pendahulu Jilid 77: `alma-parung-backend-pre-j77` (image `j76-wali-santri`, **stopped**) + `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`, **stopped**). **Catatan: rollback ke <= j76 wajibmelempar balik DB ke skema `users(id)` dulu, lihat §4 Jilid 77. Chain rollback diputus di j75/j74 — image `j75-kas-audit`, `j74-kelas-panel`, `j72-login-center`, `j69-avatar`, `j68-akun`, `jilid67-kategori`, `fix-nullsanti-v2`, `arbain-bgn2`, `fix-psb-*`, `disc-fix`, `disiplinfix`, `sppautofix`, `jilid44`, `jilid47`, dan `j77-purge-attendance` SUDAH DIHAPUS 5 Okt 2026 (§4 Jilid 78b) — jangan menyebutnya sebagai rollback.** |
 | DB | — | — | **Recount 5 Okt 2026 (Jilid 78, python3 ke `data/alma-parung.db` + endpoint `/api/santri/export`): `santri` 58, dan 58 di antaranya punya akun portal tertaut (`santri.user_id` -> `users.id`).** Angka 101/122 (Jilid 70) dan 116/124 (Jilid 68) di bawah ini **SUDAH KEDALUWARSA** — jangan dipakai sebagai fakta, recount dulu. **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
@@ -63,6 +63,58 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 81 - Tombol "Batalkan Verifikasi" donasi + anti-WA-dobel (6 Okt 2026, LIVE)
+
+### Latar belakang
+User bertanya: tab Log Transaksi `/admin/donations` tidak punya edit/hapus. Ternyata
+CRUD & verifikasi sudah ada sejak dulu, tapi tombol (edit/hapus) hanya muncul untuk
+status `pending`; baris `verified` sengaja dikunci (`errDonationLocked`, HTTP 422) karena
+saat verify `donation_campaigns.collected_amount` sudah bertambah dan Kas/Laba Rugi
+menghitung donasi langsung dari `donations WHERE status='verified'`.
+
+Keputusan user (6 Okt 2026): **opsi 1** — tombol "Batalkan Verifikasi" yang mengembalikan
+transaksi ke `pending` tanpa mengirim WA; edit & verify ulang juga **tidak** mengirim WA
+(anti pesan dobel).
+
+### Apa yang diubah
+**Backend:**
+- `apps/backend/internal/platform/database/db.go`: kolom baru `donations.wa_sent INTEGER NOT NULL DEFAULT 0` + **backfill** `SET wa_sent=1 WHERE status='verified' AND wa_sent=0` (data lama dianggap sudah pernah diinformasikan — tanpa ini, unverify→verify ulang kirim WA dobel). Idempoten, dijalankan setiap start.
+- `apps/backend/internal/features/donations/repository.go`:
+  - `VerifyDonation(id, verifiedBy)` signature berubah → `(bool, error)`; `bool` = "layak kirim WA" (`wa_sent` masih 0 sebelum update). Set `wa_sent=1` dalam tx yang sama.
+  - `UnverifyDonation(id)`: hanya untuk status `verified` (selain itu → `errDonationNotVerified`, HTTP 422); `status='pending'`, `verified_at/verified_by` di-NULL-kan, `donation_campaigns.collected_amount` dikurangi. `wa_sent` **tidak** di-reset.
+- `apps/backend/internal/features/donations/handler.go`: handler `UnverifyDonation` (audit `UNVERIFY_DONATION`, Before/After), route `PUT /api/donations/unverify/{id}`, interface `IRepository` disinkronkan (ifacemaker). WA di `VerifyDonation` hanya dikirim bila `sendWA && DonorPhone != ""`; pesan sukses berbeda tanpa frasa "notifikasi dikirim".
+- Test `repository_test.go`: schema + call-site disesuaikan, test baru `TestUnverifyDonationRestoresPendingState` (unverify→pending, collected balik, verified_at cleared, edit terbuka lagi, unverify kedua → 422, verify ulang **tidak** sendWA).
+
+**Frontend** (`apps/frontend/src/app/admin/donations/page.tsx` + `lib/api.ts`):
+- `api.ts`: `unverifyDonation(id)` → `PUT /donations/unverify/{id}`.
+- Baris `verified` kini menampilkan badge ✓ + tombol **"Batalkan Verifikasi"** (ikon `Undo2`); ada `ConfirmDialog` sendiri yang menjelaskan konsekuensi (status kembali Menunggu, jumlah kampanye & kas ikut turun, donatur TIDAK dapat WA).
+- Toast sukses memakai pesan backend.
+
+### Verifikasi
+- `go build ./...`, `go vet ./...`, `go test ./... -count=1` → semua ok; `npx tsc --noEmit --incremental false` → 0 error.
+- Migrasi live: `docker logs` → `[DB] Added column donations.wa_sent`; hasil `wa_sent` prod: pending=0, verified=1.
+- **Smoke end-to-end di container uji (DB copy, port 8091, user bendahara smoke):**
+  - unverify id8 → 200, status→`pending`, campaign10 `989545→914545` (kurang 75.000) ✅
+  - edit id8 (amount→100.000) → 200 ✅; verify id8 → 200, campaign10→`1.014.545` ✅
+  - unverify id1 (pending) → 422 `transaksi belum diverifikasi` ✅
+  - **unverify id7 → verify ulang id7: TIDAK ada panggilan WA** (log tanpa `[WA] Terkirim`/`notify`) ✅
+  - donasi pending baru diverifikasi: WA **dipanggil** (di container uji gagal hanya karena gateway belum pairing — di prod terkirim) ✅
+- Domain live: `/api/ready` 200, `/admin/donations` & `/admin/kas` →307 (tanpa sesi, normal), `PUT /api/donations/unverify/8` tanpa sesi →401.
+
+### Deploy
+- Image `alma-parung-backend:j81-batalkan-verifikasi` + `alma-parung-frontend:j81-batalkan-verifikasi`. Container j80 di-`stop`+`rename` jadi `*-pre-j81` (rollback), bukan dihapus. Chain rollback: **j81 → pre-j81(j80) → pre-j80(j79) → pre-j79(j78)**.
+
+### Catatan & temuan
+- **Peringatan data lama:** `ALTER TABLE ADD COLUMN` memberi `wa_sent=0` ke SEMUA baris,
+  jadi tanpa backfill semua donasi verified lama akan "kirim WA lagi" saat
+  unverify→verify. Backfill `SET wa_sent=1 WHERE status='verified'` mencegah itu.
+- **Bug pre-existing (bukan regresi Jilid 81, terkonfirmasi di image j80):**
+  `GET /api/donations` (publik, `donations.GetDonations`) balas **401** padahal rute publik
+  `r.Get("/donations")` didaftarkan sebelum mount (main.go:371 vs 422) — mount
+  `/donations` ber-`RequireRole("bendahara")` menelannya. `/api/donations/campaigns` &
+  `/api/donations/stats` tetap 200, dan frontend publik memakai dua endpoint ini,
+  jadi tidak kelihatan. Perbaiki jika endpoint list donasi publik pernah dipakai lagi.
 
 ## Jilid 80 - Halaman Kas & Laba Rugi (restyle penuh + tab Laba Rugi baru) (6 Okt 2026, LIVE)
 

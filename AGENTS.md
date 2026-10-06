@@ -9,8 +9,8 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - `apps/backend` — Go (chi, `module almaparung-api`), SQLite. Lihat `apps/backend/internal/{features,platform,validators}`, entry `apps/backend/cmd/api/main.go`.
   - `apps/frontend` — Next.js 16 + React 19 + Tailwind 4. Lihat `apps/frontend/src/{app,components,lib}`.
 - Database prod: `/home/heru/alma-parung/data/alma-parung.db`, di-mount ke container sebagai `/data` (`DB_PATH=/data/alma-parung.db`). Uploads: `data/uploads` → `/app/apps/backend/public/uploads`.
-- Container (**per 5 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
-  selalu `docker ps` untuk memastikan**): `alma-parung-backend-j80` (image `alma-parung-backend:j80-laba-rugi`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-j80`** (image `alma-parung-frontend:j80-laba-rugi`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback: `alma-parung-backend-pre-j80` + `alma-parung-frontend-pre-j80` (keduanya image Jilid 79), sudah di-stop — jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
+- Container (**per 6 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
+  selalu `docker ps` untuk memastikan**): `alma-parung-backend-j81` (image `alma-parung-backend:j81-batalkan-verifikasi`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-j81`** (image `alma-parung-frontend:j81-batalkan-verifikasi`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback: `alma-parung-backend-pre-j81` + `alma-parung-frontend-pre-j81` (keduanya image Jilid 80), sudah di-stop — jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
 
 - **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
@@ -76,6 +76,20 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - Rumus: field yang DTO buang = field yang form edit tidak boleh kirim balik.
     `Repository.UpdateDonation` memakai `proof_url = CASE WHEN ? = '' THEN proof_url
     ELSE ? END` supaya edit tidak menghapus bukti transfer.
+- **Jilid 81 — Batalkan Verifikasi donasi:**
+  - `PUT /api/donations/unverify/{id}` (admin superadmin/bendahara): transaksi `verified`
+    → `pending`, `verified_at`/`verified_by` di-NULL-kan, `donation_campaigns.collected_amount`
+    dikurangi, `donations.wa_sent` TETAP (tidak di-reset). 422 jika belum `verified`.
+  - `donations.wa_sent` = penanda "WA donasi sudah pernah dikirim". Hanya verify
+    **pertama** yang mengirim WA; unverify→verify ulang TIDAK mengirim (keputusan user
+    6 Okt 2026). Backfill saat migrasi menandai semua baris `verified` sebagai `wa_sent=1`
+    — jangan pernah me-reset kolom ini.
+  - Kas/Laba Rugi mengambil donasi dari `donations WHERE status='verified'`, jadi unverify
+    otomatis menurunkan angka kas tanpa baris jurnal tambahan.
+  - **Bug pre-existing (terkonfirmasi di image j80):** `GET /api/donations` publik (main.go:371)
+    balas 401 karena mount `/donations` (RequireRole bendahara, main.go:422) menelannya;
+    `/api/donations/campaigns` & `/api/donations/stats` tetap 200 dan itulah yang dipakai
+    frontend publik.
 - Settings: key-value; endpoint publik difilter allowlist di `settings/handler.go GetPublic` — **key baru untuk portal HARUS masuk allowlist**. Key rekening: `donation_*`, `psb_payment_*`, `spp_*`.
 - Kwitansi frontend: `src/components/KwitansiModal.tsx` (`KwitansiTx`, `terbilang`, `downloadKwitansiPDF` via jsPDF). Logo = `settings.web_logo_url` fallback `/assets/img/logo-alama.jpg` (sama seperti Navbar). Dipakai 5+ halaman — jaga kompatibilitas props.
 - Skrip `scripts/smoke_nik_final.py` masih versi lama (rute/payload lama) — perbaiki dulu sebelum dipakai.
