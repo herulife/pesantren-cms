@@ -9,8 +9,8 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - `apps/backend` — Go (chi, `module almaparung-api`), SQLite. Lihat `apps/backend/internal/{features,platform,validators}`, entry `apps/backend/cmd/api/main.go`.
   - `apps/frontend` — Next.js 16 + React 19 + Tailwind 4. Lihat `apps/frontend/src/{app,components,lib}`.
 - Database prod: `/home/heru/alma-parung/data/alma-parung.db`, di-mount ke container sebagai `/data` (`DB_PATH=/data/alma-parung.db`). Uploads: `data/uploads` → `/app/apps/backend/public/uploads`.
-- Container (**per 6 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
-  selalu `docker ps` untuk memastikan**): `alma-parung-backend-j81` (image `alma-parung-backend:j81-batalkan-verifikasi`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-j81`** (image `alma-parung-frontend:j81-batalkan-verifikasi`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback: `alma-parung-backend-pre-j81` + `alma-parung-frontend-pre-j81` (keduanya image Jilid 80), sudah di-stop — jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
+- Container (**per 7 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
+  selalu `docker ps` untuk memastikan**): `alma-parung-backend-j83` (image `alma-parung-backend:j83-notif-expand`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-j83`** (image `alma-parung-frontend:j83-notif-expand`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback: `alma-parung-backend-pre-j83` + `alma-parung-frontend-pre-j83` (keduanya image Jilid 82, sudah di-stop — jangan `docker rm`, hanya `stop` + `rename`). Sumber kebenaran live: `RINGKASAN.md` §2.
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
 
 - **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
