@@ -16,7 +16,6 @@ import (
 	"almaparung-api/internal/features/invoices"
 	"almaparung-api/internal/features/iuran"
 	"almaparung-api/internal/features/kas"
-	"almaparung-api/internal/features/walisantri"
 	"almaparung-api/internal/features/logs"
 	"almaparung-api/internal/features/messages"
 	"almaparung-api/internal/features/news"
@@ -35,6 +34,7 @@ import (
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
+	"almaparung-api/internal/features/walisantri"
 	"almaparung-api/internal/features/wallet"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/database"
@@ -366,11 +366,6 @@ func main() {
 			})
 		})
 
-		// ── Public Donasi ──────────
-		r.Get("/donations/campaigns", donationHandler.GetCampaigns)
-		r.Get("/donations", donationHandler.GetDonations)
-		r.Get("/donations/stats", donationHandler.GetStats)
-
 		// ── Other Authenticated Groups ──────────
 		r.Get("/settings/public", settingHandler.GetPublic)
 
@@ -422,6 +417,18 @@ func main() {
 				r.Mount("/donations", donationHandler.Routes())
 				r.Mount("/kas", kasHandler.Routes())
 			})
+
+			// ── Public Donasi ──────────
+			// Didaftarkan SETELAH mount /donations (grup Bendahara Ops) dengan
+			// sengaja: chi Mount(pattern, ...) menulis handler mALL di node PERSIS
+			// pattern ("/donations"), jadi kalau `r.Get("/donations")` didaftarkan
+			// SEBELUM mount, handler publik mGET-nya tertimpa dan GET /api/donations
+			// masuk ke mount (butuh role bendahara) -> 401. Rute literal
+			// /campaigns & /stats juga dipindah ke sini supaya urutannya konsisten
+			// (leaf static tetap terdahulukan dari wildcard "/donations/*" mount).
+			r.Get("/donations/campaigns", donationHandler.GetCampaigns)
+			r.Get("/donations", donationHandler.GetDonations)
+			r.Get("/donations/stats", donationHandler.GetStats)
 
 			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
 			// daftar ini memuat email/nama wali (data pribadi orang tua).
