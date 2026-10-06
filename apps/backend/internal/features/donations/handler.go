@@ -287,6 +287,12 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Jilid 83: beri tahu semua admin bahwa donasi sudah diverifikasi.
+	if err := sysnotif.Emit(r.Context(), database.DB, "donasi", "Donasi terverifikasi",
+		fmt.Sprintf("%s donasi Rp%.0f diverifikasi", donation.DonorName, donation.Amount), "/admin/donations"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_verify_donasi", "error": err.Error()})
+	}
+
 	// Send WA Notification — hanya untuk verifikasi PERTAMA. Verifikasi ulang
 	// setelah "Batalkan Verifikasi" (Jilid 81) tidak mengirim apa pun, supaya
 	// donatur tidak menerima pesan dobel.

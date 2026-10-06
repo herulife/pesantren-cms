@@ -13,6 +13,9 @@ import (
 	"strings"
 
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/database"
+	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/validators"
 )
 
@@ -136,6 +139,14 @@ func (h *Handler) Webhook(w http.ResponseWriter, r *http.Request) {
 	res, err := h.repo.ApplyWebhook(r.Context(), req.Code, req.GatewayTxID, req.Status, req.Amount)
 	switch {
 	case err == nil:
+		// Jilid 83: beri tahu semua admin bila ada invoice yang terbayar
+		// (event nyata dari gateway, bukan replay).
+		if req.Status == "paid" && !res.Replay {
+			if err := sysnotif.Emit(r.Context(), database.DB, "pembayaran", "Pembayaran invoice masuk",
+				fmt.Sprintf("Invoice %s terbayar Rp%d", req.Code, req.Amount), "/admin/psb"); err != nil {
+				logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_invoice_paid", "error": err.Error()})
+			}
+		}
 		audit.Record(r.Context(), audit.Entry{
 			Action: "INVOICE_WEBHOOK", Entity: "invoice", EntityID: req.Code,
 			After: map[string]interface{}{
