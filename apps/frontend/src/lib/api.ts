@@ -2370,6 +2370,14 @@ export async function verifyDonation(id: number) {
 	return parseResponse(res);
 }
 
+export async function unverifyDonation(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/unverify/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function markMessageAsRead(id: number) {
 	const res = await fetch(`${API_BASE_URL}/contact/${id}/read`, {
 		method: 'PATCH',

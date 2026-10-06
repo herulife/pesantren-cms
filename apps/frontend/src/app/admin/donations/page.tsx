@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { getCampaigns, getDonations, deleteCampaign, verifyDonation, Campaign, Donation, getDonors, createDonor, updateDonor, deleteDonor, Donor, createDonation, updateDonation, deleteDonation } from '@/lib/api';
+import { getCampaigns, getDonations, deleteCampaign, verifyDonation, unverifyDonation, Campaign, Donation, getDonors, createDonor, updateDonor, deleteDonor, Donor, createDonation, updateDonation, deleteDonation } from '@/lib/api';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { Heart, Plus, TrendingUp, Users, DollarSign, ArrowUpRight, Trash2, Pencil, Search, CheckCircle, Clock, FileDown, FileSpreadsheet, Filter, Calendar, X } from 'lucide-react';
+import { Heart, Plus, TrendingUp, Users, DollarSign, ArrowUpRight, Trash2, Pencil, Search, CheckCircle, Clock, FileDown, FileSpreadsheet, Filter, Calendar, X, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DonationsAdminPage() {
@@ -24,6 +24,11 @@ export default function DonationsAdminPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<'campaign' | 'donor' | 'donation'>('campaign');
+
+  // Batalkan Verifikasi (Jilid 81)
+  const [isUnverifyOpen, setIsUnverifyOpen] = useState(false);
+  const [isUnverifying, setIsUnverifying] = useState(false);
+  const [unverifyId, setUnverifyId] = useState<number | null>(null);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -239,6 +244,28 @@ export default function DonationsAdminPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
       showToast('error', message);
+    }
+  };
+
+  const handleUnverify = async () => {
+    if (!unverifyId) return;
+    setIsUnverifying(true);
+    try {
+      const res = await unverifyDonation(unverifyId);
+      if (res.success) {
+        showToast('success', 'Verifikasi dibatalkan. Transaksi kembali menunggu dan bisa diubah/dihapus.');
+        setIsUnverifyOpen(false);
+        setUnverifyId(null);
+        fetchData();
+        refreshAllDonations();
+      } else {
+        showToast('error', res.message || 'Gagal membatalkan verifikasi.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
+    } finally {
+      setIsUnverifying(false);
     }
   };
 
@@ -661,7 +688,18 @@ export default function DonationsAdminPage() {
                                 </button>
                               </>
                             ) : (
-                              <div className="p-2 text-sky-600 bg-sky-50 rounded-lg"><CheckCircle size={18} /></div>
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="p-2 text-sky-600 bg-sky-50 rounded-lg" title="Terverifikasi">
+                                  <CheckCircle size={18} />
+                                </span>
+                                <button
+                                  onClick={() => { setUnverifyId(d.id); setIsUnverifyOpen(true); }}
+                                  aria-label="Batalkan verifikasi transaksi"
+                                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm active:scale-95"
+                                >
+                                  <Undo2 size={14} /> Batalkan Verifikasi
+                                </button>
+                              </div>
                             )}
                           </div>
                         </td>
@@ -696,6 +734,16 @@ export default function DonationsAdminPage() {
             ? 'Transaksi yang belum terverifikasi ini akan dihapus permanen.'
             : 'Data penggalangan dana ini akan dihapus dari publik. Kontribusi dana yang sudah masuk tetap tersimpan dalam laporan audit.'}
         confirmText={deleteTarget === 'campaign' ? 'YA, LUMPUHKAN' : 'YA, HAPUS'}
+      />
+
+      <ConfirmDialog
+        isOpen={isUnverifyOpen}
+        onClose={() => { setIsUnverifyOpen(false); setUnverifyId(null); }}
+        onConfirm={handleUnverify}
+        isLoading={isUnverifying}
+        title="Batalkan Verifikasi?"
+        message="Transaksi akan kembali berstatus Menunggu, jumlah terkumpul di kampanye dikurangi, dan angka kas/laba rugi ikut menyesuaikan. Donatur TIDAK menerima pesan WhatsApp. Transaksi dapat diedit atau dihapus, lalu diverifikasi ulang kapan saja."
+        confirmText="YA, BATALKAN"
       />
 
       {isDonorModalOpen && (

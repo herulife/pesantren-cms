@@ -54,6 +54,7 @@ func newDonationsTestDB(t *testing.T) *sql.DB {
 		status TEXT DEFAULT 'pending',
 		verified_at DATETIME,
 		verified_by INTEGER,
+		wa_sent INTEGER NOT NULL DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 	`
@@ -124,8 +125,12 @@ func TestDonationLockedAfterVerify(t *testing.T) {
 		t.Fatalf("notes not persisted: %+v", list[0])
 	}
 
-	if err := repo.VerifyDonation(int(id), 1); err != nil {
+	sendWA, err := repo.VerifyDonation(int(id), 1)
+	if err != nil {
 		t.Fatalf("VerifyDonation returned error: %v", err)
+	}
+	if !sendWA {
+		t.Fatalf("first verification must be eligible for WA notification")
 	}
 	if err := repo.UpdateDonation(&Donation{ID: int(id), CampaignID: 1, DonorName: "X", Amount: 1}); err != errDonationLocked {
 		t.Fatalf("expected locked error on update, got %v", err)
@@ -178,8 +183,12 @@ func TestVerifyDonationIncreasesCollectedAmount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateDonation returned error: %v", err)
 	}
-	if err := repo.VerifyDonation(int(id), 1); err != nil {
+	sendWA, err := repo.VerifyDonation(int(id), 1)
+	if err != nil {
 		t.Fatalf("VerifyDonation returned error: %v", err)
+	}
+	if !sendWA {
+		t.Fatalf("first verification must be eligible for WA notification")
 	}
 
 	after, _ := repo.FindAllCampaigns(true, "")
@@ -188,8 +197,12 @@ func TestVerifyDonationIncreasesCollectedAmount(t *testing.T) {
 	}
 
 	// Verifikasi ulang tidak boleh menambah dua kali.
-	if err := repo.VerifyDonation(int(id), 1); err != nil {
+	sendWA, err = repo.VerifyDonation(int(id), 1)
+	if err != nil {
 		t.Fatalf("second VerifyDonation returned error: %v", err)
+	}
+	if sendWA {
+		t.Fatalf("re-verify of an already verified donation must not re-send WA")
 	}
 	after, _ = repo.FindAllCampaigns(true, "")
 	if after[0].CollectedAmount != 564545 {
@@ -228,5 +241,68 @@ func TestUpdateDonationKeepsExistingProofURL(t *testing.T) {
 	}
 	if list[0].Amount != 150000 || list[0].DonorName != "Bpk Feri (diedit)" {
 		t.Fatalf("edit did not apply: %+v", list[0])
+	}
+}
+
+// Jilid 81: "Batalkan Verifikasi" harus mengembalikan transaksi ke pending,
+// mengembalikan collected_amount kampanye, DAN tidak mengirim WA lagi pada
+// verifikasi ulang (donations.wa_sent tidak pernah di-reset).
+func TestUnverifyDonationRestoresPendingState(t *testing.T) {
+	repo := NewRepository(newDonationsTestDB(t))
+
+	id, err := repo.CreateDonation(&Donation{CampaignID: 1, DonorName: "Bpk Feri", Amount: 250000, Type: "Infak"})
+	if err != nil {
+		t.Fatalf("CreateDonation returned error: %v", err)
+	}
+
+	if _, err := repo.VerifyDonation(int(id), 1); err != nil {
+		t.Fatalf("VerifyDonation returned error: %v", err)
+	}
+	after, _ := repo.FindAllCampaigns(true, "")
+	if after[0].CollectedAmount != 250000 {
+		t.Fatalf("precondition collected_amount = %v, want 250000", after[0].CollectedAmount)
+	}
+
+	if err := repo.UnverifyDonation(int(id)); err != nil {
+		t.Fatalf("UnverifyDonation returned error: %v", err)
+	}
+
+	list, err := repo.FindAllDonations(0, "", "", "")
+	if err != nil || len(list) != 1 {
+		t.Fatalf("FindAllDonations = %d, err=%v", len(list), err)
+	}
+	if list[0].Status != "pending" {
+		t.Fatalf("status = %q, want pending", list[0].Status)
+	}
+	if list[0].VerifiedAt != nil || list[0].VerifiedBy != nil {
+		t.Fatalf("verified_at/verified_by must be cleared, got %+v", list[0])
+	}
+
+	after, _ = repo.FindAllCampaigns(true, "")
+	if after[0].CollectedAmount != 0 {
+		t.Fatalf("collected_amount after unverify = %v, want 0", after[0].CollectedAmount)
+	}
+
+	// Kembali terbuka untuk edit & hapus.
+	if err := repo.UpdateDonation(&Donation{ID: int(id), CampaignID: 1, DonorName: "Bpk Feri (koreksi)", Amount: 250000, Type: "Infak"}); err != nil {
+		t.Fatalf("UpdateDonation after unverify returned error: %v", err)
+	}
+
+	// Unverify kedua kali harus ditolak.
+	if err := repo.UnverifyDonation(int(id)); err != errDonationNotVerified {
+		t.Fatalf("expected errDonationNotVerified, got %v", err)
+	}
+
+	// Verifikasi ulang: collected_amount naik lagi, tapi WA TIDAK dikirim.
+	sendWA, err := repo.VerifyDonation(int(id), 1)
+	if err != nil {
+		t.Fatalf("re-verify returned error: %v", err)
+	}
+	if sendWA {
+		t.Fatalf("re-verify after unverify must not send WA again")
+	}
+	after, _ = repo.FindAllCampaigns(true, "")
+	if after[0].CollectedAmount != 250000 {
+		t.Fatalf("collected_amount after re-verify = %v, want 250000", after[0].CollectedAmount)
 	}
 }

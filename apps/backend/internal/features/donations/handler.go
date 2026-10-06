@@ -278,14 +278,17 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.VerifyDonation(id, adminID); err != nil {
+	sendWA, err := h.repo.VerifyDonation(id, adminID)
+	if err != nil {
 		logger.Error(r.Context(), "donation verify failed", logger.Field{"operation": "donations_verify", "donation_id": id, "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
 
-	// Send WA Notification
-	if donation.DonorPhone != "" {
+	// Send WA Notification — hanya untuk verifikasi PERTAMA. Verifikasi ulang
+	// setelah "Batalkan Verifikasi" (Jilid 81) tidak mengirim apa pun, supaya
+	// donatur tidak menerima pesan dobel.
+	if sendWA && donation.DonorPhone != "" {
 		msg := whatsapp.FormatDonasiSukses(donation.DonorName, int(donation.Amount), donation.CampaignTitle)
 		go func() {
 			if err := whatsapp.SendMessage(donation.DonorPhone, msg); err != nil {
@@ -306,7 +309,63 @@ func (h *Handler) VerifyDonation(w http.ResponseWriter, r *http.Request) {
 		After: map[string]interface{}{"status": "verified"},
 		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
-	sendJSONResponse(w, http.StatusOK, true, "Donasi berhasil diverifikasi dan notifikasi dikirim", nil)
+	if sendWA && donation.DonorPhone != "" {
+		sendJSONResponse(w, http.StatusOK, true, "Donasi berhasil diverifikasi dan notifikasi dikirim", nil)
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, "Donasi berhasil diverifikasi", nil)
+}
+
+// UnverifyDonation membatalkan verifikasi sebuah transaksi donasi (Jilid 81).
+// Transaksi kembali 'pending' sehingga bisa diedit/dihapus, collected_amount
+// kampanye dikurangi, dan angka Kas/Laba Rugi ikut menyesuaikan otomatis.
+// Tidak ada notifikasi WA (keputusan user 6 Okt 2026).
+func (h *Handler) UnverifyDonation(w http.ResponseWriter, r *http.Request) {
+	startedAt := time.Now()
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	logger.Info(r.Context(), "donation unverify started", logger.Field{"operation": "donations_unverify", "donation_id": id})
+
+	donation, err := h.repo.FindDonationByID(id)
+	if err != nil {
+		logger.Warn(r.Context(), "donation unverify not found", logger.Field{"operation": "donations_unverify", "donation_id": id})
+		sendJSONResponse(w, http.StatusNotFound, false, "Donasi tidak ditemukan", nil)
+		return
+	}
+
+	adminID, ok := auth.GetAuthenticatedUserID(r.Context())
+	if !ok {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "Akses belum diizinkan", nil)
+		return
+	}
+
+	before := map[string]interface{}{"status": donation.Status, "amount": donation.Amount}
+	if err := h.repo.UnverifyDonation(id); err != nil {
+		if err == errDonationNotVerified {
+			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
+			return
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			sendJSONResponse(w, http.StatusNotFound, false, "Transaksi tidak ditemukan", nil)
+			return
+		}
+		logger.Error(r.Context(), "donation unverify failed", logger.Field{"operation": "donations_unverify", "donation_id": id, "error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+
+	logger.Info(r.Context(), "donation unverify completed", logger.Field{
+		"operation":   "donations_unverify",
+		"donation_id": id,
+		"duration_ms": time.Since(startedAt).Milliseconds(),
+	})
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: adminID, ActorRole: actorRole,
+		Action: "UNVERIFY_DONATION", Entity: "donation", EntityID: strconv.Itoa(id),
+		Before: before, After: map[string]interface{}{"status": "pending"},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+	sendJSONResponse(w, http.StatusOK, true, "Verifikasi dibatalkan. Transaksi kembali menunggu dan bisa diubah/dihapus.", nil)
 }
 
 func (h *Handler) GetDonors(w http.ResponseWriter, r *http.Request) {
@@ -498,6 +557,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Put("/list/{id}", h.UpdateDonation)
 	r.Delete("/list/{id}", h.DeleteDonation)
 	r.Put("/verify/{id}", h.VerifyDonation)
+	r.Put("/unverify/{id}", h.UnverifyDonation)
 	r.Get("/donors", h.GetDonors)
 	r.Post("/donors", h.CreateDonor)
 	r.Put("/donors/{id}", h.UpdateDonor)
@@ -516,7 +576,8 @@ type IRepository interface {
 	CreateDonation(d *Donation) (int64, error)
 	UpdateDonation(d *Donation) error
 	DeleteDonation(id int) error
-	VerifyDonation(id int, verifiedBy int) error
+	VerifyDonation(id int, verifiedBy int) (bool, error)
+	UnverifyDonation(id int) error
 	CreateCampaign(c *Campaign) error
 	UpdateCampaign(c *Campaign) error
 	DeleteCampaign(id int) error
