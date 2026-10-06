@@ -418,18 +418,6 @@ func main() {
 				r.Mount("/kas", kasHandler.Routes())
 			})
 
-			// ── Public Donasi ──────────
-			// Didaftarkan SETELAH mount /donations (grup Bendahara Ops) dengan
-			// sengaja: chi Mount(pattern, ...) menulis handler mALL di node PERSIS
-			// pattern ("/donations"), jadi kalau `r.Get("/donations")` didaftarkan
-			// SEBELUM mount, handler publik mGET-nya tertimpa dan GET /api/donations
-			// masuk ke mount (butuh role bendahara) -> 401. Rute literal
-			// /campaigns & /stats juga dipindah ke sini supaya urutannya konsisten
-			// (leaf static tetap terdahulukan dari wildcard "/donations/*" mount).
-			r.Get("/donations/campaigns", donationHandler.GetCampaigns)
-			r.Get("/donations", donationHandler.GetDonations)
-			r.Get("/donations/stats", donationHandler.GetStats)
-
 			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
 			// daftar ini memuat email/nama wali (data pribadi orang tua).
 			r.Group(func(r chi.Router) {
@@ -547,6 +535,19 @@ func main() {
 				r.Post("/attendance/scan", attendanceHandler.Scan)
 			})
 		})
+
+		// ── Public Donasi ──────────
+		// Didaftarkan di SINI (setelah semua grup ber-auth, tapi SEBELUM chi
+		// menyelesaikan routing /api) dengan sengaja: chi Mount("/donations", ...)
+		// di grup Bendahara menulis handler mALL di node PERSIS "/donations", jadi
+		// kalau `r.Get("/donations")` didaftarkan SEBELUM mount, handler publik
+		// mGET-nya tertimpa dan GET /api/donations masuk ke mount (butuh role
+		// bendahara) -> 401. Rute literal /campaigns & /stats juga dipindah ke
+		// sini supaya urutannya konsisten (leaf static tetap terdahulukan dari
+		// wildcard "/donations/*" milik mount).
+		r.Get("/donations/campaigns", donationHandler.GetCampaigns)
+		r.Get("/donations", donationHandler.GetDonations)
+		r.Get("/donations/stats", donationHandler.GetStats)
 
 	})
 
