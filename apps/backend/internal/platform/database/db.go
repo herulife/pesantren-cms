@@ -785,6 +785,7 @@ func createTables() {
 		status TEXT DEFAULT 'pending',
 		verified_at DATETIME,
 		verified_by INTEGER,
+		wa_sent INTEGER NOT NULL DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY(campaign_id) REFERENCES donation_campaigns(id) ON DELETE SET NULL
 	);
@@ -832,6 +833,9 @@ func createTables() {
 	addColumnIfNotExists("receipts", "idempotency_key", "TEXT")
 	addColumnIfNotExists("kas_transactions", "idempotency_key", "TEXT")
 	addColumnIfNotExists("donations", "idempotency_key", "TEXT")
+	// Penanda "WA donasi sudah pernah dikirim" — TIDAK pernah di-reset saat
+	// verifikasi dibatalkan, supaya verify ulang tidak mengirim pesan dobel.
+	addColumnIfNotExists("donations", "wa_sent", "INTEGER NOT NULL DEFAULT 0")
 	addColumnIfNotExists("kas_transactions", "voided", "INTEGER NOT NULL DEFAULT 0")
 	addColumnIfNotExists("kas_transactions", "void_reason", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
