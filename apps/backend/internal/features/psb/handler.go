@@ -2,7 +2,7 @@ package psb
 
 import (
 	"almaparung-api/internal/features/auth"
-	"almaparung-api/internal/features/sysnotif"
+	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
