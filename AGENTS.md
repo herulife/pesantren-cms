@@ -10,7 +10,7 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - `apps/frontend` — Next.js 16 + React 19 + Tailwind 4. Lihat `apps/frontend/src/{app,components,lib}`.
 - Database prod: `/home/heru/alma-parung/data/alma-parung.db`, di-mount ke container sebagai `/data` (`DB_PATH=/data/alma-parung.db`). Uploads: `data/uploads` → `/app/apps/backend/public/uploads`.
 - Container (**per 5 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
-  selalu `docker ps` untuk memastikan**): `alma-parung-backend-j78` (image `alma-parung-backend:j78-export-santri`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-j78`** (image `alma-parung-frontend:j78-export-santri`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback: `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`) + `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`), keduanya sudah di-stop — jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
+  selalu `docker ps` untuk memastikan**): `alma-parung-backend-j80` (image `alma-parung-backend:j80-laba-rugi`, `-p 8090:8080`, `--restart always`) dan **`alma-parung-frontend-j80`** (image `alma-parung-frontend:j80-laba-rugi`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback: `alma-parung-backend-pre-j80` + `alma-parung-frontend-pre-j80` (keduanya image Jilid 79), sudah di-stop — jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
 
 - **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
@@ -57,6 +57,14 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - OTP (`features/otp`): 6 digit, hash SHA-256, TTL 10 mnt, cooldown 60 dtk, maks 5x coba; kirim via `whatsapp.SendMessage`. Endpoint publik rate-limited: `POST /api/otp/request|verify`.
 - Invoice (`features/invoices`): provider-agnostik; webhook `POST /api/invoices/webhook` verifikasi HMAC-SHA256 header `X-Signature` (`INVOICE_WEBHOOK_SECRET`); idempoten via `gateway_tx_id` (replay→200, konflik→409).
 - WhatsApp (`platform/whatsapp/sender.go`): teks saja via antrean `wagate`; template pakai `PortalBaseURL()` (dari `APP_URL`) — jangan hardcode domain. Status: `GET /api/notifications/wa/status` (butuh login). Gateway konek sebagai 081932506078.
+- **Kas/Laba Rugi: angka Laba Rugi WAJIB dari `/api/kas/audit`** (Jilid 80). Jangan
+  menjumlahkan ulang transaksi di frontend. `expense_groups` sengaja memakai filter
+  (`expWhere/expArgs`) yang sama dengan `Audit.Expense` supaya penjumlahannya selalu balance;
+  kalau nanti filter-nya dipisah, cek dulu invariant ini. Selalu init `[]AuditExpenseGroup{}`
+  supaya JSON bukan `null`.
+- **Filter "Jenis" di halaman Kas**: pakai client-side (`txsView`/`catsView`), jangan kirim
+  sebagai param request. Kalau dikirim ke server, dropdown kategori di form ikut terfilter
+  dan kategori yang tidak cocok lenyap dari pilihan.
 - **Donasi: DTO publik JANGAN dipakai untuk endpoint admin** (fix Jilid 79). Dua
   handler, dua aturan berbeda:
   - `GET /api/donations` (publik, `main.go:371`) -> `GetDonations` -> `toPublicList`:
@@ -97,7 +105,7 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   - ~~Image frontend terkunci: `fix-psb-current` (= `fix-psb-upload-nopicker`)~~
     **SUDAH DIHAPUS 5 Okt 2026** (bersih-bersih storage, lihat §4 RINGKASAN).
     Jangan menulis rujukan image itu lagi. Yang benar sekarang:
-    **frontend live = `j78-export-santri`**,
+    **frontend live = `j80-laba-rugi`**,
     dan memuat kode tanpa picker. Kalau perlu image lama, build ulang dari
     `git log` — bukan `docker pull`.
   - Verifikasi (29 Sep 2026): `/portal/program` tanpa Program Unggulan, upload dokumen tetap
