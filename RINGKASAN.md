@@ -21,7 +21,7 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend-j81` | `alma-parung-backend:j81-batalkan-verifikasi` | **Jilid 81** (tombol Batalkan Verifikasi donasi + `wa_sent` anti-WA-dobel). Rollback: `alma-parung-backend-pre-j81` (**j80-laba-rugi**, stopped) |
+| Backend | `alma-parung-backend-j81` | `alma-parung-backend:j81-batalkan-verifikasi` | **Jilid 81** (tombol Batalkan Verifikasi donasi + `wa_sent` anti-WA-dobel + **fix 401 `GET /api/donations` publik**). Rollback: `alma-parung-backend-j81-prerefix` (image **`j81-batalkan-verifikasi-pre-fix`**, stopped) → `alma-parung-backend-pre-j81` (**j80-laba-rugi**, stopped) |
 | Frontend | `alma-parung-frontend-j81` | `alma-parung-frontend:j81-batalkan-verifikasi` | **Jilid 81** (tombol Batalkan Verifikasi di tab Log Transaksi donasi). Rollback: `alma-parung-frontend-pre-j81` (**j80-laba-rugi**, stopped) |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | container rollback Jilid 78: `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`, **stopped**) + `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`, **stopped**), tanpa perlu rollback DB. Pendahulu Jilid 77: `alma-parung-backend-pre-j77` (image `j76-wali-santri`, **stopped**) + `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`, **stopped**). **Catatan: rollback ke <= j76 wajibmelempar balik DB ke skema `users(id)` dulu, lihat §4 Jilid 77. Chain rollback diputus di j75/j74 — image `j75-kas-audit`, `j74-kelas-panel`, `j72-login-center`, `j69-avatar`, `j68-akun`, `jilid67-kategori`, `fix-nullsanti-v2`, `arbain-bgn2`, `fix-psb-*`, `disc-fix`, `disiplinfix`, `sppautofix`, `jilid44`, `jilid47`, dan `j77-purge-attendance` SUDAH DIHAPUS 5 Okt 2026 (§4 Jilid 78b) — jangan menyebutnya sebagai rollback.** |
@@ -109,12 +109,21 @@ transaksi ke `pending` tanpa mengirim WA; edit & verify ulang juga **tidak** men
 - **Peringatan data lama:** `ALTER TABLE ADD COLUMN` memberi `wa_sent=0` ke SEMUA baris,
   jadi tanpa backfill semua donasi verified lama akan "kirim WA lagi" saat
   unverify→verify. Backfill `SET wa_sent=1 WHERE status='verified'` mencegah itu.
-- **Bug pre-existing (bukan regresi Jilid 81, terkonfirmasi di image j80):**
-  `GET /api/donations` (publik, `donations.GetDonations`) balas **401** padahal rute publik
-  `r.Get("/donations")` didaftarkan sebelum mount (main.go:371 vs 422) — mount
-  `/donations` ber-`RequireRole("bendahara")` menelannya. `/api/donations/campaigns` &
-  `/api/donations/stats` tetap 200, dan frontend publik memakai dua endpoint ini,
-  jadi tidak kelihatan. Perbaiki jika endpoint list donasi publik pernah dipakai lagi.
+- **Fix 401 `GET /api/donations` (task lanjutan setelah Jilid 81, image di-overwrite):**
+  `GET /api/donations` sempat balas **401** padahal rute publik. Penyebab: chi
+  `Mount("/donations", ...)` (grup bendahara, `main.go:417`) menulis handler mALL di node
+  PERSIS "/donations", sehingga `r.Get("/donations")` yang didaftarkan SEBELUM mount
+  (`main.go:371`) tertimpa → masuk mount ber-`RequireRole("bendahara")` → 401. Solusi:
+  rute publik (`/donations`, `/donations/campaigns`, `/donations/stats`) **dipindah ke
+  level router `/api` SETELAH semua grup ber-auth ditutup** (`main.go:548-550`); `/campaigns`
+  & `/stats` adalah leaf statis yang tetap menang atas wildcard `/donations/*` milik mount.
+  **Aturan untuk agen selanjutnya: rute publik yang path-nya bertabrakan dengan mount
+  Wajib didaftarkan SETELAH mount.**
+  - Image lama ditag `alma-parung-backend:j81-batalkan-verifikasi-pre-fix` (rollback).
+  - Verifikasi (container uji DB copy): publik `/donations`→200, `/campaigns`→200,
+    `/stats`→200; tanpa sesi `/list`→401 & `PUT /unverify/8`→401; dengan sesi bendahara
+    `unverify`→200 + pending→422. Produksi: `/api/donations`→200 (sebelumnya 401),
+    campaigns/stats→200, `/list` & `/unverify` tetap 401 tanpa sesi.
 
 ## Jilid 80 - Halaman Kas & Laba Rugi (restyle penuh + tab Laba Rugi baru) (6 Okt 2026, LIVE)
 
@@ -204,11 +213,11 @@ ada yang complained duluan.
 - `repository_test.go`: `TestVerifyDonationIncreasesCollectedAmount` (termasuk
   idempoten saat verifikasi ulang), `TestUpdateDonationKeepsExistingProofURL`.
 
-### Temuan sampingan: `GET /api/donations` sudah lama mati (401)
-`main.go:371` mendaftarkan `r.Get("/donations", ...)` sebagai "publik", tapi
+### Temuan sampingan: `GET /api/donations` sempat mati (401) → **SUDAH DIPERBAIKI**
+Dulu `main.go:371` mendaftarkan `r.Get("/donations", ...)` sebagai "publik", tapi
 `main.go:422` melakukan `r.Mount("/donations", donationHandler.Routes())` di dalam
 grup `auth.AuthMiddleware` + `RequireRole("bendahara")`. chi tidak panic (Mount
-memeriksa pola `/donations*`, bukan `/donations` exact), tapi saat request datang
+memeriksa pola `/donations*`, bukan `/donations` exact), tapi request yang datang
 **node mount menang** -> 401 untuk anonim. Terbukti:
 
 ```
@@ -217,12 +226,10 @@ GET /api/donations/stats      -> 200   (static, menang)
 GET /api/donations            -> 401   (kena mount berauth)
 ```
 
-Jadi handler publik `GetDonations` praktis tidak terjangkau, dan tidak ada frontend
-yang memakainya (hanya `/donations/list`, `/donations/campaigns`,
-`/donations/stats`). **Belum diubah di Jilid 79** karena tidak dibutuhkan -
-frontend publik tidak pernah consume daftar transaksi. Kalau suatu saat Needed,
-pakai prefix berbeda (mis. `/public/donations`) daripada relies onregistration
-order yang rapuh ini.
+Sudah diperbaiki pada task lanjutan Jilid 81 (6 Okt 2026): rute publik dipindah ke
+level router `/api` **setelah** semua grup ber-auth ditutup (`main.go:548-550`),
+kini `GET /api/donations` -> 200. **Aturan: rute publik yang path-nya bertabrakan
+dengan mount Wajib didaftarkan SETELAH mount.** (Detail di entri Jilid 81.)
 
 ### Verifikasi setelah deploy (21:35, container `alma-parung-backend-j79`)
 Token dites pakai JWT HS256 yang di-mint lokal dari `JWT_SECRET` container +

@@ -67,7 +67,7 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
   dan kategori yang tidak cocok lenyap dari pilihan.
 - **Donasi: DTO publik JANGAN dipakai untuk endpoint admin** (fix Jilid 79). Dua
   handler, dua aturan berbeda:
-  - `GET /api/donations` (publik, `main.go:371`) -> `GetDonations` -> `toPublicList`:
+  - `GET /api/donations` (publik, `main.go:549`) -> `GetDonations` -> `toPublicList`:
     hanya `verified`, tanpa PII.
   - `GET /api/donations/list` (admin, di balik `auth.RequireRole("superadmin","bendahara")`)
     -> `GetDonationsAdmin` -> `toAdminList`: pending + verified, boleh `donor_phone`,
@@ -86,10 +86,14 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
     — jangan pernah me-reset kolom ini.
   - Kas/Laba Rugi mengambil donasi dari `donations WHERE status='verified'`, jadi unverify
     otomatis menurunkan angka kas tanpa baris jurnal tambahan.
-  - **Bug pre-existing (terkonfirmasi di image j80):** `GET /api/donations` publik (main.go:371)
-    balas 401 karena mount `/donations` (RequireRole bendahara, main.go:422) menelannya;
-    `/api/donations/campaigns` & `/api/donations/stats` tetap 200 dan itulah yang dipakai
-    frontend publik.
+  - **Fix pre-existing 401 (perlu kamu tahu):** `GET /api/donations` publik sempat balas
+    401 karena chi `Mount("/donations", ...)` (grup bendahara, kini `main.go:417`) menulis
+    handler mALL di node PERSIS "/donations" — rute publik `/donations` yang didaftarkan
+    SEBELUM mount jadi tertimpa. Solusi: rute publik (`/donations`, `/donations/campaigns`,
+    `/donations/stats`) didaftarkan DI BAWAH mount, di level router `/api`, setelah semua
+    grup ber-auth ditutup (`main.go:548-550`); `/campaigns` & `/stats` adalah leaf statis
+    sehingga tetap menang atas wildcard `/donations/*` mount.**Aturan: rute publik yang
+    path awalnya bertabrakan dengan mount Wajib didaftarkan SETELAH mount.**
 - Settings: key-value; endpoint publik difilter allowlist di `settings/handler.go GetPublic` — **key baru untuk portal HARUS masuk allowlist**. Key rekening: `donation_*`, `psb_payment_*`, `spp_*`.
 - Kwitansi frontend: `src/components/KwitansiModal.tsx` (`KwitansiTx`, `terbilang`, `downloadKwitansiPDF` via jsPDF). Logo = `settings.web_logo_url` fallback `/assets/img/logo-alama.jpg` (sama seperti Navbar). Dipakai 5+ halaman — jaga kompatibilitas props.
 - Skrip `scripts/smoke_nik_final.py` masih versi lama (rute/payload lama) — perbaiki dulu sebelum dipakai.
