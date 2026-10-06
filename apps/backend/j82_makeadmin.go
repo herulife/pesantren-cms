@@ -48,8 +48,15 @@ func main() {
 	if len(os.Args) < 3 || os.Args[2] != "insert" {
 		return
 	}
+	role := "bendahara"
+	if len(os.Args) >= 4 && os.Args[3] != "" {
+		role = os.Args[3]
+	}
 
 	email := "admin.j82uji@local.test"
+	if len(os.Args) >= 5 && os.Args[4] != "" {
+		email = os.Args[4]
+	}
 	pass := "UjiJ82!2026"
 	hash, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 
@@ -78,7 +85,7 @@ func main() {
 		case "role", "user_role":
 			insCols = append(insCols, c.name)
 			insVals = append(insVals, "?")
-			args = append(args, "bendahara")
+			args = append(args, role)
 		case "created_at", "updated_at":
 			insCols = append(insCols, c.name)
 			insVals = append(insVals, "?")
@@ -91,5 +98,5 @@ func main() {
 		log.Fatal("insert failed: ", err)
 	}
 	id, _ := res.LastInsertId()
-	fmt.Printf("inserted user id=%d email=%s role=bendahara pass=%s\n", id, email, pass)
+	fmt.Printf("inserted user id=%d email=%s role=%s pass=%s\n", id, email, role, pass)
 }
