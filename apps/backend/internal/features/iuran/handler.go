@@ -2,7 +2,7 @@ package iuran
 
 import (
 	"almaparung-api/internal/features/auth"
-	"almaparung-api/internal/features/sysnotif"
+	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/finance"
