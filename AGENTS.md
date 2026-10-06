@@ -94,6 +94,11 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
     grup ber-auth ditutup (`main.go:548-550`); `/campaigns` & `/stats` adalah leaf statis
     sehingga tetap menang atas wildcard `/donations/*` mount.**Aturan: rute publik yang
     path awalnya bertabrakan dengan mount Wajib didaftarkan SETELAH mount.**
+- **Jilid 82 — Notifikasi sistem (lonceng admin):**
+  - Broadcast untuk SEMUA role admin: `/api/snotif` di belakang `RequireRole("superadmin","bendahara","panitia_psb","admin","pimpinan","wali_kelas","guru","ustadz")`. Tabel `sys_notifications` + `sys_notification_reads` (read per-user). API: `GET /api/snotif` (50 terbaru + `unread_count`), `GET /api/snotif/unread`, `POST /api/snotif/read/{id}`, `POST /api/snotif/read-all`.
+  - Menambah event notifikasi baru = panggil `sysnotif.Emit(ctx, database.DB, type, title, message, link)` di titik event handler. **WAJIB import dari `internal/platform/sysnotif`** (leaf) — JANGAN dari `internal/features/sysnotif` supaya tidak import-cycle dengan `auth`. `link` harus path admin (`/admin/...`). Gagal emit = `logger.Warn` saja.
+  - Emit yang sudah terpasang: `messages.Create` (pesan_kontak), `donations.CreateDonation` (donasi), `auth.Register` (user_baru), `psb.SaveMine` (psb_pendaftar, hanya saat registrasi BARU via pre-check `FindByUserID`+`sql.ErrNoRows`), `psb.SaveMyPayment` + `spp.SubmitProof` + `iuran.SubmitProof` (pembayaran).
+  - **Fix rute publik `/contact` (bug lama):** group Panitia PSB me-`Mount("/contact", messages.Routes())` (menimpa handler mALL), sehingga `POST /api/contact` publik yang didaftarkan SEBELUM mount balas 401/403. Solusi sama seperti `/donations`: rute publik didaftarkan SETELAH mount, di level router `/api` (dekat rute publik donasi). Mount tetap melayani `GET/{id}/PATCH/DELETE` pesan oleh panitia.
 - Settings: key-value; endpoint publik difilter allowlist di `settings/handler.go GetPublic` — **key baru untuk portal HARUS masuk allowlist**. Key rekening: `donation_*`, `psb_payment_*`, `spp_*`.
 - Kwitansi frontend: `src/components/KwitansiModal.tsx` (`KwitansiTx`, `terbilang`, `downloadKwitansiPDF` via jsPDF). Logo = `settings.web_logo_url` fallback `/assets/img/logo-alama.jpg` (sama seperti Navbar). Dipakai 5+ halaman — jaga kompatibilitas props.
 - Skrip `scripts/smoke_nik_final.py` masih versi lama (rute/payload lama) — perbaiki dulu sebelum dipakai.
