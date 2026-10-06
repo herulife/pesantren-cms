@@ -1,9 +1,12 @@
 package messages
 
 import (
+	"almaparung-api/internal/features/sysnotif"
+	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -122,6 +125,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		logger.Error(r.Context(), "message create failed", logger.Field{"operation": "messages_create_public", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (API Error)", nil)
 		return
+	}
+
+	// Jilid 82: munculkan lonceng admin untuk pesan kontak baru.
+	if err := sysnotif.Emit(r.Context(), database.DB, "pesan_kontak", "Pesan kontak baru",
+		fmt.Sprintf("Dari %s", m.Name), "/admin/messages"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_pesan_kontak", "error": err.Error()})
 	}
 
 	logger.Info(r.Context(), "message create completed", logger.Field{
