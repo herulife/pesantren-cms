@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"almaparung-api/internal/features/spp"
+	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/platform/wanotif"
 	"almaparung-api/internal/platform/whatsapp"
 )
@@ -141,6 +143,14 @@ func (rn *Runner) RunOnce() {
 	}
 	logger.Info(context.Background(), "AutoSPP generate selesai", logger.Field{"period": period, "created": created, "wa": waEnabled})
 	log.Printf("[AutoSPP] periode %s: %d tagihan dibuat", period, created)
+
+	// Jilid 83: beri tahu semua admin bahwa tagihan SPP otomatis dibuat.
+	if created > 0 {
+		if err := sysnotif.Emit(context.Background(), database.DB, "tagihan", "Tagihan SPP otomatis dibuat",
+			fmt.Sprintf("%d tagihan SPP periode %s dibuat otomatis", created, monthYearID(period)), "/admin/spp"); err != nil {
+			logger.Warn(context.Background(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_autobilling", "error": err.Error()})
+		}
+	}
 
 	if !waEnabled || created == 0 {
 		return

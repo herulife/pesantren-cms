@@ -31,7 +31,8 @@ const TYPE_ICON: Record<string, string> = {
 	pesan_kontak: '✉️',
 	donasi: '💝',
 	pembayaran: '💳',
-	user_baru: '👤'
+	user_baru: '👤',
+	tagihan: '🧾'
 };
 
 export default function NotificationBell() {
