@@ -247,9 +247,6 @@ func main() {
 		r.With(otpVerifyLimiter.Middleware).Post("/otp/verify", otpHandler.Verify)
 		r.With(webhookLimiter.Middleware).Post("/invoices/webhook", invoiceHandler.Webhook)
 
-		// Public Contact Message
-		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
-
 		// Public Notes (pastebin tanpa login). GET publik; CREATE rate-limited per IP.
 		r.Route("/notes", func(r chi.Router) {
 			r.With(noteLimiter.Middleware).Post("/", noteHandler.Create)
@@ -417,9 +414,9 @@ func main() {
 				r.Mount("/payments", paymentHandler.Routes())
 				r.Mount("/spp", sppHandler.Routes())
 				r.Mount("/iuran", iuranHandler.Routes())
-				r.Mount("/donations", donationHandler.Routes())
-				r.Mount("/kas", kasHandler.Routes())
-			})
+r.Mount("/donations", donationHandler.Routes())
+			r.Mount("/kas", kasHandler.Routes())
+		})
 
 			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
 			// daftar ini memuat email/nama wali (data pribadi orang tua).
@@ -559,6 +556,13 @@ func main() {
 		r.Get("/donations/campaigns", donationHandler.GetCampaigns)
 		r.Get("/donations", donationHandler.GetDonations)
 		r.Get("/donations/stats", donationHandler.GetStats)
+
+		// ── Public Pesan Kontak ──────────
+		// Didaftarkan di SINI (setelah semua grup ber-auth) karena group Panitia PSB
+		// me-mount "/contact" (messages.Routes) lebih dahulu. Bila didaftarkan sebelum
+		// mount, metode POST tertimpa -> form kontak publik 401/403. Mount "/contact"
+		// tetap menangani GET/{id}/PATCH/DELETE untuk manajemen pesan oleh panitia.
+		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
 
 	})
 
