@@ -4258,3 +4258,61 @@ export async function deleteNote(url_id: string, delete_token: string): Promise<
 		return { success: false, message: e instanceof Error ? e.message : 'Gagal menghapus catatan' };
 	}
 }
+
+// ── Notifikasi Sistem (lonceng admin, Jilid 82) ─────────────────────────────
+export interface SysNotificationItem {
+	id: number;
+	type: string;
+	title: string;
+	message: string;
+	link: string;
+	created_at: string;
+	read: boolean;
+}
+
+export interface SysNotificationsData {
+	items: SysNotificationItem[];
+	unread_count: number;
+}
+
+export interface SysNotificationsResponse {
+	success?: boolean;
+	message?: string;
+	data?: SysNotificationsData;
+}
+
+export interface SysNotificationUnreadResponse {
+	success?: boolean;
+	message?: string;
+	data?: { count: number };
+}
+
+export async function getSysNotifications(): Promise<SysNotificationsResponse> {
+	const res = await fetch(`${API_BASE_URL}/snotif`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function getSysNotificationUnread(): Promise<SysNotificationUnreadResponse> {
+	const res = await fetch(`${API_BASE_URL}/snotif/unread`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function markSysNotificationRead(id: number): Promise<{ success?: boolean; message?: string }> {
+	const res = await fetch(`${API_BASE_URL}/snotif/read/${id}`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function markAllSysNotificationsRead(): Promise<{ success?: boolean; message?: string }> {
+	const res = await fetch(`${API_BASE_URL}/snotif/read-all`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
