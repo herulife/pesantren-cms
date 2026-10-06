@@ -1,13 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  ArrowLeft, 
-  Save, 
-  Trash2, 
-  PlusCircle, 
-  FileText, 
+import {
+  Plus,
+  ArrowLeft,
+  FileText,
   GraduationCap,
   RefreshCw
 } from 'lucide-react';

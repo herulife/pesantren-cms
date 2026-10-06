@@ -305,9 +305,6 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                     <Link href="/teachers" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
                       Profil Asatidz
                     </Link>
-                    <Link href="/facilities" className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-                      Fasilitas Pondok
-                    </Link>
                   </div>
                 </div>
               </li>
@@ -454,36 +451,10 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="absolute left-0 top-full z-[999] w-full border-t border-emerald-900 bg-emerald-950/98 shadow-2xl lg:hidden">
-            <div className="px-4 pb-5 pt-3">
+          <div className="absolute left-0 top-full z-[999] max-h-[calc(100dvh-4.25rem)] w-full overflow-y-auto overscroll-contain border-t border-emerald-900 bg-emerald-950/98 shadow-2xl lg:hidden">
+            <div className="px-4 py-3">
               <div className="rounded-[1.6rem] border border-emerald-900/60 bg-[linear-gradient(180deg,rgba(6,78,59,0.28)_0%,rgba(6,78,59,0.18)_100%)] p-3 shadow-[0_24px_50px_-34px_rgba(0,0,0,0.55)] backdrop-blur-sm">
-                <div className="grid grid-cols-1 gap-2 rounded-2xl border border-emerald-900/40 bg-emerald-950/25 p-2">
-                  <Link href="/" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Beranda</Link>
-                  <Link href="/program" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Program</Link>
-                  <Link href="/psb" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Info PSB</Link>
-                  <Link href="/kontak" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Kontak</Link>
-                </div>
-
-                <div className="mt-4">
-                  <p className="px-1 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300/70">Profil</p>
-                  <div className="mt-2 grid grid-cols-1 gap-2">
-                    <Link href="/profil" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Profil Pesantren</Link>
-                    <Link href="/sambutan" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Sambutan Pimpinan</Link>
-                    <Link href="/teachers" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Profil Asatidz</Link>
-                    <Link href="/facilities" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Fasilitas Pondok</Link>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <p className="px-1 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300/70">Informasi</p>
-                  <div className="mt-2 grid grid-cols-1 gap-2">
-                    <Link href="/galeri" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Galeri</Link>
-                    <Link href="/videos" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Video</Link>
-                    <Link href="/news" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Berita</Link>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {loading ? (
                     <div className="h-24 animate-pulse rounded-2xl bg-emerald-900/40" />
                   ) : user ? (
@@ -514,6 +485,31 @@ export default function PublicLayout({ children, hideNavbar = false }: PublicLay
                       </Link>
                     </>
                   )}
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-2 rounded-2xl border border-emerald-900/40 bg-emerald-950/25 p-2">
+                  <Link href="/" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Beranda</Link>
+                  <Link href="/program" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Program</Link>
+                  <Link href="/psb" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Info PSB</Link>
+                  <Link href="/kontak" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-50 hover:bg-emerald-900">Kontak</Link>
+                </div>
+
+                <div className="mt-4">
+                  <p className="px-1 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300/70">Profil</p>
+                  <div className="mt-2 grid grid-cols-1 gap-2">
+                    <Link href="/profil" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Profil Pesantren</Link>
+                    <Link href="/sambutan" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Sambutan Pimpinan</Link>
+                    <Link href="/teachers" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Profil Asatidz</Link>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                    <p className="px-1 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300/70">Informasi</p>
+                    <div className="mt-2 grid grid-cols-1 gap-2">
+                      <Link href="/galeri" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Galeri</Link>
+                      <Link href="/videos" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Video</Link>
+                      <Link href="/news" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-sm text-emerald-50 hover:bg-emerald-900/70">Berita</Link>
+</div>
                 </div>
               </div>
             </div>

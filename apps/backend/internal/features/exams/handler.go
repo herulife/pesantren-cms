@@ -4,6 +4,7 @@ import (
 	"darussunnah-api/internal/features/auth"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -74,8 +75,16 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.repo.SubmitAnswer(body.SessionID, body.QuestionID, body.SelectedAnswer)
+	studentID, _ := currentUserID(r)
+
+	err := h.repo.SubmitAnswer(studentID, body.SessionID, body.QuestionID, body.SelectedAnswer)
 	if err != nil {
+		// A session that is not owned (or already finished) is reported as not
+		// found so students cannot enumerate other students' session IDs.
+		if errors.Is(err, ErrSessionNotOwned) {
+			writeJSONResponse(w, http.StatusNotFound, false, "Sesi ujian tidak ditemukan", nil)
+			return
+		}
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal menyimpan jawaban", nil)
 		return
 	}
@@ -92,8 +101,14 @@ func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	score, err := h.repo.FinishSession(body.SessionID)
+	studentID, _ := currentUserID(r)
+
+	score, err := h.repo.FinishSession(studentID, body.SessionID)
 	if err != nil {
+		if errors.Is(err, ErrSessionNotOwned) {
+			writeJSONResponse(w, http.StatusNotFound, false, "Sesi ujian tidak ditemukan", nil)
+			return
+		}
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal mengakhiri ujian", nil)
 		return
 	}
@@ -165,6 +180,6 @@ type IRepository interface {
 	GetExamQuestions(examID int, hideAnswers bool) ([]Question, error)
 	// Student: Session Management
 	StartSession(studentID, examID int) (int, error)
-	SubmitAnswer(sessionID, questionID, selectedAnswer int) error
-	FinishSession(sessionID int) (float64, error)
+	SubmitAnswer(studentID, sessionID, questionID, selectedAnswer int) error
+	FinishSession(studentID, sessionID int) (float64, error)
 }

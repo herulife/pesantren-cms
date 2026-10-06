@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, Cloud } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -27,6 +27,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { category: 'Konten & Publikasi', icon: <Layers size={18} />, label: "Program Pondok", href: "/admin/programs", roles: ["tim_media"], docRef: 'programs' },
     { category: 'Konten & Publikasi', icon: <Calendar size={18} />, label: "Agenda Kegiatan", href: "/admin/agendas", docRef: 'agendas' },
     { category: 'Konten & Publikasi', icon: <ImageIcon size={18} />, label: "Galeri Foto", href: "/admin/gallery", roles: ["tim_media"], docRef: 'gallery' },
+    { category: 'Konten & Publikasi', icon: <Cloud size={18} />, label: "Galeri Google Drive", href: "/admin/gallery/storage", roles: ["tim_media"], docRef: 'gallery' },
     { category: 'Konten & Publikasi', icon: <Video size={18} />, label: "Video Kegiatan", href: "/admin/videos", roles: ["tim_media"], docRef: 'videos' },
     
     // Akademik & Kesantrian

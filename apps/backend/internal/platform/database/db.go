@@ -79,7 +79,7 @@ func createTables() {
 		role TEXT NOT NULL DEFAULT 'user',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		whatsapp TEXT DEFAULT '',
-		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user'))
+		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'user'))
 	);
 
 	CREATE TABLE IF NOT EXISTS faqs (
@@ -193,6 +193,67 @@ func createTables() {
 		is_album_cover BOOLEAN DEFAULT 0,
 		image_url TEXT NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS gallery_albums (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		album_slug TEXT NOT NULL,
+		album_name TEXT DEFAULT '',
+		event_date TEXT DEFAULT '',
+		category TEXT DEFAULT 'Umum',
+		description TEXT DEFAULT '',
+		drive_url TEXT DEFAULT '',
+		drive_folder_id TEXT DEFAULT '',
+		is_active BOOLEAN DEFAULT 1,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(album_slug)
+	);
+
+	CREATE TABLE IF NOT EXISTS storage_accounts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		provider TEXT NOT NULL DEFAULT 'google',
+		name TEXT NOT NULL DEFAULT '',
+		account_email TEXT DEFAULT '',
+		avatar_url TEXT DEFAULT '',
+		encrypted_refresh_token BLOB,
+		status TEXT DEFAULT 'active',
+		error_message TEXT DEFAULT '',
+		last_tested_at DATETIME,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS storage_sources (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		storage_account_id INTEGER NOT NULL,
+		name TEXT NOT NULL,
+		slug TEXT NOT NULL,
+		root_folder_id TEXT NOT NULL,
+		category TEXT DEFAULT 'Umum',
+		sync_enabled BOOLEAN DEFAULT 1,
+		status TEXT DEFAULT 'idle',
+		last_error TEXT DEFAULT '',
+		last_sync_at DATETIME,
+		last_sync_status TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS storage_sync_runs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		source_id INTEGER NOT NULL,
+		status TEXT DEFAULT 'running',
+		started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		finished_at DATETIME,
+		added INTEGER DEFAULT 0,
+		updated INTEGER DEFAULT 0,
+		unchanged INTEGER DEFAULT 0,
+		deleted INTEGER DEFAULT 0,
+		errors INTEGER DEFAULT 0,
+		files_total INTEGER DEFAULT 0,
+		duration_ms INTEGER DEFAULT 0,
+		message TEXT DEFAULT ''
 	);
 
 	CREATE TABLE IF NOT EXISTS videos (
@@ -414,6 +475,9 @@ func createTables() {
 	addColumnIfNotExists("gallery", "album_slug", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "event_date", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "is_album_cover", "BOOLEAN DEFAULT 0")
+	addColumnIfNotExists("gallery", "source", "TEXT DEFAULT 'manual'")
+	addColumnIfNotExists("gallery", "source_ref", "TEXT DEFAULT ''")
+	addColumnIfNotExists("storage_sources", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("videos", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("videos", "series_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "series_slug", "TEXT DEFAULT ''")
@@ -449,11 +513,11 @@ func createTables() {
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 	_, _ = DB.Exec("UPDATE settings SET updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 
-	// Auto-migrate: upgrade "admin" role to "superadmin" for RBAC
-	res, _ := DB.Exec("UPDATE users SET role = 'superadmin' WHERE role = 'admin'")
-	if affected, _ := res.RowsAffected(); affected > 0 {
-		log.Printf("[DB] RBAC Migration: %d 'admin' users upgraded to 'superadmin'", affected)
-	}
+	// Role escalation is intentionally NOT automated.
+	// A previous build auto-promoted every "admin" user to "superadmin" on each boot,
+	// which turned any compromised "admin" login into a full superadmin takeover
+	// (see /audit-hacked incident report). Promotion must be an explicit, audited
+	// action performed through the superadmin-only user management endpoints.
 }
 
 func runMigrations() {
@@ -548,6 +612,53 @@ func runMigrations() {
 			name: "tahfidz_student_eval_date_index",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_tahfidz_student_eval_date ON tahfidz_progress(student_id, evaluation_date DESC);`,
 		},
+		{
+			name: "violation_logs_student_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_violation_logs_student ON violation_logs(student_id);`,
+		},
+		{
+			name: "wallet_transactions_wallet_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_wallet_transactions_wallet ON wallet_transactions(wallet_id);`,
+		},
+		{
+			name: "create_revoked_tokens_table",
+			sql: `CREATE TABLE IF NOT EXISTS revoked_tokens (
+				jti TEXT PRIMARY KEY,
+				expires_at INTEGER NOT NULL
+			);`,
+		},
+		{
+			name: "create_donation_campaigns_table",
+			sql: `CREATE TABLE IF NOT EXISTS donation_campaigns (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				title TEXT NOT NULL,
+				description TEXT,
+				target_amount REAL DEFAULT 0,
+				collected_amount REAL DEFAULT 0,
+				image_url TEXT DEFAULT '',
+				is_active INTEGER DEFAULT 1,
+				end_date DATETIME,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);`,
+		},
+		{
+			name: "create_donations_table",
+			sql: `CREATE TABLE IF NOT EXISTS donations (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				campaign_id INTEGER NOT NULL,
+				donor_name TEXT DEFAULT '',
+				donor_phone TEXT DEFAULT '',
+				amount REAL NOT NULL,
+				payment_method TEXT DEFAULT '',
+				proof_url TEXT DEFAULT '',
+				status TEXT DEFAULT 'pending',
+				verified_at DATETIME,
+				verified_by INTEGER,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (campaign_id) REFERENCES donation_campaigns(id)
+			);`,
+		},
 	}
 
 	for _, migration := range migrations {
@@ -557,6 +668,9 @@ func runMigrations() {
 		}
 		_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)", migration.name)
 	}
+
+	// Idempotent column additions for token revocation support.
+	addColumnIfNotExists("users", "token_version", "INTEGER NOT NULL DEFAULT 0")
 }
 
 func addColumnIfNotExists(table, column, colType string) {

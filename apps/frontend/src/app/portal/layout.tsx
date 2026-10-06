@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard } from 'lucide-react';
+import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard, Menu, X } from 'lucide-react';
 import { getMyPSBRegistration, type Registration } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -39,13 +39,15 @@ type PortalNavGroup = {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const isRaportPage = pathname.startsWith('/portal/raport');
   const isPortalDashboard = pathname === '/portal';
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
+    setSidebarOpen(false);
     void logout();
   };
 
@@ -73,6 +75,21 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     };
   }, []);
 
+  useEffect(() => {
+    if (!sidebarOpen) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sidebarOpen]);
+
   const registrationStatus = registration?.status || 'pending';
   const hasStudentAccess = registrationStatus === 'accepted';
   const isServicePath = pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams');
@@ -99,35 +116,35 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     {
       href: '/portal',
       label: 'Dashboard Pendaftaran',
-      description: 'Lihat progres, status, dan langkah berikutnya.',
+      description: 'Progres, status, dan langkah berikutnya.',
       icon: <LayoutDashboard size={20} />,
       docRef: 'dashboard',
     },
     {
       href: '/portal/biodata',
       label: 'Biodata Lengkap',
-      description: 'Isi data calon santri dan data orang tua.',
+      description: 'Data calon santri dan orang tua.',
       icon: <User size={20} />,
       docRef: 'biodata',
     },
     {
       href: '/portal/documents',
       label: 'Unggah Dokumen',
-      description: 'Kirim KK, ijazah, raport, dan pas foto.',
+      description: 'Kirim KK, ijazah, raport, pas foto.',
       icon: <Upload size={20} />,
       docRef: 'documents',
     },
     {
       href: '/portal/payment',
       label: 'Bayar Pendaftaran',
-      description: 'Upload bukti transfer biaya pendaftaran.',
+      description: 'Upload bukti transfer biaya daftar.',
       icon: <CreditCard size={20} />,
       docRef: 'dashboard',
     },
     {
       href: '/portal/help',
       label: 'Panduan Portal',
-      description: 'Baca langkah penggunaan setiap menu portal.',
+      description: 'Baca langkah tiap menu portal.',
       icon: <HelpCircle size={20} />,
       docRef: 'dashboard',
     },
@@ -137,21 +154,21 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     {
       href: '/portal/raport',
       label: 'Raport Akademik',
-      description: 'Lihat nilai, presensi, dan progres tahfidz.',
+      description: 'Nilai, presensi, progres tahfidz.',
       icon: <GraduationCap size={20} />,
       docRef: 'academics',
     },
     {
       href: '/portal/wallet',
       label: 'Darussunnah Pay',
-      description: 'Pantau saldo, PIN, dan mutasi transaksi.',
+      description: 'Saldo, PIN, mutasi transaksi.',
       icon: <Wallet size={20} />,
       docRef: 'dashboard',
     },
     {
       href: '/portal/exams',
       label: 'CBT & Ujian',
-      description: 'Akses ujian online dan tes akademik.',
+      description: 'Ujian online dan tes akademik.',
       icon: <QrCode size={20} />,
       docRef: 'academics',
     },
@@ -176,10 +193,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           label: 'Pendaftaran',
           description:
             biodataCompleted && documentsCompleted && paymentCompleted
-              ? 'Biodata, dokumen, dan pembayaran sudah lengkap. Pantau status review dari dasbor.'
+              ? 'Biodata, dokumen, dan pembayaran sudah lengkap.'
               : biodataCompleted && documentsCompleted
-                ? 'Berkas utama sudah lengkap. Lanjutkan pembayaran pendaftaran.'
-              : 'Menu inti untuk melengkapi biodata dan dokumen.',
+                ? 'Berkas utama lengkap. Lanjutkan pembayaran.'
+              : 'Menu melengkapi biodata dan dokumen.',
           active: !isServicePath,
           items: registrationItems,
         },
@@ -253,310 +270,263 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   return (
     <PublicLayout hideNavbar>
-      <div className="bg-slate-50 min-h-screen py-8 lg:py-10">
-        <div className="container mx-auto max-w-7xl px-4">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-            >
-              <Home size={14} />
-              Beranda
-            </Link>
-            <div className="flex items-center gap-2">
-              <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-600">
-                 Portal Wali Santri
+      <div className="lte-page">
+        <div className="flex min-h-screen">
+          {/* Sidebar desktop + off-canvas mobile */}
+          <aside
+            id="portal-sidebar"
+            aria-label="Sidebar navigasi portal"
+            className={`lte-sidebar ${sidebarOpen ? 'open' : ''}`}
+          >
+            <div className="lte-brand">
+              <Link href="/">
+                <span className="lte-brand-logo">D</span>
+                <span className="truncate">Portal Darussunnah</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="lte-sidebar-close"
+                aria-label="Tutup menu navigasi"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <nav className="flex-1">
+              {navGroups.map((group) => (
+                <div key={`sidebar-${group.id}`} className="lte-nav-group">
+                  <div className="lte-nav-group-label flex items-center justify-between">
+                    {group.label}
+                    {group.locked ? (
+                      <span className="lte-badge lte-badge-warning">
+                        <Lock size={11} /> Terkunci
+                      </span>
+                    ) : null}
+                  </div>
+                  {group.items.map((item) => {
+                    const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
+                    return (
+                      <div
+                        key={item.href}
+                        className={`lte-nav-link ${isActive ? 'active' : ''} ${group.locked ? 'lte-nav-link-locked' : ''}`}
+                      >
+                        <Link
+                          href={group.locked ? '/portal' : item.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className="flex flex-1 items-center gap-3 min-w-0"
+                        >
+                          <span className="lte-nav-icon shrink-0">{item.icon}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate">{item.label}</span>
+                            <span className={`mt-0.5 block truncate text-[11px] font-normal ${isActive ? 'text-blue-200/90' : 'text-gray-500'}`}>
+                              {item.description}
+                            </span>
+                          </span>
+                        </Link>
+                        <Link
+                          href={`/portal/help?ref=${item.docRef}`}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition ${
+                            isActive ? 'text-blue-200 hover:bg-white/10' : 'text-gray-500 hover:bg-white/10 hover:text-white'
+                          }`}
+                          title={`Buka panduan ${item.label}`}
+                          aria-label={`Buka panduan ${item.label}`}
+                        >
+                          <HelpCircle size={15} />
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+
+            <div className="mt-auto">
+              <div className="lte-sidebar-note">
+                <p className="mb-1 font-bold uppercase tracking-widest text-[10px]">Informasi Penting</p>
+                {hasStudentAccess
+                  ? 'Akunmu sudah masuk tahap santri aktif. Gunakan fitur harian sesuai kebutuhan.'
+                  : 'Mohon isikan data valid dan unggah dokumen asli hasil scan berwarna.'}
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 text-xs font-bold text-rose-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                className="lte-btn lte-btn-light mx-3 mb-4 w-[calc(100%-1.5rem)]"
               >
-                <LogOut size={14} />
-                Keluar
+                <LogOut size={15} /> Keluar dari Portal
               </button>
             </div>
-          </div>
+          </aside>
 
-          {isRaportPage ? (
-            <div className="space-y-6">
-              <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
-                <div className="border-b border-slate-100 px-5 py-5 lg:px-8">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Mode Fokus</p>
-                      <h2 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900 lg:text-3xl">
-                        Raport Akademik Santri
-                      </h2>
-                      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
-                        Halaman raport dibuat lebih lega agar nilai, presensi, dan progres tahfidz lebih nyaman dibaca.
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-3 sm:items-end">
-                      <Link
-                        href="/portal"
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                      >
-                        <ArrowLeft size={16} />
-                        Kembali ke Dashboard Portal
-                      </Link>
-                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-                        Tampilan fokus tanpa sidebar samping
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          {/* Backdrop for off-canvas sidebar */}
+          {sidebarOpen ? (
+            <div
+              className="lte-sidebar-backdrop"
+              onClick={() => setSidebarOpen(false)}
+              aria-hidden="true"
+            />
+          ) : null}
 
-                <div className="px-4 py-4 lg:px-6">
-                  <div className="space-y-4">
-                    {navGroups.map((group) => (
-                      <div key={`focus-${group.id}`}>
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                            group.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {group.label}
-                          </span>
-                          {group.locked ? (
-                            <span className="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                              Terkunci
-                            </span>
-                          ) : null}
+          {/* Main area */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* Topbar */}
+            <header className="lte-topbar">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen((value) => !value)}
+                  className="lte-btn lte-btn-outline-secondary lte-btn-sm lte-topbar-toggle"
+                  aria-controls="portal-sidebar"
+                  aria-expanded={sidebarOpen}
+                  aria-label={sidebarOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+                >
+                  <Menu size={15} /> Menu
+                </button>
+                <ul className="lte-breadcrumb list-none">
+                  <li>
+                    <Link href="/" className="inline-flex items-center gap-1">
+                      <Home size={13} /> Beranda
+                    </Link>
+                  </li>
+                  <li>Portal Wali Santri</li>
+                  {isRaportPage ? <li>Raport Akademik</li> : null}
+                </ul>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="lte-topbar-user hidden sm:inline-flex">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+                    {(user?.name || 'W').charAt(0)}
+                  </span>
+                  {user?.name || 'Santri'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="lte-btn lte-btn-outline-danger lte-btn-sm"
+                >
+                  <LogOut size={14} /> Keluar
+                </button>
+              </div>
+            </header>
+
+            <main className="lte-content flex-1">
+              {isRaportPage ? (
+                <div className="space-y-4">
+                  <div className="lte-card lte-card-outline">
+                    <div className="lte-card-header">
+                      <div className="flex items-center gap-3">
+                        <GraduationCap className="text-emerald-600" size={22} />
+                        <div>
+                          <p className="lte-card-subtitle">Mode Fokus Raport Santri</p>
+                          <h2 className="lte-card-title text-xl">Raport Akademik Santri</h2>
                         </div>
-                        <div className="flex gap-3 overflow-x-auto pb-1">
-                          {group.items.map((item) => {
+                      </div>
+                      <Link href="/portal" className="lte-btn lte-btn-outline-secondary lte-btn-sm">
+                        <ArrowLeft size={15} /> Kembali ke Dashboard
+                      </Link>
+                    </div>
+                    <div className="lte-card-body">
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {navGroups.map((group) =>
+                          group.items.map((item) => {
                             const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
                             return (
                               <Link
                                 key={item.href}
                                 href={group.locked ? '/portal' : item.href}
-                                className={`inline-flex shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
-                                  isActive
-                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                                } ${group.locked ? 'opacity-70' : ''}`}
+                                className={`lte-btn lte-btn-sm ${isActive ? 'lte-btn-success' : 'lte-btn-outline-secondary'} ${group.locked ? 'opacity-60' : ''}`}
                               >
-                                <span className={isActive ? 'text-emerald-500' : 'text-slate-400'}>{item.icon}</span>
-                                <span>{item.label}</span>
+                                <span>{item.icon}</span>
+                                {item.label}
                               </Link>
                             );
-                          })}
-                        </div>
+                          }),
+                        )}
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/40 lg:p-6">
-                {children}
+                  <div className="lte-focus-box p-4 sm:p-6">{children}</div>
+                </div>
+              ) : (
+                <>
+                  {isLoading && !isPortalDashboard ? (
+                    <div className="lte-alert lte-alert-info mb-4 flex items-center gap-3">
+                      <RefreshCw size={16} className="animate-spin" />
+                      Menyiapkan struktur portal sesuai status akunmu...
+                    </div>
+                  ) : null}
+
+                  {!isLoading && !hasStudentAccess && isServicePath ? (
+                    <div className="lte-alert lte-alert-warning">
+                      <p className="lte-alert-title">Menu Belum Aktif</p>
+                      <p className="mt-1">
+                        Halaman ini belum bisa dibuka dari akun pendaftaran. Lengkapi biodata, dokumen, dan pembayaran
+                        agar panitia bisa memproses statusmu.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Link href="/portal" className="lte-btn lte-btn-warning lte-btn-sm">
+                          Kembali ke Dashboard
+                        </Link>
+                        <Link href="/portal/documents" className="lte-btn lte-btn-outline-secondary lte-btn-sm">
+                          Lanjutkan Kelengkapan Dokumen
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    children
+                  )}
+                </>
+              )}
+            </main>
+          </div>
+        </div>
+
+        {/* Mobile bottom nav */}
+        <div className="fixed inset-x-0 bottom-4 z-[1000] px-4 md:hidden">
+          {isLoading ? (
+            <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+              <div className="grid grid-cols-5 gap-1">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div key={`mobile-bottom-tab-skeleton-${index}`} className="h-12 animate-pulse rounded-xl bg-slate-100" />
+                ))}
               </div>
             </div>
           ) : (
-          <div className="bg-white rounded-[2rem] lg:rounded-[3rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col md:flex-row">
-            {/* Sidebar Portal */}
-            <div className="hidden shrink-0 border-r border-slate-200 bg-slate-100 p-6 md:block md:w-72 md:border-b-0 lg:w-80 lg:p-8">
-               <div className="mb-8">
-                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Navigasi Portal</p>
-                 <h2 className="mt-2 text-2xl font-black text-slate-900 font-outfit tracking-tight">Portal Pendaftaran & Santri</h2>
-                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                   Selesaikan pendaftaran, pantau status, dan buka menu yang tersedia dari satu tempat.
-                 </p>
-               </div>
-               
-               <div className="mb-6 grid gap-3">
-                 {navGroups.map((group) => (
-                   <div
-                     key={group.id}
-                     className={`rounded-[1.5rem] border px-4 py-4 transition ${
-                       group.active
-                         ? 'border-blue-200 bg-blue-50 text-blue-800'
-                         : 'border-slate-200 bg-white text-slate-600'
-                     }`}
-                   >
-                     <div className="flex items-center justify-between gap-3">
-                       <div>
-                         <p className="text-xs font-black uppercase tracking-[0.18em]">{group.label}</p>
-                         <p className={`mt-1 text-xs leading-relaxed ${group.active ? 'text-blue-700/80' : 'text-slate-500'}`}>
-                           {group.description}
-                         </p>
-                       </div>
-                       {group.locked ? (
-                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                           <Lock size={12} />
-                           Terkunci
-                         </span>
-                       ) : (
-                         <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                           group.active ? 'bg-white text-blue-700' : 'bg-slate-100 text-slate-500'
-                         }`}>
-                           {group.active ? 'Aktif' : 'Tersedia'}
-                         </span>
-                       )}
-                     </div>
-                   </div>
-                 ))}
-               </div>
+            <nav aria-label="Menu portal mobile" className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+              <div className="grid grid-cols-5 gap-1">
+                {mobilePortalTabs.map((item) => {
+                  if (item.locked) {
+                    return (
+                      <span
+                        key={`mobile-bottom-tab-${item.href}`}
+                        className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-bold text-slate-400"
+                        title="Aktif setelah pendaftaran diterima"
+                      >
+                        <span className="text-slate-400">{item.icon}</span>
+                        <span className="w-full truncate text-center">{item.label}</span>
+                      </span>
+                    );
+                  }
 
-               <nav className="space-y-6">
-                 {navGroups.map((group) => (
-                   <div key={`sidebar-${group.id}`}>
-                     <div className="mb-3 flex items-center justify-between">
-                       <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{group.label}</p>
-                       {group.locked ? (
-                         <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">Aktif setelah diterima</span>
-                       ) : null}
-                     </div>
-                     <div className="space-y-3">
-                       {group.items.map((item) => {
-                         const isActive = item.href === '/portal' ? pathname === item.href : pathname.startsWith(item.href);
-
-                         return (
-                           <div
-                             key={item.href}
-                             className={`flex items-center gap-2 rounded-2xl transition-all ${
-                               isActive
-                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                             } ${group.locked ? 'opacity-70' : ''}`}
-                           >
-                             <Link href={group.locked ? '/portal' : item.href} className="flex flex-1 items-center gap-4 p-4">
-                               <span className={isActive ? 'text-blue-200' : 'text-slate-400'}>{item.icon}</span>
-                               <div className="min-w-0">
-                                 <div className="font-bold text-sm tracking-wide">{item.label}</div>
-                                 <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-blue-100/80' : 'text-slate-500'}`}>
-                                   {item.description}
-                                 </div>
-                               </div>
-                             </Link>
-                             <Link
-                               href={`/portal/help?ref=${item.docRef}`}
-                               className={`mr-3 flex h-8 w-8 items-center justify-center rounded-full transition ${
-                                 isActive
-                                   ? 'text-blue-100 hover:bg-white/10'
-                                   : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600'
-                               }`}
-                               title={`Buka panduan ${item.label}`}
-                               aria-label={`Buka panduan ${item.label}`}
-                             >
-                               <HelpCircle size={16} />
-                             </Link>
-                           </div>
-                         );
-                       })}
-                     </div>
-                   </div>
-                 ))}
-               </nav>
-
-               <div className="mt-12 p-5 bg-amber-50 rounded-3xl border border-amber-100">
-                  <h4 className="font-black text-amber-900 text-xs uppercase tracking-widest mb-2">Informasi Penting</h4>
-                  <p className="text-amber-800 text-xs leading-relaxed font-medium">
-                    {hasStudentAccess
-                      ? 'Akunmu sudah masuk tahap santri aktif. Gunakan fitur harian sesuai kebutuhan.'
-                      : 'Mohon isikan data yang valid dan unggah dokumen asli hasil scan berwarna.'}
-                  </p>
-               </div>
-
-               <button
-                 type="button"
-                 onClick={handleLogout}
-                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm font-bold text-rose-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-               >
-                 <LogOut size={17} />
-                 Keluar dari Portal
-               </button>
-            </div>
-
-            {/* Content Area */}
-            <div className="min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
-               {isLoading && !isPortalDashboard ? (
-                 <div className="mb-6 flex items-center gap-3 rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-500">
-                   <RefreshCw size={16} className="animate-spin text-blue-600" />
-                   Menyiapkan struktur portal sesuai status akunmu...
-                 </div>
-               ) : null}
-
-               {!isLoading && !hasStudentAccess && isServicePath ? (
-                 <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-sm">
-                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700">Menu Belum Aktif</p>
-                   <h3 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-amber-950">
-                     Selesaikan Pendaftaran Terlebih Dahulu
-                   </h3>
-                   <p className="mt-3 max-w-2xl text-sm leading-7 text-amber-900/80">
-                     Halaman ini belum bisa dibuka dari akun pendaftaran. Lengkapi biodata, dokumen, dan pembayaran agar panitia bisa memproses statusmu.
-                   </p>
-                   <div className="mt-5 flex flex-wrap gap-3">
-                     <Link
-                       href="/portal"
-                       className="inline-flex items-center justify-center rounded-2xl bg-amber-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-400"
-                     >
-                       Kembali ke Dashboard Pendaftaran
-                     </Link>
-                     <Link
-                       href="/portal/documents"
-                       className="inline-flex items-center justify-center rounded-2xl border border-amber-200 bg-white px-5 py-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
-                     >
-                       Lanjutkan Kelengkapan Dokumen
-                     </Link>
-                   </div>
-                 </div>
-               ) : children}
-            </div>
-          </div>
+                  return (
+                    <Link
+                      key={`mobile-bottom-tab-${item.href}`}
+                      href={item.href}
+                      className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-bold transition-colors ${
+                        item.active ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                      }`}
+                    >
+                      <span className={item.active ? 'text-blue-700' : 'text-slate-400'}>{item.icon}</span>
+                      <span className="w-full truncate text-center">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
           )}
         </div>
-      </div>
-      <div className="fixed inset-x-0 bottom-4 z-[1000] px-4 md:hidden">
-        {isLoading ? (
-          <div className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur">
-            <div className="grid grid-cols-5 gap-1">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <div
-                  key={`mobile-bottom-tab-skeleton-${index}`}
-                  className="h-12 animate-pulse rounded-2xl bg-slate-100"
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <nav
-            aria-label="Menu portal mobile"
-            className="mx-auto max-w-md rounded-[1.65rem] border border-slate-200 bg-white/95 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur"
-          >
-            <div className="grid grid-cols-5 gap-1">
-              {mobilePortalTabs.map((item) => {
-                if (item.locked) {
-                  return (
-                    <span
-                      key={`mobile-bottom-tab-${item.href}`}
-                      className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold text-slate-400"
-                      title="Aktif setelah pendaftaran diterima"
-                    >
-                      <span className="text-slate-400">{item.icon}</span>
-                      <span className="w-full truncate text-center">{item.label}</span>
-                    </span>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={`mobile-bottom-tab-${item.href}`}
-                    href={item.href}
-                    className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold transition-all duration-300 ${
-                      item.active
-                        ? 'bg-emerald-50 text-emerald-700 shadow-sm'
-                        : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
-                    }`}
-                  >
-                    <span className={item.active ? 'text-emerald-700' : 'text-slate-400'}>{item.icon}</span>
-                    <span className="w-full truncate text-center">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-        )}
       </div>
     </PublicLayout>
   );

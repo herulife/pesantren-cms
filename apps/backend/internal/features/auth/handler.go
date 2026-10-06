@@ -22,13 +22,59 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
+// tokenTTL is how long an access token stays valid. Previously 24h, which meant
+// a stolen token was usable for a full day even after the user logged out or the
+// owner rotated the account password.
+const tokenTTL = 12 * time.Hour
+
+const (
+	tokenIssuer   = "darussunnah-api"
+	tokenAudience = "darussunnah-app"
+)
+
+// GetJWTSecret returns the HMAC signing key.
+//
+// It used to return nil when JWT_SECRET was unset, and both jwt.SignedString and
+// jwt.Parse accept a nil HMAC key, so a missing secret silently produced
+// effectively unsigned, forgeable tokens instead of failing loudly.
 func GetJWTSecret() []byte {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		logger.Error(context.Background(), "missing JWT_SECRET environment variable", nil)
+		logger.Error(context.Background(), "missing JWT_SECRET environment variable; tokens will be rejected", nil)
 		return nil
 	}
 	return []byte(secret)
+}
+
+// SecretConfigured reports whether a usable signing key is present.
+func SecretConfigured() bool {
+	return strings.TrimSpace(os.Getenv("JWT_SECRET")) != ""
+}
+
+// newAuthToken issues a signed access token. All claims required for safe
+// verification are present: iss/aud stop a token minted for another service from
+// being replayed here, iat/nbf prevent replay of stale tokens, and jti lets logout
+// revoke an individual token.
+func newAuthToken(user *User, tokenVersion int) (string, error) {
+	if !SecretConfigured() {
+		return "", errors.New("JWT_SECRET is not configured")
+	}
+
+	now := time.Now()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":    user.ID,
+		"email": user.Email,
+		"role":  user.Role,
+		"jti":   uuid.New().String(),
+		"ver":   tokenVersion,
+		"iat":   now.Unix(),
+		"nbf":   now.Unix(),
+		"iss":   tokenIssuer,
+		"aud":   tokenAudience,
+		"exp":   now.Add(tokenTTL).Unix(),
+	})
+
+	return token.SignedString(GetJWTSecret())
 }
 
 type Handler struct {
@@ -90,15 +136,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		user.LastLoginAt = &now
 	}
 
-	// Create JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"role":  user.Role,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
-	})
+	// Create JWT with revocation support (jti + token version)
+	ver, _ := h.repo.GetTokenVersion(user.ID)
 
-	tokenString, err := token.SignedString(GetJWTSecret())
+	tokenString, err := newAuthToken(user, ver)
 	if err != nil {
 		logger.Error(r.Context(), "failed generating jwt token", logger.Field{
 			"correlation_id": correlationID,
@@ -274,15 +315,9 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		user.LastLoginAt = &now
 	}
 
-	// Create local JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"role":  user.Role,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
-	})
-
-	tokenString, err := token.SignedString(GetJWTSecret())
+	// Create local JWT with revocation support (jti + token version)
+	ver, _ := h.repo.GetTokenVersion(user.ID)
+	tokenString, err := newAuthToken(user, ver)
 	if err != nil {
 		logger.Error(r.Context(), "failed generating jwt token for google login", logger.Field{
 			"correlation_id": correlationID,
@@ -304,6 +339,26 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	// Revoke whichever credential the caller actually presented. Previously only
+	// the cookie was revoked, so a client that authenticated with
+	// "Authorization: Bearer <jwt>" kept a fully valid token after logging out
+	// and could keep calling the API until it expired.
+	//
+	// extractToken already prefers the Authorization header over the cookie, so
+	// this revokes the same token the request was authenticated with.
+	if tokenString := extractToken(r); tokenString != "" {
+		if parsed, _, perr := jwt.NewParser().ParseUnverified(tokenString, jwt.MapClaims{}); perr == nil {
+			if m, ok := parsed.Claims.(jwt.MapClaims); ok {
+				if jti, _ := m["jti"].(string); jti != "" {
+					var exp int64
+					if ef, ok := m["exp"].(float64); ok {
+						exp = int64(ef)
+					}
+					_ = h.repo.RevokeToken(jti, exp)
+				}
+			}
+		}
+	}
 	clearAuthCookie(w)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -466,6 +521,9 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Revoke all existing sessions for the target user.
+	_ = h.repo.BumpTokenVersion(id)
+
 	adminID := 0
 	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
 		if cid, ok := claims["id"].(float64); ok {
@@ -565,6 +623,9 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Revoke all existing sessions for the target user after a role change.
+	_ = h.repo.BumpTokenVersion(id)
+
 	// Log activity
 	adminID := 0
 	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
@@ -581,33 +642,13 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Handler) Routes() chi.Router {
-	r := chi.NewRouter()
-
-	// Public routes
-	r.Post("/login", h.Login)
-	r.Post("/register", h.Register)
-	r.Post("/google", h.GoogleLogin)
-	r.Post("/logout", h.Logout)
-
-	// Protected routes
-	r.Group(func(r chi.Router) {
-		r.Use(AuthMiddleware)
-		r.Get("/me", h.GetMe)
-
-		// Admin/Superadmin only
-		r.Group(func(r chi.Router) {
-			r.Post("/users", h.CreateUser)
-			r.Get("/users", h.GetAllUsers)
-			r.Put("/users/{id}/password", h.ResetUserPassword)
-			r.Put("/users/{id}/role", h.UpdateUserRole)
-			r.Delete("/users/{id}", h.DeleteUser)
-		})
-	})
-
-	return r
-}
-
+// Routes() was removed. It mounted the user-management endpoints behind
+// AuthMiddleware only, with a comment claiming "Admin/Superadmin only" but no
+// RequireRole guard, so any authenticated account (including students) could
+// have reached CreateUser / DeleteUser / UpdateUserRole. The live router never
+// mounted this function - cmd/api/main.go wires those routes explicitly behind
+// RequireRole("superadmin") - so it was dead code carrying an escalation trap.
+// Removing it prevents a future refactor or test from exposing it.
 func writeValidationError(w http.ResponseWriter, correlationID string, errs validators.ValidationErrors) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Correlation-ID", correlationID)
@@ -647,7 +688,7 @@ func setAuthCookie(w http.ResponseWriter, token string) {
 		HttpOnly: true,
 		Secure:   strings.EqualFold(os.Getenv("COOKIE_SECURE"), "true"),
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int((24 * time.Hour).Seconds()),
+		MaxAge:   int(tokenTTL.Seconds()),
 	})
 }
 
@@ -676,4 +717,8 @@ type IRepository interface {
 	UpdateLastLogin(id int) error
 	DeleteUser(id int) error
 	UpdateRole(userID int, role string) error
+	GetTokenVersion(id int) (int, error)
+	BumpTokenVersion(id int) error
+	RevokeToken(jti string, expiresAt int64) error
+	IsTokenRevoked(jti string) (bool, error)
 }

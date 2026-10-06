@@ -2,11 +2,10 @@ package upload
 
 import (
 	"bytes"
+	"encoding/base64"
 	"image"
 	"image/color"
 	"image/png"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -40,10 +39,10 @@ func TestSanitizeImageRejectsNonImagePayload(t *testing.T) {
 }
 
 func TestSanitizeImageAcceptsWEBP(t *testing.T) {
-	webpPath := filepath.Join("..", "..", "..", "public", "uploads", "1776405414851972300.webp")
-	webpPayload, err := os.ReadFile(webpPath)
+	// Minimal valid 16x16 lossy WebP, embedded so the test needs no external fixture.
+	webpPayload, err := base64.StdEncoding.DecodeString("UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoQABAAAUAmJaQAA3AA/v0n4AA=")
 	if err != nil {
-		t.Fatalf("read webp fixture: %v", err)
+		t.Fatalf("decode embedded webp: %v", err)
 	}
 
 	sanitized, format, err := sanitizeImage(bytes.NewReader(webpPayload))

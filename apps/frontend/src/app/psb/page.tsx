@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   FileText,
   MapPin,
+  Phone,
   Sparkles,
 } from 'lucide-react';
 
@@ -21,23 +22,46 @@ export function PsbPageContent() {
 
   return (
     <>
-      <section className="relative overflow-hidden border-b border-emerald-900/80 bg-slate-950 py-24 text-white">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-25"
-          style={{ backgroundImage: `url('${pageContent.hero.background_image_url}')` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/88 to-emerald-950/78" />
-        <div className="relative mx-auto max-w-6xl px-4">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
-            <Sparkles size={14} />
-            {pageContent.hero.eyebrow}
-          </p>
-          <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
-            {pageContent.hero.title}
-          </h1>
-          <p className="mt-6 max-w-3xl text-lg leading-8 text-emerald-50/90">
-            {pageContent.hero.subtitle}
-          </p>
+      <section className="relative overflow-hidden border-b border-emerald-900/80 bg-slate-950 py-16 text-white md:py-24">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-950/90 to-emerald-950/80" />
+        <div className="absolute -left-32 top-0 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14">
+          <div className="order-2 lg:order-1">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
+              <Sparkles size={14} />
+              {pageContent.hero.eyebrow}
+            </p>
+            <h1 className="mt-6 text-3xl font-black leading-tight tracking-tight md:text-5xl">
+              {pageContent.hero.title}
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-8 text-emerald-50/90 md:text-lg">
+              {pageContent.hero.subtitle}
+            </p>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Link
+                href={pageContent.cta.primary_button.url}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-4 text-sm font-black text-white shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+              >
+                {pageContent.cta.primary_button.label} <ArrowRight size={18} />
+              </Link>
+              <a
+                href={pageContent.cta.secondary_button.url}
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-8 py-4 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20"
+              >
+                {pageContent.cta.secondary_button.label}
+              </a>
+            </div>
+          </div>
+          <div className="order-1 mx-auto w-full max-w-sm lg:order-2 lg:max-w-none">
+            <div className="relative overflow-hidden rounded-[2rem] border border-emerald-700/50 bg-emerald-900/30 p-2 shadow-2xl shadow-emerald-950/60">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pageContent.hero.background_image_url}
+                alt="Banner Penerimaan Santri Baru Darussunnah tahun 2027/2028"
+                className="h-auto w-full max-h-[540px] rounded-[1.6rem] object-cover"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -127,6 +151,20 @@ export function PsbPageContent() {
                     <p className="mt-2 text-sm leading-7 text-slate-200">{pageContent.location.subtitle}</p>
                   </div>
                 </div>
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <a
+                    href="https://wa.me/6281413241748"
+                    className="inline-flex items-center gap-2 rounded-full border border-emerald-600/30 bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
+                  >
+                    <Phone size={16} className="text-emerald-600" /> 0814 1324 1748
+                  </a>
+                  <a
+                    href="https://wa.me/6281517114840"
+                    className="inline-flex items-center gap-2 rounded-full border border-emerald-600/30 bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
+                  >
+                    <Phone size={16} className="text-emerald-600" /> 0815 1711 4840
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -156,6 +194,12 @@ export function PsbPageContent() {
               className="rounded-full border border-white/20 bg-white/10 px-10 py-5 text-lg font-black text-white backdrop-blur-md transition-all hover:bg-white/20"
             >
               {pageContent.cta.secondary_button.label}
+            </a>
+            <a
+              href="https://wa.me/6281517114840"
+              className="rounded-full border border-white/20 bg-white/10 px-10 py-5 text-lg font-black text-white backdrop-blur-md transition-all hover:bg-white/20"
+            >
+              WhatsApp 0815 1711 4840
             </a>
           </div>
         </div>

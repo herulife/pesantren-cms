@@ -65,7 +65,7 @@ func (h *Handler) Scan(w http.ResponseWriter, r *http.Request) {
 	studentID, studentName, err := h.repo.ValidateAndRecordAttendance(body.Token)
 	if err != nil {
 		logger.Warn(r.Context(), "attendance scan validation failed", logger.Field{"operation": "attendance_scan", "error": err.Error()})
-		writeJSONResponse(w, http.StatusBadRequest, false, err.Error(), nil)
+		writeJSONResponse(w, http.StatusBadRequest, false, "Token tidak valid atau sudah kadaluarsa", nil)
 		return
 	}
 

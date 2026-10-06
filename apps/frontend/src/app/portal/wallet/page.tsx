@@ -95,7 +95,7 @@ export default function WalletPage() {
   return (
     <div className="mx-auto max-w-4xl pb-20">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <Link href="/portal" className="inline-flex items-center gap-2 w-fit rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 border border-slate-200">
+        <Link href="/portal" className="lte-btn lte-btn-outline-secondary lte-btn-sm">
           <ArrowLeft size={16} /> Kembali ke Portal
         </Link>
         <div className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg w-fit">
@@ -104,13 +104,13 @@ export default function WalletPage() {
       </div>
 
       {/* Hero Section (Digital Card Replica) */}
-      <div className="relative mb-8 overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 text-white shadow-2xl">
+      <div className="relative mb-8 overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-2xl sm:p-10">
         <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-cyan-500/20 blur-[80px]" />
         <div className="absolute left-0 bottom-0 h-64 w-64 -ml-20 -mb-20 rounded-full bg-emerald-500/20 blur-[80px]" />
         <div className="absolute inset-0 bg-[url('/assets/noise.png')] opacity-10 mix-blend-overlay" />
         
-        <div className="relative z-10 flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
-          <div>
+        <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between md:gap-10">
+          <div className="min-w-0">
             <div className="mb-6 flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/20">
                 <Nfc size={20} />
@@ -119,15 +119,15 @@ export default function WalletPage() {
             </div>
             
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 drop-shadow-md">Total Saldo</p>
-            <div className="mt-1 flex items-baseline gap-2">
-              <h1 className="font-outfit text-5xl md:text-6xl font-black tracking-tight drop-shadow-lg">
+            <div className="mt-1 flex flex-wrap items-baseline gap-2">
+              <h1 className="font-outfit text-4xl font-black tracking-tight drop-shadow-lg break-all sm:text-5xl md:text-6xl">
                 {formatCurrency(wallet?.balance || 0).replace('Rp', '')}
               </h1>
-              <span className="text-xl font-bold text-white/50">IDR</span>
+              <span className="text-lg font-bold text-white/50">IDR</span>
             </div>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {!wallet?.has_pin && (
               <button 
                 onClick={() => setShowPinModal(true)}
@@ -147,18 +147,19 @@ export default function WalletPage() {
       </div>
 
       {/* History Table */}
-      <div className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-10 shadow-sm">
-        <div className="mb-8 flex items-center justify-between border-b border-slate-100 pb-6">
-          <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900 flex items-center gap-2">
-            <History size={20} className="text-slate-400" /> Mutasi Terakhir
+      <div className="lte-card">
+        <div className="lte-card-header">
+          <h4 className="lte-card-title flex items-center gap-2">
+            <History size={18} className="text-slate-400" /> Mutasi Terakhir
           </h4>
-          <button onClick={fetchData} className="rounded-full hover:bg-slate-50 p-2 text-slate-400 hover:text-slate-900 transition-colors">
-            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+          <button onClick={fetchData} className="lte-btn lte-btn-outline-secondary lte-btn-sm">
+            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
           </button>
         </div>
 
+        <div className="lte-card-body">
         {history.length === 0 ? (
-          <div className="py-20 flex flex-col items-center justify-center text-center">
+          <div className="py-14 flex flex-col items-center justify-center text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 mb-4 ring-8 ring-slate-50/50">
               <History size={32} className="text-slate-300" />
             </div>
@@ -168,20 +169,20 @@ export default function WalletPage() {
         ) : (
           <div className="space-y-3">
             {history.map((tr) => (
-              <div key={tr.id} className="group flex items-center justify-between rounded-[1.5rem] bg-white border border-slate-100 p-5 transition-all hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50">
-                <div className="flex items-center gap-5">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-transform group-hover:scale-110 ${
+              <div key={tr.id} className="group flex items-center justify-between rounded-lg bg-white border border-slate-100 p-4 transition-all hover:border-slate-300">
+                <div className="flex items-center gap-4">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-lg transition-transform group-hover:scale-110 ${
                     tr.type === 'deposit' 
                       ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100' 
                       : 'bg-rose-50 text-rose-600 ring-1 ring-rose-100'
                   }`}>
-                    {tr.type === 'deposit' ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
+                    {tr.type === 'deposit' ? <ArrowDownLeft size={22} /> : <ArrowUpRight size={22} />}
                   </div>
                   <div>
                     <h5 className="text-sm font-bold text-slate-900 capitalize leading-tight group-hover:text-blue-600 transition-colors">
                       {tr.description || 'Transaksi Saku'}
                     </h5>
-                    <p className="mt-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <p className="mt-1 flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
                       {new Date(tr.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       <span className="h-1 w-1 rounded-full bg-slate-300" />
                       {new Date(tr.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
@@ -197,40 +198,45 @@ export default function WalletPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Set PIN Modal */}
       {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-[2.5rem] bg-white p-10 shadow-2xl">
-            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-50 text-amber-600 ring-8 ring-amber-50/50">
-              <ShieldCheck size={32} />
+          <div className="w-full max-w-sm lte-card">
+            <div className="lte-card-header justify-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <ShieldCheck size={26} />
+              </div>
+              <div>
+                <h2 className="lte-card-title">Atur PIN Saku</h2>
+                <p className="lte-card-subtitle">PIN 6 digit ini akan ditanyakan setiap kali Anda melakukan pembelian di area pondok.</p>
+              </div>
             </div>
-            <h2 className="mb-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">Atur PIN Saku</h2>
-            <p className="mb-8 text-sm text-slate-500 leading-relaxed">PIN 6 digit ini akan ditanyakan setiap kali Anda melakukan pembelian di area pondok.</p>
             
-            <form onSubmit={handleSetPIN} className="space-y-6">
+            <form onSubmit={handleSetPIN} className="lte-card-body space-y-5">
               <input 
                 type="password"
                 maxLength={6}
                 inputMode="numeric"
                 pattern="[0-9]*"
                 placeholder="000000"
-                className="w-full rounded-[1.25rem] border-2 border-slate-100 bg-slate-50 p-5 text-center text-3xl font-black tracking-[0.5em] outline-none focus:border-cyan-500 transition-all font-outfit"
+                className="lte-form-control w-full p-5 text-center text-3xl font-black tracking-[0.5em] outline-none"
                 onChange={e => setPin(e.target.value)}
               />
               <div className="flex gap-3">
                 <button 
                   type="button" 
                   onClick={() => setShowPinModal(false)}
-                  className="flex-1 rounded-[1.25rem] py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-colors"
+                  className="lte-btn lte-btn-outline-secondary flex-1"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
                   disabled={pin.length < 4 || isSettingPin}
-                  className="flex-1 rounded-[1.25rem] bg-slate-900 py-4 text-[10px] font-black uppercase tracking-widest text-white shadow-lg hover:bg-cyan-600 transition-all disabled:opacity-50"
+                  className="lte-btn lte-btn-primary flex-1"
                 >
                   Simpan PIN
                 </button>

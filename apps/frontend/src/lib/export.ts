@@ -1,7 +1,5 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import type jsPDF from 'jspdf';
 
 type ReportScoreRow = {
 	subject: string;
@@ -44,15 +42,29 @@ type AutoTableDoc = jsPDF & {
 	};
 };
 
+// Lazy-load the heavy PDF/Excel libs only when an export is actually triggered,
+// keeping them out of the initial admin/portal bundles (PERF-01).
+async function loadPdfLibs(): Promise<{
+	jsPDF: typeof import('jspdf').default;
+	autoTable: typeof import('jspdf-autotable').default;
+}> {
+	const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+		import('jspdf'),
+		import('jspdf-autotable'),
+	]);
+	return { jsPDF, autoTable };
+}
+
 /**
  * Export data ke PDF dengan header Darussunnah
  */
-export function exportToPDF(
+export async function exportToPDF(
 	title: string,
 	columns: string[],
 	rows: (string | number)[][],
 	filename: string
 ) {
+	const { jsPDF, autoTable } = await loadPdfLibs();
 	const doc = new jsPDF();
 
 	// Header pondok
@@ -91,7 +103,7 @@ export function exportToPDF(
 	doc.save(`${filename}.pdf`);
 }
 
-function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
+function renderStudentReport(doc: jsPDF, autoTable: typeof import('jspdf-autotable').default, payload: StudentReportPayload) {
 	const tableDoc = doc as AutoTableDoc;
 	const printedAt =
 		payload.printedAt ||
@@ -206,53 +218,57 @@ function renderStudentReport(doc: jsPDF, payload: StudentReportPayload) {
 	return doc;
 }
 
-function buildStudentReportDoc(payload: StudentReportPayload) {
+async function buildStudentReportDoc(payload: StudentReportPayload) {
+	const { jsPDF, autoTable } = await loadPdfLibs();
 	const doc = new jsPDF();
-	return renderStudentReport(doc, payload);
+	return renderStudentReport(doc, autoTable, payload);
 }
 
-export function previewStudentReportPDF(payload: StudentReportPayload) {
-	const doc = buildStudentReportDoc(payload);
+export async function previewStudentReportPDF(payload: StudentReportPayload) {
+	const doc = await buildStudentReportDoc(payload);
 	window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
 }
 
-export function downloadStudentReportPDF(payload: StudentReportPayload) {
-	const doc = buildStudentReportDoc(payload);
+export async function downloadStudentReportPDF(payload: StudentReportPayload) {
+	const doc = await buildStudentReportDoc(payload);
 	doc.save(`${payload.filename}.pdf`);
 }
 
-function buildBulkStudentReportDoc(payload: BulkStudentReportPayload) {
+async function buildBulkStudentReportDoc(payload: BulkStudentReportPayload) {
+	const { jsPDF, autoTable } = await loadPdfLibs();
 	const doc = new jsPDF();
 
 	payload.reports.forEach((report, index) => {
 		if (index > 0) {
 			doc.addPage();
 		}
-		renderStudentReport(doc, report);
+		renderStudentReport(doc, autoTable, report);
 	});
 
 	return doc;
 }
 
-export function previewBulkStudentReportPDF(payload: BulkStudentReportPayload) {
-	const doc = buildBulkStudentReportDoc(payload);
+export async function previewBulkStudentReportPDF(payload: BulkStudentReportPayload) {
+	const doc = await buildBulkStudentReportDoc(payload);
 	window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
 }
 
-export function downloadBulkStudentReportPDF(payload: BulkStudentReportPayload) {
-	const doc = buildBulkStudentReportDoc(payload);
+export async function downloadBulkStudentReportPDF(payload: BulkStudentReportPayload) {
+	const doc = await buildBulkStudentReportDoc(payload);
 	doc.save(`${payload.filename}.pdf`);
 }
 
 /**
  * Export data ke Excel (.xlsx)
  */
-export function exportToExcel(
+export async function exportToExcel(
 	title: string,
 	columns: string[],
 	rows: (string | number)[][],
 	filename: string
 ) {
+	const XLSX = await import('xlsx');
+
 	const safeSheetName = title
 		.replace(/[:\\/?*\[\]]/g, '-')
 		.replace(/\s+/g, ' ')

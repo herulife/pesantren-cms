@@ -494,6 +494,19 @@ export interface GalleryItem {
 	created_at: string;
 }
 
+// Gallery album metadata (Drive links, descriptions)
+export interface GalleryAlbumMeta {
+  id: number;
+  album_slug: string;
+  album_name: string;
+  event_date: string;
+  category: string;
+  description: string;
+  drive_url: string;
+  drive_folder_id: string;
+  is_active: boolean;
+}
+
 export interface Campaign {
 	id: number;
 	title: string;
@@ -918,7 +931,7 @@ export async function getMessages(params: { isRead?: boolean, search?: string } 
 		if (params.isRead !== undefined) queryParams.append('is_read', params.isRead ? '1' : '0');
 		if (params.search) queryParams.append('search', params.search);
 		
-		const res = await fetch(`${API_BASE_URL}/contact?${queryParams.toString()}`, { 
+		const res = await fetch(`${API_BASE_URL}/messages?${queryParams.toString()}`, { 
 			headers: getAuthHeaders(),
 			cache: 'no-store' 
 		});
@@ -1020,7 +1033,10 @@ export async function addNews(news: NewsPayload) {
 
 export async function getNewsById(id: number | string) {
 	try {
-		const res = await fetch(`${API_BASE_URL}/news/${id}`, { cache: 'no-store' });
+		// /news/manage/{id} is the authenticated read that still returns drafts and
+		// trashed items. The public /news/{id} endpoint is now published-only, so
+		// using it here made the admin edit form 404 on every draft.
+		const res = await fetch(`${API_BASE_URL}/news/manage/${id}`, { headers: getAuthHeaders(), cache: 'no-store' });
 		if (!res.ok) return null;
 		const result = await parseResponse(res);
 		return result?.data ? normalizeNewsPayload(result.data) : null;
@@ -1068,7 +1084,7 @@ export async function getNewsPaginated(params: { status?: string, category?: str
     if (params.limit) queryParams.append('limit', params.limit.toString());
     if (params.offset) queryParams.append('offset', params.offset.toString());
 
-    const res = await fetch(`${API_BASE_URL}/news?${queryParams.toString()}`, { headers: getAuthHeaders(), cache: 'no-store' });
+    const res = await fetch(`${API_BASE_URL}/news/manage/all?${queryParams.toString()}`, { headers: getAuthHeaders(), cache: 'no-store' });
     if (!res.ok) return { data: [], pagination: { total: 0 } };
     const result = await parseResponse(res);
     return {
@@ -1273,15 +1289,6 @@ export async function login(credentials: { email: string; password: string }) {
 	return parseResponse(res);
 }
 
-export async function registerUser(credentials: { name: string; email: string; password: string }) {
-	const res = await fetch(`${API_BASE_URL}/register`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(credentials)
-	});
-	return parseResponse(res);
-}
-
 export async function googleLogin(credential: string) {
 	const res = await fetch(`${API_BASE_URL}/auth/google`, {
 		method: 'POST',
@@ -1451,6 +1458,31 @@ export async function uploadImage(file: File) {
 	}
 	return result;
 }
+
+/**
+ * Upload dokumen pribadi siswa (KK, akta, ijazah, pasfoto, bukti bayar).
+ *
+ * Sengaja memakai endpoint terpisah dari `uploadImage`. Endpoint `/upload` kini
+ * staf-only dan menaruh file di direktori publik yang dilayani tanpa autentikasi,
+ * sedangkan dokumen siswa berisi data pribadi anak yang belum dewasa dan tidak
+ * boleh bisa diakses siapa pun yang tahu URL-nya. Backend menyimpan dokumen ini
+ * di storage privat per-user dan hanya melayikannya ke pemilik atau staf.
+ */
+export async function uploadPrivateDocument(file: File) {
+	const formData = new FormData();
+	formData.append('image', file);
+
+	const res = await fetch(`${API_BASE_URL}/upload/document`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: formData
+	});
+	const result = await parseResponse(res);
+	if (result?.data?.url && !result.url) {
+		return { ...result, url: result.data.url };
+	}
+	return result;
+}
 export async function verifyDonation(id: number) {
 	const res = await fetch(`${API_BASE_URL}/donations/verify/${id}`, {
 		method: 'PUT',
@@ -1460,7 +1492,7 @@ export async function verifyDonation(id: number) {
 }
 
 export async function markMessageAsRead(id: number) {
-	const res = await fetch(`${API_BASE_URL}/contact/${id}/read`, {
+	const res = await fetch(`${API_BASE_URL}/messages/${id}/read`, {
 		method: 'PATCH',
 		headers: getAuthHeaders()
 	});
@@ -1468,7 +1500,7 @@ export async function markMessageAsRead(id: number) {
 }
 
 export async function deleteMessage(id: number) {
-	const res = await fetch(`${API_BASE_URL}/contact/${id}`, {
+	const res = await fetch(`${API_BASE_URL}/messages/${id}`, {
 		method: 'DELETE',
 		headers: getAuthHeaders()
 	});
@@ -2108,4 +2140,187 @@ export async function topUpWalletAdmin(userID: number, amount: number, descripti
 		console.error(`[API] Topup error:`, e);
 		return false;
 	}
+}
+
+// ── Multi Google Drive Storage (Gallery Sync) ────────────────
+
+export interface StorageAccountLite {
+	id: number;
+	provider: string;
+	name: string;
+	account_email: string;
+	avatar_url: string;
+	status: string;
+	error_message: string;
+	last_tested_at: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface StorageSource {
+	id: number;
+	storage_account_id: number;
+	name: string;
+	slug: string;
+	root_folder_id: string;
+	category: string;
+	sync_enabled: boolean;
+	status: string;
+	last_error: string;
+	last_sync_at: string;
+	last_sync_status: string;
+	created_at: string;
+	updated_at: string;
+	media_count?: number;
+	account_email?: string;
+}
+
+export interface StorageAccountRich extends StorageAccountLite {
+	sources: StorageSource[];
+}
+
+export interface StorageTotals {
+	accounts: number;
+	sources: number;
+	enabled: number;
+	media: number;
+	synced_media: number;
+	total_files_synced: number;
+}
+
+export interface StorageStatus {
+	configured: boolean;
+	client_id_masked: string;
+	redirect_uri: string;
+	app_url: string;
+	accounts: number;
+	sources: number;
+}
+
+export interface SyncRun {
+	id: number;
+	source_id: number;
+	status: string;
+	started_at: string;
+	finished_at: string;
+	added: number;
+	updated: number;
+	unchanged: number;
+	deleted: number;
+	errors: number;
+	files_total: number;
+	duration_ms: number;
+	message: string;
+}
+
+export interface SyncJob {
+	running: boolean;
+	source_id: number;
+	run_id: number;
+	started_at: string;
+	last_error: string;
+	added: number;
+	updated: number;
+	unchanged: number;
+	deleted: number;
+	errors: number;
+	files_total: number;
+}
+
+export interface StorageSourceDetail {
+	source: StorageSource;
+	account_email: string;
+	last_run: SyncRun | null;
+	run_history: SyncRun[];
+	job: SyncJob | null;
+}
+
+export interface StorageFolder {
+	id: string;
+	name: string;
+	mime_type: string;
+}
+
+export interface StorageOverview {
+	accounts: StorageAccountRich[];
+	totals: StorageTotals;
+}
+
+async function storageRequest<T>(path: string, init?: RequestInit) {
+	const res = await fetch(`${API_BASE_URL}${path}`, withCredentials({ cache: 'no-store', ...init }));
+	const result = await parseResponse(res);
+	return result?.data as T;
+}
+
+export function getStorageStatus() {
+	return storageRequest<StorageStatus>('/admin/storage/status');
+}
+
+export function getStorageOverview() {
+	return storageRequest<StorageOverview>('/admin/storage/accounts');
+}
+
+export function getStorageAccountDetail(accountID: number) {
+	return storageRequest<{ account: StorageAccountLite; sources: StorageSource[] }>(`/admin/storage/accounts/${accountID}`);
+}
+
+export function getStorageFolders(accountID: number, parent?: string) {
+	const q = parent ? `?parent=${encodeURIComponent(parent)}` : '';
+	return storageRequest<StorageFolder[]>(`/admin/storage/accounts/${accountID}/folders${q}`);
+}
+
+export function beginStorageOAuth() {
+	return storageRequest<{ auth_url: string; redirect: string }>('/admin/storage/oauth/begin');
+}
+
+export function createStorageSource(accountID: number, payload: { name: string; slug?: string; root_folder_id: string; category?: string; test_first?: boolean }) {
+	return storageRequest<{ source_id: number }>(`/admin/storage/accounts/${accountID}/sources`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+}
+
+export function updateStorageAccount(accountID: number, payload: { name?: string; status?: string }) {
+	return storageRequest<{ id: number }>(`/admin/storage/accounts/${accountID}`, {
+		method: 'PATCH',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+}
+
+export function deleteStorageAccount(accountID: number) {
+	return storageRequest<{ id: number }>(`/admin/storage/accounts/${accountID}`, { method: 'DELETE', headers: getAuthHeaders() });
+}
+
+export function updateStorageSource(sourceID: number, payload: { name?: string; slug?: string; category?: string; sync_enabled?: boolean }) {
+	return storageRequest<{ id: number }>(`/admin/storage/sources/${sourceID}`, {
+		method: 'PATCH',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+}
+
+export function deleteStorageSource(sourceID: number, keep: boolean) {
+	return storageRequest<{ id: number }>(`/admin/storage/sources/${sourceID}?keep=${keep ? '1' : '0'}`, { method: 'DELETE', headers: getAuthHeaders() });
+}
+
+export function testStorageSource(sourceID: number) {
+	return storageRequest<{ id: number }>(`/admin/storage/sources/${sourceID}/test`, { method: 'POST', headers: getAuthHeaders() });
+}
+
+export function startStorageSync(sourceID: number) {
+	return storageRequest<{ source_id: number; job: SyncJob }>(`/admin/storage/sources/${sourceID}/sync`, { method: 'POST', headers: getAuthHeaders() });
+}
+
+export function getStorageSyncStatus(sourceID: number) {
+	return storageRequest<{ source_id: number; job: SyncJob | null; last_run: SyncRun | null }>(`/admin/storage/sources/${sourceID}/sync`);
+}
+
+export function getStorageSourceDetail(sourceID: number) {
+	return storageRequest<StorageSourceDetail>(`/admin/storage/sources/${sourceID}`);
+}
+
+export function getStorageStats() {
+	return storageRequest<StorageTotals>('/admin/storage/stats');
 }

@@ -165,6 +165,32 @@ func (r *Repository) FindByID(id int) (*News, error) {
 	return &n, nil
 }
 
+// FindPublishedByID returns a news item only when it is published. Public routes
+// must use this instead of FindByID: FindByID ignores status, so it would happily
+// hand drafts and trashed items to unauthenticated callers.
+func (r *Repository) FindPublishedByID(id int) (*News, error) {
+	var n News
+	err := r.db.QueryRow(`
+		SELECT id, title, slug, content, excerpt, category_id, NULL as category_name, image_url, status, COALESCE(author_id, 0), created_at, updated_at
+		FROM news WHERE id = ? AND status = 'published'
+	`, id).Scan(
+		&n.ID, &n.Title, &n.Slug, &n.Content, &n.Excerpt, &n.CategoryID, &n.CategoryName,
+		&n.ImageURL, &n.Status, &n.AuthorID, &n.CreatedAt, &n.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &n, nil
+}
+
+// FindAllPublished lists published news for public consumers. Unlike FindAll it
+// ignores any caller supplied status, so a query string of ?status=trash (or an
+// empty status, which used to mean "everything except trash", drafts included)
+// cannot widen the result set.
+func (r *Repository) FindAllPublished(category, search string, limit, offset int) ([]News, int, error) {
+	return r.FindAll("published", category, search, limit, offset)
+}
+
 func (r *Repository) FindBySlug(slug string) (*News, error) {
 	var n News
 	err := r.db.QueryRow(`

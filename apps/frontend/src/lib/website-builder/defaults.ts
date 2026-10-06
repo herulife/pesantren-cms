@@ -394,46 +394,50 @@ export const defaultWebsiteBuilderPages: WebsiteBuilderPages = {
   psb: {
     version: 1,
     hero: {
-      eyebrow: 'Pendaftaran Santri Baru',
-      title: 'Penerimaan santri baru Darussunnah untuk tahun pelajaran 2026/2027.',
+      eyebrow: 'بسم الله والحمدلله · السلام عليكم ورحمة الله وبركاته',
+      title: 'Alhamdulillah!! Penerimaan Santri Baru, Tahun Pendidikan 2027/2028',
       subtitle:
-        'Kenali persyaratan, jadwal gelombang, dan langkah awal pendaftaran untuk bergabung bersama keluarga besar penghafal Al-Quran di Darussunnah.',
-      background_image_url: '/assets/img/psb-banner.png',
+        "Pesantren Tahfidz Al-Qur'an Darussunnah Parung-Bogor, Jawa Barat — Telah dibuka!! Mari wujudkan impian Ananda menjadi penghafal Al-Qur'an yang sholeh, berakhlak mulia, dan siap bersaing dengan ketrampilan hidup yang cukup.",
+      background_image_url: '/assets/img/psb-banner-2027.jpg',
     },
     requirements: {
-      eyebrow: 'Persyaratan',
-      title: 'Dokumen yang perlu disiapkan',
+      eyebrow: 'Program Unggul',
+      title: 'Program yang Unggul, Terukur dan Terencana',
       items: [
-        'Fotokopi Akta Kelahiran (3 lembar)',
-        'Fotokopi Kartu Keluarga (3 lembar)',
-        'Pas Foto 3x4 Background Merah (4 lembar)',
-        'Raport Terakhir / Ijazah Terakhir',
-        'Surat Keterangan Sehat dari Dokter',
+        'Kurikulum Pondok & DIKNAS',
+        'Tarbiyah Aqidah',
+        'Tsaqofah Islamiyah yang Luas',
+        'Akselerasi Tahfidz 30 juz',
+        'Tahfidz Hadits (Arbain, Riyadhusholihin, Umdatul Ahkam, Bulughul Marom)',
+        'Program Mahasantri B.Arab',
+        'Pembekalan Life skill (Tata Boga, Otomotif & Kelistrikan)',
+        'Tempat sejuk, jauh dari keramaian dan kebisingan',
       ],
     },
     schedule: {
-      eyebrow: 'Gelombang Pendaftaran',
-      title: 'Jadwal pendaftaran yang sedang dibuka',
+      eyebrow: 'Pendaftaran',
+      title: 'Masa pendaftaran yang sedang dibuka',
       waves: [
-        { label: 'Gelombang I', date_text: '1 Januari - 31 Maret 2026', active: true },
-        { label: 'Gelombang II', date_text: '1 April - 30 Juni 2026 (Opsional)', active: false },
+        { label: 'Gelombang I', date_text: '1 Oktober - 31 Desember 2026', active: true },
+        { label: 'Gelombang II', date_text: '1 Januari - Maret 2027 (sampai kuota terpenuhi)', active: false },
       ],
     },
     location: {
-      eyebrow: 'Lokasi Pendaftaran',
-      title: 'Datang atau hubungi panitia untuk arahan berikutnya',
+      eyebrow: 'Lokasi Pondok',
+      title: 'Pondok Putra & Pondok Putri',
       subtitle:
         'Hubungi panitia pendaftaran untuk petunjuk lokasi, jadwal kunjungan, dan informasi survei pondok.',
-      address_text: 'Kp. Lengkong Barang RT.01/02, Ds. Iwul, Kec. Parung, Bogor 16330',
+      address_text:
+        'Pondok Putra: Ciaruteun, Bogor · Pondok Putri: Kp. Lengkong Barang RT.01/02, Ds. Iwul, Kec. Parung, Bogor 16330',
       image_url: '/assets/img/info-pendaftaran.jpg',
     },
     cta: {
-      eyebrow: 'Langkah Berikutnya',
-      title: 'Siap menjadi penghafal Al-Quran?',
+      eyebrow: 'Ayo bergabung',
+      title: "Ayo bergabung bersama kami",
       subtitle:
-        'Buka formulir pendaftaran online atau hubungi panitia PSB untuk pertanyaan seputar jadwal, syarat, dan pembayaran.',
+        'Untuk informasi lebih lanjut hubungi 0814 1324 1748 · 0815 1711 4840. Silahkan di share, semoga berbuah amal sholeh dan menjadi sebab seseorang mendapatkan kebaikan. والسلام عليكم.',
       primary_button: { label: 'Daftar Online Sekarang', url: '/psb-daftar', style: 'primary' },
-      secondary_button: { label: 'Hubungi Panitia (WhatsApp)', url: 'https://wa.me/6281413241748', style: 'secondary' },
+      secondary_button: { label: 'WhatsApp Panitia', url: 'https://wa.me/6281413241748', style: 'secondary' },
     },
   },
   kontak: {

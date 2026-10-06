@@ -131,17 +131,30 @@ export default function VideoSeriesPage() {
                 <span className="rounded-full bg-white px-4 py-2 shadow-sm">{series.items.length} video</span>
               </div>
 
-              {leadVideoId ? (
+              {leadVideo ? (
                 <div className="mb-12 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_25px_60px_-35px_rgba(15,23,42,0.25)] transition-shadow duration-500 hover:shadow-[0_30px_70px_-30px_rgba(16,185,129,0.15)]">
-                  <div className="aspect-video">
-                    <iframe
-                      title={series.title}
-                      src={`https://www.youtube.com/embed/${leadVideoId}?rel=0`}
-                      className="h-full w-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
+                  {leadVideoId ? (
+                    <div className="aspect-video">
+                      <iframe
+                        title={series.title}
+                        src={`https://www.youtube.com/embed/${leadVideoId}?rel=0`}
+                        className="h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-video bg-slate-900">
+                      <video
+                        controls
+                        playsInline
+                        preload="metadata"
+                        poster={leadVideo.thumbnail || undefined}
+                        src={leadVideo.url}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  )}
                   <div className="px-6 py-5 md:px-8 md:py-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">Video Utama</p>
                     <h2 className="mt-2 text-xl font-black uppercase tracking-tight text-slate-900 md:text-2xl">{leadVideo.title}</h2>

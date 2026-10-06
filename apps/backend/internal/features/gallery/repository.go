@@ -19,6 +19,19 @@ type GalleryItem struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+// GalleryAlbumMeta holds metadata for an album, including optional Drive link
+type GalleryAlbumMeta struct {
+	ID           int    `json:"id"`
+	AlbumSlug    string `json:"album_slug"`
+	AlbumName    string `json:"album_name"`
+	EventDate    string `json:"event_date"`
+	Category     string `json:"category"`
+	Description  string `json:"description"`
+	DriveURL     string `json:"drive_url"`
+	DriveFolderID string `json:"drive_folder_id"`
+	IsActive     bool   `json:"is_active"`
+}
+
 type Repository struct {
 	db *sql.DB
 }
@@ -88,11 +101,69 @@ func (r *Repository) FindAll(category, search string, limit, offset int) ([]Gall
 	}
 	if search != "" {
 		countQuery += " AND title LIKE ?"
-		countArgs = append(countArgs, "%"+search+"%")
+		countArgs = append(args, "%"+search+"%")
 	}
 	r.db.QueryRow(countQuery, countArgs...).Scan(&total)
 
 	return list, total, nil
+}
+
+// GetAllMeta returns album metadata including optional Drive links
+func (r *Repository) GetAllMeta() ([]GalleryAlbumMeta, error) {
+	query := `
+		SELECT id, album_slug, album_name,
+		       COALESCE(event_date, '') as event_date,
+		       COALESCE(category, 'Umum') as category,
+		       COALESCE(description, '') as description,
+		       COALESCE(drive_url, '') as drive_url,
+		       COALESCE(drive_folder_id, '') as drive_folder_id,
+		       COALESCE(is_active, 1) as is_active
+		FROM gallery_albums
+		ORDER BY created_at DESC
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []GalleryAlbumMeta
+	for rows.Next() {
+		var m GalleryAlbumMeta
+		err := rows.Scan(&m.ID, &m.AlbumSlug, &m.AlbumName, &m.EventDate, &m.Category, &m.Description, &m.DriveURL, &m.DriveFolderID, &m.IsActive)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, m)
+	}
+	return list, nil
+}
+
+// UpdateMeta updates album metadata (Drive URL, description, etc.)
+func (r *Repository) UpdateMeta(slug string, meta *GalleryAlbumMeta) error {
+	query := `
+		UPDATE gallery_albums
+		SET album_name = ?, event_date = ?, category = ?,
+		    description = ?, drive_url = ?, drive_folder_id = ?,
+		    is_active = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE album_slug = ?
+	`
+	_, err := r.db.Exec(query,
+		meta.AlbumName, meta.EventDate, meta.Category,
+		meta.Description, meta.DriveURL, meta.DriveFolderID,
+		meta.IsActive, slug)
+	return err
+}
+
+// UpsertMeta creates or updates album metadata
+func (r *Repository) UpsertMeta(slug, name string) error {
+	query := `
+		INSERT INTO gallery_albums (album_slug, album_name, event_date, category, description, drive_url, drive_folder_id, is_active)
+		VALUES (?, ?, '', 'Umum', '', '', '', 1)
+		ON CONFLICT(album_slug) DO NOTHING
+	`
+	_, err := r.db.Exec(query, slug, name)
+	return err
 }
 
 func (r *Repository) Create(item *GalleryItem) error {
@@ -105,6 +176,10 @@ func (r *Repository) Create(item *GalleryItem) error {
 	albumSlug := strings.TrimSpace(item.AlbumSlug)
 	albumName := strings.TrimSpace(item.AlbumName)
 	imageURL := strings.TrimSpace(item.ImageURL)
+
+	// Ensure album entry exists in gallery_albums
+	tx.Exec(`INSERT INTO gallery_albums (album_slug, album_name) VALUES (?, ?)
+	         ON CONFLICT(album_slug) DO NOTHING`, albumSlug, albumName)
 
 	var existingCount int
 	err = tx.QueryRow(`

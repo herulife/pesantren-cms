@@ -163,7 +163,7 @@ func (h *Handler) TopUp(w http.ResponseWriter, r *http.Request) {
 			"amount":         body.Amount,
 			"error":          err.Error(),
 		})
-		writeJSONResponse(w, http.StatusInternalServerError, false, err.Error(), nil)
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses pengisian saldo", nil)
 		return
 	}
 
@@ -227,7 +227,7 @@ func (h *Handler) Spend(w http.ResponseWriter, r *http.Request) {
 			"amount":    body.Amount,
 			"error":     err.Error(),
 		})
-		writeJSONResponse(w, http.StatusInternalServerError, false, err.Error(), nil)
+		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses transaksi", nil)
 		return
 	}
 

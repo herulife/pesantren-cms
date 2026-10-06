@@ -40,3 +40,23 @@ backups
 **/out
 **/dist
 **/build
+
+# Compiled Go binaries must never enter the build context. A stale host-built
+# darussunnah-api was being copied over the freshly compiled one by the
+# "COPY apps/backend/ ./" layer, so backend source changes never reached the
+# running container.
+darussunnah-api
+**/darussunnah-api
+*.test
+**/*.test
+
+# Entri di atas blok ".deploy/..." sampai ".apps/..." tidak pernah cocok: path
+# aslinya tanpa titik di depan, jadi file-file tersebut sebenarnya tidak pernah
+# dikecualikan. Sebagian besar tertutup oleh pola generik (data, *.db), tapi
+# volume dokumen privat harus dikecualikan eksplisit supaya dokumen PSB dan bukti
+# pembayaran tidak ikut terunggah ke build context.
+deploy/darussunnah/data/
+backups/
+**/private-uploads/
+**/.next/
+**/node_modules/

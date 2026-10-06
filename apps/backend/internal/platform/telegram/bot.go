@@ -126,8 +126,10 @@ func IsAllowedChat(chatID int64) bool {
 
 func WebhookSecretMatches(headerValue string) bool {
 	expected := strings.TrimSpace(os.Getenv("TELEGRAM_WEBHOOK_SECRET"))
+	// Fail closed: if no secret is configured, reject all webhook calls.
+	// This prevents an unauthenticated webhook when TELEGRAM_WEBHOOK_SECRET is unset.
 	if expected == "" {
-		return true
+		return false
 	}
 	return strings.TrimSpace(headerValue) == expected
 }

@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { Sparkles, Image as ImageIcon, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { SUNEDITOR_OPTIONS } from '@/lib/suneditor-options';
 import ImageCropperModal from '@/components/ImageCropperModal';
 import 'suneditor/dist/css/suneditor.min.css'; // Import Sun Editor's CSS File
 
@@ -137,7 +138,6 @@ export default function EditNewsPage() {
   useEffect(() => {
     if (id) {
       getNewsById(id).then(data => {
-        console.log('[NEWS DEBUG][EDIT][LOAD]', { id, data });
         if (data) {
           setFormData(normalizeNewsFormData(data));
         } else {
@@ -179,17 +179,9 @@ export default function EditNewsPage() {
     }
     const slug = formData.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     const excerpt = formData.excerpt.trim() || `${plainContent.substring(0, 120)}${plainContent.length > 120 ? '...' : ''}`;
-    const debugId = `news-edit-${id}-${Date.now()}`;
     const payload = { ...buildNewsPayload({ ...formData, excerpt }), slug };
-    console.log('[NEWS DEBUG][EDIT][SUBMIT]', {
-      debugId,
-      id,
-      formData,
-      payload,
-    });
     try {
       const res = await updateNews(id, payload);
-      console.log('[NEWS DEBUG][EDIT][RESPONSE]', { debugId, id, res });
       if (res.success) {
         showToast('success', 'Berita berhasil diperbarui!');
         router.push('/admin/news');
@@ -243,12 +235,6 @@ export default function EditNewsPage() {
 
   const handleGallerySelect = (url: string) => {
     const normalizedUrl = normalizeApiAssetUrl(url);
-    console.log('[NEWS DEBUG][EDIT][GALLERY_SELECT]', {
-      id,
-      selectedUrl: url,
-      normalizedUrl,
-      currentImageUrl: formData.image_url.String,
-    });
     if (normalizeApiAssetUrl(formData.image_url.String) === normalizedUrl) {
       showToast('info', 'Foto galeri yang dipilih sama dengan gambar unggulan yang sedang dipakai.');
       setIsGalleryOpen(false);
@@ -256,7 +242,7 @@ export default function EditNewsPage() {
     }
     setFormData(prev => ({ ...prev, image_url: { String: normalizedUrl, Valid: true } }));
     setIsGalleryOpen(false);
-    showToast('success', 'Gambar galeri berhasil dipilih.');
+    showToast('success', 'Gambar terpilih! Jangan lupa klik SIMPAN di bawah agar tersimpan.');
   };
 
   const handleEditorGallerySelect = (url: string) => {
@@ -383,6 +369,7 @@ export default function EditNewsPage() {
                     setOptions={{
                         height: '100%',
                         minHeight: '400px',
+                        ...SUNEDITOR_OPTIONS,
                         buttonList: [
                             ['undo', 'redo'],
                             ['font', 'fontSize', 'formatBlock'],
@@ -392,7 +379,7 @@ export default function EditNewsPage() {
                             ['removeFormat'],
                             ['outdent', 'indent'],
                             ['align', 'horizontalRule', 'list', 'lineHeight'],
-                            ['table', 'link', 'image', 'video', 'audio'],
+                            ['table', 'link', 'image'],
                             ['fullScreen', 'showBlocks', 'codeView'],
                             ['preview', 'print']
                         ]

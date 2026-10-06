@@ -20,7 +20,7 @@ import {
   getPublicSettingsMap,
   resolveDisplayImageUrl,
   saveMyPSBPayment,
-  uploadImage,
+  uploadPrivateDocument,
   type Registration,
   type SettingsMap,
 } from '@/lib/api';
@@ -53,25 +53,25 @@ const paymentStatusMeta: Record<PaymentStatus, { label: string; title: string; d
     label: 'Belum Bayar',
     title: 'Upload Bukti Pembayaran Pendaftaran',
     description: 'Lengkapi nominal, tanggal transfer, lalu unggah bukti pembayaran agar panitia bisa melakukan verifikasi.',
-    className: 'border-amber-100 bg-amber-50 text-amber-700',
+    className: 'lte-alert-warning',
   },
   pending: {
     label: 'Menunggu Verifikasi',
     title: 'Bukti Pembayaran Sedang Dicek',
     description: 'Bukti pembayaran sudah masuk. Panitia akan memeriksa nominal dan bukti transfer yang kamu kirim.',
-    className: 'border-blue-100 bg-blue-50 text-blue-700',
+    className: 'lte-alert-primary',
   },
   paid: {
     label: 'Lunas',
     title: 'Pembayaran Sudah Diverifikasi',
     description: 'Pembayaran pendaftaran sudah dinyatakan lunas. Kamu bisa memantau status pendaftaran dari dashboard portal.',
-    className: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+    className: 'lte-alert-success',
   },
   rejected: {
     label: 'Perlu Upload Ulang',
     title: 'Bukti Pembayaran Perlu Diperbaiki',
     description: 'Panitia belum bisa memverifikasi bukti pembayaran. Periksa catatan, lalu upload ulang bukti yang benar.',
-    className: 'border-rose-100 bg-rose-50 text-rose-700',
+    className: 'lte-alert-danger',
   },
 };
 
@@ -137,7 +137,7 @@ export default function PortalPaymentPage() {
           label: 'Perlu Tindakan',
           title: 'Catatan Panitia Perlu Ditindaklanjuti',
           description: 'Periksa catatan panitia di bawah ini, lalu upload ulang bukti transfer bila diminta.',
-        className: 'border-amber-200 bg-amber-50 text-amber-900',
+        className: 'lte-alert-warning',
       }
     : statusMeta;
   const configuredBankName = settings.psb_payment_bank_name?.trim() || '';
@@ -240,7 +240,7 @@ export default function PortalPaymentPage() {
     try {
       let nextProofUrl = proofUrl;
       if (selectedProofFile) {
-        const uploadResult = await uploadImage(selectedProofFile);
+        const uploadResult = await uploadPrivateDocument(selectedProofFile);
         nextProofUrl = uploadResult?.url || uploadResult?.data?.url || '';
         if (!nextProofUrl) {
           throw new Error('URL bukti pembayaran tidak ditemukan setelah upload.');
@@ -279,32 +279,34 @@ export default function PortalPaymentPage() {
 
   return (
     <>
-      <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900">Bayar Pendaftaran</h3>
-      <p className="mb-10 max-w-2xl text-sm leading-relaxed text-slate-500">
-        Kirim bukti transfer biaya pendaftaran dari portal. Panitia akan memverifikasi pembayaran sebelum pendaftaran bisa dinyatakan diterima.
-      </p>
+      <div className="lte-content-header">
+        <h3 className="lte-page-title">Bayar Pendaftaran</h3>
+        <p className="lte-page-subtitle">
+          Kirim bukti transfer biaya pendaftaran dari portal. Panitia akan memverifikasi pembayaran sebelum pendaftaran bisa dinyatakan diterima.
+        </p>
+      </div>
 
-      <div className={`mb-8 rounded-[2rem] border p-6 shadow-sm ${visibleStatusMeta.className}`}>
+      <div className={`lte-alert mb-8 ${visibleStatusMeta.className}`}>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-white/80 p-3">
+            <div className="rounded bg-white/85 p-2.5">
               {paymentStatus === 'paid' ? <CheckCircle2 size={24} /> : hasPaymentWarning ? <AlertCircle size={24} /> : <CreditCard size={24} />}
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em]">{visibleStatusMeta.label}</p>
-              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight">{visibleStatusMeta.title}</h4>
-              <p className="mt-2 max-w-2xl text-sm font-medium leading-7 opacity-80">{visibleStatusMeta.description}</p>
+              <p className="lte-card-subtitle">{visibleStatusMeta.label}</p>
+              <h4 className="lte-alert-title mt-1">{visibleStatusMeta.title}</h4>
+              <p className="mt-1 max-w-2xl text-sm leading-7">{visibleStatusMeta.description}</p>
               {paymentNote ? (
                 <div
-                  className={`mt-4 rounded-2xl px-4 py-4 shadow-sm ${
+                  className={`mt-4 rounded px-4 py-4 shadow-sm ${
                     hasPaymentWarning
-                      ? 'border border-amber-200 bg-white text-amber-950 shadow-amber-900/5'
+                      ? 'border border-amber-200 bg-white text-amber-950'
                       : 'border border-white/70 bg-white/80'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${
                         hasPaymentWarning ? 'bg-amber-100 text-amber-700' : 'bg-white text-current'
                       }`}
                     >
@@ -312,14 +314,14 @@ export default function PortalPaymentPage() {
                     </div>
                     <div>
                       <p
-                        className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                          hasPaymentWarning ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                        className={`lte-badge ${
+                          hasPaymentWarning ? 'lte-badge-soft-warning' : 'lte-badge-light'
                         }`}
                       >
                         Catatan Panitia
                       </p>
                       <p
-                        className={`mt-2 rounded-2xl px-4 py-3 text-sm font-black leading-6 ${
+                        className={`mt-2 rounded px-4 py-3 text-sm font-bold leading-6 ${
                           hasPaymentWarning
                             ? 'border border-amber-200 bg-amber-50 text-amber-950'
                             : 'bg-slate-50 text-slate-800'
@@ -333,78 +335,76 @@ export default function PortalPaymentPage() {
               ) : null}
             </div>
           </div>
-          <span className="inline-flex w-fit rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]">
+          <span className="lte-badge lte-badge-light w-fit">
             {proofUrl ? 'Bukti sudah ada' : 'Belum ada bukti'}
           </span>
         </div>
       </div>
 
-      <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <div className="lte-card mb-8">
+        <div className="lte-card-header">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Checklist Pembayaran</p>
-            <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Langkah Yang Sudah Dilalui</h4>
+            <p className="lte-card-subtitle">Checklist Pembayaran</p>
+            <h4 className="lte-card-title">Langkah Yang Sudah Dilalui</h4>
           </div>
-          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <span className="lte-badge lte-badge-primary">
             {paymentSteps.filter((step) => step.completed).length}/{paymentSteps.length} selesai
           </span>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-5">
-          {paymentSteps.map((step) => (
-            <div
-              key={step.title}
-              className={`rounded-2xl border px-4 py-4 ${
-                step.completed
-                  ? 'border-emerald-100 bg-emerald-50 text-emerald-900'
-                  : 'border-slate-200 bg-slate-50 text-slate-500'
-              }`}
-            >
+        <div className="lte-card-body">
+          <div className="grid gap-3 md:grid-cols-5">
+            {paymentSteps.map((step) => (
               <div
-                className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
-                  step.completed ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'
-                }`}
+                key={step.title}
+                className={`lte-step-item ${step.completed ? 'done' : ''}`}
               >
-                {step.completed ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                <div
+                  className={`mb-3 flex h-9 w-9 items-center justify-center rounded ${
+                    step.completed ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-400'
+                  }`}
+                >
+                  {step.completed ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                </div>
+                <p className="lte-step-title">{step.title}</p>
+                <p className={`lte-step-desc ${step.completed ? 'text-emerald-800' : 'text-slate-500'}`}>{step.description}</p>
               </div>
-              <p className="text-sm font-black leading-tight">{step.title}</p>
-              <p className="mt-2 text-xs font-semibold leading-5 opacity-75">{step.description}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
       {successMessage ? (
-        <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 shadow-sm">
+        <div className="lte-alert lte-alert-success mb-8">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-emerald-100 text-emerald-700">
               <CheckCircle2 size={24} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Upload Berhasil</p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Bukti Pembayaran Terkirim</h4>
-              <p className="mt-2 text-sm font-semibold leading-7">{successMessage}</p>
+              <p className="lte-card-subtitle">Upload Berhasil</p>
+              <h4 className="lte-alert-title mt-1">Bukti Pembayaran Terkirim</h4>
+              <p className="mt-1 text-sm font-semibold leading-7">{successMessage}</p>
             </div>
           </div>
         </div>
       ) : null}
 
       {hasPaymentWarning && paymentNote ? (
-        <div className="relative mb-8 overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6 text-amber-950 shadow-lg shadow-amber-900/5">
+        <div className="lte-alert lte-alert-warning relative mb-8 pl-8">
           <div className="absolute inset-y-0 left-0 w-2 bg-amber-400" />
-          <div className="flex items-start gap-4 pl-2">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded bg-amber-100 text-amber-700">
               <AlertCircle size={28} />
             </div>
             <div>
-              <p className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-amber-800">
+              <p className="lte-badge lte-badge-warning w-fit">
                 Peringatan Panitia
               </p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Upload Ulang Bukti Transfer</h4>
-              <p className="mt-3 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm font-black leading-7 text-amber-950 shadow-sm">
+              <h4 className="lte-alert-title mt-2">Upload Ulang Bukti Transfer</h4>
+              <p className="mt-3 rounded border border-amber-200 bg-white px-4 py-3 text-sm font-bold leading-7 shadow-sm">
                 Catatan panitia: {paymentNote}
               </p>
-              <p className="mt-3 text-sm font-semibold leading-7 text-amber-800">
+              <p className="mt-3 text-sm leading-7">
                 Silakan pilih foto bukti transfer yang benar pada form di bawah. Setelah upload ulang, status akan kembali menunggu verifikasi.
               </p>
             </div>
@@ -413,43 +413,41 @@ export default function PortalPaymentPage() {
       ) : null}
 
       {!canUploadPayment ? (
-        <div className="mb-8 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-1 shrink-0" size={20} />
-            <div>
-              <h4 className="font-bold">Selesaikan data pendaftaran dulu</h4>
-              <p className="mt-2 text-sm leading-7">
-                Pembayaran baru bisa dikirim setelah biodata dan dokumen wajib lengkap, supaya bukti transfer tersambung ke data pendaftar yang benar.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {!biodataCompleted ? (
-                  <Link href="/portal/biodata" className="rounded-full bg-amber-500 px-5 py-3 text-xs font-black uppercase tracking-widest text-white">
-                    Lengkapi Biodata
-                  </Link>
-                ) : null}
-                {!documentsCompleted ? (
-                  <Link href="/portal/documents" className="rounded-full border border-amber-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-amber-800">
-                    Unggah Dokumen
-                  </Link>
-                ) : null}
-              </div>
+        <div className="lte-alert lte-alert-warning mb-8 flex items-start gap-3">
+          <AlertCircle className="mt-1 shrink-0" size={20} />
+          <div>
+            <p className="lte-alert-title">Selesaikan data pendaftaran dulu</p>
+            <p className="mt-2 text-sm leading-7">
+              Pembayaran baru bisa dikirim setelah biodata dan dokumen wajib lengkap, supaya bukti transfer tersambung ke data pendaftar yang benar.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {!biodataCompleted ? (
+                <Link href="/portal/biodata" className="lte-btn lte-btn-warning">
+                  Lengkapi Biodata
+                </Link>
+              ) : null}
+              {!documentsCompleted ? (
+                <Link href="/portal/documents" className="lte-btn lte-btn-outline-secondary">
+                  Unggah Dokumen
+                </Link>
+              ) : null}
             </div>
           </div>
         </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+        <div className="lte-card">
+          <div className="lte-card-header justify-start gap-3">
+            <div className="rounded bg-emerald-50 p-2.5 text-emerald-600">
               <ShieldCheck size={22} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Instruksi Transfer</p>
-              <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Pembayaran Manual</h4>
+              <p className="lte-card-subtitle">Instruksi Transfer</p>
+              <h4 className="lte-card-title">Pembayaran Manual</h4>
             </div>
           </div>
-          <div className="space-y-4 text-sm leading-7 text-slate-600">
+          <div className="lte-card-body space-y-4 text-sm leading-7 text-slate-600">
             <p>
               Silakan transfer biaya pendaftaran ke rekening berikut. Setelah transfer, isi nominal dan tanggal bayar, pilih foto bukti transfer,
               lalu klik tombol kirim.
@@ -457,158 +455,160 @@ export default function PortalPaymentPage() {
 
             {hasBankInfo ? (
               <div className="grid gap-3">
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                <div className="rounded border border-emerald-100 bg-emerald-50 p-4">
+                  <p className="lte-card-subtitle flex items-center gap-2">
                     <Landmark size={13} /> Bank Tujuan
                   </p>
-                  <p className="mt-2 text-lg font-black text-emerald-950">{configuredBankName || '-'}</p>
+                  <p className="mt-2 text-lg font-bold text-emerald-950">{configuredBankName || '-'}</p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Nomor Rekening</p>
-                    <p className="mt-2 break-all font-mono text-xl font-black tracking-wide text-slate-900">{configuredAccountNumber || '-'}</p>
+                  <div className="rounded border border-slate-200 bg-slate-50 p-4">
+                    <p className="lte-card-subtitle">Nomor Rekening</p>
+                    <p className="mt-2 break-all font-mono text-xl font-bold tracking-wide text-slate-900">{configuredAccountNumber || '-'}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Atas Nama</p>
-                    <p className="mt-2 text-sm font-black leading-6 text-slate-900">{configuredAccountName || '-'}</p>
+                  <div className="rounded border border-slate-200 bg-slate-50 p-4">
+                    <p className="lte-card-subtitle">Atas Nama</p>
+                    <p className="mt-2 text-sm font-bold leading-6 text-slate-900">{configuredAccountName || '-'}</p>
                   </div>
                 </div>
                 {configuredAmount > 0 ? (
-                  <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                    <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                  <div className="rounded border border-amber-100 bg-amber-50 p-4">
+                    <p className="lte-card-subtitle flex items-center gap-2">
                       <Banknote size={13} /> Nominal Pendaftaran
                     </p>
-                    <p className="mt-2 text-xl font-black text-amber-950">{formatCurrency(configuredAmount)}</p>
+                    <p className="mt-2 text-xl font-bold text-amber-950">{formatCurrency(configuredAmount)}</p>
                   </div>
                 ) : null}
               </div>
             ) : (
-              <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-semibold text-amber-900">
+              <p className="lte-alert lte-alert-warning">
                 Nomor rekening belum diatur oleh admin. Silakan hubungi panitia PSB sebelum transfer.
               </p>
             )}
 
             {configuredPaymentNote ? (
-              <p className="rounded-2xl border border-blue-100 bg-blue-50 p-4 font-semibold text-blue-900">
+              <p className="lte-alert lte-alert-primary">
                 {configuredPaymentNote}
               </p>
             ) : null}
 
             {configuredInstructions ? (
-              <p className="whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 font-semibold text-slate-700">
+              <p className="rounded border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-700">
                 {configuredInstructions}
               </p>
             ) : null}
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nominal Transfer</label>
-              <input
-                type="number"
-                min="1"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 disabled:text-slate-400"
-                placeholder="Contoh: 250000"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tanggal Transfer</label>
-              <input
-                type="date"
-                value={paymentDate}
-                onChange={(event) => setPaymentDate(event.target.value)}
-                disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 disabled:text-slate-400"
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-5">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Bukti Transfer</p>
-                <h5 className="mt-2 font-bold text-slate-900">
-                  {selectedProofFile ? 'Bukti baru siap dikirim' : proofUrl ? 'Bukti pembayaran sudah tersimpan' : 'Pilih foto bukti pembayaran'}
-                </h5>
-                <p className="mt-2 text-xs leading-6 text-slate-500">
-                  Pilih file dulu, lalu klik Kirim Bukti Pembayaran. Format: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
-                </p>
-                {selectedProofFile ? (
-                  <p className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-emerald-700">
-                    File dipilih: {selectedProofFile.name}
-                  </p>
-                ) : null}
-                {registration?.payment_amount ? (
-                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-400">
-                    Nominal tersimpan: {formatCurrency(registration.payment_amount)}
-                  </p>
-                ) : null}
+        <div className="lte-card">
+          <div className="lte-card-body">
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="lte-form-label">Nominal Transfer</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                  disabled={isLocked}
+                  className="lte-form-control w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 disabled:text-slate-400"
+                  placeholder="Contoh: 250000"
+                />
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                {proofDisplayUrl ? (
-                  <a
-                    href={proofDisplayUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
-                  >
-                    <Eye size={16} />
-                    Preview
-                  </a>
-                ) : null}
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.gif,.webp"
-                    disabled={!canUploadPayment || isUploading || isLocked}
-                    onChange={handleProofSelect}
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-                  />
-                  <button
-                    type="button"
-                    className={`pointer-events-none inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-widest transition ${
-                      !canUploadPayment || isLocked
-                        ? 'bg-slate-200 text-slate-400'
-                        : hasPaymentWarning
-                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                          : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                    }`}
-                  >
-                    <UploadCloud size={16} />
-                    {selectedProofFile ? 'Ganti Bukti' : proofUrl ? 'Ganti Bukti' : 'Pilih Bukti'}
-                  </button>
+              <div className="space-y-2">
+                <label className="lte-form-label">Tanggal Transfer</label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(event) => setPaymentDate(event.target.value)}
+                  disabled={isLocked}
+                  className="lte-form-control w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 disabled:text-slate-400"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 rounded border border-dashed border-slate-200 bg-slate-50 p-5">
+              <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="lte-card-subtitle">Bukti Transfer</p>
+                  <h5 className="lte-card-title mt-1">
+                    {selectedProofFile ? 'Bukti baru siap dikirim' : proofUrl ? 'Bukti pembayaran sudah tersimpan' : 'Pilih foto bukti pembayaran'}
+                  </h5>
+                  <p className="mt-2 text-xs leading-6 text-slate-500">
+                    Pilih file dulu, lalu klik Kirim Bukti Pembayaran. Format: JPG, JPEG, PNG, GIF, atau WEBP. Maksimal 5MB.
+                  </p>
+                  {selectedProofFile ? (
+                    <p className="lte-alert lte-alert-success mt-3 px-4 py-3 font-bold uppercase tracking-widest">
+                      File dipilih: {selectedProofFile.name}
+                    </p>
+                  ) : null}
+                  {registration?.payment_amount ? (
+                    <p className="lte-card-subtitle mt-3">
+                      Nominal tersimpan: {formatCurrency(registration.payment_amount)}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  {proofDisplayUrl ? (
+                    <a
+                      href={proofDisplayUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="lte-btn lte-btn-outline-secondary lte-btn-sm"
+                    >
+                      <Eye size={16} />
+                      Preview
+                    </a>
+                  ) : null}
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.gif,.webp"
+                      disabled={!canUploadPayment || isUploading || isLocked}
+                      onChange={handleProofSelect}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                    />
+                    <button
+                      type="button"
+                      className={`lte-btn pointer-events-none lte-btn-sm ${
+                        !canUploadPayment || isLocked
+                          ? 'lte-btn-outline-secondary'
+                          : hasPaymentWarning
+                            ? 'lte-btn-warning'
+                            : 'lte-btn-success'
+                      }`}
+                    >
+                      <UploadCloud size={16} />
+                      {selectedProofFile ? 'Ganti Bukti' : proofUrl ? 'Ganti Bukti' : 'Pilih Bukti'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-6 flex flex-col gap-3 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm font-semibold leading-6 text-slate-600">
-              Setelah bukti dipilih, klik tombol kirim agar status berubah menjadi menunggu verifikasi panitia.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => void handleSubmitPayment()}
-                disabled={!canSubmitPayment || isUploading}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
-              >
-                {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
-              </button>
-              <Link
-                href="/portal"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-emerald-600"
-              >
-                Kembali ke Dasbor <ArrowRight size={16} />
-              </Link>
+            <div className="mt-6 flex flex-col gap-3 rounded border border-slate-100 bg-slate-50 p-5 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm font-semibold leading-6 text-slate-600">
+                Setelah bukti dipilih, klik tombol kirim agar status berubah menjadi menunggu verifikasi panitia.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => void handleSubmitPayment()}
+                  disabled={!canSubmitPayment || isUploading}
+                  className="lte-btn lte-btn-success"
+                >
+                  {isUploading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                  {isUploading ? 'Mengirim' : 'Kirim Bukti Pembayaran'}
+                </button>
+                <Link
+                  href="/portal"
+                  className="lte-btn lte-btn-dark"
+                >
+                  Kembali ke Dasbor <ArrowRight size={16} />
+                </Link>
+              </div>
             </div>
           </div>
         </div>

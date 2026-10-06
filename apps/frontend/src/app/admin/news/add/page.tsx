@@ -7,6 +7,7 @@ import { useToast } from '@/components/Toast';
 import { Sparkles, Image as ImageIcon, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { SUNEDITOR_OPTIONS } from '@/lib/suneditor-options';
 import ImageCropperModal from '@/components/ImageCropperModal';
 import 'suneditor/dist/css/suneditor.min.css'; // Import Sun Editor's CSS File
 
@@ -116,16 +117,9 @@ export default function AddNewsPage() {
     }
     const slug = formData.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     const excerpt = formData.excerpt.trim() || `${plainContent.substring(0, 120)}${plainContent.length > 120 ? '...' : ''}`;
-    const debugId = `news-add-${Date.now()}`;
     const payload = { ...buildNewsPayload({ ...formData, excerpt }), slug };
-    console.log('[NEWS DEBUG][ADD][SUBMIT]', {
-      debugId,
-      formData,
-      payload,
-    });
     try {
       const res = await addNews(payload);
-      console.log('[NEWS DEBUG][ADD][RESPONSE]', { debugId, res });
       if (res.success) {
         showToast('success', 'Berita berhasil diterbitkan!');
         router.push('/admin/news');
@@ -179,11 +173,6 @@ export default function AddNewsPage() {
 
   const handleGallerySelect = (url: string) => {
     const normalizedUrl = normalizeApiAssetUrl(url);
-    console.log('[NEWS DEBUG][ADD][GALLERY_SELECT]', {
-      selectedUrl: url,
-      normalizedUrl,
-      currentImageUrl: formData.image_url.String,
-    });
     if (normalizeApiAssetUrl(formData.image_url.String) === normalizedUrl) {
       showToast('info', 'Foto galeri yang dipilih sama dengan gambar unggulan yang sedang dipakai.');
       setIsGalleryOpen(false);
@@ -318,6 +307,7 @@ export default function AddNewsPage() {
                     setOptions={{
                         height: '100%',
                         minHeight: '400px',
+                        ...SUNEDITOR_OPTIONS,
                         buttonList: [
                             ['undo', 'redo'],
                             ['font', 'fontSize', 'formatBlock'],
@@ -327,7 +317,7 @@ export default function AddNewsPage() {
                             ['removeFormat'],
                             ['outdent', 'indent'],
                             ['align', 'horizontalRule', 'list', 'lineHeight'],
-                            ['table', 'link', 'image', 'video', 'audio'],
+                            ['table', 'link', 'image'],
                             ['fullScreen', 'showBlocks', 'codeView'],
                             ['preview', 'print']
                         ]

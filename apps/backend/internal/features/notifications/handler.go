@@ -56,6 +56,51 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 	writeJSONResponse(w, status, false, message, nil)
 }
 
+// NotificationsSummary aggregates counts + latest items of unprocessed records
+// for the admin notification bell. Role-aware: each staff role only sees the
+// modules they operate on.
+func (h *Handler) NotificationsSummary(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.CurrentUserRole(r.Context())
+	sections := make([]SummarySection, 0, 3)
+	total := 0
+
+	if role == "superadmin" || role == "panitia_psb" {
+		count, items, err := h.repo.GetPendingRegistrations()
+		if err != nil {
+			logger.Warn(r.Context(), "notification summary psb failed", logger.Field{"error": err.Error()})
+		} else {
+			total += count
+			if count > 0 {
+				sections = append(sections, SummarySection{Type: "psb", Label: "Daftar PSB Baru", Count: count, Items: items})
+			}
+		}
+
+		count, items, err = h.repo.GetUnreadMessages()
+		if err != nil {
+			logger.Warn(r.Context(), "notification summary messages failed", logger.Field{"error": err.Error()})
+		} else {
+			total += count
+			if count > 0 {
+				sections = append(sections, SummarySection{Type: "message", Label: "Pesan Kontak Baru", Count: count, Items: items})
+			}
+		}
+	}
+
+	if role == "superadmin" || role == "bendahara" {
+		count, items, err := h.repo.GetPendingDonations()
+		if err != nil {
+			logger.Warn(r.Context(), "notification summary donations failed", logger.Field{"error": err.Error()})
+		} else {
+			total += count
+			if count > 0 {
+				sections = append(sections, SummarySection{Type: "donation", Label: "Donasi Baru", Count: count, Items: items})
+			}
+		}
+	}
+
+	writeJSONResponse(w, http.StatusOK, true, "", Summary{Total: total, Sections: sections})
+}
+
 func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
 	logger.Info(r.Context(), "notification status started", logger.Field{"operation": "notifications_status"})

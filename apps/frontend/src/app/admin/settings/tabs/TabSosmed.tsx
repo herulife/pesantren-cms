@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { getSettings, updateSetting } from '@/lib/api';
+import { getSettings, updateSettingsBatch } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Save, RefreshCw, Share2, Globe, Camera, Video } from 'lucide-react';
 
@@ -34,7 +34,8 @@ export default function TabSosmed() {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
+      const payload = KEYS.map(k => ({ key: k, value: formValues[k] || '' }));
+      await updateSettingsBatch(payload);
       showToast('success', 'Media Sosial berhasil disimpan');
     } catch {
       showToast('error', 'Gagal menyimpan pengaturan');

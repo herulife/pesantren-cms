@@ -3,8 +3,13 @@ package exams
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 )
+
+// ErrSessionNotOwned is returned when a caller references an exam session that
+// does not belong to them. Callers map this to 404 so ownership cannot be probed.
+var ErrSessionNotOwned = errors.New("exam session not found")
 
 type Exam struct {
 	ID              int       `json:"id"`
@@ -143,10 +148,37 @@ func (r *Repository) StartSession(studentID, examID int) (int, error) {
 	return int(id), nil
 }
 
-func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) error {
+// ownsOngoingSession reports whether sessionID belongs to studentID and is
+// still open. Every mutation on a session funnels through this check.
+//
+// The handler previously took session_id straight from the request body and
+// passed it to SubmitAnswer/FinishSession unchecked. Since session IDs are small
+// sequential integers, any logged-in student could submit answers into another
+// student's session, close it early, and overwrite that student's grades row.
+func (r *Repository) ownsOngoingSession(studentID, sessionID int) (bool, error) {
+	var count int
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM exam_sessions WHERE id = ? AND student_id = ? AND status = 'ongoing'`,
+		sessionID, studentID,
+	).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count == 1, nil
+}
+
+func (r *Repository) SubmitAnswer(studentID, sessionID, questionID, selectedAnswer int) error {
+	owned, err := r.ownsOngoingSession(studentID, sessionID)
+	if err != nil {
+		return err
+	}
+	if !owned {
+		return ErrSessionNotOwned
+	}
+
 	// 1. Get correct key
 	var correctKey int
-	err := r.db.QueryRow("SELECT correct_answer_key FROM exam_questions WHERE id = ?", questionID).Scan(&correctKey)
+	err = r.db.QueryRow("SELECT correct_answer_key FROM exam_questions WHERE id = ?", questionID).Scan(&correctKey)
 	if err != nil {
 		return err
 	}
@@ -162,7 +194,15 @@ func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) err
 	return err
 }
 
-func (r *Repository) FinishSession(sessionID int) (float64, error) {
+func (r *Repository) FinishSession(studentID, sessionID int) (float64, error) {
+	owned, err := r.ownsOngoingSession(studentID, sessionID)
+	if err != nil {
+		return 0, err
+	}
+	if !owned {
+		return 0, ErrSessionNotOwned
+	}
+
 	var totalPoints, earnedPoints int
 
 	// Sum points
@@ -172,7 +212,7 @@ func (r *Repository) FinishSession(sessionID int) (float64, error) {
 		JOIN exam_answers a ON q.id = a.question_id
 		WHERE a.session_id = ?
 	`
-	err := r.db.QueryRow(queryPoints, sessionID).Scan(&totalPoints, &earnedPoints)
+	err = r.db.QueryRow(queryPoints, sessionID).Scan(&totalPoints, &earnedPoints)
 	if err != nil {
 		return 0, err
 	}
@@ -191,8 +231,13 @@ func (r *Repository) FinishSession(sessionID int) (float64, error) {
 	}
 
 	// SYNC TO GRADES
-	var studentID, examID int
-	r.db.QueryRow("SELECT student_id, exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&studentID, &examID)
+	var ownerStudentID, examID int
+	r.db.QueryRow("SELECT student_id, exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&ownerStudentID, &examID)
+
+	// Defense in depth: never write a grade row for anyone but the session owner.
+	if ownerStudentID != studentID {
+		return 0, ErrSessionNotOwned
+	}
 
 	var subjectID int
 	var semester, year string
@@ -204,7 +249,7 @@ func (r *Repository) FinishSession(sessionID int) (float64, error) {
 		INSERT INTO grades (student_id, subject_id, semester, academic_year, uas_score, final_score, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(student_id, subject_id) DO UPDATE SET uas_score = excluded.uas_score
-	`, studentID, subjectID, semester, year, score, score, "Generated from CBT")
+	`, ownerStudentID, subjectID, semester, year, score, score, "Generated from CBT")
 
 	return score, nil
 }

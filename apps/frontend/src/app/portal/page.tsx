@@ -306,11 +306,9 @@ export default function PortalDashboard() {
 
   return (
     <>
-      <div className="mb-8">
-        <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
-          Ahlan Wa Sahlan, <br /> <span className="text-blue-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
-        </h3>
-        <p className="text-lg text-slate-500">
+      <div className="lte-content-header">
+        <h3 className="lte-page-title">Ahlan Wa Sahlan, {user?.name || registration?.full_name || 'Calon Santri'}</h3>
+        <p className="lte-page-subtitle">
           {hasStudentAccess
             ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
             : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
@@ -323,7 +321,7 @@ export default function PortalDashboard() {
 
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div>
-              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
+              <span className="lte-badge lte-badge-warning mb-4 inline-flex items-center gap-1.5">
                 <Activity size={12} /> Status Pendaftaran
               </span>
               <h4 className="mb-2 text-2xl font-black uppercase tracking-tight">{portalState.meta.title}</h4>
@@ -378,53 +376,44 @@ export default function PortalDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-8 shadow-sm">
-          <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-            <AlertCircle size={28} />
+        <div className="lte-card lte-card-body md:justify-center">
+          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+            <AlertCircle size={24} />
           </div>
-          <h4 className="mb-2 font-outfit text-lg font-black uppercase tracking-tight text-slate-800">Tindakan Berikutnya</h4>
+          <h4 className="lte-card-title mb-2">Tindakan Berikutnya</h4>
           <p className="mb-6 flex-1 text-sm text-slate-500">{portalState.actionCopy}</p>
           {portalState.paymentNeedsAttention && portalState.paymentNote ? (
-            <div className="mb-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-rose-800">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="mt-0.5 shrink-0 text-rose-600" size={18} />
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-600">Catatan Panitia</p>
-                  <p className="mt-1 text-sm font-black leading-6 text-rose-950">{portalState.paymentNote}</p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-rose-700">
-                    Upload ulang bukti transfer agar panitia bisa memverifikasi pembayaran.
-                  </p>
-                </div>
-              </div>
+            <div className="lte-alert lte-alert-danger mb-5">
+              <p className="lte-alert-title flex items-center gap-2">
+                <AlertCircle size={16} /> Catatan Panitia
+              </p>
+              <p className="mt-1 text-sm">{portalState.paymentNote}</p>
+              <p className="mt-1 text-xs">Upload ulang bukti transfer agar panitia bisa memverifikasi pembayaran.</p>
             </div>
           ) : null}
 
           <Link
             href={portalState.actionHref}
-            className="w-full rounded-xl border-2 border-amber-200 bg-white py-4 text-center text-xs font-bold uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50"
+            className="lte-btn lte-btn-warning w-full"
           >
             {portalState.actionLabel}
           </Link>
         </div>
 
         {hasStudentAccess ? (
-          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/40 p-5 shadow-sm md:p-6">
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="lte-card md:col-span-3">
+            <div className="lte-card-header">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Akses Santri</p>
-                <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-                  Presensi & Dompet
-                </h4>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                <p className="lte-card-subtitle text-blue-700">Akses Santri</p>
+                <h4 className="lte-card-title">Presensi & Dompet</h4>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
                   Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
                 </p>
               </div>
-              <div className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
-                Live tools untuk akses harian
-              </div>
+              <span className="lte-badge lte-badge-soft-info">Live tools harian</span>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
+            <div className="lte-card-body grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
               <StudentQRCard />
               <div className="md:h-full">
                 <WalletCard />
@@ -435,37 +424,34 @@ export default function PortalDashboard() {
       </div>
 
       {hasStudentAccess ? (
-        <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div className="lte-card mb-10">
+          <div className="lte-card-header">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Akses Santri</p>
-              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-                Raport, Dompet, dan Ujian
-              </h4>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              <p className="lte-card-subtitle">Akses Santri</p>
+              <h4 className="lte-card-title">Raport, Dompet, dan Ujian</h4>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
                 Pilih layanan yang ingin dibuka dari portal santri aktif.
               </p>
             </div>
-            <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-              Santri aktif
-            </div>
+            <span className="lte-badge lte-badge-soft-success">Santri aktif</span>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="lte-card-body grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {studentQuickMenus.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
+                className="flex items-start gap-4 rounded-lg border border-slate-200 bg-white p-4 transition hover:border-blue-400 hover:shadow-sm"
               >
-                <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
+                <div className="inline-flex rounded-lg border px-3 py-3 text-blue-600">
                   {item.icon}
                 </div>
-                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-blue-700">{item.title}</h5>
-                <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-blue-600">
-                  Buka Menu
-                  <ChevronRight size={14} />
+                <div>
+                  <h5 className="font-bold text-slate-900 group-hover:text-blue-700">{item.title}</h5>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">{item.description}</p>
+                  <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-blue-600">
+                    Buka Menu <ChevronRight size={13} />
+                  </div>
                 </div>
               </Link>
             ))}
@@ -474,46 +460,41 @@ export default function PortalDashboard() {
       ) : null}
 
       {!hasStudentAccess ? (
-      <div className="mb-10">
-        <h4 className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
-          <FileText className="text-slate-400" size={18} />
-          Daftar Tugas
-        </h4>
+      <div className="lte-card mb-10">
+        <div className="lte-card-header">
+          <div className="flex items-center gap-2">
+            <FileText className="text-slate-400" size={18} />
+            <h4 className="lte-card-title">Daftar Tugas</h4>
+          </div>
+        </div>
 
-        <div className="mb-10 space-y-4">
+        <div className="lte-card-body space-y-3">
           {portalState.checklist.map((item, index) => {
             const cardClasses = item.completed
-              ? 'border-emerald-100 bg-white shadow-sm'
-              : 'border-slate-200 bg-white shadow-sm hover:border-blue-300';
-            const iconClasses = item.completed
-              ? 'bg-emerald-50 text-emerald-500'
-              : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500';
+              ? 'border-emerald-200 bg-white'
+              : 'border-slate-200 bg-white hover:border-blue-400';
 
             const content = (
               <>
                 <div className="flex items-center gap-5">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${iconClasses}`}>
+                  <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-colors ${item.completed ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-400'}`}>
                     {item.icon}
                   </div>
                   <div>
-                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-blue-700'}`}>
-                      {item.title}
-                    </h5>
+                    <h5 className="font-bold text-slate-900">{item.title}</h5>
                     <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
                   </div>
                 </div>
 
                 {item.completed ? (
-                  <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                    Selesai
-                  </span>
+                  <span className="lte-badge lte-badge-soft-success">Selesai</span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
+                    <span className="hidden text-[10px] font-bold uppercase tracking-widest text-slate-400 md:inline">
                       Langkah {index + 1}
                     </span>
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white">
-                      <ChevronRight size={20} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-400">
+                      <ChevronRight size={18} />
                     </span>
                   </div>
                 )}
@@ -525,7 +506,7 @@ export default function PortalDashboard() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className={`group flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 transition-colors ${cardClasses}`}
+                  className={`flex items-center justify-between gap-5 rounded-lg border px-5 py-4 transition-colors ${cardClasses}`}
                 >
                   {content}
                 </Link>
@@ -533,7 +514,7 @@ export default function PortalDashboard() {
             }
 
             return (
-              <div key={item.title} className={`flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 ${cardClasses}`}>
+              <div key={item.title} className={`flex items-center justify-between gap-5 rounded-lg border px-5 py-4 ${cardClasses}`}>
                 {content}
               </div>
             );
@@ -544,61 +525,63 @@ export default function PortalDashboard() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="lte-card">
+          <div className="lte-card-header">
             <div className="min-w-0">
-              <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Biodata</h4>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+              <h4 className="lte-card-title">Ringkasan Biodata</h4>
+              <p className="lte-card-subtitle">
                 Cek kembali data inti calon santri dan orang tua sebelum panitia menyelesaikan proses verifikasi.
               </p>
             </div>
             <Link
               href="/portal/biodata"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-700 transition-colors hover:bg-blue-100 md:w-auto md:shrink-0"
+              className="lte-btn lte-btn-outline-primary lte-btn-sm md:w-auto md:shrink-0"
             >
               Edit Biodata
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {biodataSummary.map((item) => (
-              <div key={item.label} className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
-                <p
-                  className={`min-h-[3rem] break-words text-sm font-bold leading-relaxed ${
-                    item.value === '-' ? 'text-slate-400' : 'text-slate-800'
-                  }`}
-                >
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
+          <div className="lte-card-body">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {biodataSummary.map((item) => (
+                <div key={item.label} className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{item.label}</p>
+                  <p
+                    className={`break-words text-sm font-bold leading-relaxed ${
+                      item.value === '-' ? 'text-slate-400' : 'text-slate-800'
+                    }`}
+                  >
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
 
-          <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-xs font-medium text-slate-500">
-            Terakhir diperbarui: <span className="font-bold text-slate-700">{formatDateLabel(registration?.updated_at)}</span>
+            <p className="mt-4 text-xs font-medium text-slate-500">
+              Terakhir diperbarui: <span className="font-bold text-slate-700">{formatDateLabel(registration?.updated_at)}</span>
+            </p>
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="lte-card">
+          <div className="lte-card-header">
             <div className="min-w-0">
-              <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Dokumen</h4>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+              <h4 className="lte-card-title">Ringkasan Dokumen</h4>
+              <p className="lte-card-subtitle">
                 Pastikan semua dokumen penting sudah terunggah agar proses review berjalan lancar.
               </p>
             </div>
             <Link
               href="/portal/documents"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors hover:bg-emerald-100 md:w-auto md:shrink-0"
+              className="lte-btn lte-btn-outline-success lte-btn-sm md:w-auto md:shrink-0"
             >
               Kelola Dokumen
             </Link>
           </div>
 
-          <div className="space-y-4">
+          <div className="lte-card-body space-y-3">
             {documentSummary.map((item) => (
-              <div key={item.label} className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div key={item.label} className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-slate-800">{item.label}</p>
                   <p className="mt-1 text-xs text-slate-500">
@@ -606,10 +589,8 @@ export default function PortalDashboard() {
                   </p>
                 </div>
                 <span
-                  className={`inline-flex w-fit rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest ${
-                    item.uploaded
-                      ? 'border border-emerald-100 bg-emerald-50 text-emerald-600'
-                      : 'border border-amber-100 bg-amber-50 text-amber-600'
+                  className={`lte-badge w-fit ${
+                    item.uploaded ? 'lte-badge-soft-success' : 'lte-badge-soft-warning'
                   }`}
                 >
                   {item.uploaded ? 'Sudah Ada' : 'Belum Ada'}

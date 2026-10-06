@@ -1,25 +1,32 @@
 @import "tailwindcss";
+@import "./adminlte.css";
 
 @theme inline {
-  --color-primary: #065f46;
-  --color-accent: #fbbf24;
-  --color-surface-50: #f8fafc;
-  --color-surface-100: #f1f5f9;
-  --color-surface-200: #e2e8f0;
+  --color-primary: #0F6D3F;
+  --color-primary-dark: #0A4F2E;
+  --color-secondary: #1E8E5A;
+  --color-surface-50: #F7F9F7;
+  --color-surface-100: #EFF2EF;
+  --color-surface-200: #DDE3DD;
+  --color-accent: #F4C542;
+  --color-accent-dark: #D4A52E;
 }
 
 :root {
-  --background: #fbfbfc;
-  --foreground: #0f172a;
+  --background: #F7F9F7;
+  --foreground: #1E293B;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   letter-spacing: -0.01em;
 }
 
+.font-headline {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
 .glass-card {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
@@ -43,11 +50,6 @@ body {
 
 .animate-fade-in-up {
   animation: fade-in-up 0.6s ease-out forwards;
-}
-
-/* Prevent horizontal scroll from swiper overflow */
-html, body {
-  overflow-x: hidden;
 }
 
 /* Hero Swiper styles */
@@ -268,5 +270,5 @@ html, body {
 }
 
 .font-headline {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }

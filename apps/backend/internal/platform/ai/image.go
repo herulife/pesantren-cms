@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,13 +37,17 @@ func GenerateAndDownloadImage(topic string) (string, error) {
 		return "", fmt.Errorf("gagal mengunduh gambar AI, status: %d", res.StatusCode)
 	}
 
-	out, err := os.Create(filePath)
+	body, err := io.ReadAll(io.LimitReader(res.Body, 10<<20))
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
 
-	if _, err := io.Copy(out, res.Body); err != nil {
+	// Validate the downloaded content is actually an image before persisting.
+	if err := validateImageBytes(body); err != nil {
+		return "", err
+	}
+
+	if err := os.WriteFile(filePath, body, 0o644); err != nil {
 		return "", err
 	}
 
@@ -53,4 +58,24 @@ func GenerateAndDownloadImage(topic string) (string, error) {
 	imageUrl := fmt.Sprintf("%s/uploads/ai/%s", appURL, newFileName)
 
 	return imageUrl, nil
+}
+
+// validateImageBytes ensures the payload is a real image (JPEG/PNG/GIF/WEBP)
+// by inspecting its magic bytes, preventing non-image content from being stored.
+func validateImageBytes(b []byte) error {
+	if len(b) < 12 {
+		return fmt.Errorf("konten gambar tidak valid")
+	}
+	switch {
+	case bytes.HasPrefix(b, []byte{0xFF, 0xD8, 0xFF}):
+		return nil
+	case bytes.HasPrefix(b, []byte{0x89, 0x50, 0x4E, 0x47}):
+		return nil
+	case bytes.HasPrefix(b, []byte("GIF87a")) || bytes.HasPrefix(b, []byte("GIF89a")):
+		return nil
+	case bytes.HasPrefix(b, []byte("RIFF")) && len(b) > 11 && string(b[8:12]) == "WEBP":
+		return nil
+	default:
+		return fmt.Errorf("tipe gambar tidak didukung")
+	}
 }

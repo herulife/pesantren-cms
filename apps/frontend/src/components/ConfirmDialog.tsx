@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 
 interface ConfirmDialogProps {
@@ -26,6 +26,7 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   const isDanger = type === 'danger';
   const managesAsyncClose = typeof isLoading === 'boolean';
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -33,15 +34,36 @@ export default function ConfirmDialog({
     }
 
     document.body.style.overflow = 'hidden';
+
+    // Move focus into the dialog and close on Escape.
+    const node = dialogRef.current;
+    node?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+
     return () => {
       document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 sm:px-0 transition-opacity duration-300 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-desc"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 sm:px-0 transition-opacity duration-300 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'} outline-none`}
+    >
        <div 
          className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
          onClick={onClose}
@@ -53,9 +75,10 @@ export default function ConfirmDialog({
          }`}
        >
           <div className="flex justify-between items-center p-6 border-b border-slate-100">
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{title}</h3>
+            <h3 id="confirm-dialog-title" className="text-xl font-black text-slate-900 uppercase tracking-tight">{title}</h3>
             <button 
               onClick={onClose}
+              aria-label="Tutup dialog"
               className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
             >
               <X size={20} />
@@ -68,9 +91,9 @@ export default function ConfirmDialog({
                   {isDanger ? <Trash2 size={32} /> : <AlertTriangle size={32} />}
                </div>
                
-               <p className="text-slate-600 mb-8 leading-relaxed font-medium">
-                 {message}
-               </p>
+                <p id="confirm-dialog-desc" className="text-slate-600 mb-8 leading-relaxed font-medium">
+                  {message}
+                </p>
 
                <div className="flex gap-4 w-full">
                  <button 

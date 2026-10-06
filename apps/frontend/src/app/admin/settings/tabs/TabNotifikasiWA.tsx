@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { getSettings, updateSetting } from '@/lib/api';
+import { getSettings, updateSettingsBatch } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Save, RefreshCw, MessageCircle, Settings2, Info } from 'lucide-react';
 
@@ -41,7 +41,8 @@ export default function TabNotifikasiWA() {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
+      const payload = KEYS.map(k => ({ key: k, value: formValues[k] || '' }));
+      await updateSettingsBatch(payload);
       showToast('success', 'Template pesan WA berhasil disimpan');
     } catch {
       showToast('error', 'Gagal menyimpan pengaturan');

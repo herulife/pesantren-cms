@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"darussunnah-api/internal/platform/roles"
 )
 
 type User struct {
@@ -199,12 +201,47 @@ func isMissingTableError(err error) bool {
 }
 
 func (r *Repository) UpdateRole(userID int, role string) error {
-	validRoles := map[string]bool{
-		"superadmin": true, "bendahara": true, "panitia_psb": true, "tim_media": true, "admin": true, "user": true,
-	}
-	if !validRoles[role] {
+	if !roles.IsAssignable(role) {
 		return errors.New("invalid role: " + role)
 	}
 	_, err := r.db.Exec("UPDATE users SET role = ? WHERE id = ?", role, userID)
 	return err
+}
+
+// GetTokenVersion returns the current token version for a user.
+func (r *Repository) GetTokenVersion(id int) (int, error) {
+	var v int
+	err := r.db.QueryRow("SELECT COALESCE(token_version, 0) FROM users WHERE id = ?", id).Scan(&v)
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// BumpTokenVersion invalidates every existing token for a user (password/role change).
+func (r *Repository) BumpTokenVersion(id int) error {
+	_, err := r.db.Exec("UPDATE users SET token_version = COALESCE(token_version, 0) + 1 WHERE id = ?", id)
+	return err
+}
+
+// RevokeToken records a single JWT jti as revoked until its expiry.
+func (r *Repository) RevokeToken(jti string, expiresAt int64) error {
+	if jti == "" {
+		return nil
+	}
+	_, err := r.db.Exec("INSERT OR REPLACE INTO revoked_tokens (jti, expires_at) VALUES (?, ?)", jti, expiresAt)
+	return err
+}
+
+// IsTokenRevoked reports whether the given jti has been revoked.
+func (r *Repository) IsTokenRevoked(jti string) (bool, error) {
+	if jti == "" {
+		return false, nil
+	}
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(1) FROM revoked_tokens WHERE jti = ?", jti).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

@@ -19,6 +19,30 @@ func TestClientIPIgnoresSpoofedForwardHeaders(t *testing.T) {
 	}
 }
 
+func TestClientIPUsesForwardedHeaderFromTrustedProxy(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/login", nil)
+	req.RemoteAddr = "172.19.0.2:1234"
+	req.Header.Set("X-Forwarded-For", "203.0.113.50, 172.19.0.2")
+	req.Header.Set("X-Real-IP", "172.19.0.2")
+
+	ip := clientIP(req)
+	if ip != "203.0.113.50" {
+		t.Fatalf("expected forwarded client IP, got %q", ip)
+	}
+}
+
+func TestClientIPPrefersCloudflareConnectingIPFromTrustedProxy(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/login", nil)
+	req.RemoteAddr = "172.19.0.2:1234"
+	req.Header.Set("CF-Connecting-IP", "203.0.113.60")
+	req.Header.Set("X-Forwarded-For", "203.0.113.50, 172.19.0.2")
+
+	ip := clientIP(req)
+	if ip != "203.0.113.60" {
+		t.Fatalf("expected Cloudflare client IP, got %q", ip)
+	}
+}
+
 func TestRateLimiterBlocksAfterLimit(t *testing.T) {
 	limiter := NewRateLimiter(2, time.Minute)
 	handler := limiter.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { getSettings, updateSetting } from '@/lib/api';
+import { getSettings, updateSettingsBatch } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Save, RefreshCw, MapPin, Phone, Mail, Globe, MessageCircle } from 'lucide-react';
 
@@ -34,7 +34,8 @@ export default function TabKontak() {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
+      const payload = KEYS.map(k => ({ key: k, value: formValues[k] || '' }));
+      await updateSettingsBatch(payload);
       showToast('success', 'Informasi Kontak berhasil disimpan');
     } catch {
       showToast('error', 'Gagal menyimpan pengaturan');

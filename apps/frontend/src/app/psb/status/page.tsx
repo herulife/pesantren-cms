@@ -46,9 +46,9 @@ export default function PsbStatusPage() {
             <p className="text-slate-500 text-lg">Masukkan Nomor Pendaftaran atau NISN untuk melihat hasil seleksi Penerimaan Santri Baru.</p>
           </div>
 
-          <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+          <div className="lte-card p-8 md:p-10">
             <form onSubmit={handleSearch} className="mb-8">
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">ID Pendaftaran / NISN</label>
+              <label className="lte-form-label mb-3">ID Pendaftaran / NISN</label>
               <div className="flex gap-4">
                  <div className="relative flex-1 group">
                     <input 
@@ -56,14 +56,14 @@ export default function PsbStatusPage() {
                       placeholder="Contoh: PSB20260405" 
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-medium"
+                      className="lte-form-control w-full pl-12 pr-5"
                     />
                     <Search className="absolute left-4 top-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
                  </div>
                  <button 
                    type="submit"
                    disabled={isLoading}
-                   className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                   className="lte-btn lte-btn-primary"
                  >
                    {isLoading ? 'Mencari...' : 'Cari'}
                  </button>

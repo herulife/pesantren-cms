@@ -14,7 +14,7 @@ import {
   getGallerySortTimestamp,
   slugifyContentKey,
 } from '@/lib/api';
-import { ArrowLeft, CalendarDays, ImageIcon } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ImageIcon, ExternalLink, FolderOpen, Images } from 'lucide-react';
 
 type AlbumView = {
   key: string;
@@ -145,6 +145,41 @@ export default function GaleriDetailPage() {
                   <h3 className="mt-2 text-2xl font-black uppercase tracking-tight text-slate-900">{album.cover.title}</h3>
                 </div>
               </div>
+
+              {slug.includes('tasmie') && (
+                <div className="mb-10 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-5">
+                    <Images size={20} className="text-emerald-600" />
+                    <p className="text-sm font-bold uppercase tracking-[0.15em] text-emerald-700">Foto Resolusi Penuh</p>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-5">
+                    Untuk melihat seluruh foto kegiatan tasmi tersedia di Google Drive. Klik folder di bawah untuk mengakses.
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {[
+                      { name: 'Foto Acara', url: 'https://drive.google.com/drive/folders/1-RTTjf0EFAeugvoF4l2_NjMgZB96Pudd' },
+                      { name: 'Foto Selfie', url: 'https://drive.google.com/drive/folders/15sNK-YGwvzvxEsP8GOExKWi6J1VKljtr' },
+                      { name: 'Photo Booth', url: 'https://drive.google.com/drive/folders/13z3jDT-Iwaar2fcC7GWLa92RhAWDHonk' },
+                    ].map((folder) => (
+                      <a
+                        key={folder.name}
+                        href={folder.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-3 rounded-xl border border-emerald-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-400 hover:shadow-md"
+                      >
+                        <FolderOpen size={28} className="shrink-0 text-emerald-500 transition-colors group-hover:text-emerald-600" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-900">{folder.name}</p>
+                          <p className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                            Buka Folder <ExternalLink size={12} />
+                          </p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="columns-1 gap-6 md:columns-2 xl:columns-3">
                 {sortedItems.map((photo) => (
                   <div key={photo.id} className="mb-6 break-inside-avoid overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,0.25)]">

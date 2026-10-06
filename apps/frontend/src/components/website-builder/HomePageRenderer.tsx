@@ -28,6 +28,9 @@ export type GalleryAlbumSummary = {
   eventDate: string;
   photoCount: number;
   cover: GalleryItem;
+  driveUrl?: string;
+  driveFolderId?: string;
+  description?: string;
 };
 
 export type VideoSeriesSummary = {

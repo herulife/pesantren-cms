@@ -80,7 +80,9 @@ func (r *Repository) FindAllPoints(ctx context.Context, limit, offset int) ([]St
 	}
 
 	var total int
-	r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM student_points").Scan(&total)
+	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM student_points").Scan(&total); err != nil {
+		return nil, 0, err
+	}
 
 	return list, total, nil
 }

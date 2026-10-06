@@ -140,26 +140,24 @@ export default function PortalRaportPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Navigasi Cepat</p>
+          <p className="lte-card-subtitle">Navigasi Cepat</p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             Setelah selesai membaca raport, kamu bisa kembali ke dashboard atau pindah ke menu akademik lain tanpa bingung.
           </p>
         </div>
         <Link
           href="/portal"
-          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="lte-btn lte-btn-outline-secondary"
         >
           Kembali ke Dashboard Portal
         </Link>
       </div>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm print:shadow-none">
-        <div className="flex flex-col gap-5 border-b border-slate-100 px-5 py-5 lg:flex-row lg:items-start lg:justify-between lg:px-6">
+      <section className="lte-card lte-card-outline-success print:shadow-none">
+        <div className="lte-card-header lg:items-start">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Portal Wali Santri</p>
-            <h1 className="mt-2 font-outfit text-2xl font-black tracking-tight text-slate-900 lg:text-3xl">
-              Raport Akademik Santri
-            </h1>
+            <p className="lte-card-subtitle">Portal Wali Santri</p>
+            <h1 className="lte-page-title mt-2">Raport Akademik Santri</h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
               Nilai, kehadiran, dan progres tahfidz ditampilkan dalam format yang lebih rapi dan mudah dibaca.
             </p>
@@ -169,7 +167,7 @@ export default function PortalRaportPage() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="lte-btn lte-btn-outline-secondary"
             >
               <Printer size={16} />
               Cetak
@@ -177,7 +175,7 @@ export default function PortalRaportPage() {
             <button
               type="button"
               onClick={() => previewStudentReportPDF(reportPayload)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="lte-btn lte-btn-outline-secondary"
             >
               <Eye size={16} />
               Preview
@@ -185,7 +183,7 @@ export default function PortalRaportPage() {
             <button
               type="button"
               onClick={() => downloadStudentReportPDF(reportPayload)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              className="lte-btn lte-btn-success"
             >
               <Download size={16} />
               Download
@@ -193,21 +191,21 @@ export default function PortalRaportPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:grid-cols-2 xl:grid-cols-4 lg:px-6">
+        <div className="lte-card-body grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Nama Santri</p>
+            <p className="lte-card-subtitle">Nama Santri</p>
             <p className="mt-2 break-words text-sm font-semibold text-slate-900">{user?.name || 'Santri Darussunnah'}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Semester Aktif</p>
+            <p className="lte-card-subtitle">Semester Aktif</p>
             <p className="mt-2 text-sm font-semibold text-slate-900">{reportSummary.latestMeta.semester}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Tahun Akademik</p>
+            <p className="lte-card-subtitle">Tahun Akademik</p>
             <p className="mt-2 text-sm font-semibold text-slate-900">{reportSummary.latestMeta.academicYear}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Tanggal Cetak</p>
+            <p className="lte-card-subtitle">Tanggal Cetak</p>
             <p className="mt-2 text-sm font-semibold text-slate-900">{formatDateLabel(new Date().toISOString())}</p>
           </div>
         </div>
@@ -240,29 +238,29 @@ export default function PortalRaportPage() {
             accent: 'text-fuchsia-700 bg-fuchsia-50 border-fuchsia-100',
           },
         ].map((item) => (
-          <div key={item.label} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border ${item.accent}`}>
+          <div key={item.label} className="lte-card p-4">
+            <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border ${item.accent}`}>
               {item.icon}
             </div>
-            <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{item.label}</p>
+            <p className="lte-card-subtitle mt-4">{item.label}</p>
             <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">{item.value}</p>
           </div>
         ))}
       </div>
 
       <div className="space-y-6">
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Raport Nilai</p>
-              <h2 className="mt-2 font-outfit text-2xl font-black tracking-tight text-slate-900">Performa Akademik</h2>
+        <section className="lte-card">
+          <div className="lte-card-header">
+              <div>
+                <p className="lte-card-subtitle">Raport Nilai</p>
+                <h2 className="lte-card-title mt-2">Performa Akademik</h2>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
+                {reportSummary.totalGrades} data nilai tercatat
+              </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
-              {reportSummary.totalGrades} data nilai tercatat
-            </div>
-          </div>
 
-          <div className="px-5 py-5 lg:px-6">
+            <div className="lte-card-body">
           {grades.length === 0 ? (
             <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center text-sm font-medium text-slate-500">
               Nilai akademik belum tersedia. Nanti setelah guru atau admin menginput nilai, raport akan tampil di sini.
@@ -277,33 +275,33 @@ export default function PortalRaportPage() {
                       <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{`${item.semester || '-'} - ${item.academic_year || '-'}`}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 md:text-right">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Nilai Akhir</p>
+                      <p className="lte-card-subtitle">Nilai Akhir</p>
                       <p className="mt-1 text-2xl font-black text-emerald-700">{formatScore(item.final_score)}</p>
                     </div>
                   </div>
 
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-slate-200 bg-white p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">UTS</p>
+                      <p className="lte-card-subtitle">UTS</p>
                       <p className="mt-1 text-sm font-bold text-slate-800">{formatScore(item.uts_score)}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">UAS</p>
+                      <p className="lte-card-subtitle">UAS</p>
                       <p className="mt-1 text-sm font-bold text-slate-800">{formatScore(item.uas_score)}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Tugas</p>
+                      <p className="lte-card-subtitle">Tugas</p>
                       <p className="mt-1 text-sm font-bold text-slate-800">{formatScore(item.task_score)}</p>
                     </div>
                   </div>
 
                   <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[0.75fr_1.25fr]">
                     <div className="rounded-xl border border-slate-200 bg-white p-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Predikat</p>
+                      <p className="lte-card-subtitle">Predikat</p>
                       <p className="mt-1 text-sm font-black leading-6 text-slate-900">{item.grade_letter || '-'} - {getLetterPredicate(item.grade_letter)}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Deskripsi</p>
+                      <p className="lte-card-subtitle">Deskripsi</p>
                       <p className="mt-1 text-sm leading-6 text-slate-600">{item.notes || 'Menunjukkan perkembangan belajar yang baik dan stabil.'}</p>
                     </div>
                   </div>
@@ -314,12 +312,14 @@ export default function PortalRaportPage() {
           </div>
         </section>
 
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-5 py-5 lg:px-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Rekap Kehadiran</p>
-            <h2 className="mt-2 font-outfit text-2xl font-black tracking-tight text-slate-900">Presensi</h2>
-          </div>
-          <div className="px-5 py-5 lg:px-6">
+        <section className="lte-card">
+          <div className="lte-card-header justify-start">
+              <div>
+                <p className="lte-card-subtitle">Rekap Kehadiran</p>
+                <h2 className="lte-card-title mt-2">Presensi</h2>
+              </div>
+            </div>
+            <div className="lte-card-body">
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
                 { label: 'Hadir', value: reportSummary.hadir, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
@@ -336,12 +336,14 @@ export default function PortalRaportPage() {
           </div>
         </section>
 
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-5 py-5 lg:px-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tahfidz</p>
-            <h2 className="mt-2 font-outfit text-2xl font-black tracking-tight text-slate-900">Progres Hafalan</h2>
-          </div>
-          <div className="px-5 py-5 lg:px-6">
+        <section className="lte-card">
+          <div className="lte-card-header justify-start">
+              <div>
+                <p className="lte-card-subtitle">Tahfidz</p>
+                <h2 className="lte-card-title mt-2">Progres Hafalan</h2>
+              </div>
+            </div>
+            <div className="lte-card-body">
 
             {tahfidz.length === 0 ? (
               <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm font-medium text-slate-500">
@@ -358,12 +360,12 @@ export default function PortalRaportPage() {
                           {`Juz ${item.juz || '-'} - Ayat ${item.start_ayat || '-'}-${item.end_ayat || '-'}`}
                         </p>
                       </div>
-                      <span className="inline-flex w-fit rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                      <span className="lte-badge lte-badge-light">
                         {item.status}
                       </span>
                     </div>
                     <p className="mt-3 text-sm text-slate-600">{item.musyrif_notes || 'Belum ada catatan musyrif.'}</p>
-                    <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    <p className="lte-card-subtitle mt-3">
                       Evaluasi: {formatDateLabel(item.evaluation_date)}
                     </p>
                   </div>
@@ -374,20 +376,20 @@ export default function PortalRaportPage() {
         </section>
       </div>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-start gap-4 border-b border-slate-100 px-5 py-5 lg:px-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+      <section className="lte-card">
+        <div className="lte-card-header justify-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
             <FileText size={22} />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Catatan Raport</p>
-            <h2 className="mt-2 font-outfit text-2xl font-black tracking-tight text-slate-900">Ringkasan Wali Murid</h2>
+            <p className="lte-card-subtitle">Catatan Raport</p>
+            <h2 className="lte-card-title mt-2">Ringkasan Wali Murid</h2>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-2 lg:px-6">
+        <div className="lte-card-body grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Akademik</p>
+            <p className="lte-card-subtitle">Akademik</p>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
               {grades.length === 0
                 ? 'Belum ada data nilai yang bisa ditinjau saat ini.'
@@ -395,7 +397,7 @@ export default function PortalRaportPage() {
             </p>
           </div>
           <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Tahfidz & Kehadiran</p>
+            <p className="lte-card-subtitle">Tahfidz & Kehadiran</p>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
               {tahfidz.length === 0
                 ? 'Progres tahfidz belum diinput. Rekap kehadiran tetap bisa dipantau dari kartu presensi di atas.'

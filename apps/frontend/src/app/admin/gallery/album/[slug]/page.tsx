@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { deleteGalleryItem, formatGalleryAlbumTitle, GalleryItem, getGallery, getGallerySortTimestamp, resolveDisplayImageUrl } from '@/lib/api';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { ArrowLeft, Calendar, Copy, FolderOpen, ImageIcon, Layers3, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Copy, FolderOpen, ImageIcon, Layers3, Trash2, ExternalLink, Link as LinkIcon, Save } from 'lucide-react';
 
 export default function GalleryAlbumAdminPage() {
   const params = useParams();
@@ -15,6 +15,11 @@ export default function GalleryAlbumAdminPage() {
   const slug = typeof params?.slug === 'string' ? params.slug : '';
 
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [driveUrl, setDriveUrl] = useState('');
+  const [driveFolderId, setDriveFolderId] = useState('');
+  const [albumDescription, setAlbumDescription] = useState('');
+  const [isSavingDrive, setIsSavingDrive] = useState(false);
+  const [driveUrlError, setDriveUrlError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -52,6 +57,47 @@ export default function GalleryAlbumAdminPage() {
       cover,
     };
   }, [items, slug]);
+
+  const handleSaveDriveUrl = async () => {
+    // Validate
+    setDriveUrlError('');
+    let finalUrl = driveUrl.trim();
+    if (finalUrl && !finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = 'https://' + finalUrl;
+    }
+    if (finalUrl) {
+      // Extract folder ID from Google Drive URL
+      let folderId = driveFolderId.trim();
+      if (!folderId && finalUrl.includes('drive.google.com')) {
+        const match = finalUrl.match('/folders/([a-zA-Z0-9_-]+)');
+        if (match) folderId = match[1];
+      }
+      setIsSavingDrive(true);
+      try {
+        const res = await fetch(process.env.NEXT_PUBLIC_API_URL + "/gallery/albums/" + slug, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            album_name: albumMeta?.name,
+            drive_url: finalUrl,
+            drive_folder_id: folderId,
+            description: albumDescription,
+            is_active: true,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('success', 'Link Google Drive berhasil disimpan!');
+        } else {
+          showToast('error', data.message || 'Gagal menyimpan link Drive.');
+        }
+      } catch {
+        showToast('error', 'Terjadi kesalahan saat menyimpan.');
+      } finally {
+        setIsSavingDrive(false);
+      }
+    }
+  };
 
   const handleDelete = async () => {
     if (!selectedId) return;
@@ -163,6 +209,66 @@ export default function GalleryAlbumAdminPage() {
                   </div>
                 </div>
               </div>
+
+              {/* ── Google Drive URL Section ── */}
+              <div className="rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 p-5 border border-slate-700">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 shadow-sm">
+                    <FolderOpen size={18} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Album Online</p>
+                    <p className="text-sm font-black text-white leading-tight">Google Drive</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1.5 block">Link Folder Google Drive</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <input
+                          type="url"
+                          value={driveUrl}
+                          onChange={(e) => { setDriveUrl(e.target.value); setDriveUrlError(''); }}
+                          placeholder="https://drive.google.com/drive/folders/..."
+                          className="w-full rounded-lg border border-slate-600 bg-slate-700 pl-9 pr-4 py-2.5 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSaveDriveUrl}
+                        disabled={isSavingDrive}
+                        className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.15em] text-white transition-all hover:bg-emerald-400 disabled:opacity-50 whitespace-nowrap"
+                      >
+                        <Save size={12} />
+                        {isSavingDrive ? 'Menyimpan...' : 'Simpan'}
+                      </button>
+                    </div>
+                    {driveUrlError && <p className="text-xs text-rose-400 mt-1">{driveUrlError}</p>}
+                    <p className="text-[10px] text-slate-500 mt-1.5">Isi link folder Google Drive yang dishare "Anyone with link". Biarkan kosong jika foto hanya di-host di server.</p>
+                  </div>
+
+                  {driveUrl && (
+                    <div className="flex items-center justify-between rounded-lg bg-slate-700/50 border border-slate-600 px-4 py-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ExternalLink size={13} className="text-emerald-400 shrink-0" />
+                        <span className="text-xs text-slate-300 truncate">{driveUrl}</span>
+                      </div>
+                      <a
+                        href={driveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-3 shrink-0 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-emerald-300 hover:bg-emerald-500/30 transition-colors whitespace-nowrap"
+                      >
+                        Buka ↗
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <p className="text-sm font-medium leading-relaxed text-slate-500">Foto cover ditampilkan di panel kiri. Semua item di bawah bisa dipreview, disalin URL-nya, atau dihapus langsung dari album.</p>
             </div>
           </div>

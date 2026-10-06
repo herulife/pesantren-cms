@@ -6,14 +6,22 @@ import (
 )
 
 func TestSanitizeNewsHTML_RemovesDangerousMarkup(t *testing.T) {
-	raw := `<p onclick="alert(1)">Halo</p><script>alert(1)</script><iframe src="https://evil.test"></iframe><a href="javascript:alert(1)">klik</a><a href="https://darussunnahparung.com/info" target="_blank">aman</a>`
+	raw := `<p onclick="alert(1)">Halo</p><script>alert(1)</script><iframe src="javascript:alert(1)"></iframe><a href="javascript:alert(1)">klik</a><a href="https://darussunnahparung.com/info" target="_blank">aman</a>`
 
 	got := sanitizeNewsHTML(raw)
 
-	for _, fragment := range []string{"script", "iframe", "onclick", "javascript:"} {
+	for _, fragment := range []string{"script", "onclick", "javascript:"} {
 		if strings.Contains(got, fragment) {
 			t.Fatalf("sanitized html still contains %q: %s", fragment, got)
 		}
+	}
+
+	// iframes are allowed (embedding), but dangerous src attributes must be stripped.
+	if !strings.Contains(got, "<iframe") {
+		t.Fatalf("expected iframe element to remain, got %s", got)
+	}
+	if strings.Contains(got, `src="javascript:alert(1)"`) {
+		t.Fatalf("expected dangerous iframe src to be stripped, got %s", got)
 	}
 
 	if !strings.Contains(got, "<p>Halo</p>") {

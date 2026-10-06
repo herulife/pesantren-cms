@@ -1,6 +1,7 @@
 package faqs
 
 import (
+	"darussunnah-api/internal/features/news"
 	"darussunnah-api/internal/platform/logger"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
@@ -59,6 +60,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	f.Answer = news.SanitizeNewsContent(f.Answer)
 	if err := h.repo.Create(&f); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -75,6 +77,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)
 		return
 	}
+	f.Answer = news.SanitizeNewsContent(f.Answer)
 	if err := h.repo.Update(id, &f); err != nil {
 		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)

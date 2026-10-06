@@ -172,7 +172,7 @@ export default function HeroBlock({ section, settings }: HeroBlockProps) {
     const slide = slides[0] || defaultSlide;
     return (
       <section className={`relative overflow-hidden bg-slate-950 ${heroHeightClass(mobileHeight)}`}>
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
+        <div className="absolute inset-0 bg-no-repeat bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
         <div className={`absolute inset-0 ${overlayClass(overlay)}`} />
         <div className="container relative z-10 mx-auto grid min-h-[inherit] max-w-6xl items-center gap-8 px-4 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
           <HeroContent section={section} slide={slide} variant={variant} textPosition={textPosition} />
@@ -196,15 +196,15 @@ export default function HeroBlock({ section, settings }: HeroBlockProps) {
 
   const renderSlide = (slide: BuilderHeroSlide) => (
     <div className={`relative overflow-hidden ${heroHeightClass(mobileHeight)}`}>
-      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
+      <div className="absolute inset-0 bg-no-repeat bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
       <div className={`absolute inset-0 ${overlayClass(overlay)}`} />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.14),transparent_24%)]" />
-      <div className={`container relative z-10 mx-auto grid min-h-[inherit] max-w-6xl items-center gap-10 px-4 pb-16 pt-10 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-24 ${variant === 'split' ? 'lg:grid-cols-[1fr_0.9fr]' : ''}`}>
+      <div className={`container relative z-10 mx-auto grid min-h-[inherit] max-w-6xl items-center gap-10 px-4 pb-16 pt-20 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-24 ${variant === 'split' ? 'lg:grid-cols-[1fr_0.9fr]' : ''}`}>
         <HeroContent section={section} slide={slide} variant={variant} textPosition={textPosition} />
         {variant === 'split' ? (
           <div className="hidden overflow-hidden rounded-[2.2rem] border border-white/15 bg-white/10 p-3 shadow-[0_30px_80px_-50px_rgba(0,0,0,0.72)] backdrop-blur-sm lg:block">
             <div className="relative h-[420px] overflow-hidden rounded-[1.7rem]">
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
+              <div className="absolute inset-0 bg-no-repeat bg-cover bg-center" style={{ backgroundImage: `url('${resolveDisplayImageUrl(slide.image_url)}')` }} />
             </div>
           </div>
         ) : null}

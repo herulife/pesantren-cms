@@ -12,6 +12,7 @@ import (
 	"darussunnah-api/internal/features/facilities"
 	"darussunnah-api/internal/features/faqs"
 	"darussunnah-api/internal/features/gallery"
+	"darussunnah-api/internal/features/gstorage"
 	"darussunnah-api/internal/features/logs"
 	"darussunnah-api/internal/features/messages"
 	"darussunnah-api/internal/features/news"
@@ -30,7 +31,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"path"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -87,6 +92,11 @@ func main() {
 	galleryRepo := gallery.NewRepository(database.DB)
 	galleryHandler := gallery.NewHandler(galleryRepo)
 
+	gstorageCfg := gstorage.LoadConfig()
+	gstorageRepo := gstorage.NewRepository(database.DB)
+	gstorageSvc := gstorage.NewService(gstorageCfg, gstorageRepo)
+	gstorageHandler := gstorage.NewHandler(gstorageRepo, gstorageSvc, gstorageCfg)
+
 	donationRepo := donations.NewRepository(database.DB)
 	donationHandler := donations.NewHandler(donationRepo)
 
@@ -140,11 +150,18 @@ func main() {
 
 	loginLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
 	googleLoginLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
-	registerLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
+	// registerLimiter removed — public registration disabled for security
 	contactLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
+	aiGenerateLimiter := appmiddleware.NewRateLimiter(10, time.Minute)
+	uploadLimiter := appmiddleware.NewRateLimiter(30, time.Minute)
 
 	// 5. Mount Routes
 	r.Route("/api", func(r chi.Router) {
+		// CSRF defense: for state-changing requests, reject cross-origin Origins.
+		// Same-site/app requests send an allowed Origin; browser CSRF attacks send a
+		// foreign Origin (or none). Combined with SameSite=Lax cookies + CORS this closes CSRF.
+		r.Use(csrfOriginMiddleware(getAllowedOrigins()))
+
 		// Public Routes
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("OK"))
@@ -152,8 +169,10 @@ func main() {
 
 		// Public Auth
 		r.With(loginLimiter.Middleware).Post("/login", authHandler.Login)
-		r.With(registerLimiter.Middleware).Post("/register", authHandler.Register)
+		// Register DISABLED for security — only superadmin can create users via POST /api/users
+		// r.With(registerLimiter.Middleware).With(auth.RequireLicense(database.DB)).Post("/register", authHandler.Register)
 		r.With(googleLoginLimiter.Middleware).Post("/auth/google", authHandler.GoogleLogin)
+		r.Get("/auth/storage/google/callback", gstorageHandler.OAuthCallback) // Public OAuth callback (Google redirect)
 		r.Post("/logout", authHandler.Logout)
 		r.Get("/premium-check", authHandler.GetLicenseStatus)
 		r.Post("/telegram/webhook", notificationHandler.TelegramWebhook)
@@ -167,6 +186,7 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
 				r.Use(auth.RequireLicense(database.DB))
+				r.Use(auth.RequireRole("superadmin", "tim_media"))
 				r.Post("/", faqHandler.Create)
 				r.Put("/{id}", faqHandler.Update)
 				r.Delete("/{id}", faqHandler.Delete)
@@ -178,6 +198,7 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
 				r.Use(auth.RequireLicense(database.DB))
+				r.Use(auth.RequireRole("superadmin", "tim_media", "panitia_psb"))
 				r.Post("/", agendaHandler.Create)
 				r.Put("/{id}", agendaHandler.Update)
 				r.Delete("/{id}", agendaHandler.Delete)
@@ -187,12 +208,23 @@ func main() {
 		// ── Gallery Management ──────────────────
 		r.Route("/gallery", func(r chi.Router) {
 			r.Get("/", galleryHandler.GetAll) // Public Read
+			r.Get("/albums/metadata", galleryHandler.GetMeta) // Public - get Drive links + album meta
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
 				r.Use(auth.RequireRole("tim_media", "superadmin"))
 				r.Post("/", galleryHandler.Create)
 				r.Delete("/{id}", galleryHandler.Delete)
+				r.Put("/albums/{slug}", galleryHandler.UpdateMeta) // Admin - update Drive URL + meta
+			})
+		})
+
+		// ── Multi Google Drive Storage Admin ─────────
+		r.Route("/admin/storage", func(r chi.Router) {
+			r.Group(func(r chi.Router) {
+				r.Use(auth.AuthMiddleware)
+				r.Use(auth.RequireRole("tim_media", "superadmin"))
+				gstorageHandler.Routes(r)
 			})
 		})
 
@@ -211,19 +243,21 @@ func main() {
 
 		// ── News Management ──────────────────
 		r.Route("/news", func(r chi.Router) {
-			r.Get("/", newsHandler.GetAll)               // Public Read
+			r.Get("/", newsHandler.GetAllPublic)         // Public Read - published only
 			r.Get("/slug/{slug}", newsHandler.GetBySlug) // Public Read by Slug
-			r.Get("/{id}", newsHandler.GetByID)          // Public Read
+			r.Get("/{id}", newsHandler.GetByIDPublic)    // Public Read - published only
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
 				r.Use(auth.RequireRole("tim_media", "superadmin"))
+				r.Get("/manage/all", newsHandler.GetAll) // Admin listing: honours status (draft/trash)
+				r.Get("/manage/{id}", newsHandler.GetByID) // Admin single read: any status
 				r.Post("/", newsHandler.Create)
 				r.Put("/{id}", newsHandler.Update)
 				r.Delete("/{id}", newsHandler.Delete)
 				r.Put("/{id}/restore", newsHandler.Restore)
 				r.Delete("/{id}/force", newsHandler.ForceDelete)
-				r.Post("/generate", newsHandler.GenerateArticle) // AI Generation
+				r.With(aiGenerateLimiter.Middleware).Post("/generate", newsHandler.GenerateArticle) // AI Generation
 			})
 		})
 
@@ -276,7 +310,28 @@ func main() {
 			r.Use(auth.RequireLicense(database.DB))
 
 			r.Get("/me", authHandler.GetMe)
-			r.Post("/upload", upload.HandleUpload)
+			// Uploads are staff-only. This endpoint previously sat behind
+			// AuthMiddleware + RequireLicense with no role gate, so any student
+			// account (role "user") could write arbitrary files into the publicly
+			// served /uploads/ directory.
+			r.With(
+				uploadLimiter.Middleware,
+				auth.RequireRole("superadmin", "tim_media", "panitia_psb", "bendahara"),
+			).Post("/upload", upload.HandleUpload)
+
+			// Student document upload (PSB: KK, akta kelahiran, ijazah). Kept
+			// separate from the staff content-image endpoint so minors' documents
+			// never land in the publicly served directory.
+			r.With(
+				uploadLimiter.Middleware,
+				auth.RequireRole("user", "superadmin", "tim_media", "panitia_psb", "bendahara"),
+			).Post("/upload/document", upload.HandleDocumentUpload)
+			r.Get("/documents/{userID}/{filename}", upload.ServeDocument)
+
+			// Admin notification bell summary (staff roles)
+			r.With(
+				auth.RequireRole("superadmin", "tim_media", "panitia_psb", "bendahara"),
+			).Get("/admin/notifications/summary", notificationHandler.NotificationsSummary)
 
 			// Superadmin Only
 			r.Group(func(r chi.Router) {
@@ -308,7 +363,7 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("panitia_psb"))
 				r.Mount("/psb", psbHandler.Routes())
-				r.Mount("/contact", messageHandler.Routes())
+				r.Mount("/messages", messageHandler.Routes())
 			})
 
 			// Portal PSB for calon santri / wali
@@ -355,8 +410,12 @@ func main() {
 	})
 
 	// Serve Static Files -> public/uploads
-	fileServer := http.FileServer(http.Dir("./public/uploads"))
-	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fileServer))
+	//
+	// http.FileServer emits a full directory listing for any path that resolves to
+	// a directory, which let anyone enumerate every uploaded filename. Staff images
+	// (news, facilities) are meant to be world-readable, so the files stay public,
+	// but directory listing is now refused and only single files are served.
+	r.Handle("/uploads/*", singleFileStatic("/uploads/", http.Dir("./public/uploads")))
 
 	// 6. Start Server
 	port := ":" + getEnv("API_PORT", "8080")
@@ -366,8 +425,28 @@ func main() {
 		"allowed_origins": getAllowedOrigins(),
 		"log_level":       getEnv("LOG_LEVEL", "info"),
 	})
-	if err := http.ListenAndServe(port, r); err != nil {
+
+	server := &http.Server{Addr: port, Handler: r}
+
+	// Graceful shutdown: close DB and stop accepting new requests on signal.
+	go func() {
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+		<-stop
+		logger.Info(context.Background(), "shutdown signal received, closing resources", logger.Field{"event": "shutdown"})
+		if database.DB != nil {
+			_ = database.DB.Close()
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = server.Shutdown(ctx)
+	}()
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Error(context.Background(), "api server stopped unexpectedly", logger.Field{"error": err.Error()})
+		if database.DB != nil {
+			_ = database.DB.Close()
+		}
 		os.Exit(1)
 	}
 }
@@ -399,6 +478,33 @@ func getAllowedOrigins() []string {
 		}
 	}
 	return origins
+}
+
+// csrfOriginMiddleware rejects state-changing requests whose Origin header is
+// present but not in the allow-list. Browsers always send Origin for cross-site
+// and CORS-triggering same-site requests, so a foreign Origin = CSRF attempt.
+func csrfOriginMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
+	allowed := make(map[string]bool, len(allowedOrigins))
+	for _, o := range allowedOrigins {
+		allowed[strings.ToLower(strings.TrimSpace(o))] = true
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
+				next.ServeHTTP(w, r)
+				return
+			}
+			origin := strings.TrimSpace(r.Header.Get("Origin"))
+			if origin != "" && !allowed[strings.ToLower(origin)] {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				_, _ = w.Write([]byte(`{"success":false,"message":"Cross-site request ditolak (CSRF)"}`))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func validateEnv() {
@@ -445,4 +551,37 @@ func validateEnv() {
 			}
 		}
 	}
+}
+
+// singleFileStatic serves static assets from root without directory listing.
+//
+// http.FileServer responds to a path that resolves to a directory with a full
+// listing of every entry, which published the complete set of uploaded filenames
+// to anonymous visitors. We resolve the path ourselves and refuse anything that
+// is a directory, then delegate to http.ServeContent for the actual file so
+// Range requests, If-Modified-Since and Content-Type still work.
+func singleFileStatic(mountPrefix string, root http.Dir) http.Handler {
+	fileServer := http.StripPrefix(mountPrefix, http.FileServer(root))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Resolve the requested path inside root. mountPrefix is stripped because
+		// the route is mounted at /uploads/* while the files live under ./public.
+		rel := path.Clean("/" + strings.TrimPrefix(r.URL.Path, strings.TrimSuffix(mountPrefix, "/")))
+		rel = strings.TrimPrefix(rel, "/")
+
+		// Defence in depth: reject traversal explicitly instead of relying only on
+		// http.Dir, so the intent survives future refactors.
+		if rel == "" || !filepath.IsLocal(rel) {
+			http.NotFound(w, r)
+			return
+		}
+
+		info, err := os.Stat(filepath.Join(string(root), rel))
+		if err != nil || info.IsDir() {
+			http.NotFound(w, r)
+			return
+		}
+
+		fileServer.ServeHTTP(w, r)
+	})
 }

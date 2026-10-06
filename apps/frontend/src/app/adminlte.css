@@ -1,0 +1,758 @@
+/* ============================================================
+   AdminLTE / Bootstrap 4 accent layer (lte-*)
+   Dipakai di halaman portal wali, PSB, login, dan register.
+   Rule di file ini unlayered => menang atas Tailwind utilities.
+   ============================================================ */
+
+.lte-page {
+  background-color: #f4f6f9;
+  min-height: 100vh;
+}
+
+.lte-content {
+  padding: 1.25rem 1.25rem 2rem;
+}
+
+.lte-content-header {
+  margin-bottom: 1.25rem;
+}
+
+.lte-page-title {
+  margin: 0 0 0.15rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #343a40;
+}
+
+.lte-page-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* ---------- Topbar ---------- */
+.lte-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e7ec;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.lte-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin: 0;
+  list-style: none;
+  padding: 0;
+}
+
+.lte-breadcrumb li + li::before {
+  content: "/";
+  color: #adb5bd;
+  padding-right: 0.35rem;
+}
+
+.lte-breadcrumb a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.lte-topbar-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 2rem;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #343a40;
+}
+
+/* ---------- Sidebar ---------- */
+.lte-sidebar {
+  width: 268px;
+  flex-shrink: 0;
+  background: #343a40;
+  color: #c2c7d0;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lte-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #2f353a;
+}
+
+.lte-brand-logo {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #007bff;
+  color: #fff;
+  font-weight: 900;
+}
+
+.lte-nav-group {
+  padding: 1.1rem 0.9rem 0.5rem;
+}
+
+.lte-nav-group-label {
+  padding: 0 0.6rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8f979e;
+}
+
+.lte-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.62rem 0.75rem;
+  margin-bottom: 0.2rem;
+  border-radius: 0.4rem;
+  color: #c2c7d0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lte-nav-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lte-nav-link.active {
+  color: #ffffff;
+  background: #007bff;
+}
+
+.lte-nav-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #9099a1;
+}
+
+.lte-nav-link.active .lte-nav-icon {
+  color: #cfe2ff;
+}
+
+.lte-nav-link-locked {
+  opacity: 0.55;
+}
+
+.lte-sidebar-note {
+  margin: 1rem 0.9rem 0.9rem;
+  padding: 0.85rem;
+  border-radius: 0.45rem;
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.25);
+  color: #ffe69a;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* ---------- Cards ---------- */
+.lte-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.4rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.lte-card-outline {
+  border-top: 3px solid #007bff;
+}
+
+.lte-card-outline-success {
+  border-top: 3px solid #28a745;
+}
+
+.lte-card-outline-warning {
+  border-top: 3px solid #ffc107;
+}
+
+.lte-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid #eceff3;
+  border-radius: 0.4rem 0.4rem 0 0;
+  background: #ffffff;
+}
+
+.lte-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #343a40;
+}
+
+.lte-card-subtitle {
+  font-size: 0.78rem;
+  color: #6c757d;
+  margin-top: 0.1rem;
+}
+
+.lte-card-body {
+  padding: 1.1rem;
+  flex: 1 1 auto;
+}
+
+/* ---------- Badges ---------- */
+.lte-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.32em 0.65em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 0.22rem;
+}
+
+.lte-badge-primary { background: #007bff; color: #ffffff; }
+.lte-badge-success { background: #28a745; color: #ffffff; }
+.lte-badge-warning { background: #ffc107; color: #343a40; }
+.lte-badge-danger  { background: #dc3545; color: #ffffff; }
+.lte-badge-info    { background: #17a2b8; color: #ffffff; }
+.lte-badge-secondary { background: #6c757d; color: #ffffff; }
+.lte-badge-light   { background: #e9ecef; color: #495057; }
+.lte-badge-dark    { background: #343a40; color: #ffffff; }
+
+.lte-badge-soft-primary { background: #cfe2ff; color: #084298; }
+.lte-badge-soft-success { background: #d4edda; color: #155724; }
+.lte-badge-soft-warning { background: #fff3cd; color: #856404; }
+.lte-badge-soft-danger  { background: #f8d7da; color: #842029; }
+.lte-badge-soft-info    { background: #cff4fc; color: #055160; }
+
+/* ---------- Buttons ---------- */
+.lte-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease, color 0.15s ease, transform 0.05s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lte-btn:active {
+  transform: translateY(1px);
+}
+
+.lte-btn-primary { background: #007bff; color: #fff; }
+.lte-btn-primary:hover { background: #0069d9; color: #fff; }
+.lte-btn-success { background: #28a745; color: #fff; }
+.lte-btn-success:hover { background: #218838; color: #fff; }
+.lte-btn-danger  { background: #dc3545; color: #fff; }
+.lte-btn-danger:hover  { background: #c82333; color: #fff; }
+.lte-btn-warning { background: #ffc107; color: #343a40; }
+.lte-btn-warning:hover { background: #e0a800; color: #343a40; }
+.lte-btn-info    { background: #17a2b8; color: #fff; }
+.lte-btn-info:hover    { background: #138496; color: #fff; }
+.lte-btn-dark    { background: #343a40; color: #fff; }
+.lte-btn-dark:hover    { background: #23272b; color: #fff; }
+.lte-btn-light   { background: #f8f9fa; color: #343a40; }
+
+.lte-btn-outline-primary { border-color: #007bff; color: #007bff; background: transparent; }
+.lte-btn-outline-primary:hover { background: #007bff; color: #fff; }
+.lte-btn-outline-success { border-color: #28a745; color: #28a745; background: transparent; }
+.lte-btn-outline-success:hover { background: #28a745; color: #fff; }
+.lte-btn-outline-danger  { border-color: #dc3545; color: #dc3545; background: transparent; }
+.lte-btn-outline-danger:hover  { background: #dc3545; color: #fff; }
+.lte-btn-outline-secondary { border-color: #ced4da; color: #6c757d; background: #fff; }
+.lte-btn-outline-secondary:hover { background: #e9ecef; color: #343a40; }
+
+.lte-btn-sm { padding: 0.3rem 0.75rem; font-size: 0.78rem; }
+.lte-btn-lg { padding: 0.7rem 1.5rem; font-size: 1rem; }
+
+.lte-btn:disabled,
+.lte-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ---------- Form ---------- */
+.lte-form-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #495057;
+}
+
+.lte-form-control {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.93rem;
+  font-weight: 500;
+  color: #495057;
+  background: #ffffff;
+  border: 1px solid #d5dbe1;
+  border-radius: 0.3rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lte-form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.2);
+}
+
+.lte-form-control::placeholder {
+  color: #adb5bd;
+}
+
+.lte-form-control:disabled {
+  background: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+select.lte-form-control {
+  appearance: auto;
+}
+
+/* Forms that reuse existing Tailwind inputs: force Bootstrap accent.
+   Unlayered + !important => menang atas utility Tailwind. */
+.lte-form-page .lte-form-card input:not([type='file']),
+.lte-form-page .lte-form-card select,
+.lte-form-page .lte-form-card textarea {
+  border-radius: 0.3rem !important;
+  border-color: #d5dbe1 !important;
+  background: #ffffff !important;
+  padding: 0.6rem 0.85rem !important;
+  font-size: 0.93rem !important;
+  font-weight: 500 !important;
+  color: #495057 !important;
+}
+
+.lte-form-page .lte-form-card input:not([type='file']):focus,
+.lte-form-page .lte-form-card select:focus,
+.lte-form-page .lte-form-card textarea:focus {
+  border-color: #80bdff !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 0.18rem rgba(0, 123, 255, 0.18) !important;
+}
+
+/* ---------- Alert ---------- */
+.lte-alert {
+  padding: 0.9rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.lte-alert-primary { background: #cfe2ff; border-color: #b6d4fe; color: #084298; }
+.lte-alert-success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+.lte-alert-warning { background: #fff3cd; border-color: #ffeeba; color: #856404; }
+.lte-alert-danger  { background: #f8d7da; border-color: #f5c6cb; color: #842029; }
+.lte-alert-info    { background: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+
+.lte-alert-title {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ---------- Table ---------- */
+.lte-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  color: #343a40;
+}
+
+.lte-table th,
+.lte-table td {
+  padding: 0.7rem 0.85rem;
+  vertical-align: middle;
+  border-top: 1px solid #dee2e6;
+}
+
+.lte-table thead th {
+  border-top: 0;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6c757d;
+}
+
+.lte-table-striped tbody tr:nth-of-type(odd) {
+  background: #f4f6f9;
+}
+
+.lte-table-hover tbody tr:hover {
+  background: #eaf2fd;
+}
+
+/* ---------- List group ---------- */
+.lte-list-group {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.35rem;
+  overflow: hidden;
+}
+
+.lte-list-group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.05rem;
+  background: #ffffff;
+  border-bottom: 1px solid #eef1f4;
+  color: #343a40;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.lte-list-group-item:last-child {
+  border-bottom: 0;
+}
+
+.lte-list-group-item:hover {
+  background: #f8f9fa;
+}
+
+.lte-list-group-item.active {
+  background: #007bff;
+  color: #ffffff;
+}
+
+/* ---------- Small box (AdminLTE style) ---------- */
+.lte-small-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.35rem;
+  padding: 1.15rem 1.25rem;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 118px;
+}
+
+.lte-small-box-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.92;
+}
+
+.lte-small-box-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.lte-small-box-icon {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 0.55rem;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.lte-small-box-footer {
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.lte-small-box a.lte-bg-button {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+.lte-bg-primary { background: #007bff; }
+.lte-bg-success { background: #28a745; }
+.lte-bg-warning { background: #ffc107; color: #343a40; }
+.lte-bg-danger  { background: #dc3545; }
+.lte-bg-info    { background: #17a2b8; }
+.lte-bg-secondary { background: #6c757d; }
+
+/* ---------- Progress ---------- */
+.lte-progress {
+  height: 0.8rem;
+  background: #e9ecef;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.lte-progress-bar {
+  height: 100%;
+  background: #007bff;
+  border-radius: 0.5rem;
+  transition: width 0.5s ease;
+}
+
+.lte-progress-bar-success { background: #28a745; }
+.lte-progress-bar-warning { background: #ffc107; }
+.lte-progress-bar-danger  { background: #dc3545; }
+
+/* ---------- Stepper ---------- */
+.lte-step {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.lte-step-item {
+  flex: 1 1 0;
+  min-width: 140px;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.35rem;
+  background: #ffffff;
+}
+
+.lte-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e9ecef;
+  color: #6c757d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.lte-step-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #343a40;
+}
+
+.lte-step-desc {
+  font-size: 0.78rem;
+  color: #6c757d;
+  margin-top: 0.15rem;
+}
+
+.lte-step-item.done {
+  border-color: #c3e6cb;
+  background: #f2fbf4;
+}
+
+.lte-step-item.done .lte-step-num {
+  background: #28a745;
+  color: #ffffff;
+}
+
+.lte-step-item.current {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+}
+
+.lte-step-item.current .lte-step-num {
+  background: #007bff;
+  color: #ffffff;
+}
+
+/* ---------- Misc ---------- */
+.lte-text-muted { color: #6c757d; }
+.lte-text-primary { color: #007bff; }
+.lte-text-success { color: #28a745; }
+.lte-text-warning { color: #d39e00; }
+.lte-text-danger { color: #dc3545; }
+
+.lte-hr {
+  border: 0;
+  border-top: 1px solid #e4e7ec;
+  margin: 1rem 0;
+}
+
+.lte-link {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.lte-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.lte-focus-box {
+  border: 1px solid #e4e7ec;
+  border-top: 3px solid #28a745;
+  border-radius: 0.4rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================================
+   Responsive (mobile)
+   ============================================================ */
+@media (max-width: 767px) {
+  /* Beri ruang bawah agar konten tidak tertutup bottom-nav floating */
+  .lte-content {
+    padding-bottom: 7.5rem;
+  }
+
+  /* Topbar ringkas: sembunyikan breadcrumb induk, sisakan halaman aktif */
+  .lte-topbar {
+    padding: 0.5rem 0.9rem;
+    gap: 0.5rem;
+  }
+
+  .lte-topbar .lte-btn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .lte-breadcrumb li:not(:last-child) {
+    display: none;
+  }
+
+  .lte-breadcrumb li:last-child::before {
+    content: none;
+  }
+
+  .lte-card-header {
+    padding: 0.7rem 0.95rem;
+  }
+
+  .lte-card-body {
+    padding: 0.95rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .lte-content {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  .lte-btn {
+    white-space: normal;
+  }
+}
+
+/* ============================================================
+   Sidebar mobile: off-canvas drawer (AdminLTE-style)
+   ============================================================ */
+.lte-brand a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lte-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1150;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.lte-topbar-toggle {
+  display: none;
+}
+
+.lte-sidebar-close {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .lte-topbar-toggle {
+    display: inline-flex;
+  }
+
+  .lte-sidebar-close {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #c2c7d0;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .lte-sidebar-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .lte-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 1200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: none;
+  }
+
+  .lte-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 0 0 48px rgba(0, 0, 0, 0.45);
+  }
+}

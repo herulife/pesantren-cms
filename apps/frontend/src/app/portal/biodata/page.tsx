@@ -193,13 +193,15 @@ export default function BiodataPage() {
 
   return (
     <>
-      <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900">Biodata Calon Santri</h3>
-      <p className="mb-10 max-w-xl text-sm leading-relaxed text-slate-500">
-        Lengkapi data calon santri dan data orang tua. Biodata ini akan dibaca langsung oleh panitia PSB saat proses verifikasi.
-      </p>
+      <div className="lte-content-header">
+        <h3 className="lte-page-title">Biodata Calon Santri</h3>
+        <p className="lte-page-subtitle">
+          Lengkapi data calon santri dan data orang tua. Biodata ini akan dibaca langsung oleh panitia PSB saat proses verifikasi.
+        </p>
+      </div>
 
-      <div className="mb-8 flex gap-4 rounded-3xl border border-blue-100 bg-blue-50 p-6 text-blue-800">
-        <AlertCircle className="mt-1 shrink-0 text-blue-500" />
+      <div className="lte-alert lte-alert-primary mb-4 flex items-start gap-3">
+        <AlertCircle className="mt-0.5 shrink-0" />
         <p className="text-sm font-medium leading-relaxed">
           Nama lengkap akan otomatis mengikuti akun portal saat biodata pertama kali dibuat, tetapi tetap bisa disesuaikan di formulir ini jika perlu mengikuti dokumen resmi.
         </p>
@@ -208,16 +210,15 @@ export default function BiodataPage() {
       {!isEditMode && hasSavedBiodata ? (
         <div className="space-y-8">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-            <div className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-sm">
+            <div className="lte-card lte-card-outline">
+              <div className="lte-card-body">
               <div className="flex items-start gap-4">
-                <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-600">
-                  <CheckCircle2 size={28} />
+                <div className="rounded-lg bg-emerald-100 p-3 text-emerald-600">
+                  <CheckCircle2 size={26} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Biodata Tersimpan</p>
-                  <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
-                    Form Tidak Perlu Aktif Terus
-                  </h4>
+                  <p className="lte-card-subtitle text-emerald-600">Biodata Tersimpan</p>
+                  <h4 className="lte-card-title mt-1">Form Tidak Perlu Aktif Terus</h4>
                   <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
                     {savedMessage || 'Biodata kamu sudah masuk ke database. Supaya tidak membingungkan dan tidak berubah tanpa sengaja, halaman ini sekarang tampil sebagai ringkasan dulu.'}
                   </p>
@@ -226,27 +227,27 @@ export default function BiodataPage() {
                   </p>
                 </div>
               </div>
+              </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Langkah Berikutnya</p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
-                Lanjut ke Unggah Dokumen
-              </h4>
-              <p className="mt-3 text-sm leading-7 text-slate-500">
-                Setelah biodata aman, tahap berikutnya adalah mengunggah KK, ijazah atau raport terakhir, dan pas foto agar panitia bisa memeriksa berkas lengkapmu.
-              </p>
-              <div className="mt-6 flex flex-col gap-3">
+            <div className="lte-card">
+              <div className="lte-card-header justify-start gap-3">
+                <div>
+                  <p className="lte-card-subtitle text-slate-500">Langkah Berikutnya</p>
+                  <h4 className="lte-card-title">Lanjut ke Unggah Dokumen</h4>
+                </div>
+              </div>
+              <div className="lte-card-body flex flex-col gap-3">
                 <Link
                   href="/portal/documents"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500"
+                  className="lte-btn lte-btn-success w-full"
                 >
                   Unggah Dokumen Sekarang <ArrowRight size={16} />
                 </Link>
                 <button
                   type="button"
                   onClick={() => setIsEditMode(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                  className="lte-btn lte-btn-outline-secondary w-full"
                 >
                   <PencilLine size={16} /> Edit Biodata
                 </button>
@@ -256,14 +257,20 @@ export default function BiodataPage() {
 
           <div className="grid gap-6 xl:grid-cols-2">
             {summaryCards.map((card) => (
-              <div key={card.title} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-                <div className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] ${card.accent}`}>
-                  {card.title}
+              <div key={card.title} className="lte-card">
+                <div className="lte-card-header justify-start gap-3">
+                  <span
+                    className={`lte-badge ${
+                      card.title === 'Data Orang Tua' ? 'lte-badge-soft-success' : 'lte-badge-soft-primary'
+                    }`}
+                  >
+                    {card.title}
+                  </span>
                 </div>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="lte-card-body grid gap-4 sm:grid-cols-2">
                   {card.items.map((item) => (
-                    <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                    <div key={item.label} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{item.label}</p>
                       <p className={`mt-2 text-sm font-bold leading-6 ${item.value === '-' ? 'text-slate-400' : 'text-slate-800'}`}>
                         {item.value}
                       </p>
@@ -277,18 +284,18 @@ export default function BiodataPage() {
       ) : null}
 
       {isEditMode ? (
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="lte-form-page space-y-8">
           {hasSavedBiodata ? (
-            <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
+            <div className="lte-alert lte-alert-warning">
               <p className="text-sm font-semibold leading-relaxed">
                 Kamu sedang mengedit biodata yang sudah tersimpan. Setelah selesai memperbaiki, simpan lagi agar ringkasan dan data panitia ikut diperbarui.
               </p>
             </div>
           ) : null}
 
-        <div className="space-y-6">
-          <h4 className="flex items-center gap-2 border-b border-slate-100 pb-2 font-bold text-slate-800">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-500">1</span>
+        <div className="lte-form-card space-y-6">
+          <h4 className="flex items-center gap-2 border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-widest text-slate-700">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
             Data Calon Santri
           </h4>
 
@@ -400,15 +407,15 @@ export default function BiodataPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <h4 className="flex items-center gap-2 border-b border-slate-100 pb-2 font-bold text-slate-800">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-500">2</span>
+        <div className="lte-form-card space-y-6">
+          <h4 className="flex items-center gap-2 border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-widest text-slate-700">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">2</span>
             Data Orang Tua
           </h4>
 
           <div className="grid grid-cols-1 gap-6">
-            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
-              <h5 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">Informasi Ayah</h5>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <h5 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-600">Informasi Ayah</h5>
               <div className="grid gap-4 md:grid-cols-2">
                 <input type="text" value={formData.father_name} onChange={(e) => handleChange('father_name', e.target.value)} placeholder="Nama Lengkap Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
                 <input type="text" value={formData.father_job} onChange={(e) => handleChange('father_job', e.target.value)} placeholder="Pekerjaan Ayah" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
@@ -416,8 +423,8 @@ export default function BiodataPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
-              <h5 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">Informasi Ibu</h5>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <h5 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-600">Informasi Ibu</h5>
               <div className="grid gap-4 md:grid-cols-2">
                 <input type="text" value={formData.mother_name} onChange={(e) => handleChange('mother_name', e.target.value)} placeholder="Nama Lengkap Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
                 <input type="text" value={formData.mother_job} onChange={(e) => handleChange('mother_job', e.target.value)} placeholder="Pekerjaan Ibu" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-800 outline-none" required />
@@ -427,13 +434,13 @@ export default function BiodataPage() {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-6">
+        <div className="border-t border-slate-200 pt-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
             {hasSavedBiodata ? (
               <button
                 type="button"
                 onClick={() => setIsEditMode(false)}
-                className="inline-flex w-full items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:w-auto"
+                className="lte-btn lte-btn-outline-secondary w-full md:w-auto"
               >
                 Batal Edit
               </button>
@@ -442,7 +449,7 @@ export default function BiodataPage() {
               type="submit"
               value="save"
               disabled={isSaving}
-              className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-blue-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 disabled:opacity-70 md:w-auto"
+              className="lte-btn lte-btn-outline-primary w-full md:w-auto"
             >
               {isSaving ? 'Menyimpan...' : <><Save size={18} /> Simpan Biodata</>}
             </button>
@@ -450,7 +457,7 @@ export default function BiodataPage() {
               type="submit"
               value="continue"
               disabled={isSaving}
-              className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-blue-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:opacity-70 md:w-auto"
+              className="lte-btn lte-btn-primary w-full md:w-auto md:px-6 md:py-2.5"
             >
               {isSaving ? 'Menyimpan...' : <>Simpan & Lanjut ke Dokumen <ArrowRight size={18} /></>}
             </button>

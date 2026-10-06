@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getSettings, updateSetting } from '@/lib/api';
+import { getSettings, updateSettingsBatch } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { Banknote, Building2, Hash, RefreshCw, Save, UserRound, WalletCards } from 'lucide-react';
 
@@ -46,7 +46,8 @@ export default function TabPembayaranPSB() {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      await Promise.all(KEYS.map((key) => updateSetting(key, formValues[key] || '')));
+      const payload = KEYS.map((key) => ({ key, value: formValues[key] || '' }));
+      await updateSettingsBatch(payload);
       showToast('success', 'Pengaturan pembayaran PSB berhasil disimpan');
     } catch {
       showToast('error', 'Gagal menyimpan pengaturan pembayaran PSB');

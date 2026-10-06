@@ -17,7 +17,15 @@ export default function NewsPortal() {
     async function fetchNews() {
       try {
         const data = await getNews();
-        setNews(Array.isArray(data) ? data.slice(0, 12) : []);
+        // Handle paginated API: { data: { items: [...] } }
+        const items = Array.isArray(data)
+          ? data
+          : Array.isArray((data as any)?.data?.items)
+          ? (data as any).data.items
+          : Array.isArray((data as any)?.data)
+          ? (data as any).data
+          : [];
+        setNews(items.slice(0, 12));
       } catch (error) {
         console.error('Error fetching news:', error);
         setNews([]);
@@ -86,30 +94,11 @@ export default function NewsPortal() {
           </div>
         ) : filteredNews.length > 0 ? (
           <div className="space-y-8">
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)] xl:items-stretch">
-              <NewsCard news={filteredNews[0]} featured />
-              <div className="grid gap-6 md:grid-cols-2 md:auto-rows-fr xl:grid-cols-1">
-                {filteredNews.slice(1, 3).map((item) => (
-                  <NewsCard key={item.id} news={item} />
-                ))}
-              </div>
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {filteredNews.map((item) => (
+                <NewsCard key={item.id} news={item} />
+              ))}
             </div>
-
-            {filteredNews.length > 3 ? (
-              <div>
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-gradient-to-r from-emerald-200 via-emerald-100 to-transparent" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">
-                    Arsip Berita
-                  </p>
-                </div>
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  {filteredNews.slice(3).map((item) => (
-                    <NewsCard key={item.id} news={item} />
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
         ) : (
           <PublicEmptyState

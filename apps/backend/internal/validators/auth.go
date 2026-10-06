@@ -1,6 +1,10 @@
 package validators
 
-import "strings"
+import (
+	"strings"
+
+	"darussunnah-api/internal/platform/roles"
+)
 
 type LoginRequest struct {
 	Email    string `json:"email"`
@@ -77,15 +81,7 @@ func ValidateCreateUserRequest(req *CreateUserRequest) ValidationErrors {
 		errs.Add("password", "Password minimal 8 karakter")
 	}
 
-	validRoles := map[string]bool{
-		"superadmin":  true,
-		"bendahara":   true,
-		"panitia_psb": true,
-		"tim_media":   true,
-		"admin":       true,
-		"user":        true,
-	}
-	if !validRoles[req.Role] {
+	if !roles.IsAssignable(req.Role) {
 		errs.Add("role", "Role tidak valid")
 	}
 
@@ -108,6 +104,10 @@ func ValidateRoleUpdateRequest(req *RoleUpdateRequest) ValidationErrors {
 	req.Role = strings.TrimSpace(req.Role)
 	if req.Role == "" {
 		errs.Add("role", "Role wajib diisi")
+		return errs
+	}
+	if !roles.IsAssignable(req.Role) {
+		errs.Add("role", "Role tidak valid")
 	}
 	return errs
 }

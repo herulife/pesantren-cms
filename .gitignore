@@ -8,6 +8,8 @@
 Thumbs.db
 
 # Node / Next.js
+node_modules/
+.next/
 apps/frontend/node_modules/
 apps/frontend/.next/
 apps/frontend/tsconfig.tsbuildinfo
@@ -37,5 +39,18 @@ apps/backend/internal/features/videos/vet_output.txt
 # User uploads
 apps/backend/public/uploads/
 
+# Data produksi & backup. Berisi data siswa (PSB, pembayaran, dokumen privat),
+# jadi tidak boleh masuk repo meski repo someday-CONtohnya privat.
+deploy/darussunnah/data/
+backups/
+
 # Bun legacy binary lockfile
 raport/bun.lockb
+*.bak*
+
+# Compiled Go binary (built inside Docker)
+/darussunnah-api
+apps/backend/darussunnah-api
+
+# Credential/host
+ssh_logs.py

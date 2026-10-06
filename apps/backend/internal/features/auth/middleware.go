@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
 	"database/sql"
 	"fmt"
@@ -28,6 +29,20 @@ func CurrentUserID(ctx context.Context) (int, bool) {
 	return int(idFloat), true
 }
 
+// CurrentUserRole returns the role claim from the verified token. The second
+// return value is false when there is no authenticated user in the context.
+func CurrentUserRole(ctx context.Context) (string, bool) {
+	claims, ok := ctx.Value(UserContextKey).(jwt.MapClaims)
+	if !ok {
+		return "", false
+	}
+	role, ok := claims["role"].(string)
+	if !ok || role == "" {
+		return "", false
+	}
+	return role, true
+}
+
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		correlationID := logger.CorrelationID(r)
@@ -41,12 +56,31 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			writeAPIError(w, http.StatusUnauthorized, correlationID, "Sesi login tidak ditemukan", nil)
 			return
 		}
+		// Fail closed when no signing key is configured. Parsing with a nil HMAC
+		// key would otherwise accept a token signed with an empty secret.
+		if !SecretConfigured() {
+			logger.Error(r.Context(), "auth rejected: JWT_SECRET is not configured", logger.Field{
+				"correlation_id": correlationID,
+				"path":           r.URL.Path,
+			})
+			writeAPIError(w, http.StatusInternalServerError, correlationID, "Konfigurasi server tidak valid", nil)
+			return
+		}
+
+		// Pin the algorithm to HS256. The previous check accepted any HMAC variant
+		// (HS256/HS384/HS512), so a caller could pick the signing algorithm.
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			if token.Method != jwt.SigningMethodHS256 {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return GetJWTSecret(), nil
-		})
+		},
+			// Bind the token to this service so a token minted elsewhere with the
+			// same secret cannot be replayed against this API.
+			jwt.WithIssuer(tokenIssuer),
+			jwt.WithAudience(tokenAudience),
+			jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+		)
 
 		if err != nil || !token.Valid {
 			fields := logger.Field{
@@ -73,6 +107,17 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Enforce token revocation (logout / password / role change).
+		if denied := isTokenDenied(claims); denied {
+			logger.Warn(r.Context(), "auth failed revoked or stale token", logger.Field{
+				"correlation_id": correlationID,
+				"ip":             r.RemoteAddr,
+				"path":           r.URL.Path,
+			})
+			writeAPIError(w, http.StatusUnauthorized, correlationID, "Sesi login sudah tidak valid", nil)
+			return
+		}
+
 		ctx := context.WithValue(r.Context(), UserContextKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -89,6 +134,40 @@ func extractToken(r *http.Request) string {
 	}
 
 	return strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+}
+
+// isTokenDenied enforces revocation: a token is rejected if its jti was
+// explicitly revoked (logout) or its embedded version no longer matches the
+// user's current token_version (password/role change).
+func isTokenDenied(claims jwt.MapClaims) bool {
+	if database.DB == nil {
+		return false
+	}
+
+	if jti, _ := claims["jti"].(string); jti != "" {
+		var count int
+		if err := database.DB.QueryRow("SELECT COUNT(1) FROM revoked_tokens WHERE jti = ?", jti).Scan(&count); err == nil && count > 0 {
+			return true
+		}
+	}
+
+	if ver, ok := claims["ver"].(float64); ok {
+		idf, ok := claims["id"].(float64)
+		if !ok {
+			return false
+		}
+		var dbVer int
+		err := database.DB.QueryRow("SELECT COALESCE(token_version, 0) FROM users WHERE id = ?", int(idf)).Scan(&dbVer)
+		if err != nil {
+			// User missing or DB error: fail closed.
+			return true
+		}
+		if int(ver) != dbVer {
+			return true
+		}
+	}
+
+	return false
 }
 
 func RequireLicense(db *sql.DB) func(http.Handler) http.Handler {

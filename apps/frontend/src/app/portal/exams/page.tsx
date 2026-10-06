@@ -34,22 +34,22 @@ export default function AvailableExamsPage() {
     <div className="mx-auto max-w-5xl pb-20">
       {/* Header Breadcrumb */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <Link href="/portal" className="inline-flex items-center gap-2 w-fit rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 border border-slate-200">
+        <Link href="/portal" className="lte-btn lte-btn-outline-secondary lte-btn-sm">
           <ArrowLeft size={16} /> Kembali ke Portal
         </Link>
-        <div className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 w-fit">
-          <GraduationCap size={16} /> Computer Based Test
+        <div className="lte-badge lte-badge-primary w-fit">
+          <GraduationCap size={14} /> Computer Based Test
         </div>
       </div>
 
       {/* Hero Title */}
-      <div className="mb-12 relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-10 text-white shadow-2xl">
+      <div className="relative mb-8 overflow-hidden rounded-[2rem] bg-slate-900 p-6 text-white shadow-2xl sm:mb-12 sm:p-10 sm:rounded-[2.5rem]">
         <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-blue-500/20 blur-3xl" />
         <div className="absolute left-0 bottom-0 h-64 w-64 -ml-20 -mb-20 rounded-full bg-purple-500/20 blur-3xl" />
         
         <div className="relative z-10">
-          <h1 className="font-outfit text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">Ujian Tersedia</h1>
-          <p className="text-lg text-white/70 max-w-xl">Kerjakan ujian dengan jujur dan sungguh-sungguh. Pastikan koneksi intenet Anda stabil sebelum menekan tombol mulai.</p>
+          <h1 className="font-outfit text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-3 sm:mb-4">Ujian Tersedia</h1>
+          <p className="text-base sm:text-lg text-white/70 max-w-xl">Kerjakan ujian dengan jujur dan sungguh-sungguh. Pastikan koneksi intenet Anda stabil sebelum menekan tombol mulai.</p>
         </div>
       </div>
 
@@ -112,10 +112,10 @@ export default function AvailableExamsPage() {
                   <div className="mt-auto pt-4">
                     <Link
                       href={`/portal/exams/${exam.id}`}
-                      className="group/btn flex w-full items-center justify-center gap-3 rounded-[1.25rem] bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white transition-all shadow-lg hover:bg-blue-600 hover:shadow-blue-600/30 active:scale-95"
+                      className="lte-btn lte-btn-primary w-full py-3"
                     >
                       Mulai Mengerjakan
-                      <PlayCircle size={18} className="transition-transform group-hover/btn:scale-110" />
+                      <PlayCircle size={18} />
                     </Link>
                   </div>
                 </div>

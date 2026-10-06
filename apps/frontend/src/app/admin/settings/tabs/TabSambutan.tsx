@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { getSettings, updateSetting } from '@/lib/api';
+import { getSettings, updateSettingsBatch } from '@/lib/api';
 import { useToast } from '@/components/Toast';
-import { Save, RefreshCw, MessageSquareQuote, Image as ImageIcon } from 'lucide-react';
+import { Save, RefreshCw, MessageSquareQuote, Image as ImageIcon, UploadCloud } from 'lucide-react';
 
 export default function TabSambutan() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -39,7 +39,8 @@ export default function TabSambutan() {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      await Promise.all(KEYS.map(k => updateSetting(k, formValues[k] || '')));
+      const payload = KEYS.map(k => ({ key: k, value: formValues[k] || '' }));
+      await updateSettingsBatch(payload);
       showToast('success', 'Sambutan berhasil disimpan');
     } catch {
       showToast('error', 'Gagal menyimpan pengaturan');
@@ -88,21 +89,70 @@ export default function TabSambutan() {
                 <label className="text-[10px] font-black text-orange-700 uppercase tracking-[0.2em] flex items-center gap-2">
                   <ImageIcon size={12} /> URL Foto Pimpinan
                 </label>
-                <input 
-                   value={formValues['welcome_speech_image'] || ''}
-                   onChange={(e) => handleChange('welcome_speech_image', e.target.value)}
-                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
-                />
+                <div className="flex gap-4 items-start">
+                   {formValues['welcome_speech_image'] ? (
+                     <div className="shrink-0 w-24 h-24 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 relative">
+                        <img 
+                          src={formValues['welcome_speech_image'].startsWith('http') ? formValues['welcome_speech_image'] : `https://darussunnahparung.com${formValues['welcome_speech_image']}`} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).src = '/assets/img/kepsek.png'; }}
+                        />
+                     </div>
+                   ) : (
+                     <div className="shrink-0 w-24 h-24 rounded-xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400">
+                        <ImageIcon size={24} />
+                     </div>
+                   )}
+                   <div className="flex-1 space-y-3">
+                      <input 
+                         value={formValues['welcome_speech_image'] || ''}
+                         onChange={(e) => handleChange('welcome_speech_image', e.target.value)}
+                         placeholder="/uploads/foto-pimpinan.jpg"
+                         className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                      />
+                      <div className="relative">
+                         <input 
+                            type="file" 
+                            accept="image/*"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={async (e) => {
+                               const file = e.target.files?.[0];
+                               if (!file) return;
+                               showToast('success', 'Mengunggah gambar...');
+                               try {
+                                  const { uploadImage } = await import('@/lib/api');
+                                  const res = await uploadImage(file);
+                                  if (res.success && res.url) {
+                                     handleChange('welcome_speech_image', res.url);
+                                     showToast('success', 'Gambar berhasil diunggah');
+                                  } else {
+                                     showToast('error', 'Gagal mengunggah gambar');
+                                  }
+                               } catch (err) {
+                                  showToast('error', 'Terjadi kesalahan saat mengunggah');
+                               }
+                            }}
+                         />
+                         <button type="button" className="text-xs font-bold bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 hover:text-orange-600 transition-colors flex items-center gap-2">
+                            <UploadCloud size={14} /> Unggah Foto Baru
+                         </button>
+                      </div>
+                   </div>
+                </div>
              </div>
 
              <div className="space-y-4">
-                <label className="text-[10px] font-black text-orange-700 uppercase tracking-[0.2em]">Pesan Sambutan Lengkap</label>
+                <div className="flex items-center justify-between">
+                   <label className="text-[10px] font-black text-orange-700 uppercase tracking-[0.2em]">Pesan Sambutan Lengkap</label>
+                   <span className="text-[10px] font-bold text-slate-400">Gunakan Enter untuk baris baru</span>
+                </div>
                 <textarea 
                    rows={6}
                    value={formValues['welcome_speech_text'] || ''}
                    onChange={(e) => handleChange('welcome_speech_text', e.target.value)}
                    placeholder="Assalamualaikum Warahmatullahi Wabarakatuh..."
-                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-800 leading-relaxed"
+                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-800 leading-relaxed focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
                 />
              </div>
           </div>

@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
+import NotificationBell from './admin/NotificationBell';
 import { useAuth } from './AuthProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -57,14 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {user?.role || 'staff'}
               </p>
             </div>
-            <button
-              type="button"
-              className="rounded-full bg-emerald-600 p-2 text-white lg:hidden"
-              onClick={() => setIsMobileSidebarOpen(false)}
-              aria-label="Tutup menu cepat"
-            >
-              <X size={16} />
-            </button>
+            <NotificationBell />
           </div>
         </header>
 

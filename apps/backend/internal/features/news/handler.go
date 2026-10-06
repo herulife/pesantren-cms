@@ -127,6 +127,59 @@ func (h *Handler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Detail berita berhasil dimuat", n)
 }
 
+// GetAllPublic is the unauthenticated news listing. It intentionally ignores the
+// status query parameter and only ever returns published items.
+func (h *Handler) GetAllPublic(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+	search := r.URL.Query().Get("search")
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
+	newsList, total, err := h.repo.FindAllPublished(category, search, limit, offset)
+	if err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+	sanitizeNewsList(newsList)
+
+	sendJSONResponse(w, http.StatusOK, true, "Daftar berita berhasil dimuat", map[string]interface{}{
+		"items": newsList,
+		"pagination": map[string]int{
+			"total":  total,
+			"limit":  limit,
+			"offset": offset,
+		},
+	})
+}
+
+// GetByIDPublic is the unauthenticated single-news read. Draft and trashed items
+// are reported as not found rather than forbidden, so their existence is not
+// disclosed to anonymous callers.
+func (h *Handler) GetByIDPublic(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		sendJSONResponse(w, http.StatusNotFound, false, "Berita tidak ditemukan", nil)
+		return
+	}
+	n, err := h.repo.FindPublishedByID(id)
+	if err != nil {
+		sendJSONResponse(w, http.StatusNotFound, false, "Berita tidak ditemukan", nil)
+		return
+	}
+	sanitizeNewsModel(n)
+	sendJSONResponse(w, http.StatusOK, true, "Detail berita berhasil dimuat", n)
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
@@ -320,11 +373,14 @@ func (h *Handler) GenerateArticle(w http.ResponseWriter, r *http.Request) {
 
 	articleText, err := ai.GenerateArticle(req.Topic)
 	if err != nil {
-		sendJSONResponse(w, http.StatusBadGateway, false, err.Error(), nil)
+		logger.Error(r.Context(), "ai article generation failed", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusBadGateway, false, "Gagal membuat draft berita. Silakan coba lagi.", nil)
 		return
 	}
 
-	responseBody := map[string]interface{}{"result": articleText}
+	// Sanitize the AI-generated HTML before returning it to the admin browser
+	// to prevent stored/admin XSS from adversarial model output.
+	responseBody := map[string]interface{}{"result": sanitizeNewsHTML(articleText)}
 
 	if req.WithImage {
 		imageUrl, imgErr := ai.GenerateAndDownloadImage(req.Topic)
@@ -363,7 +419,9 @@ func (h *Handler) Routes() chi.Router {
 type IRepository interface {
 	EnsureUniqueSlug(baseSlug string, excludeID int) (string, error)
 	FindAll(status, category, search string, limit, offset int) ([]News, int, error)
+	FindAllPublished(category, search string, limit, offset int) ([]News, int, error)
 	FindByID(id int) (*News, error)
+	FindPublishedByID(id int) (*News, error)
 	FindBySlug(slug string) (*News, error)
 	Create(n *News) error
 	Update(id int, n *News) error
