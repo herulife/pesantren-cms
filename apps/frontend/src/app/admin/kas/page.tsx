@@ -102,6 +102,11 @@ export default function KasAdminPage() {
     else showToast("error", res.message || "Gagal.");
   };
 
+  // Filter "Jenis" diterapkan di sisi klien supaya tidak menambah request dan
+  // supaya dropdown kategori pada form tetap memuat seluruh kategori.
+  const txsView = useMemo(() => (kind === "all" ? txs : txs.filter((t) => t.kind === kind)), [txs, kind]);
+  const catsView = useMemo(() => (kind === "all" ? cats : cats.filter((c) => c.kind === kind)), [cats, kind]);
+
   const formCat = cats.find((c) => String(c.id) === form.category_id);
   const formCatAuto = form.kind === "masuk" && !!formCat?.is_auto_source;
 
@@ -138,7 +143,7 @@ export default function KasAdminPage() {
       return {
         title: "Log Transaksi Kas",
         columns: ["Kode", "Tanggal", "Jenis", "Kategori", "Nominal", "Keterangan", "Dicatat Oleh"],
-        rows: txs.map((t) => [t.code || "-", t.date, t.kind, t.category || "-", fmtRp(t.amount), t.notes || "-", t.creator || "-"]),
+        rows: txsView.map((t) => [t.code || "-", t.date, t.kind, t.category || "-", fmtRp(t.amount), t.notes || "-", t.creator || "-"]),
         filename: `log-transaksi-kas-${stamp}`,
       };
     }
@@ -146,7 +151,7 @@ export default function KasAdminPage() {
       return {
         title: "Kategori Kas",
         columns: ["Kode", "Nama", "Jenis", "Sumber", "Dibuat Oleh"],
-        rows: cats.map((c) => [c.code || "-", c.name, c.kind, c.is_auto_source ? "otomatis" : "manual", c.creator || "-"]),
+        rows: catsView.map((c) => [c.code || "-", c.name, c.kind, c.is_auto_source ? "otomatis" : "manual", c.creator || "-"]),
         filename: `kategori-kas-${stamp}`,
       };
     }
@@ -169,7 +174,7 @@ export default function KasAdminPage() {
       ],
       filename: `papan-kas-${stamp}`,
     };
-  }, [tab, txs, cats, audit, lrLines]);
+  }, [tab, txsView, catsView, audit, lrLines]);
 
   const runExport = async (as: "pdf" | "xlsx") => {
     setExporting(true);
@@ -506,7 +511,7 @@ export default function KasAdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {txs.map((t) => {
+                  {txsView.map((t) => {
                     const c = cats.find((x) => x.id === t.category_id);
                     const auto = t.kind === "masuk" && !!c?.is_auto_source;
                     return (
@@ -533,7 +538,7 @@ export default function KasAdminPage() {
                       </tr>
                     );
                   })}
-                  {txs.length === 0 && <EmptyRow col={8}>Belum ada transaksi pada periode ini.</EmptyRow>}
+                  {txsView.length === 0 && <EmptyRow col={8}>Belum ada transaksi pada periode ini.</EmptyRow>}
                 </tbody>
               </table>
             </div>
@@ -567,7 +572,7 @@ export default function KasAdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {cats.map((c) => (
+                  {catsView.map((c) => (
                     <tr key={c.id} className="transition hover:bg-slate-50">
                       <td className={`${TD} font-mono text-xs`}>{c.code || "-"}</td>
                       <td className={`${TD} font-bold`}>
@@ -606,7 +611,7 @@ export default function KasAdminPage() {
                       </td>
                     </tr>
                   ))}
-                  {cats.length === 0 && <EmptyRow col={5}>Belum ada kategori kas.</EmptyRow>}
+                  {catsView.length === 0 && <EmptyRow col={5}>Belum ada kategori kas.</EmptyRow>}
                 </tbody>
               </table>
             </div>
