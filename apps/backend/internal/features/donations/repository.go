@@ -8,6 +8,8 @@ import (
 
 var errDonationLocked = errors.New("transaksi yang sudah terverifikasi tidak bisa diubah/dihapus")
 
+var errDonationNotVerified = errors.New("transaksi belum diverifikasi")
+
 type Campaign struct {
 	ID              int        `json:"id"`
 	Title           string     `json:"title"`
@@ -321,14 +323,65 @@ func (r *Repository) FindDonationByID(id int) (*Donation, error) {
 	return &d, nil
 }
 
-func (r *Repository) VerifyDonation(id int, verifiedBy int) error {
+// VerifyDonation menandai donasi sebagai verified dan menambah collected_amount
+// kampanye. Hasil kedua (bool) = apakah notifikasi WA pertama kali layak dikirim:
+// kolom donations.wa_sent dicatat di sini dan TIDAK pernah di-reset oleh
+// UnverifyDonation, supaya donatur tidak menerima WA dobel saat verifikasi
+// ulang setelah koreksi (keputusan user 6 Okt 2026: unverify & verify ulang
+// tidak mengirim WA sama sekali).
+func (r *Repository) VerifyDonation(id int, verifiedBy int) (bool, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+
+	// 1. Get donation details
+	var amount float64
+	var campaignID int
+	var currentStatus string
+	var waSent int
+	err = tx.QueryRow("SELECT amount, campaign_id, status, COALESCE(wa_sent, 0) FROM donations WHERE id = ?", id).Scan(&amount, &campaignID, &currentStatus, &waSent)
+	if err != nil {
+		return false, err
+	}
+
+	if currentStatus == "verified" {
+		return false, nil // Already verified
+	}
+
+	// 2. Update donation status
+	now := time.Now().Format("2006-01-02 15:04:05")
+	_, err = tx.Exec("UPDATE donations SET status = 'verified', verified_at = ?, verified_by = ?, wa_sent = 1 WHERE id = ?", now, verifiedBy, id)
+	if err != nil {
+		return false, err
+	}
+
+	// 3. Update campaign collected amount
+	_, err = tx.Exec("UPDATE donation_campaigns SET collected_amount = collected_amount + ? WHERE id = ?", amount, campaignID)
+	if err != nil {
+		return false, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return waSent == 0, nil
+}
+
+// UnverifyDonation membatalkan verifikasi: status kembali 'pending',
+// verified_at/verified_by dikosongkan, dan collected_amount kampanye dikurangi
+// balik sebesar amount donasi. Tabel donations adalah sumber angka Kas/Laba Rugi
+// (kas/audit.go menjumlahkan WHERE status='verified'), jadi cukup ubah status —
+// angka kas ikut menyesuaikan otomatis tanpa baris kas tambahan.
+// donations.wa_sent sengaja TIDAK di-reset (lihat VerifyDonation).
+func (r *Repository) UnverifyDonation(id int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	// 1. Get donation details
 	var amount float64
 	var campaignID int
 	var currentStatus string
@@ -337,19 +390,16 @@ func (r *Repository) VerifyDonation(id int, verifiedBy int) error {
 		return err
 	}
 
-	if currentStatus == "verified" {
-		return nil // Already verified
+	if currentStatus != "verified" {
+		return errDonationNotVerified
 	}
 
-	// 2. Update donation status
-	now := time.Now().Format("2006-01-02 15:04:05")
-	_, err = tx.Exec("UPDATE donations SET status = 'verified', verified_at = ?, verified_by = ? WHERE id = ?", now, verifiedBy, id)
+	_, err = tx.Exec("UPDATE donations SET status = 'pending', verified_at = NULL, verified_by = NULL WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
 
-	// 3. Update campaign collected amount
-	_, err = tx.Exec("UPDATE donation_campaigns SET collected_amount = collected_amount + ? WHERE id = ?", amount, campaignID)
+	_, err = tx.Exec("UPDATE donation_campaigns SET collected_amount = collected_amount - ? WHERE id = ?", amount, campaignID)
 	if err != nil {
 		return err
 	}
