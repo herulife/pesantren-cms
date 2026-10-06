@@ -3,6 +3,7 @@ package sysnotif
 import (
 	"almaparung-api/internal/features/auth"
 	"almaparung-api/internal/platform/logger"
+	platsysnotif "almaparung-api/internal/platform/sysnotif"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -50,7 +51,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
 		return
 	}
-	items, unread, err := List(r.Context(), h.db, userID)
+	items, unread, err := platsysnotif.List(r.Context(), h.db, userID)
 	if err != nil {
 		logger.Error(r.Context(), "sysnotif list failed", logger.Field{"operation": "sysnotif_list", "error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -69,7 +70,7 @@ func (h *Handler) UnreadCount(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
 		return
 	}
-	n, err := UnreadCount(r.Context(), h.db, userID)
+	n, err := platsysnotif.UnreadCount(r.Context(), h.db, userID)
 	if err != nil {
 		logger.Error(r.Context(), "sysnotif unread failed", logger.Field{"operation": "sysnotif_unread", "error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
@@ -92,7 +93,7 @@ func (h *Handler) MarkRead(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "ID notifikasi tidak valid", nil)
 		return
 	}
-	if err := MarkRead(r.Context(), h.db, userID, id); err != nil {
+	if err := platsysnotif.MarkRead(r.Context(), h.db, userID, id); err != nil {
 		logger.Error(r.Context(), "sysnotif mark read failed", logger.Field{"operation": "sysnotif_mark_read", "error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
@@ -107,7 +108,7 @@ func (h *Handler) MarkAllRead(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
 		return
 	}
-	if err := MarkAllRead(r.Context(), h.db, userID); err != nil {
+	if err := platsysnotif.MarkAllRead(r.Context(), h.db, userID); err != nil {
 		logger.Error(r.Context(), "sysnotif mark all read failed", logger.Field{"operation": "sysnotif_mark_all_read", "error": err.Error()})
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
