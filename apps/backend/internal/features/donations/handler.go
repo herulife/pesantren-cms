@@ -2,7 +2,9 @@ package donations
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/features/sysnotif"
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
@@ -472,6 +474,11 @@ func (h *Handler) CreateDonation(w http.ResponseWriter, r *http.Request) {
 		logger.Error(r.Context(), "donation create failed", logger.Field{"operation": "donation_create", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
+	}
+	// Jilid 82: beri tahu admin bahwa ada donasi baru tercatat.
+	if err := sysnotif.Emit(r.Context(), database.DB, "donasi", "Donasi baru tercatat",
+		fmt.Sprintf("%s menyumbang Rp%.0f", d.DonorName, d.Amount), "/admin/donations"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_donasi", "error": err.Error()})
 	}
 	sendJSONResponse(w, http.StatusCreated, true, "Transaksi donasi berhasil dicatat", nil)
 }

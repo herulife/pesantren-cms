@@ -2,13 +2,17 @@ package psb
 
 import (
 	"almaparung-api/internal/features/auth"
+	"almaparung-api/internal/features/sysnotif"
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/database"
+	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/wanotif"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -335,6 +339,13 @@ func (h *Handler) SaveMine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Jilid 82: deteksi pendaftar BARU (belum ada baris registrasi) agar tidak
+	// berdenging lagi saat wali mengedit biodatanya.
+	isNewPendaftar := false
+	if _, err := h.repo.FindByUserID(r.Context(), userID); err != nil && errors.Is(err, sql.ErrNoRows) {
+		isNewPendaftar = true
+	}
+
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
 		SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
@@ -401,6 +412,14 @@ func (h *Handler) SaveMine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SendSuccessResponse(w, http.StatusOK, reg, "Biodata PSB berhasil disimpan")
+
+	// Jilid 82: bunyikan lonceng admin hanya untuk pendaftar BARU.
+	if isNewPendaftar {
+		if err := sysnotif.Emit(r.Context(), database.DB, "psb_pendaftar", "Pendaftar PSB baru",
+			fmt.Sprintf("%s (%s)", reg.FullName, reg.Jenjang), "/admin/psb"); err != nil {
+			logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_psb_pendaftar", "error": err.Error()})
+		}
+	}
 }
 
 func (h *Handler) SaveMyDocuments(w http.ResponseWriter, r *http.Request) {
@@ -563,6 +582,12 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SendSuccessResponse(w, http.StatusOK, reg, msg)
+
+	// Jilid 82: beri tahu bendahara bahwa ada bukti pembayaran PSB baru.
+	if err := sysnotif.Emit(r.Context(), database.DB, "pembayaran", "Bukti pembayaran PSB masuk",
+		fmt.Sprintf("%s — Rp%d menunggu verifikasi", reg.FullName, reg.PaymentAmount), "/admin/psb"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_psb_payment", "error": err.Error()})
+	}
 }
 
 func (h *Handler) UpdatePaymentStatus(w http.ResponseWriter, r *http.Request) {

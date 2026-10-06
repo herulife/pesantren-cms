@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"almaparung-api/internal/features/sysnotif"
 	"almaparung-api/internal/platform/audit"
+	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/validators"
 	"context"
@@ -220,6 +222,12 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		})
 		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal membuat akun", nil)
 		return
+	}
+
+	// Jilid 82: admin tahu ada pendaftar akun baru (portal PSB/wali, dst).
+	if err := sysnotif.Emit(r.Context(), database.DB, "user_baru", "Akun baru terdaftar",
+		fmt.Sprintf("%s (%s)", newUser.Name, newUser.Email), "/admin/users"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_user_baru", "error": err.Error()})
 	}
 
 	logger.RecordActivity(&newUser.ID, "REGISTER", "Pengguna baru mendaftar", r.RemoteAddr, r.UserAgent())
