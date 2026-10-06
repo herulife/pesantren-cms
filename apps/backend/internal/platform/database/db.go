@@ -836,6 +836,12 @@ func createTables() {
 	// Penanda "WA donasi sudah pernah dikirim" — TIDAK pernah di-reset saat
 	// verifikasi dibatalkan, supaya verify ulang tidak mengirim pesan dobel.
 	addColumnIfNotExists("donations", "wa_sent", "INTEGER NOT NULL DEFAULT 0")
+	// Backfill: donasi yang sudah verified saat kolom ini dibuat (semua data
+	// lama) sudah melewati momen verifikasi pertama, jadi ditandai "sudah
+	// diinformasikan". Tanpa ini, unverify -> verify ulang akan mengirim WA
+	// dobel ke donatur lama. Idempoten: VerifyDonation selalu menulis 1 untuk
+	// donasi verified, jadi baris yang tersentuh di sini hanya data pra-Jilid 81.
+	_, _ = DB.Exec(`UPDATE donations SET wa_sent = 1 WHERE status = 'verified' AND wa_sent = 0`)
 	addColumnIfNotExists("kas_transactions", "voided", "INTEGER NOT NULL DEFAULT 0")
 	addColumnIfNotExists("kas_transactions", "void_reason", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
