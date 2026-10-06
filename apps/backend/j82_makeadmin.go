@@ -33,7 +33,8 @@ func main() {
 	}
 	var infos []cinfo
 	var cid, pk int
-	var name, typ, notnull, dflt string
+	var name, typ, notnull string
+	var dflt sql.NullString
 	for rows.Next() {
 		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
 			log.Fatal(err)
