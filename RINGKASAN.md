@@ -1,5 +1,5 @@
 # RINGKASAN PROYEK ALMA-PARUNG — Handoff Antar Agen
-> Terakhir diperbarui: 2026-10-05 (**Jilid 79 - Perbaiki tab "Log Transaksi" donasi yang kosong (4 pending tidak pernah tampil, `collected_amount` selalu 0) + pisah DTO admin/publik + proteksi bukti transfer saat edit; Jilid 78b - bersih-bersih storage: 58G -> 37G terpakai (82G free), 11 dangling image + 23 image lama + 3 container uji dihapus, chain rollback (per 5 Okt, sebelum Jilid 79) j78->j77->j76; Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
+> Terakhir diperbarui: 2026-10-06 (**Jilid 80 - Perbaiki tab "Log Transaksi" donasi yang kosong (4 pending tidak pernah tampil, `collected_amount` selalu 0) + pisah DTO admin/publik + proteksi bukti transfer saat edit; Jilid 78b - bersih-bersih storage: 58G -> 37G terpakai (82G free), 11 dangling image + 23 image lama + 3 container uji dihapus, chain rollback (per 5 Okt, sebelum Jilid 79) j78->j77->j76; Jilid 78 - Export Data Santri: endpoint `GET /api/santri/export` (tanpa paginasi, 26 kolom `santri` + akun portal) + tombol Export Excel di header `/admin/kesantrian`, `wali_kelas` fail-closed;** Jilid 77/77a - presensi pakai `santri.id`: FK `attendance.student_id` -> `santri(id)`, unique index `(student_id,date)`, endpoint baru `GET /api/academics/attendance/students`, form presensi memakai daftar Santri, fix `PurgeSantri` menghapus presensi milik Santri lain; **Jilid 76 - Akun Wali Santri satu-akun-per-keluarga + halaman `/admin/akun/walisantri`; Jilid 75 - Papan Kas + `/api/kas/audit`; Jilid 74 - filter kelas Santri ikut data DB (distinct + jumlah per kelas, kelas lama tetap) + 5 menu ex-Classic dikelompokkan jadi panel Sidebar "Administrasi"; Jilid 73 - filter+form kelas kanonik `7`-`12`+`PSB` + Mode Classic dihapus/pindah ke Glass; 2026-10-01 (Jilid 71 - keterangan template import santri dipindah ke tutorial "Data Santri & Import Massal"; Jilid 70 - foto avatar tampil di Sidebar admin + menu cepat; Jilid 69 - unggah foto avatar profil di `/admin/akun`; Jilid 68 - avatar profil di header + halaman `/admin/akun` dengan ganti password sendiri; Jilid 67 Kategori Murid; Jilid 66 tombol No. Rekening deep-link; Jilid 65 hapus total BGN + import ulang Santri))). Baca seluruh file ini SEBELUM menyentuh apa pun.
 
 ## 0. ATURAN WAJIB UNTUK AGEN PENERUS (baca dulu!)
 
@@ -21,8 +21,8 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend-j78` | `alma-parung-backend:j78-export-santri` | **Jilid 78** (endpoint baru `GET /api/santri/export` tanpa paginasi/search - 26 kolom `santri` + data akun portal via LEFT JOIN `users`, `password_hash` tidak ikut; `wali_kelas` dibatasi kelasnya dan **fail-closed** kalau penugasannya kosong), Jilid 77/77a (`attendance.student_id` -> `santri(id)` + unique index `idx_attendance_student_date(student_id,date)`; endpoint baru `GET /api/academics/attendance/students`; `GetAttendanceSummary` menjumlahkan semua Santri milik satu akun; QR scan mencatat semua anak sebuah akun; duplikat presensi -> HTTP 409), Jilid 76 (`GET/PUT /api/wali-santri` + halaman `/admin/akun/walisantri`; satu akun wali boleh untuk banyak Santri - index unik `idx_santri_user_unique` sudah di-drop), Jilid 75, 74, 69, 68, 67, 65. Healthy, **WAJIB `-p 8090:8080`** karena nginx mem-proxy `/api/` ke 8090. **Rollback j78: container `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`) SUDAH di-stop dan **tidak perlu membalik DB** (Jilid 78 tanpa migrasi). JANGAN simply restart ke container j77 atau lebih tua tanpa rollback DB, lihat §4 Jilid 77. Rollback lain: `alma-parung-backend-pre-j75` (image `j74-kelas-panel`), lalu `alma-parung-backend-pre-j74` (image `j69-avatar`) |
-| Frontend | `alma-parung-frontend-j78` | `alma-parung-frontend:j78-export-santri` | **Jilid 78** (`exportData()` di `/admin/kesantrian` jadi async dan ambil data LENGKAP dari `/santri/export`; tombol Export Excel baru di header = semua data, tombol di toolbar = hanya baris terpilih; state `exporting` disable tombol selama fetch), Jilid 77 (form presensi `/admin/academics/form` memakai endpoint `getAttendanceStudents()` sehingga dropdown menampilkan Santri.id + kelas; dropdown nilai/tahfidz/arbain tetap `users.id`), Jilid 76 (`/admin/akun/walisantri`), Jilid 75 (`/admin/kas` Papan Kas), Jilid 74 (panel Sidebar Administrasi), Jilid 73 (kelas kanonik). Healthy, **WAJIB `-p 3002:3000`**. **Rollback j78: container `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`) SUDAH di-stop** (container rollback harus di-stop dulu sebelum port 3002 bisa dipakai lagi). Rollback lain: `alma-parung-frontend-bobot-pre-j75`, lalu `-pre-j74` |
+| Backend | `alma-parung-backend-j80` | `alma-parung-backend:j80-laba-rugi` | **Jilid 80** (field baru `expense_groups` untuk Laba Rugi). Rollback: `alma-parung-backend-pre-j80` (Jilid 79) |
+| Frontend | `alma-parung-frontend-j80` | `alma-parung-frontend:j80-laba-rugi` | **Jilid 80** (restyle penuh `/admin/kas` + tab Laba Rugi + export PDF/Excel). Rollback: `alma-parung-frontend-pre-j80` (Jilid 79) |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | container rollback Jilid 78: `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`, **stopped**) + `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`, **stopped**), tanpa perlu rollback DB. Pendahulu Jilid 77: `alma-parung-backend-pre-j77` (image `j76-wali-santri`, **stopped**) + `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`, **stopped**). **Catatan: rollback ke <= j76 wajibmelempar balik DB ke skema `users(id)` dulu, lihat §4 Jilid 77. Chain rollback diputus di j75/j74 — image `j75-kas-audit`, `j74-kelas-panel`, `j72-login-center`, `j69-avatar`, `j68-akun`, `jilid67-kategori`, `fix-nullsanti-v2`, `arbain-bgn2`, `fix-psb-*`, `disc-fix`, `disiplinfix`, `sppautofix`, `jilid44`, `jilid47`, dan `j77-purge-attendance` SUDAH DIHAPUS 5 Okt 2026 (§4 Jilid 78b) — jangan menyebutnya sebagai rollback.** |
 | DB | — | — | **Recount 5 Okt 2026 (Jilid 78, python3 ke `data/alma-parung.db` + endpoint `/api/santri/export`): `santri` 58, dan 58 di antaranya punya akun portal tertaut (`santri.user_id` -> `users.id`).** Angka 101/122 (Jilid 70) dan 116/124 (Jilid 68) di bawah ini **SUDAH KEDALUWARSA** — jangan dipakai sebagai fakta, recount dulu. **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
@@ -63,6 +63,46 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 80 - Halaman Kas & Laba Rugi (restyle penuh + tab Laba Rugi baru) (6 Okt 2026, LIVE)
+
+### Apa yang diubah
+**Backend** (`apps/backend/internal/features/kas/audit.go`):
+- Tambah `AuditExpenseGroup` (CategoryID, Label, Amount, Count) + field `Audit.ExpenseGroups` (JSON `expense_groups`).
+- Query `expense_groups` memakai variabel filter `expWhere/expArgs` yang **SAMA** dengan `Audit.Expense`.
+  Ini wajib: kalau filter-nya beda, Laba Rugi bisa tidak balance. Selalu di-init `[]AuditExpenseGroup{}`
+  supaya JSON-nya `[]`, bukan `null`.
+- Test baru di `audit_test.go`: jumlah harus cocok dengan total, ikut filter periode, dan kosong bukan nil.
+
+**Frontend** (`apps/frontend/src/app/admin/kas/page.tsx`) — restyle penuh:
+- 4 tab: Papan Kas, Transaksi, Kategori, **Laba Rugi** (baru).
+- Pakai helper `isData()` dari `lib/auth` agar style sel/header konsisten dengan **Data Santri**
+  (lihat entri Jilid 78 untuk pola tersebut). Horisont scroll, `min-w-3xl`, judulibold + `rounded-xl bg-white`.
+- Filter periode + **filter "Jenis"**. Bug lama diperbaiki: `kind` sebelumnya di-state tapi tidak pernah
+  dipakai, jadi select-nya tidak mengubah apa pun. Sekarang di-filter client-side (`txsView`/`catsView`)
+  supaya tidak menambah request dan dropdown kategori di form tetap memuat semua kategori.
+- Ringkasan 4 kartu (Saldo, Masuk, Keluar, Sumber Dana Otomatis) + panel anomali + panel Papan Kas
+  yang bisa diklik untuk drill-down ke transaksi.
+- Tab Laba Rugi dibangun dari angka resmi `/api/kas/audit`
+  (`total_income`, `expense`, `balance`, `sources`, `expense_groups`) — **tidak** menjumlahkan ulang
+  transaksi di frontend.
+- Tombol **Export PDF / Export Excel** di header, kontekstual per tab, pakai `lib/export.ts`.
+
+### Verifikasi
+- `go build ./...`, `go vet ./...`, `go test ./... -count=1` -> semua paket **ok**.
+- `npx tsc --noEmit --incremental false` -> 0 error.
+- Invariant diuji langsung ke DB produksi: `audit.expense = 15,618,000` (14 baris),
+  `sum(expense_groups) = 15,618,000` (6 kategori) -> **seimbang**.
+- Binary live dicek: `strings /app/apps/backend/almaparung-api` memuat string `expense_groups`.
+- `/admin/kas` tanpa sesi -> 307 ke `/login` (middleware auth OK). `/api/kas/*` tanpa sesi -> 401.
+
+### Catatan
+- Deploy image `alma-parung-backend:j80-laba-rugi` dan `alma-parung-frontend:j80-laba-rugi`.
+  Container j79 **tidak dihapus**, hanya di-`stop` lalu di-`rename` jadi `*-pre-j80` (rollback).
+- Tabel transaksi dimuat max 200 baris (`TX_LIMIT=200`) sesuai batas endpoint server, jadi
+  tombol export ikut terbatas 200 baris terbaru. Kalau perlu export penuh, export khusus backend.
+- Smoke test terautentikasi (buka `/admin/kas` sebagai bendahara dan `/admin/donations` Log Transaksi)
+  BELUM dilakukan karena tidak ada kredensial admin; jangan reset password prod tanpa izin user.
 
 ## Jilid 79 - Perbaiki tab "Log Transaksi" donasi yang kosong (5 Okt 2026, LIVE)
 
