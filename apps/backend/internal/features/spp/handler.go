@@ -2,11 +2,11 @@ package spp
 
 import (
 	"almaparung-api/internal/features/auth"
-	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/finance"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
 	"database/sql"
@@ -312,10 +312,10 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 type payRequest struct {
-	Amount  int    `json:"amount"`
-	Method  string `json:"method"`
-	PaidAt  string `json:"paid_at"`
-	Notes   string `json:"notes"`
+	Amount int    `json:"amount"`
+	Method string `json:"method"`
+	PaidAt string `json:"paid_at"`
+	Notes  string `json:"notes"`
 }
 
 func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
@@ -449,7 +449,6 @@ func (h *Handler) CombinedReport(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Laporan gabungan berhasil dimuat", rows)
 }
 
-
 func (h *Handler) notifyKwitansiWA(billID int, r *http.Request, aid int) {
 	if !h.repo.WAKwitansiEnabled() {
 		return
@@ -482,10 +481,10 @@ func (h *Handler) SubmitProof(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Amount  int    `json:"amount"`
-		Method  string `json:"method"`
-		PaidAt  string `json:"paid_at"`
-		Proof   string `json:"proof_url"`
+		Amount int    `json:"amount"`
+		Method string `json:"method"`
+		PaidAt string `json:"paid_at"`
+		Proof  string `json:"proof_url"`
 	}
 	if err := validators.DecodeJSON(w, r, &req); err != nil {
 		sendJSONResponse(w, http.StatusBadRequest, false, "Payload permintaan tidak valid", nil)

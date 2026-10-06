@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/platform/audit"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/validators"
 	"context"
 	"database/sql"

@@ -417,9 +417,9 @@ func main() {
 				r.Mount("/payments", paymentHandler.Routes())
 				r.Mount("/spp", sppHandler.Routes())
 				r.Mount("/iuran", iuranHandler.Routes())
-r.Mount("/donations", donationHandler.Routes())
-			r.Mount("/kas", kasHandler.Routes())
-		})
+				r.Mount("/donations", donationHandler.Routes())
+				r.Mount("/kas", kasHandler.Routes())
+			})
 
 			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
 			// daftar ini memuat email/nama wali (data pribadi orang tua).

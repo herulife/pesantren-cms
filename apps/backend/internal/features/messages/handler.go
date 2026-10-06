@@ -1,9 +1,9 @@
 package messages
 
 import (
-	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/platform/database"
 	"almaparung-api/internal/platform/logger"
+	"almaparung-api/internal/platform/sysnotif"
 	"almaparung-api/internal/validators"
 	"encoding/json"
 	"fmt"
