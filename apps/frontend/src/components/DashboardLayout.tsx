@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import FloatingQuickMenu from './FloatingQuickMenu';
 import UserAvatar from './UserAvatar';
 import { useAuth } from './AuthProvider';
+import NotificationBell from './NotificationBell';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -55,6 +56,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Lonceng notifikasi sistem (Jilid 82) */}
+            <NotificationBell />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-slate-700">{user?.name || 'Admin'}</p>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
