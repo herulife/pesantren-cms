@@ -1281,6 +1281,32 @@ func runMigrations() {
 			name: "arbain_progress_student_hadith_index",
 			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_arbain_student_hadith ON arbain_progress(student_id, hadith_number);`,
 		},
+		{
+			// Jilid 82: notifikasi sistem (lonceng) untuk semua admin.
+			// Broadcast: setiap baris dibaca per-user lewat sys_notification_reads.
+			name: "sys_notifications_table",
+			sql: `CREATE TABLE IF NOT EXISTS sys_notifications (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				type TEXT NOT NULL,
+				title TEXT NOT NULL,
+				message TEXT NOT NULL,
+				link TEXT NOT NULL DEFAULT '',
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+			);`,
+		},
+		{
+			name: "sys_notifications_created_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_sys_notif_created ON sys_notifications(created_at DESC);`,
+		},
+		{
+			name: "sys_notification_reads_table",
+			sql: `CREATE TABLE IF NOT EXISTS sys_notification_reads (
+				user_id INTEGER NOT NULL,
+				notification_id INTEGER NOT NULL,
+				read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY (user_id, notification_id)
+			);`,
+		},
 	}
 
 	for _, migration := range migrations {

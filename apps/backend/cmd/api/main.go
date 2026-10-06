@@ -31,6 +31,7 @@ import (
 	"almaparung-api/internal/features/school"
 	"almaparung-api/internal/features/settings"
 	"almaparung-api/internal/features/spp"
+	"almaparung-api/internal/features/sysnotif"
 	"almaparung-api/internal/features/teachers"
 	"almaparung-api/internal/features/upload"
 	"almaparung-api/internal/features/videos"
@@ -184,6 +185,8 @@ func main() {
 
 	notificationRepo := notifications.NewRepository(database.DB)
 	notificationHandler := notifications.NewHandler(notificationRepo)
+
+	sysnotifHandler := sysnotif.NewHandler(database.DB)
 
 	attendanceRepo := attendance.NewRepository(database.DB)
 	attendanceHandler := attendance.NewHandler(attendanceRepo)
@@ -414,9 +417,9 @@ func main() {
 				r.Mount("/payments", paymentHandler.Routes())
 				r.Mount("/spp", sppHandler.Routes())
 				r.Mount("/iuran", iuranHandler.Routes())
-				r.Mount("/donations", donationHandler.Routes())
-				r.Mount("/kas", kasHandler.Routes())
-			})
+r.Mount("/donations", donationHandler.Routes())
+			r.Mount("/kas", kasHandler.Routes())
+		})
 
 			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
 			// daftar ini memuat email/nama wali (data pribadi orang tua).
@@ -533,6 +536,14 @@ func main() {
 				r.Mount("/academics", academicHandler.Routes())
 				r.Mount("/notifications", notificationHandler.Routes())
 				r.Post("/attendance/scan", attendanceHandler.Scan)
+			})
+
+			// Notifikasi sistem (lonceng) — dibuka untuk SEMUA role admin.
+			// Jilid 82: superadmin/bendahara/panitia_psb/admin/pimpinan/wali_kelas/
+			// guru/ustadz semuanya melihat notifikasi yang sama (broadcast).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin", "pimpinan", "wali_kelas", "guru", "ustadz"))
+				r.Mount("/snotif", sysnotifHandler.Routes())
 			})
 		})
 

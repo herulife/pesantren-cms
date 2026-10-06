@@ -2,8 +2,10 @@ package iuran
 
 import (
 	"almaparung-api/internal/features/auth"
-	"almaparung-api/internal/platform/finance"
+	"almaparung-api/internal/features/sysnotif"
 	"almaparung-api/internal/features/upload"
+	"almaparung-api/internal/platform/database"
+	"almaparung-api/internal/platform/finance"
 	"almaparung-api/internal/platform/logger"
 	"almaparung-api/internal/platform/whatsapp"
 	"almaparung-api/internal/validators"
@@ -491,9 +493,14 @@ func (h *Handler) SubmitProof(w http.ResponseWriter, r *http.Request) {
 			sendJSONResponse(w, http.StatusUnprocessableEntity, false, err.Error(), nil)
 			return
 		}
-		logger.Error(r.Context(), "spp proof failed", logger.Field{"operation": "spp_proof", "error": err.Error()})
+		logger.Error(r.Context(), "iuran proof failed", logger.Field{"operation": "iuran_proof", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
+	}
+	// Jilid 82: bendahara tahu ada bukti pembayaran iuran baru yang menunggu diverifikasi.
+	if err := sysnotif.Emit(r.Context(), database.DB, "pembayaran", "Pembayaran iuran masuk",
+		fmt.Sprintf("Tagihan #%d — Rp%d menunggu verifikasi", id, req.Amount), "/admin/iuran"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_iuran_proof", "error": err.Error()})
 	}
 	sendJSONResponse(w, http.StatusOK, true, "Bukti pembayaran terkirim, menunggu verifikasi bendahara", nil)
 }
