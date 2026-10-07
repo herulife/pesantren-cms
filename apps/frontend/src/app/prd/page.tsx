@@ -257,6 +257,10 @@ export default function PrdPage() {
           <h2 id="roadmap-title" className="text-sm font-bold text-slate-500">
             Rencana pengerjaan
           </h2>
+          <p className="mt-2 max-w-3xl text-sm text-slate-500">
+            Nomor menyesuaikan jilid terakhir yang sudah live: <b>Jilid 84 = Kelola akun wali santri oleh superadmin</b>{' '}
+            (buat akun, edit whatsapp, reset password). Rencana E-Rapor berikutnya mulai dari Jilid 85.
+          </p>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
             {JILID.map((j) => (
               <div key={j.n} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
