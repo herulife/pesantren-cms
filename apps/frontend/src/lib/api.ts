@@ -2020,7 +2020,7 @@ export async function getWaliSantriAccounts(): Promise<WaliList | null> {
 
 export async function updateWaliSantriAccount(
 	userId: number,
-	payload: { name: string; email: string }
+	payload: { name: string; email: string; whatsapp?: string }
 ): Promise<{ ok: boolean; message: string }> {
 	try {
 		const r = await lmsFetch(`/wali-santri/${userId}`, {
@@ -2032,6 +2032,49 @@ export async function updateWaliSantriAccount(
 		return {
 			ok: false,
 			message: e instanceof Error ? e.message : 'Gagal memperbarui akun wali'
+		};
+	}
+}
+
+export interface WaliCreatePayload {
+	name: string;
+	email: string;
+	whatsapp?: string;
+	password: string;
+	santri_ids: number[];
+}
+
+export async function createWaliSantriAccount(
+	payload: WaliCreatePayload
+): Promise<{ ok: boolean; message: string; user_id?: number }> {
+	try {
+		const r = await lmsFetch<{ user_id: number }>('/wali-santri', {
+			method: 'POST',
+			body: JSON.stringify(payload)
+		});
+		return { ok: r.success, message: r.message, user_id: r.data?.user_id };
+	} catch (e) {
+		return {
+			ok: false,
+			message: e instanceof Error ? e.message : 'Gagal membuat akun wali'
+		};
+	}
+}
+
+export async function resetWaliSantriPassword(
+	userId: number,
+	password: string
+): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wali-santri/${userId}/reset-password`, {
+			method: 'POST',
+			body: JSON.stringify({ password })
+		});
+		return { ok: r.success, message: r.message };
+	} catch (e) {
+		return {
+			ok: false,
+			message: e instanceof Error ? e.message : 'Gagal mereset password'
 		};
 	}
 }
