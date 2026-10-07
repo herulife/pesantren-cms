@@ -50,6 +50,11 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - Auth: `POST /api/register` body `{name,email,password}` (STRICT JSON — unknown field = 400), `POST /api/login` body `{email,password}`. Cookie `alma_token` ber-flag `Secure` → **tidak terkirim via HTTP polos**; untuk smoke/curl pakai `Authorization: Bearer <token dari Set-Cookie>`.
 - Semua decode JSON backend memakai `validators.DecodeStrictJSON` (unknown field ditolak).
 - Portal wali (role `user`): `GET/PUT /api/psb/me`, `PUT /api/psb/me/documents`, `PUT /api/psb/me/payment`, `GET /api/psb/me/receipt`, `/api/my-bills`, `/api/my-receipt` (lihat grup "Portal PSB" di `main.go`).
+- **Jilid 84 — Kelola akun wali (superadmin/bendahara, `features/walisantri`):**
+  - `POST /api/wali-santri` body `{name,email,whatsapp?,password,santri_ids?}` → 201 `{user_id}`. Duplikat email 409; santri dipilih tidak ada 404; wajib STRICT JSON. `whatsapp` opsional pakai `ValidatePhone`.
+  - `PUT /api/wali-santri/{id}` body `{name,email,whatsapp?}` → edit data akun wali (termasuk whatsapp yang dulu tidak bisa diisi).
+  - `POST /api/wali-santri/{id}/reset-password` body `{password}` (min 8) → 200; `token_version+1` = semua sesi lama akun itu otomatis dicabut (wali harus login ulang). Akun `role != "user"` → 400; id tidak ada → 404.
+  - Daftar `GET /api/wali-santri` menaruh akun tanpa tautan santri di grup `orphans` (bukan `accounts`); field `whatsapp` hanya diekspos untuk `accounts`. Reset/modif password wali tetap taat aturan §"Password awal" di bawah.
 - **Password awal akun wali (7 Okt 2026) = deterministik `Alma` + NIS santri pertama (id terkecil) di akun itu.** Kredensial: `/home/heru/KREDENSIAL-WALI-20261007.csv` (**di luar repo**, jangan commit). Backup hash lama: `/home/heru/backup-hash-wali-20261007.json` (rollback = restore dari JSON). Jangan reset manual selain lewat skema ini tanpa izin user.
 - RBAC: `auth.RequireRole(...)`, `superadmin` bypass semua. Notifikasi: `superadmin,bendahara`. SPP/iuran: `bendahara`.
 - NIK unik di layer repo (`ErrDuplicateNIK` → 409), bukan index global (daftar-ulang lintas periode).
