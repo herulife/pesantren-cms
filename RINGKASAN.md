@@ -64,6 +64,15 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
 
+## Reset Password Awal Akun Wali Santri (7 Okt 2026)
+
+- **55 akun wali** (role `user` yang tertaut santri) di-set ulang ke password deterministik: `Alma` + NIS santri pertama (santri ber-id terkecil) di akun itu. Semua ≥ 11 karakter (rule minimum 8). Valid bcrypt.
+- Latar belakang: audit 7 Okt 2026 → 75/82 akun wali belum pernah login; password awal hasil import **tidak terdokumentasi** sehingga wali selalu gagal "Email atau password salah" (bukan bug sistem — alur login teruji end-to-end, akun uji id 211 dibuat lalu dihapus).
+- Berkas kredensial & backup hash **DI LUAR repo** (jangan pernah commit):
+  - `/home/heru/KREDENSIAL-WALI-20261007.csv` (55 baris: email, nama wali, santri, NIS, no HP wali, password) — chmod 600.
+  - `/home/heru/backup-hash-wali-20261007.json` (id → hash lama, untuk rollback).
+- Verifikasi: login API ketiga tipe akun (keluarga `wali<hp>@`, merged `nurhaepi`, placeholder `wali-santri<id>@`) berhasil; password salah tetap 401. Token sesi lama tidak di-invalidasi (token_version tidak diubah).
+
 ## Halaman Rancangan /prd - Pratinjau Integrasi E-Rapor (7 Okt 2026, LIVE)
 
 Bukan jilid fitur — halaman desain yang diminta user untuk "melihat hasil akhir" integrasi E-Rapor sebelum implementasi.
