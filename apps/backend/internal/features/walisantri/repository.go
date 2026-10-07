@@ -4,9 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 var ErrDuplicateEmail = errors.New("email sudah dipakai akun lain")
+
+var ErrNotWali = errors.New("akun ini bukan akun wali")
 
 // Santri adalah anak yang tertaut ke satu akun wali.
 type Santri struct {
