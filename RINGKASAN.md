@@ -22,7 +22,7 @@
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
 | Backend | `alma-parung-backend-j83` | `alma-parung-backend:j83-notif-expand` | **Jilid 83** (Perluas event notifikasi: emit `donasi` "Donasi terverifikasi" saat VerifyDonation, `pembayaran` "Pembayaran invoice masuk" saat invoice webhook paid, `tagihan` "Tagihan SPP otomatis dibuat" saat autobilling dibuat. API `/snotif` Jilid 82 + fix rute publik `POST /api/contact` tetap). Rollback: `alma-parung-backend-pre-j83` (image **`j82-sysnotif`**, stopped) |
-| Frontend | `alma-parung-frontend-j83` | `alma-parung-frontend:j83-notif-expand` | **Jilid 83** (icon `tagihan` 🧾 di `NotificationBell` `TYPE_ICON`). Rollback: `alma-parung-frontend-pre-j83` (**j82-sysnotif**, stopped) |
+| Frontend | `alma-parung-frontend-j83` | `alma-parung-frontend:prd-preview` | **PRD Preview /prd** (halaman rancangan integrasi E-Rapor, mockup interaktif di `https://almaparung.com/prd`; konten Jilid 83 tetap utuh). Rollback: `alma-parung-frontend-pre-prd` (**j83-notif-expand**, stopped) |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | container rollback Jilid 78: `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`, **stopped**) + `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`, **stopped**), tanpa perlu rollback DB. Pendahulu Jilid 77: `alma-parung-backend-pre-j77` (image `j76-wali-santri`, **stopped**) + `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`, **stopped**). **Catatan: rollback ke <= j76 wajibmelempar balik DB ke skema `users(id)` dulu, lihat §4 Jilid 77. Chain rollback diputus di j75/j74 — image `j75-kas-audit`, `j74-kelas-panel`, `j72-login-center`, `j69-avatar`, `j68-akun`, `jilid67-kategori`, `fix-nullsanti-v2`, `arbain-bgn2`, `fix-psb-*`, `disc-fix`, `disiplinfix`, `sppautofix`, `jilid44`, `jilid47`, dan `j77-purge-attendance` SUDAH DIHAPUS 5 Okt 2026 (§4 Jilid 78b) — jangan menyebutnya sebagai rollback.** |
 | DB | — | — | **Recount 5 Okt 2026 (Jilid 78, python3 ke `data/alma-parung.db` + endpoint `/api/santri/export`): `santri` 58, dan 58 di antaranya punya akun portal tertaut (`santri.user_id` -> `users.id`).** Angka 101/122 (Jilid 70) dan 116/124 (Jilid 68) di bawah ini **SUDAH KEDALUWARSA** — jangan dipakai sebagai fakta, recount dulu. **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
@@ -63,6 +63,16 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Halaman Rancangan /prd - Pratinjau Integrasi E-Rapor (7 Okt 2026, LIVE)
+
+Bukan jilid fitur — halaman desain yang diminta user untuk "melihat hasil akhir" integrasi E-Rapor sebelum implementasi.
+
+- Frontend baru: `apps/frontend/src/app/prd/page.tsx` (server) + `src/app/prd/EraporMockup.tsx` (client, mockup interaktif 3 tab: Kelengkapan identitas / Log sinkron / Selisih EMIS). Isi: mockup `/admin/erapor`, alur sinkron 4 langkah, celah data alma, batasan ("RDM tanpa API tulis publik — sinkron = ekspor file + tarik EMIS"), roadmap Jilid 84–86.
+- Rancangan lengkap: `docs/ERAPOR_SYNC_PLAN.md` (baru).
+- Deploy: image `alma-parung-frontend:prd-preview` (b61e3727c56d). Container `alma-parung-frontend-j83` berganti image; yang lama di-rename `alma-parung-frontend-pre-prd` (`j83-notif-expand`, stopped). Backend tetap `j83-notif-expand`.
+- Verifikasi: `tsc` bersih; `https://almaparung.com/prd` 200; tab berpindah benar (aria-selected + isi tabel berubah), tanpa pageerror; kontainer `healthy`.
+- Catatan: cacat interaktivitas tab sempat terlihat di `next dev` (HMR websocket gagal) — bukan bug kode; di prod build (`next start`/container) tab berfungsi normal.
 
 ## Jilid 83 - Perluas event notifikasi sistem (7 Okt 2026, LIVE)
 
