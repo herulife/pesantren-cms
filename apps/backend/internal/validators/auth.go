@@ -153,17 +153,19 @@ func ValidateRoleUpdateRequest(req *RoleUpdateRequest) ValidationErrors {
 }
 
 // WaliUpdateRequest dipakai endpoint /api/wali-santri/{id} untuk mengganti nama
-// + email akun wali. Ini yang membuat data karangan bisa diganti admin kapan
-// saja tanpa membuat akun baru.
+// + email + nomor WhatsApp akun wali. Ini yang membuat data karangan bisa
+// diganti admin kapan saja tanpa membuat akun baru.
 type WaliUpdateRequest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Whatsapp string `json:"whatsapp"`
 }
 
 func ValidateWaliUpdateRequest(req *WaliUpdateRequest) ValidationErrors {
 	errs := ValidationErrors{}
 	req.Name = strings.TrimSpace(req.Name)
 	req.Email = NormalizeEmail(req.Email)
+	req.Whatsapp = strings.TrimSpace(req.Whatsapp)
 
 	if req.Name == "" {
 		errs.Add("name", "Nama wali wajib diisi")
@@ -176,6 +178,52 @@ func ValidateWaliUpdateRequest(req *WaliUpdateRequest) ValidationErrors {
 		errs.Add("email", "Format email tidak valid")
 	} else if len(req.Email) > 190 {
 		errs.Add("email", "Email terlalu panjang")
+	}
+	if req.Whatsapp != "" && !ValidatePhone(req.Whatsapp) {
+		errs.Add("whatsapp", "Nomor WhatsApp tidak valid")
+	}
+	return errs
+}
+
+// WaliCreateRequest dipakai POST /api/wali-santri untuk membuat akun wali
+// baru. SantriIDs opsional: santri yang langsung ditautkan ke akun ini.
+type WaliCreateRequest struct {
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Whatsapp  string `json:"whatsapp"`
+	Password  string `json:"password"`
+	SantriIDs []int  `json:"santri_ids"`
+}
+
+func ValidateWaliCreateRequest(req *WaliCreateRequest) ValidationErrors {
+	errs := ValidationErrors{}
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = NormalizeEmail(req.Email)
+	req.Whatsapp = strings.TrimSpace(req.Whatsapp)
+
+	if req.Name == "" {
+		errs.Add("name", "Nama wali wajib diisi")
+	} else if len([]rune(req.Name)) > 120 {
+		errs.Add("name", "Nama wali maksimal 120 karakter")
+	}
+	if req.Email == "" {
+		errs.Add("email", "Email wajib diisi")
+	} else if !ValidateEmail(req.Email) {
+		errs.Add("email", "Format email tidak valid")
+	} else if len(req.Email) > 190 {
+		errs.Add("email", "Email terlalu panjang")
+	}
+	if len(req.Password) < 8 {
+		errs.Add("password", "Password minimal 8 karakter")
+	}
+	if req.Whatsapp != "" && !ValidatePhone(req.Whatsapp) {
+		errs.Add("whatsapp", "Nomor WhatsApp tidak valid")
+	}
+	for _, sid := range req.SantriIDs {
+		if sid <= 0 {
+			errs.Add("santri_ids", "ID Santri tidak valid")
+			break
+		}
 	}
 	return errs
 }

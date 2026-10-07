@@ -1,6 +1,7 @@
 package walisantri
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -68,7 +69,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.Update(id, UpdateInput{Name: req.Name, Email: req.Email}); err != nil {
+	if err := h.repo.Update(id, UpdateInput{Name: req.Name, Email: req.Email, Whatsapp: req.Whatsapp}); err != nil {
 		if errors.Is(err, ErrDuplicateEmail) {
 			writeJSON(w, http.StatusConflict, false, "Email itu sudah dipakai akun lain", nil)
 			return
@@ -82,9 +83,106 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	audit.Record(r.Context(), audit.Entry{
 		RequestID: logger.CorrelationID(r), ActorID: actorID,
 		Action: "UPDATE_WALI", Entity: "user", EntityID: strconv.Itoa(id),
-		After: map[string]interface{}{"name": req.Name, "email": req.Email},
+		After: map[string]interface{}{"name": req.Name, "email": req.Email, "whatsapp": req.Whatsapp},
 		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 
 	writeJSON(w, http.StatusOK, true, "Akun wali diperbarui", nil)
+}
+
+// Create: membuat akun wali baru + (opsional) menautkan Santri yang dipilih.
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, false, "Isi permintaan tidak valid", nil)
+		return
+	}
+	var req validators.WaliCreateRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeJSON(w, http.StatusBadRequest, false, "Isi permintaan tidak valid: "+err.Error(), nil)
+		return
+	}
+	if errs := validators.ValidateWaliCreateRequest(&req); len(errs) > 0 {
+		writeJSON(w, http.StatusUnprocessableEntity, false, "Data wali tidak valid", errs)
+		return
+	}
+
+	id, err := h.repo.Create(CreateInput{
+		Name:      req.Name,
+		Email:     req.Email,
+		Whatsapp:  req.Whatsapp,
+		Password:  req.Password,
+		SantriIDs: req.SantriIDs,
+	})
+	if err != nil {
+		if errors.Is(err, ErrDuplicateEmail) {
+			writeJSON(w, http.StatusConflict, false, "Email itu sudah dipakai akun lain", nil)
+			return
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, false, "Terpilih Santri yang tidak ditemukan", nil)
+			return
+		}
+		logger.Error(r.Context(), "walisantri create failed", logger.Field{"error": err.Error()})
+		writeJSON(w, http.StatusInternalServerError, false, "Gagal membuat akun wali", nil)
+		return
+	}
+
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID,
+		Action: "CREATE_WALI", Entity: "user", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{
+			"name": req.Name, "email": req.Email, "whatsapp": req.Whatsapp, "santri_ids": req.SantriIDs,
+		},
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	writeJSON(w, http.StatusCreated, true, "Akun wali berhasil dibuat", map[string]interface{}{"user_id": id})
+}
+
+// ResetPassword: mengganti password akun wali (admin menentukannya sendiri,
+// lalu menyampaikan ke wali). Sesi lama otomatis dicabut via token_version.
+func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || id <= 0 {
+		writeJSON(w, http.StatusBadRequest, false, "ID akun wali tidak valid", nil)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, false, "Isi permintaan tidak valid", nil)
+		return
+	}
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeJSON(w, http.StatusBadRequest, false, "Isi permintaan tidak valid: "+err.Error(), nil)
+		return
+	}
+	if len(req.Password) < 8 {
+		writeJSON(w, http.StatusUnprocessableEntity, false, "Password minimal 8 karakter", nil)
+		return
+	}
+
+	if err := h.repo.ResetPassword(id, req.Password); err != nil {
+		if errors.Is(err, ErrNotWali) {
+			writeJSON(w, http.StatusBadRequest, false, err.Error(), nil)
+			return
+		}
+		logger.Error(r.Context(), "walisantri reset password failed", logger.Field{"user_id": id, "error": err.Error()})
+		writeJSON(w, http.StatusInternalServerError, false, "Gagal mereset password", nil)
+		return
+	}
+
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID,
+		Action: "RESET_WALI_PASSWORD", Entity: "user", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	writeJSON(w, http.StatusOK, true, "Password akun wali direset. Sampaikan password baru ke wali.", nil)
 }
