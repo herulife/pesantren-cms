@@ -486,6 +486,180 @@ export default function WaliSantriAccountsPage() {
 					</div>
 				</section>
 			)}
+
+			{showCreate && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+					<div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+						<div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+							<h2 className="text-base font-black text-slate-900">Buat Akun Wali Santri</h2>
+							<button
+								type="button"
+								onClick={() => setShowCreate(false)}
+								disabled={creating}
+								className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+							>
+								<X className="h-5 w-5" />
+							</button>
+						</div>
+						<div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">Nama wali *</label>
+								<input
+									value={createDraft.name}
+									onChange={(e) => setCreateDraft({ ...createDraft, name: e.target.value })}
+									placeholder="Nama lengkap wali"
+									className={inputClass}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">Email login *</label>
+								<input
+									type="email"
+									value={createDraft.email}
+									onChange={(e) => setCreateDraft({ ...createDraft, email: e.target.value })}
+									placeholder="nama@email.com"
+									className={inputClass}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">No. HP WhatsApp (opsional)</label>
+								<input
+									value={createDraft.whatsapp}
+									onChange={(e) => setCreateDraft({ ...createDraft, whatsapp: e.target.value })}
+									placeholder="contoh: 08xx..."
+									className={inputClass + ' font-mono'}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">Password awal * (min. 8 karakter)</label>
+								<input
+									type="password"
+									value={createDraft.password}
+									onChange={(e) => setCreateDraft({ ...createDraft, password: e.target.value })}
+									placeholder="Password awal untuk wali"
+									className={inputClass}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">
+									Tautkan Santri (opsional, boleh lebih dari satu = satu keluarga)
+								</label>
+								<input
+									value={studentQ}
+									onChange={(e) => setStudentQ(e.target.value)}
+									placeholder="Cari nama / NIS santri..."
+									className={inputClass}
+								/>
+								<div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white">
+									{filteredStudents.length === 0 ? (
+										<p className="p-3 text-sm text-slate-400">Tidak ada santri yang cocok.</p>
+									) : (
+										filteredStudents.map((s) => (
+											<button
+												type="button"
+												key={s.id}
+												onClick={() => toggleStudent(s.id)}
+												className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2 text-left transition last:border-0 hover:bg-sky-50"
+											>
+												<input
+													type="checkbox"
+													readOnly
+													checked={selectedStudents.has(s.id)}
+													className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+												/>
+												<div className="min-w-0 flex-1">
+													<div className="truncate text-sm font-semibold text-slate-800">{s.name}</div>
+													<div className="truncate text-xs text-slate-400">
+														{s.class ? `${s.class} · ` : ''}{s.nis}
+													</div>
+												</div>
+												{linkedStudentIds.has(s.id) && (
+													<span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+														sudah berakun
+													</span>
+												)}
+											</button>
+										))
+									)}
+								</div>
+							</div>
+						</div>
+						<div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+							<button
+								type="button"
+								onClick={() => setShowCreate(false)}
+								disabled={creating}
+								className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+							>
+								Batal
+							</button>
+							<button
+								type="button"
+								onClick={() => void submitCreate()}
+								disabled={creating}
+								className="inline-flex items-center gap-1 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-sky-700 disabled:opacity-50"
+							>
+								{creating ? 'Menyimpan...' : 'Simpan Akun'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{resetting !== null && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+					<div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+						<div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+							<h2 className="text-base font-black text-slate-900">Reset Password</h2>
+							<button
+								type="button"
+								onClick={() => setResetting(null)}
+								disabled={resetSaving}
+								className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+							>
+								<X className="h-5 w-5" />
+							</button>
+						</div>
+						<div className="space-y-4 px-5 py-4">
+							<p className="text-sm text-slate-600">
+								Tulis password baru untuk akun ini. Sesi login wali yang masih aktif
+								otomatis dicabut — wali harus login ulang.
+							</p>
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">
+									Password baru * (min. 8 karakter)
+								</label>
+								<input
+									type="password"
+									value={resetPass}
+									onChange={(e) => setResetPass(e.target.value)}
+									placeholder="Password baru"
+									autoFocus
+									className={inputClass}
+								/>
+							</div>
+						</div>
+						<div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+							<button
+								type="button"
+								onClick={() => setResetting(null)}
+								disabled={resetSaving}
+								className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+							>
+								Batal
+							</button>
+							<button
+								type="button"
+								onClick={() => void submitReset(resetting)}
+								disabled={resetSaving}
+								className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+							>
+								{resetSaving ? 'Menyimpan...' : 'Reset Password'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 			</>
 			)}
 		</div>
