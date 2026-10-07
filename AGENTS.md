@@ -50,6 +50,7 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - Auth: `POST /api/register` body `{name,email,password}` (STRICT JSON — unknown field = 400), `POST /api/login` body `{email,password}`. Cookie `alma_token` ber-flag `Secure` → **tidak terkirim via HTTP polos**; untuk smoke/curl pakai `Authorization: Bearer <token dari Set-Cookie>`.
 - Semua decode JSON backend memakai `validators.DecodeStrictJSON` (unknown field ditolak).
 - Portal wali (role `user`): `GET/PUT /api/psb/me`, `PUT /api/psb/me/documents`, `PUT /api/psb/me/payment`, `GET /api/psb/me/receipt`, `/api/my-bills`, `/api/my-receipt` (lihat grup "Portal PSB" di `main.go`).
+- **Password awal akun wali (7 Okt 2026) = deterministik `Alma` + NIS santri pertama (id terkecil) di akun itu.** Kredensial: `/home/heru/KREDENSIAL-WALI-20261007.csv` (**di luar repo**, jangan commit). Backup hash lama: `/home/heru/backup-hash-wali-20261007.json` (rollback = restore dari JSON). Jangan reset manual selain lewat skema ini tanpa izin user.
 - RBAC: `auth.RequireRole(...)`, `superadmin` bypass semua. Notifikasi: `superadmin,bendahara`. SPP/iuran: `bendahara`.
 - NIK unik di layer repo (`ErrDuplicateNIK` → 409), bukan index global (daftar-ulang lintas periode).
 - Status PSB guarded: `psbStatusTransitions` + conditional UPDATE → 422 bila ilegal; `accepted/re_registration` wajib `payment_status=paid`. Portal tak bisa edit biodata saat `review/tes/accepted/re_registration` (`ErrEditLocked` → 403); `pending`/`rejected` boleh.
