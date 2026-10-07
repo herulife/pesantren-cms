@@ -172,6 +172,10 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, false, err.Error(), nil)
 			return
 		}
+		if errors.Is(err, sql.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, false, "Akun wali tidak ditemukan", nil)
+			return
+		}
 		logger.Error(r.Context(), "walisantri reset password failed", logger.Field{"user_id": id, "error": err.Error()})
 		writeJSON(w, http.StatusInternalServerError, false, "Gagal mereset password", nil)
 		return
