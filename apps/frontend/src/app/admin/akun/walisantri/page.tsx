@@ -359,8 +359,23 @@ export default function WaliSantriAccountsPage() {
 											<span className="font-mono text-xs text-slate-600">{a.email}</span>
 										)}
 									</td>
-									<td className="px-4 py-3 font-mono text-xs text-slate-600">
-										{a.whatsapp || <span className="text-amber-600">belum ada</span>}
+									<td className="px-4 py-3">
+										{editing === a.user_id ? (
+											<input
+												value={draft.whatsapp}
+												onChange={(e) =>
+													setDraft({ ...draft, whatsapp: e.target.value })
+												}
+												placeholder="contoh: 08xx..."
+												className={inputClass + ' min-w-[150px] font-mono'}
+											/>
+										) : a.whatsapp ? (
+											<span className="font-mono text-xs text-slate-600">{a.whatsapp}</span>
+										) : (
+											<span className="font-mono text-xs font-medium text-amber-600">
+												belum ada
+											</span>
+										)}
 									</td>
 									<td className="px-4 py-3">
 										<ul className="space-y-0.5">
@@ -419,14 +434,27 @@ export default function WaliSantriAccountsPage() {
 												</button>
 											</div>
 										) : (
-											<button
-												type="button"
-												onClick={() => startEdit(a)}
-												className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
-											>
-												<Pencil className="h-3.5 w-3.5" />
-												Ubah
-											</button>
+											<div className="flex justify-end gap-2">
+												<button
+													type="button"
+													onClick={() => {
+														setResetPass('');
+														setResetting(a.user_id);
+													}}
+													className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
+												>
+													<KeyRound className="h-3.5 w-3.5" />
+													Reset
+												</button>
+												<button
+													type="button"
+													onClick={() => startEdit(a)}
+													className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+												>
+													<Pencil className="h-3.5 w-3.5" />
+													Ubah
+												</button>
+											</div>
 										)}
 									</td>
 								</tr>
