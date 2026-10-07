@@ -21,7 +21,9 @@ func NewHandler(repo *Repository) *Handler { return &Handler{repo: repo} }
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.List)
+	r.Post("/", h.Create)
 	r.Put("/{id}", h.Update)
+	r.Post("/{id}/reset-password", h.ResetPassword)
 	return r
 }
 
