@@ -19,13 +19,13 @@ const KESIAPAN: Kesiapan[] = [
     kebutuhan: 'NISN siswa',
     alma: 'Belum ada kolom `santri.nisn`',
     s: 'belum',
-    catatan: 'Ditambahkan di Jilid 84',
+    catatan: 'Ditambahkan di Jilid 85',
   },
   {
     kebutuhan: 'NPSN madrasah',
     alma: 'Belum ada di settings',
     s: 'belum',
-    catatan: 'Ditambahkan di Jilid 84',
+    catatan: 'Ditambahkan di Jilid 85',
   },
   {
     kebutuhan: 'Rombel / kode kelas resmi',
@@ -84,7 +84,7 @@ const ALUR = [
 
 const JILID = [
   {
-    n: 84,
+    n: 85,
     title: 'Data pokok siap EMIS',
     items: [
       'Kolom `santri.nisn` + index',
@@ -94,7 +94,7 @@ const JILID = [
     ],
   },
   {
-    n: 85,
+    n: 86,
     title: 'Ekspor data pokok & nilai',
     items: [
       'Endpoint ekspor Excel/JSON',
@@ -104,7 +104,7 @@ const JILID = [
     ],
   },
   {
-    n: 86,
+    n: 87,
     title: 'Monitoring sinkron',
     items: [
       'Tabel `erapor_sync`',
