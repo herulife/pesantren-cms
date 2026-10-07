@@ -2386,4 +2386,23 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
   download timed out`. Pakai **docker network** bersama + nama container sebagai hostname
   (`docker network create x && docker network connect x a && ...`), bukan IP host.
 - Frontend production **bake rewrite `/api` ke `https://almaparung.com`** saat build
-  (lihat `routes-manifest.json`), jadi container uji frontend **tetap m
+  (lihat `routes-manifest.json`), jadi container uji frontend **tetap menembak API produksi**.
+  Untuk menguji UI tanpa menyentuh produksi, taruh nginx/nginx:alpine di depan dua container uji
+  di network yang sama: `/api/` → container backend uji, sisanya → container frontend uji.
+- `next build` = **build yang paling mahal** (~15 mnt). Jalankan build backend + frontend
+  **sekaligus** di background ( dua proses `setsid nohup` terpisah + file penanda `.done`) —
+  jalan paralel, totalnya ~15 mnt bukan 25.
+- Legacy builder buffered output `docker build` (log cuma 4 baris "DEPRECATED" selama puluhan
+  menit). Jangan kira build mati — cek proses `ps aux | grep "[d]ocker build"` dan tunggu file
+  `.done`. Pesan "Install the buildx component" itu **warning**, bukan error.
+
+- Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
+- **chi**: memecah grup terproteksi jadi `r.Route(path, func(r chi.Router){ ... })` dengan grup READ rute spesifik + grup WRITE `r.Mount("/", h.Routes())` aman — rute spesifik menang untuk method-nya, sisanya tetap masuk mount (POST/PUT/DELETE **bukan** 405, sudah diuji 13/13). Tetap wajib uji ulang endpoint WRITE setiap kali melakukan pemecahan seperti ini.
+- **Android/Chrome**: popup `<select>` native bisa "terbuka lalu langsung nutup". Headless tidak bisa menirukan popup, dan instrumentasi (urutan event, blur, mutasi DOM, scroll, transform/filter ancestor) bisa bersih total → jangan disalahkan logika React; ganti ke combobox kustom (lihat `SelectField`).
+- `tsc --noEmit` gagal `TS5033` kalau `tsconfig.tsbuildinfo` dimiliki root → tambah `--incremental false`.
+- DB live mode WAL (ada `-wal`/`-shm`); salinan konsisten pakai `python3` `src.backup(dst)`, bukan `cp`.
+- Berkas root-owned di `/tmp`/folder ter-mount tidak bisa dihapus oleh `heru` → `docker run --rm -v DIR:/x alpine sh -c "rm -rf /x/*"`.
+- `sudo -S` tanpa `-p ''` mencetak prompt tanpa newline, jadi `console.log`/echo PERTAMA ikut menempel di baris prompt lalu ikut terhapus `grep -v '^\[sudo'` — awas thinks "baris hilang". Pakai `sudo -S -p ''`.
+- Screenshot tutorial: `public/` = aset publik tanpa auth. Selalu (1) redaksi data di DOM sebelum `screenshot()` dengan sumber nama dari API, (2) guard path di `src/middleware.ts`. Validasi dengan `curl` **tanpa cookie** (harus 307, bukan 200).
+- `<img loading="lazy"` di bawah fold: `naturalWidth` = 0 saat dicek → false "gambar rusak". Paksa scroll sampai bawah + tunggu, baru cek `naturalWidth`; `HTTP 4xx/5xx = 0` adalah bukti paling andal.
+- Build: jalankan `nohup ... > log 2>&1 &` + file penanda `.done`; jangan `pgrep -f <cmd>` lewat ssh (self-match → loop nyangkut & broken pipe). Pesan "Install the buildx component" dari `docker build` = warning legacy builder, bukan error.
