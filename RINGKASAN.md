@@ -21,8 +21,8 @@
 ## 2. STATUS LIVE
 | Layanan | Container | Image | Keterangan |
 |---|---|---|---|
-| Backend | `alma-parung-backend-j83` | `alma-parung-backend:j83-notif-expand` | **Jilid 83** (Perluas event notifikasi: emit `donasi` "Donasi terverifikasi" saat VerifyDonation, `pembayaran` "Pembayaran invoice masuk" saat invoice webhook paid, `tagihan` "Tagihan SPP otomatis dibuat" saat autobilling dibuat. API `/snotif` Jilid 82 + fix rute publik `POST /api/contact` tetap). Rollback: `alma-parung-backend-pre-j83` (image **`j82-sysnotif`**, stopped) |
-| Frontend | `alma-parung-frontend-j83` | `alma-parung-frontend:prd-preview` | **PRD Preview /prd** (halaman rancangan integrasi E-Rapor, mockup interaktif di `https://almaparung.com/prd`; konten Jilid 83 tetap utuh). Rollback: `alma-parung-frontend-pre-prd` (**j83-notif-expand**, stopped) |
+| Backend | `alma-parung-backend-j83` | `alma-parung-backend:j84-kelola-wali` | **Jilid 84** (Kelola akun wali santri oleh superadmin/bendahara: `POST /api/wali-santri` buat akun + tautkan santri, `PUT /api/wali-santri/{id}` edit nama/email/whatsapp, `POST /api/wali-santri/{id}/reset-password` dengan pencabutan sesi otomatis). Rollback: `alma-parung-backend-pre-j84` (image **`j83-notif-expand`**, stopped) |
+| Frontend | `alma-parung-frontend-j83` | `alma-parung-frontend:j84-kelola-wali` | **Jilid 84 UI Kelola Akun Wali** (modal buat akun + picker santri, edit whatsapp inline, tombol Reset password per baris; halaman `/prd` tetap ikut). Rollback: `alma-parung-frontend-pre-j84` (**prd-preview**, stopped) |
 | Store | `alma-store` | `latest` | terpisah, jangan sentuh |
 | Rollback tersedia | — | container rollback Jilid 78: `alma-parung-backend-pre-j78` (image `j77-purge-attendance-v2`, **stopped**) + `alma-parung-frontend-bobot-pre-j78` (image `j77-attendance-santri`, **stopped**), tanpa perlu rollback DB. Pendahulu Jilid 77: `alma-parung-backend-pre-j77` (image `j76-wali-santri`, **stopped**) + `alma-parung-frontend-bobot-pre-j77` (image `j76-wali-santri`, **stopped**). **Catatan: rollback ke <= j76 wajibmelempar balik DB ke skema `users(id)` dulu, lihat §4 Jilid 77. Chain rollback diputus di j75/j74 — image `j75-kas-audit`, `j74-kelas-panel`, `j72-login-center`, `j69-avatar`, `j68-akun`, `jilid67-kategori`, `fix-nullsanti-v2`, `arbain-bgn2`, `fix-psb-*`, `disc-fix`, `disiplinfix`, `sppautofix`, `jilid44`, `jilid47`, dan `j77-purge-attendance` SUDAH DIHAPUS 5 Okt 2026 (§4 Jilid 78b) — jangan menyebutnya sebagai rollback.** |
 | DB | — | — | **Recount 5 Okt 2026 (Jilid 78, python3 ke `data/alma-parung.db` + endpoint `/api/santri/export`): `santri` 58, dan 58 di antaranya punya akun portal tertaut (`santri.user_id` -> `users.id`).** Angka 101/122 (Jilid 70) dan 116/124 (Jilid 68) di bawah ini **SUDAH KEDALUWARSA** — jangan dipakai sebagai fakta, recount dulu. **Recount 1 Okt 2026 14:20 (Jilid 70, python3 ke `data/alma-parung.db`): `santri` 101, `users` 122** (`santri` 103 -> 101 dalam ~2 jam; lihat §5 item 2) — status: 76 `aktif`, 24 `lulus`, 3 `pindah` (TIDAK ada `cuti`); `category`: 102 `reguler`, 1 `yatim`. **Angka-angka lama di §5 item 1/1b/1c/2/3/4 (116/124, 113/2/1, 74/119) SUDAH KEDALUWARSA — jangan dipakai.** Penyebab penurunan hanya sebagian yang bisa dijelaskan: `docker logs` container lama mencatat `DELETE /api/santri/{id}/purge` 200 pada 09:37-09:45 (10x) dan 11:45-11:46 (2x), plus `DELETE /api/users/201` 200 pada 10:39 — jadi sebagian baris memang dihapus lewat UI/API, sisanya belum dijelaskan (lihat §5 item 2). `users.photo_url` **baru ada** (migrasi Jilid 69, TEXT nullable, semua NULL = semua masih pakai inisial). Folder upload avatar: `data/uploads/avatars/`. `registrations` tetap **kosong**; `bgn_recipients` + `bgn_recipients_archive` + kolom `santri.bgn_identity`/`bgn_recipient` **sudah di-DROP**; `santri.father_occupation`/`mother_occupation` dibuat Jilid 67 |
@@ -63,6 +63,19 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
+
+## Jilid 84 - Kelola Akun Wali Santri oleh Superadmin (7 Okt 2026, LIVE)
+
+Fitur `/admin/akun/walisantri` (role `superadmin` + `bendahara`): superadmin kini bisa **buat akun wali baru**, **edit nama/email/whatsapp** (whatsapp dulu tidak bisa diisi), dan **reset password** per akun (semua sesi lama otomatis dicabut via `token_version+1`).
+
+- Backend baru di `internal/features/walisantri`:
+  - `repository.go`: `Create` (transaksional: bcrypt + link `santri.user_id`, duplikat email→`ErrDuplicateEmail` 409, santri tidak ada→404), `Update` (kini menyimpan `whatsapp`), `ResetPassword` (role != `user` → `ErrNotWali` 400; akun tidak ada → 404; bcrypt + `token_version+1`).
+  - `handler.go`: rute baru `POST /api/wali-santri`, `PUT /api/wali-santri/{id}`, `POST /api/wali-santri/{id}/reset-password` (tetap di balik `auth.RequireRole("superadmin","bendahara")`, mount `main.go` ±421 belum berubah). `Create` → 201 `{user_id}`; audit baru `CREATE_WALI`/`UPDATE_WALI`/`RESET_WALI_PASSWORD`.
+  - `validators/auth.go`: `WaliCreateRequest` (name, email, password min 8, whatsapp opsional via `ValidatePhone`, `santri_ids>0` boleh kosong), `WaliUpdateRequest` + `whatsapp` opsional.
+- Frontend `src/app/admin/akun/walisantri/page.tsx`: tombol header **Buat Akun Wali** + modal buat (form + picker santri dengan pencarian nama/NIS + badge "sudah berakun", multi-select satu keluarga), input whatsapp inline saat mode edit, tombol **Reset** per baris + modal konfirmasi; `src/lib/api.ts` baru `createWaliSantriAccount()`, `resetWaliSantriPassword()`, payload update + whatsapp.
+- Verifikasi: `npx tsc --noEmit` bersih; `go build ./...` exit 0. Container uji (salinan DB + JWT superadmin buatan, port 8099): create 201 / duplikat email 409 / update 200 / reset 200 (token_version 0→1 + login password baru 200) / reset akun non-wali 400 / reset id tak ada 404 / tanpa token 401. E2E prod id 212 (create+update whatsapp tersimpan di DB+reset, akun muncul di grup `orphans` karena tanpa tautan santri) → dihapus. Playwright 12 cek UI PASS (render, buka modal, picker, submit+toast+daftar ter-refresh, modal reset, edit inline, tanpa console error). `/prd` di domain tetap 200.
+- Deploy: image `alma-parung-backend:j84-kelola-wali` (container `alma-parung-backend-j83`, `healthy`) + `alma-parung-frontend:j84-kelola-wali` (container `alma-parung-frontend-j83`, `healthy`). Rollback: `alma-parung-backend-pre-j84` (j83-notif-expand, stopped) + `alma-parung-frontend-pre-j84` (prd-preview, stopped) — jangan `docker rm`.
+- Catatan: daftar `/api/wali-santri` menaruh akun tanpa tautan santri di grup `orphans` (bukan `accounts`); field `whatsapp` hanya diekspos di `accounts`. Akun uji (id 212 `uji.j84.e2e`, id 213 `uji.ui.j84`) sudah dihapus dari DB prod.
 
 ## Reset Password Awal Akun Wali Santri (7 Okt 2026)
 
@@ -2373,23 +2386,4 @@ Pelajaran: letakkan file scratch di `/tmp`, jangan di dalam repo.
   download timed out`. Pakai **docker network** bersama + nama container sebagai hostname
   (`docker network create x && docker network connect x a && ...`), bukan IP host.
 - Frontend production **bake rewrite `/api` ke `https://almaparung.com`** saat build
-  (lihat `routes-manifest.json`), jadi container uji frontend **tetap menembak API produksi**.
-  Untuk menguji UI tanpa menyentuh produksi, taruh nginx/nginx:alpine di depan dua container uji
-  di network yang sama: `/api/` → container backend uji, sisanya → container frontend uji.
-- `next build` = **build yang paling mahal** (~15 mnt). Jalankan build backend + frontend
-  **sekaligus** di background ( dua proses `setsid nohup` terpisah + file penanda `.done`) —
-  jalan paralel, totalnya ~15 mnt bukan 25.
-- Legacy builder buffered output `docker build` (log cuma 4 baris "DEPRECATED" selama puluhan
-  menit). Jangan kira build mati — cek proses `ps aux | grep "[d]ocker build"` dan tunggu file
-  `.done`. Pesan "Install the buildx component" itu **warning**, bukan error.
-
-- Skala nilai seragam KKM 0-100 (grade+CBT+predikat selaras; kesantrian tampil 0-100). Live: backend+frontend `skala`.
-- **chi**: memecah grup terproteksi jadi `r.Route(path, func(r chi.Router){ ... })` dengan grup READ rute spesifik + grup WRITE `r.Mount("/", h.Routes())` aman — rute spesifik menang untuk method-nya, sisanya tetap masuk mount (POST/PUT/DELETE **bukan** 405, sudah diuji 13/13). Tetap wajib uji ulang endpoint WRITE setiap kali melakukan pemecahan seperti ini.
-- **Android/Chrome**: popup `<select>` native bisa "terbuka lalu langsung nutup". Headless tidak bisa menirukan popup, dan instrumentasi (urutan event, blur, mutasi DOM, scroll, transform/filter ancestor) bisa bersih total → jangan disalahkan logika React; ganti ke combobox kustom (lihat `SelectField`).
-- `tsc --noEmit` gagal `TS5033` kalau `tsconfig.tsbuildinfo` dimiliki root → tambah `--incremental false`.
-- DB live mode WAL (ada `-wal`/`-shm`); salinan konsisten pakai `python3` `src.backup(dst)`, bukan `cp`.
-- Berkas root-owned di `/tmp`/folder ter-mount tidak bisa dihapus oleh `heru` → `docker run --rm -v DIR:/x alpine sh -c "rm -rf /x/*"`.
-- `sudo -S` tanpa `-p ''` mencetak prompt tanpa newline, jadi `console.log`/echo PERTAMA ikut menempel di baris prompt lalu ikut terhapus `grep -v '^\[sudo'` — awas thinks "baris hilang". Pakai `sudo -S -p ''`.
-- Screenshot tutorial: `public/` = aset publik tanpa auth. Selalu (1) redaksi data di DOM sebelum `screenshot()` dengan sumber nama dari API, (2) guard path di `src/middleware.ts`. Validasi dengan `curl` **tanpa cookie** (harus 307, bukan 200).
-- `<img loading="lazy"` di bawah fold: `naturalWidth` = 0 saat dicek → false "gambar rusak". Paksa scroll sampai bawah + tunggu, baru cek `naturalWidth`; `HTTP 4xx/5xx = 0` adalah bukti paling andal.
-- Build: jalankan `nohup ... > log 2>&1 &` + file penanda `.done`; jangan `pgrep -f <cmd>` lewat ssh (self-match → loop nyangkut & broken pipe). Pesan "Install the buildx component" dari `docker build` = warning legacy builder, bukan error.
+  (lihat `routes-manifest.json`), jadi container uji frontend **tetap m
