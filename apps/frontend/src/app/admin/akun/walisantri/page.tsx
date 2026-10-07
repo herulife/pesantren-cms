@@ -4,15 +4,21 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
 	getWaliSantriAccounts,
 	updateWaliSantriAccount,
+	createWaliSantriAccount,
+	resetWaliSantriPassword,
+	getAttendanceStudents,
 	WaliAccount,
 	WaliList,
+	AttendanceStudent,
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/components/AuthProvider';
 import {
 	AlertTriangle,
 	BadgeCheck,
+	KeyRound,
 	Pencil,
+	Plus,
 	RefreshCw,
 	Search,
 	TriangleAlert,
@@ -23,7 +29,7 @@ import {
 const inputClass =
 	'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10';
 
-type EditDraft = { name: string; email: string };
+type EditDraft = { name: string; email: string; whatsapp: string };
 
 export default function WaliSantriAccountsPage() {
 	const { showToast } = useToast();
@@ -35,8 +41,24 @@ export default function WaliSantriAccountsPage() {
 	const [q, setQ] = useState('');
 	const [onlyPlaceholder, setOnlyPlaceholder] = useState(false);
 	const [editing, setEditing] = useState<number | null>(null);
-	const [draft, setDraft] = useState<EditDraft>({ name: '', email: '' });
+	const [draft, setDraft] = useState<EditDraft>({ name: '', email: '', whatsapp: '' });
 	const [saving, setSaving] = useState(false);
+
+	const [showCreate, setShowCreate] = useState(false);
+	const [creating, setCreating] = useState(false);
+	const [createDraft, setCreateDraft] = useState({
+		name: '',
+		email: '',
+		whatsapp: '',
+		password: '',
+	});
+	const [studentQ, setStudentQ] = useState('');
+	const [students, setStudents] = useState<AttendanceStudent[]>([]);
+	const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
+
+	const [resetting, setResetting] = useState<number | null>(null);
+	const [resetPass, setResetPass] = useState('');
+	const [resetSaving, setResetSaving] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -76,12 +98,12 @@ export default function WaliSantriAccountsPage() {
 
 	function startEdit(a: WaliAccount) {
 		setEditing(a.user_id);
-		setDraft({ name: a.name, email: a.email });
+		setDraft({ name: a.name, email: a.email, whatsapp: a.whatsapp || '' });
 	}
 
 	function cancelEdit() {
 		setEditing(null);
-		setDraft({ name: '', email: '' });
+		setDraft({ name: '', email: '', whatsapp: '' });
 	}
 
 	async function saveEdit(a: WaliAccount) {
@@ -94,6 +116,7 @@ export default function WaliSantriAccountsPage() {
 			const res = await updateWaliSantriAccount(a.user_id, {
 				name: draft.name.trim(),
 				email: draft.email.trim(),
+				whatsapp: draft.whatsapp.trim() || undefined,
 			});
 			if (!res.ok) {
 				showToast('error', res.message || 'Gagal menyimpan akun wali.');
@@ -104,6 +127,97 @@ export default function WaliSantriAccountsPage() {
 			await load();
 		} finally {
 			setSaving(false);
+		}
+	}
+
+	const linkedStudentIds = useMemo(() => {
+		const ids = new Set<number>();
+		(data?.accounts ?? []).forEach((a) => a.santri.forEach((s) => ids.add(s.santri_id)));
+		return ids;
+	}, [data]);
+
+	const filteredStudents = useMemo(() => {
+		const needle = studentQ.trim().toLowerCase();
+		if (!needle) return students;
+		return students.filter(
+			(s) => s.name.toLowerCase().includes(needle) || (s.nis || '').toLowerCase().includes(needle)
+		);
+	}, [students, studentQ]);
+
+	function toggleStudent(id: number) {
+		setSelectedStudents((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	}
+
+	function resetCreate() {
+		setCreateDraft({ name: '', email: '', whatsapp: '', password: '' });
+		setSelectedStudents(new Set());
+		setStudentQ('');
+		setStudents([]);
+	}
+
+	function openCreate() {
+		resetCreate();
+		setShowCreate(true);
+		void getAttendanceStudents().then((list) => setStudents(list));
+	}
+
+	async function submitCreate() {
+		if (!createDraft.name.trim()) {
+			showToast('error', 'Nama wali wajib diisi.');
+			return;
+		}
+		if (!createDraft.email.trim()) {
+			showToast('error', 'Email wali wajib diisi.');
+			return;
+		}
+		if (createDraft.password.length < 8) {
+			showToast('error', 'Password minimal 8 karakter.');
+			return;
+		}
+		setCreating(true);
+		try {
+			const res = await createWaliSantriAccount({
+				name: createDraft.name.trim(),
+				email: createDraft.email.trim(),
+				whatsapp: createDraft.whatsapp.trim() || undefined,
+				password: createDraft.password,
+				santri_ids: [...selectedStudents],
+			});
+			if (!res.ok) {
+				showToast('error', res.message || 'Gagal membuat akun wali.');
+				return;
+			}
+			showToast('success', `Akun wali dibuat (ID ${res.user_id}). Sampaikan password ke wali.`);
+			setShowCreate(false);
+			resetCreate();
+			await load();
+		} finally {
+			setCreating(false);
+		}
+	}
+
+	async function submitReset(userId: number) {
+		if (resetPass.length < 8) {
+			showToast('error', 'Password minimal 8 karakter.');
+			return;
+		}
+		setResetSaving(true);
+		try {
+			const res = await resetWaliSantriPassword(userId, resetPass);
+			if (!res.ok) {
+				showToast('error', res.message || 'Gagal mereset password.');
+				return;
+			}
+			showToast('success', 'Password akun wali direset. Sesinya ikut dicabut.');
+			setResetting(null);
+			setResetPass('');
+		} finally {
+			setResetSaving(false);
 		}
 	}
 
@@ -131,15 +245,25 @@ export default function WaliSantriAccountsPage() {
 						satu Santri, semuanya bisa login pakai akun yang sama.
 					</p>
 				</div>
-				<button
-					type="button"
-					onClick={() => void load()}
-					disabled={loading}
-					className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-				>
-					<RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-					Muat Ulang
-				</button>
+				<div className="flex flex-wrap items-center gap-2">
+					<button
+						type="button"
+						onClick={openCreate}
+						className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-700"
+					>
+						<Plus className="h-4 w-4" />
+						Buat Akun Wali
+					</button>
+					<button
+						type="button"
+						onClick={() => void load()}
+						disabled={loading}
+						className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+					>
+						<RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+						Muat Ulang
+					</button>
+				</div>
 			</header>
 
 			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
