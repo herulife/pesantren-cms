@@ -437,7 +437,7 @@ func main() {
 			// panitia_psb/admin.
 			r.Route("/school", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
-					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin", "wali_kelas", "pimpinan"))
+					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin", "wali_kelas", "pimpinan", "user"))
 					r.Get("/classes", schoolHandler.ListClasses)
 					r.Get("/years", schoolHandler.ListYears)
 				})
