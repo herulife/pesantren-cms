@@ -107,6 +107,7 @@ type IRepository interface {
 	FindAvailablePortalUsers(search string, includeID int) ([]PortalUser, error)
 	LinkUserExclusive(santriID, userID int) error
 	ResetLinkedPassword(santriID int, newPassword string) (int, error)
+	UpdateLinkedAccount(santriID int, email, newPassword string) (int, int, error)
 	FindByUserID(userID int) ([]Santri, error)
 	ExportAll(classes []string, restrictClasses bool) ([]ExportRow, error)
 	ListClassesFromSantri(classes []string) ([]ClassCount, error)
