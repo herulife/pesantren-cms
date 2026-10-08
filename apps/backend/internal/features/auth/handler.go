@@ -812,6 +812,89 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// PUT /api/users/{id} — ubah nama + email login akun staf (superadmin/bendahara).
+// Guard-nya sengaja sama dengan reset password: akun portal (role 'user')
+// ditolak di sini karena dikelola lewat /api/wali-santri, dan akun sendiri
+// tidak boleh diubah supaya admin tidak bisa mengunci dirinya sendiri.
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	correlationID := logger.CorrelationID(r)
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Invalid user ID", nil)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	var req validators.UpdateUserRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	if validationErrs := validators.ValidateUpdateUserRequest(&req); len(validationErrs) > 0 {
+		writeValidationError(w, correlationID, validationErrs)
+		return
+	}
+
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, correlationID, "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
+		return
+	}
+	if rejectSelfUserAction(w, r, id) {
+		return
+	}
+	if target.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, correlationID, "Hanya super admin yang dapat mengubah akun super admin", nil)
+			return
+		}
+	}
+	if existing, _ := h.repo.FindByEmail(req.Email); existing != nil && existing.ID != id {
+		writeAPIError(w, http.StatusConflict, correlationID, "Email sudah terdaftar", nil)
+		return
+	}
+
+	if err := h.repo.UpdateIdentity(id, req.Name, req.Email); err != nil {
+		logger.Error(r.Context(), "failed updating user identity", logger.Field{
+			"user_id": id,
+			"error":   err.Error(),
+		})
+		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal memperbarui akun", nil)
+		return
+	}
+
+	adminID := 0
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
+	}
+	logger.RecordActivity(&adminID, "UPDATE_USER", fmt.Sprintf("Mengubah nama/email User ID %d", id), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: adminID,
+		Action: "UPDATE_USER", Entity: "user", EntityID: strconv.Itoa(id),
+		Before: map[string]interface{}{"name": target.Name, "email": target.Email},
+		After:  map[string]interface{}{"name": req.Name, "email": req.Email},
+		IP:     r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Akun user diperbarui",
+		"data": map[string]interface{}{
+			"id":    id,
+			"name":  req.Name,
+			"email": req.Email,
+		},
+	})
+}
+
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 
@@ -831,6 +914,7 @@ func (h *Handler) Routes() chi.Router {
 			r.Use(RequireRole("superadmin", "bendahara"))
 			r.Post("/users", h.CreateUser)
 			r.Get("/users", h.GetAllUsers)
+			r.Put("/users/{id}", h.UpdateUser)
 			r.Put("/users/{id}/password", h.ResetUserPassword)
 			r.Put("/users/{id}/role", h.UpdateUserRole)
 		})
