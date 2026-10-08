@@ -861,15 +861,17 @@ func createTables() {
 	addColumnIfNotExists("kas_categories", "code", "TEXT DEFAULT ''")
 	addColumnIfNotExists("kas_categories", "is_auto_source", "INTEGER NOT NULL DEFAULT 0")
 
-	// Jilid 75: kategori kas bernama SPP / Iuran / Donasi adalah SUMBER OTOMATIS
-	// ringkasan kas (spp_bills / iuran_bills / donations). Kalau uang yang sama
-	// ikut dicatat manual lewat kategori itu, totalnya terhitung 2x karena
-	// Income = Spp + Iuran + Donasi + Kas. Tandai supaya Summary bisa
+	// Jilid 75: kategori kas bernama SPP / Iuran / Donasi / Pendaftaran PSB
+	// adalah SUMBER OTOMATIS ringkasan kas (spp_bills / iuran_bills /
+	// donations / psb_payments). Kalau uang yang sama ikut dicatat manual
+	// lewat kategori itu, totalnya terhitung 2x karena Income = Spp + Iuran +
+	// Donasi + Pendaftaran PSB + Kas. Tandai supaya Summary bisa
 	// mengecualikannya. Transaksi yang dikecualikan tetap ditampilkan di Papan Kas
 	// sebagai "sudah termasuk hitungan sumber", bukan dianggap hilang.
 	if _, err := DB.Exec(`UPDATE kas_categories SET is_auto_source = 1
 		WHERE kind = 'masuk' AND is_auto_source = 0
-		  AND LOWER(TRIM(name)) IN ('spp', 'iuran', 'donasi', 'donation', 'pembayaran spp')`); err != nil {
+		  AND LOWER(TRIM(name)) IN ('spp', 'iuran', 'donasi', 'donation', 'pembayaran spp',
+		    'pendaftaran', 'pendaftaran psb', 'biaya pendaftaran', 'psb', 'daftar ulang')`); err != nil {
 		log.Printf("WARN: gagal menandai kategori kas auto-source: %v", err)
 	}
 	addColumnIfNotExists("spp_bills", "payment_proof", "TEXT DEFAULT ''")

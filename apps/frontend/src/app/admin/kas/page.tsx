@@ -490,7 +490,7 @@ export default function KasAdminPage() {
 
           {formCatAuto && (
             <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              <b>Perhatian:</b> "{formCat?.name}" sudah dihitung otomatis dari SPP/Iuran/Donasi. Kalau transaksi ini uang yang{" "}
+              <b>Perhatian:</b> "{formCat?.name}" sudah dihitung otomatis dari SPP/Iuran/Donasi/Pendaftaran PSB. Kalau transaksi ini uang yang{" "}
               <b>sama</b>, tidak akan dijumlahkan lagi (aman). Kalau uang <b>lain</b>, pilih kategori biasa supaya tidak hilang dari hitungan.
             </div>
           )}

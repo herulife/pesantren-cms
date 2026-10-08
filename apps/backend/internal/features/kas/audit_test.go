@@ -74,7 +74,13 @@ func newKasTestDB(t *testing.T) *sql.DB {
 	);
 	CREATE TABLE psb_payments (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		amount REAL DEFAULT 0
+		amount REAL DEFAULT 0,
+		status TEXT DEFAULT 'pending',
+		paid_at DATETIME
+	);
+	CREATE TABLE registrations (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		full_name TEXT DEFAULT ''
 	);
 	CREATE TABLE santri (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,6 +126,15 @@ func kasSeed(t *testing.T, db *sql.DB) {
 	// Transaksi masuk di kategori auto_source ->-Excluded, bukan pemasukan.
 	mustExec(`INSERT INTO kas_transactions (date, kind, category_id, amount) VALUES
 		('2026-10-05', 'masuk', 3, 3000000)`)
+	// Pendaftaran PSB: yang 'paid' masuk pemasukan, 'pending' tidak, dan
+	// nominal Rp0 diabaikan.
+	mustExec(`INSERT INTO registrations (id, full_name) VALUES
+		(1, 'Ahmad'), (2, 'Budi')`)
+	mustExec(`INSERT INTO psb_payments (id, amount, status, paid_at) VALUES
+		(1, 1500000, 'paid', '2026-10-06'),
+		(2, 2000000, 'pending', '2026-10-07'),
+		(3, 750000, 'paid', '2026-09-30'),
+		(4, 0, 'paid', '2026-10-08')`)
 }
 
 func TestAuditExpenseGroupsJumlahHarusCocokDenganTotal(t *testing.T) {
@@ -187,6 +202,53 @@ func TestAuditExpenseGroupsIkutiFilterPeriode(t *testing.T) {
 	if len(a.ExpenseGroups) != 2 {
 		t.Fatalf("jumlah group = %d, want 2", len(a.ExpenseGroups))
 	}
+}
+
+func TestAuditPendaftaranPSBHanyaYangLunasMasukPemasukan(t *testing.T) {
+	db := newKasTestDB(t)
+	defer db.Close()
+	kasSeed(t, db)
+	repo := &Repository{db: db}
+
+	a, err := repo.Audit("2026-10-01", "2026-10-31")
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+
+	psb := findSource(a, "psb")
+	if psb == nil {
+		t.Fatal("sumber Pendaftaran PSB tidak ada di daftar sources")
+	}
+	// Yang masuk: hanya id1 (1500000, paid, dalam periode). id2 pending
+	// tidak dihitung, id3 di luar periode, id4 nominal 0.
+	if psb.Amount != 1500000 || psb.Count != 1 {
+		t.Fatalf("psb = %+v, want 1500000/1", psb)
+	}
+	if psb.Origin != "otomatis" || psb.Table != "psb_payments" {
+		t.Fatalf("psb.Origin/Table = %s/%s, want otomatis/psb_payments", psb.Origin, psb.Table)
+	}
+	// Drill-down cuma satu baris.
+	if rows := a.Rows["psb"]; len(rows) != 1 {
+		t.Fatalf("rows psb = %d baris, want 1", len(rows))
+	}
+
+	// Tanpa filter periode, id3 masuk juga: 1500000 + 750000 = 2250000.
+	aFull, err := repo.Audit("", "")
+	if err != nil {
+		t.Fatalf("Audit full: %v", err)
+	}
+	if psb := findSource(aFull, "psb"); psb == nil || psb.Amount != 2250000 || psb.Count != 2 {
+		t.Fatalf("psb full = %+v, want 2250000/2", psb)
+	}
+}
+
+func findSource(a *Audit, key string) *AuditSource {
+	for i := range a.Sources {
+		if a.Sources[i].Key == key {
+			return &a.Sources[i]
+		}
+	}
+	return nil
 }
 
 func TestAuditExpenseGroupsKosongBukanNil(t *testing.T) {

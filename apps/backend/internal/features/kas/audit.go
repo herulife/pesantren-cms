@@ -120,7 +120,18 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 	}
 	donAmount := int(donFloat)
 
-	// --- 4. Kas manual (otomatis dari kas_transactions, bukan kategori auto) ---
+	// --- 4. Pendaftaran PSB (otomatis dari psb_payments, status paid) ---
+	// Ledger ini ditulis oleh fitur PSB saat panitia memverifikasi pembayaran
+	// (transisi pending -> paid, satu baris per registrasi). Re-mark "paid"
+	// idempotent, jadi pendapatan tidak pernah terhitung dua kali.
+	psbF, psbA := dateFilter("paid_at", dateFrom, dateTo)
+	psbAmount, psbCount, err := sum(
+		`SELECT COALESCE(SUM(amount),0), COUNT(*) FROM psb_payments WHERE status='paid' AND COALESCE(amount,0)>0`+psbF, psbA...)
+	if err != nil {
+		return nil, err
+	}
+
+	// --- 5. Kas manual (otomatis dari kas_transactions, bukan kategori auto) ---
 	manWhere := []string{"COALESCE(t.voided,0) = 0", "t.kind='masuk'",
 		`COALESCE(t.category_id,0) NOT IN (SELECT id FROM kas_categories WHERE COALESCE(is_auto_source,0)=1)`}
 	manArgs := []interface{}{}
@@ -146,6 +157,8 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 			Origin: "otomatis", Table: "iuran_bills"},
 		{Key: "donasi", Label: "Donasi", Amount: donAmount, Count: donCount,
 			Origin: "otomatis", Table: "donations"},
+		{Key: "psb", Label: "Pendaftaran PSB", Amount: psbAmount, Count: psbCount,
+			Origin: "otomatis", Table: "psb_payments"},
 		{Key: "manual", Label: "Kas manual", Amount: manAmount, Count: manCount,
 			Origin: "manual", Table: "kas_transactions"},
 	}
@@ -225,6 +238,12 @@ func (r *Repository) Audit(dateFrom, dateTo string) (*Audit, error) {
 	} else {
 		return nil, err
 	}
+	// --- Baris pendukung: Pendaftaran PSB ---
+	if rows, err := r.auditRowsPsb(psbF, psbA); err == nil {
+		a.Rows["psb"] = rows
+	} else {
+		return nil, err
+	}
 	// --- Baris pendukung: Kas manual ---
 	if rows, err := r.auditRowsManual(manWhere, manArgs); err == nil {
 		a.Rows["manual"] = rows
@@ -271,6 +290,17 @@ func (r *Repository) auditRowsDonasi(f string, args []interface{}) ([]AuditRow, 
 		WHERE d.status='verified'` + f
 	if f != "" {
 		q += ` ORDER BY d.created_at ASC`
+	}
+	return r.scanRows(q, args)
+}
+
+func (r *Repository) auditRowsPsb(f string, args []interface{}) ([]AuditRow, error) {
+	q := `SELECT p.id, COALESCE(p.paid_at,''), COALESCE(reg.full_name,'(pendaftar terhapus)'),
+		COALESCE(p.code,''), COALESCE(p.amount,0)
+		FROM psb_payments p LEFT JOIN registrations reg ON reg.id=p.registration_id
+		WHERE p.status='paid' AND COALESCE(p.amount,0)>0` + f
+	if f != "" {
+		q += ` ORDER BY p.paid_at ASC`
 	}
 	return r.scanRows(q, args)
 }
