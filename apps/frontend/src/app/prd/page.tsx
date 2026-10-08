@@ -19,13 +19,13 @@ const KESIAPAN: Kesiapan[] = [
     kebutuhan: 'NISN siswa',
     alma: 'Belum ada kolom `santri.nisn`',
     s: 'belum',
-    catatan: 'Ditambahkan di Jilid 85',
+    catatan: 'Ditambahkan di Jilid 90',
   },
   {
     kebutuhan: 'NPSN madrasah',
     alma: 'Belum ada di settings',
     s: 'belum',
-    catatan: 'Ditambahkan di Jilid 85',
+    catatan: 'Ditambahkan di Jilid 90',
   },
   {
     kebutuhan: 'Rombel / kode kelas resmi',
@@ -84,7 +84,7 @@ const ALUR = [
 
 const JILID = [
   {
-    n: 85,
+    n: 90,
     title: 'Data pokok siap EMIS',
     items: [
       'Kolom `santri.nisn` + index',
@@ -94,7 +94,7 @@ const JILID = [
     ],
   },
   {
-    n: 86,
+    n: 91,
     title: 'Ekspor data pokok & nilai',
     items: [
       'Endpoint ekspor Excel/JSON',
@@ -104,7 +104,7 @@ const JILID = [
     ],
   },
   {
-    n: 87,
+    n: 92,
     title: 'Monitoring sinkron',
     items: [
       'Tabel `erapor_sync`',
@@ -157,7 +157,7 @@ export default function PrdPage() {
             dan memantau selisih dengan EMIS — semuanya dari web Alma.
           </p>
           <p className="mt-3 text-sm text-slate-500">
-            7 Oktober 2026 · Rencana 3 jilid · Rujukan:{' '}
+            8 Oktober 2026 · Rencana 3 jilid · Rujukan:{' '}
             <code className="rounded bg-slate-100 px-1.5 py-0.5">docs/ERAPOR_SYNC_PLAN.md</code>
           </p>
         </header>
@@ -258,8 +258,8 @@ export default function PrdPage() {
             Rencana pengerjaan
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Nomor menyesuaikan jilid terakhir yang sudah live: <b>Jilid 84 = Kelola akun wali santri oleh superadmin</b>{' '}
-            (buat akun, edit whatsapp, reset password). Rencana E-Rapor berikutnya mulai dari Jilid 85.
+            Nomor menyesuaikan jilid terakhir yang sudah live: <b>Jilid 89 = Perbaikan data tahfidz tampil</b>{' '}
+            (sebelumnya: 88 = kelola semua akun, 84 = kelola akun wali santri). Rencana E-Rapor berikutnya mulai dari Jilid 90.
           </p>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
             {JILID.map((j) => (
