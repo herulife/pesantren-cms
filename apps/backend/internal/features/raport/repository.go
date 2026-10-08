@@ -28,6 +28,7 @@ type ComputedRaport struct {
 	MapelDetails     []SubjectScore    `json:"mapel_details"`
 	ProjectDetails   []ProjectDetail   `json:"project_details"`
 	KesantrianDetail map[string]float64 `json:"kesantrian_detail"`
+	Tahfidz          *RaportTahfidz    `json:"tahfidz"`
 	Status           string            `json:"status"`
 }
 
@@ -46,6 +47,30 @@ type ProjectDetail struct {
 	Contribution float64 `json:"contribution"`
 }
 
+// TahfidzEntry satu baris progres hafalan pada periode rapor.
+type TahfidzEntry struct {
+	SurahName      string `json:"surah_name"`
+	Juz            int    `json:"juz"`
+	StartAyat      int    `json:"start_ayat"`
+	EndAyat        int    `json:"end_ayat"`
+	Status         string `json:"status"`
+	EvaluationDate string `json:"evaluation_date"`
+}
+
+// RaportTahfidz ringkasan progres tahfidz untuk satu periode rapor.
+// INFORMASIONAL (Jilid 90, keputusan user 8 Okt 2026): tidak masuk
+// final_score dan tidak menambah daftar `missing`, jadi santri tanpa data
+// tahfidz tetap bisa mengunci rapornya.
+type RaportTahfidz struct {
+	Entries []TahfidzEntry `json:"entries"`
+	Total   int            `json:"total"`
+	Lulus   int            `json:"lulus"`
+	Proses  int            `json:"proses"`
+	Setor   int            `json:"setor"`
+	Score   float64        `json:"score"` // persentase lulus (0-100), 0 bila tak ada data
+	HasData bool           `json:"has_data"`
+}
+
 type StoredRaport struct {
 	ID               int     `json:"id"`
 	StudentID        int     `json:"student_id"`
@@ -61,6 +86,8 @@ type StoredRaport struct {
 	Notes            string  `json:"notes"`
 	GeneratedBy      int     `json:"generated_by"`
 	UpdatedAt        string  `json:"updated_at"`
+	// Tahfidz diisi saat pembacaan (bukan kolom tersimpan) — lihat GetStored.
+	Tahfidz *RaportTahfidz `json:"tahfidz"`
 }
 
 type Repository struct {
@@ -113,6 +140,10 @@ func (r *Repository) Compute(ctx context.Context, studentID int, semester, acade
 	// 3. Nilai kesantrian = rata-rata aspek yang sudah dinilai.
 	var kesOK bool
 	raport.KesantrianScore, kesOK = r.computeKesantrian(ctx, studentID, semester, academicYear, raport.KesantrianDetail)
+
+	// 3b. Progres tahfidz pada periode yang sama — INFORMASIONAL, sengaja
+	// tidak dijadikan syarat is_complete (lihat RaportTahfidz).
+	raport.Tahfidz = r.computeTahfidz(ctx, studentID, semester, academicYear)
 
 	// 4. Nilai akhir = rata-rata biasa ketiga komponen, HANYA bila ketiganya
 	// sudah ada datanya. Komponen yang belum dinilai = kosong, bukan angka.
@@ -280,6 +311,44 @@ func (r *Repository) computeKesantrian(ctx context.Context, studentID int, semes
 	return math.Round((score14/4.0)*10000) / 100, true
 }
 
+// computeTahfidz mengambil progres tahfidz milik santri pada periode rapor.
+// Kueri INFORMASIONAL (Jilid 90): tanpa data memberi has_data=false dan tidak
+// pernah menambah `missing`, jadi tidak mengunci proses kunci rapor.
+func (r *Repository) computeTahfidz(ctx context.Context, studentID int, semester, academicYear string) *RaportTahfidz {
+	res := &RaportTahfidz{Entries: []TahfidzEntry{}}
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT surah_name, juz, start_ayat, end_ayat, status, evaluation_date
+		FROM tahfidz_progress
+		WHERE student_id = ? AND semester = ? AND academic_year = ?
+		ORDER BY evaluation_date DESC, id DESC
+	`, studentID, semester, academicYear)
+	if err != nil {
+		return res
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var e TahfidzEntry
+		if err := rows.Scan(&e.SurahName, &e.Juz, &e.StartAyat, &e.EndAyat, &e.Status, &e.EvaluationDate); err != nil {
+			continue
+		}
+		res.Entries = append(res.Entries, e)
+		res.Total++
+		switch strings.ToLower(strings.TrimSpace(e.Status)) {
+		case "lulus":
+			res.Lulus++
+		case "setor":
+			res.Setor++
+		default:
+			res.Proses++
+		}
+	}
+	if res.Total > 0 {
+		res.HasData = true
+		res.Score = math.Round(float64(res.Lulus)/float64(res.Total)*10000) / 100
+	}
+	return res
+}
+
 var ErrRaportLocked = errors.New("rapor terkunci, gunakan unlock eksplisit")
 
 func (r *Repository) Upsert(ctx context.Context, s *StoredRaport) error {
@@ -332,6 +401,9 @@ func (r *Repository) GetStored(ctx context.Context, studentID int, semester, aca
 	if err := r.db.QueryRowContext(ctx, "SELECT name FROM users WHERE id = ?", studentID).Scan(&s.StudentName); err != nil {
 		s.StudentName = ""
 	}
+	// Progres tahfidz tidak disimpan di tabel raports — selalu dibaca ulang
+	// pada periode yang sama supaya rapor locked ikut menampilkan tahfidz.
+	s.Tahfidz = r.computeTahfidz(ctx, studentID, s.Semester, s.AcademicYear)
 	return &s, nil
 }
 

@@ -2,6 +2,7 @@ package academics
 
 import (
 	"database/sql"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,6 +66,10 @@ type TahfidzProgress struct {
 	Status         string `json:"status"` // proses, setor, lulus
 	MusyrifNotes   string `json:"musyrif_notes"`
 	EvaluationDate string `json:"evaluation_date"`
+	// Periode rapor (Jilid 90): diturunkan server-side dari evaluation_date
+	// (bulan >= Juli -> semester 1 TA y/y+1, selain itu semester 2 TA y-1/y).
+	Semester     string `json:"semester"`
+	AcademicYear string `json:"academic_year"`
 }
 
 type Repository struct {
@@ -393,7 +398,7 @@ func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
 // Tahfidz
 func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date, t.semester, t.academic_year
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		ORDER BY t.evaluation_date DESC
@@ -408,7 +413,7 @@ func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error)
 		var ts []TahfidzProgress
 		for rows.Next() {
 			var t TahfidzProgress
-			if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate); err != nil {
+			if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate, &t.Semester, &t.AcademicYear); err != nil {
 				return nil, err
 			}
 			ts = append(ts, t)
@@ -424,7 +429,7 @@ func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error)
 	var ts []TahfidzProgress
 	for rows.Next() {
 		var t TahfidzProgress
-		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate); err != nil {
+		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate, &t.Semester, &t.AcademicYear); err != nil {
 			return nil, err
 		}
 		ts = append(ts, t)
@@ -434,7 +439,7 @@ func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error)
 
 func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date, t.semester, t.academic_year
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		WHERE t.student_id = ?
@@ -449,7 +454,7 @@ func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, erro
 	var ts []TahfidzProgress
 	for rows.Next() {
 		var t TahfidzProgress
-		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate); err != nil {
+		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate, &t.Semester, &t.AcademicYear); err != nil {
 			return nil, err
 		}
 		ts = append(ts, t)
@@ -457,15 +462,40 @@ func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, erro
 	return ts, nil
 }
 
+// DeriveTahfidzPeriod menurunkan semester & tahun ajaran dari tanggal
+// evaluasi tahfidz. Aturan identik dengan migrasi backfill di db.go (Jilid 90):
+// bulan >= Juli -> semester 1 (TA y/y+1), selain itu semester 2 (TA y-1/y).
+// Tanggal kosong/tidak valid memakai hari ini supaya baris selalu punya periode.
+func DeriveTahfidzPeriod(evaluationDate string) (semester, academicYear string) {
+	d := strings.TrimSpace(evaluationDate)
+	if len(d) < 10 {
+		d = time.Now().Format("2006-01-02")
+	}
+	year, err := strconv.Atoi(d[0:4])
+	if err != nil {
+		return "", ""
+	}
+	month, err := strconv.Atoi(d[5:7])
+	if err != nil {
+		return "", ""
+	}
+	if month >= 7 {
+		return "1", strconv.Itoa(year) + "/" + strconv.Itoa(year+1)
+	}
+	return "2", strconv.Itoa(year-1) + "/" + strconv.Itoa(year)
+}
+
 func (r *Repository) CreateTahfidz(t *TahfidzProgress) error {
-	query := `INSERT INTO tahfidz_progress (student_id, surah_name, juz, start_ayat, end_ayat, status, musyrif_notes, evaluation_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate)
+	t.Semester, t.AcademicYear = DeriveTahfidzPeriod(t.EvaluationDate)
+	query := `INSERT INTO tahfidz_progress (student_id, surah_name, juz, start_ayat, end_ayat, status, musyrif_notes, evaluation_date, semester, academic_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate, t.Semester, t.AcademicYear)
 	return err
 }
 
 func (r *Repository) UpdateTahfidz(id int, t *TahfidzProgress) error {
-	query := `UPDATE tahfidz_progress SET student_id=?, surah_name=?, juz=?, start_ayat=?, end_ayat=?, status=?, musyrif_notes=?, evaluation_date=? WHERE id=?`
-	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate, id)
+	t.Semester, t.AcademicYear = DeriveTahfidzPeriod(t.EvaluationDate)
+	query := `UPDATE tahfidz_progress SET student_id=?, surah_name=?, juz=?, start_ayat=?, end_ayat=?, status=?, musyrif_notes=?, evaluation_date=?, semester=?, academic_year=? WHERE id=?`
+	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate, t.Semester, t.AcademicYear, id)
 	return err
 }
 

@@ -720,6 +720,8 @@ export interface TahfidzProgress {
 	status: string;
 	musyrif_notes: string;
 	evaluation_date: string;
+	semester?: string;
+	academic_year?: string;
 }
 
 export interface HadisArbain {
@@ -3461,6 +3463,27 @@ export interface ProjectDetailScore {
 	contribution: number;
 }
 
+// Progres tahfidz pada periode rapor — informatif, TIDAK memengaruhi
+// final_score (keputusan produk Jilid 90).
+export interface RaportTahfidzEntry {
+	surah_name: string;
+	juz: number;
+	start_ayat: number;
+	end_ayat: number;
+	status: string;
+	evaluation_date: string;
+}
+
+export interface RaportTahfidz {
+	entries: RaportTahfidzEntry[];
+	total: number;
+	lulus: number;
+	proses: number;
+	setor: number;
+	score: number;
+	has_data: boolean;
+}
+
 export interface ComputedRaport {
 	student_id: number;
 	student_name: string;
@@ -3476,6 +3499,7 @@ export interface ComputedRaport {
 	mapel_details?: SubjectScoreDetail[];
 	project_details?: ProjectDetailScore[];
 	kesantrian_detail?: Record<string, number>;
+	tahfidz?: RaportTahfidz | null;
 	status?: string;
 }
 
@@ -3515,6 +3539,7 @@ export interface StoredRaport {
 	status: string;
 	notes: string;
 	updated_at: string;
+	tahfidz?: RaportTahfidz | null;
 }
 
 async function lmsFetch<T>(path: string, init?: RequestInit): Promise<{ success: boolean; message: string; data: T }> {

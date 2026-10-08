@@ -123,7 +123,7 @@ func (r *Repository) GetScopedTahfidz(classes []string, limit, offset int) ([]Ta
 		args = append(args, c)
 	}
 	query := `
-		SELECT t.id, t.student_id, u.name as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, u.name as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date, t.semester, t.academic_year
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		LEFT JOIN santri st ON st.user_id = t.student_id
@@ -146,7 +146,7 @@ func (r *Repository) queryTahfidzScoped(query string, args []interface{}, limit,
 	var ts []TahfidzProgress
 	for rows.Next() {
 		var t TahfidzProgress
-		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate); err != nil {
+		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate, &t.Semester, &t.AcademicYear); err != nil {
 			return nil, err
 		}
 		ts = append(ts, t)

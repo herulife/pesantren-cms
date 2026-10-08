@@ -142,7 +142,7 @@ const CATS: Cat[] = [
   {
     id: '3',
     title: 'Skema & Struktur Data',
-    ok: 1,
+    ok: 2,
     denom: 7,
     items: [
       {
@@ -162,16 +162,15 @@ const CATS: Cat[] = [
       {
         id: '3.3',
         label: 'tahfidz_progress tidak punya semester / academic_year',
-        s: 'FAIL',
-        why: 'Struktur kolom: id, student_id, surah_name, juz, start_ayat, end_ayat, status, musyrif_notes, evaluation_date, created_at. Bandingkan grades (punya semester + academic_year), kesantrian_aspek, project_assessments — ketiganya punya keduanya. Akibatnya progres hafalan TIDAK BISA direkap per periode, dan tidak masuk ke rapor sama sekali: grep "tahfidz" di seluruh features/raport = 0 hasil. Program unggulan sekolah tidak memberi kontribusi apa pun ke rapor meski secara resmi ada.',
-        fix: 'Tambah semester + academic_year, backfill dari evaluation_date. Ini prasyarat sebelum tahfidz bisa jadi komponen rapor.',
+        s: 'PASS',
+        why: 'Jilid 90 (8 Okt 2026): kolom semester + academic_year ditambahkan lewat addColumnIfNotExists di db.go, di-backfill idempoten dari evaluation_date (bulan >= Juli -> semester 1 TA y/y+1), dan Create/Update Tahfidz menurunkan periode yang sama di server (DeriveTahfidzPeriod) sehingga form frontend tidak perlu mengirim periode. Progres tahfidz kini dibaca features/raport (computeTahfidz) dan tampil di eRapor, PDF, serta portal sebagai komponen INFORMASIONAL — tidak mengubah final_score (keputusan produk 8 Okt 2026).',
       },
       {
         id: '3.4',
         label: 'validateTahfidz tidak memvalidasi start_ayat / end_ayat sama sekali',
         s: 'FAIL',
         why: 'Fungsi itu memeriksa StudentID, Juz (1-30), SurahName (!=""), Status. Field StartAyat dan EndAyat TIDAK PERNAH dirujuk. Tidak ada start_ayat > 0, tidak ada end >= start, tidak ada batas 286 ayat (Al-Baqarah), tidak ada konsistensi surah↔ayat. Baris dengan start_ayat=500, end_ayat=-5 diterima dengan 200. Surah_name juga teks bebas — tidak dicek terhadap 114 surah, tidak ada surah_id. Status kosong pun lolos karena syaratnya "t.Status != \'\'" sehingga DEFAULT \'proses\' di DB tidak pernah terpakai.',
-        fix: '1 <= start_ayat <= end_ayat <= max_ayat(surah). Ganti surah_name teks bebas dengan surah_id FK ke tabel referensi 114 surah. Jadikan status wajib non-kosong.',
+        fix: 'Sebagian sudah ditutup (Jilid 90): validateTahfidz kini memaksa 1 <= start_ayat <= end_ayat <= 300 dan status kosong di-default "proses". Yang masih terbuka: ganti surah_name teks bebas dengan surah_id FK ke tabel referensi 114 surah, lalu validasi ayat maksimal per surah (mis. 286 untuk Al-Baqarah).',
       },
       {
         id: '3.5',
@@ -426,7 +425,7 @@ const TOP5 = [
   'Terratkan kelengkapan rapor: hitung cakupan (mapel dinilai vs mapel aktif, kegiatan dinilai vs kegiatan aktif), dan jadikan prekondisi level-repo sebelum Upsert. Inilah satu-satunya bug yang bisa menghasilkan rapor resmi bernilai 100 untuk Santri yang belum dinilai — selisih 67 poin, sudah terbukti diuji.',
   'Tambahkan is_complete ke StoredRaport. Saat ini setiap rapor yang sudah dikunci justru tampil "belum lengkap" dengan nilai "–" di portal wali — bugs yang paling langsung dilihat pengguna.',
   'Aktifkan bobot yang sudah ada: hitung Σ(score×weight)/Σ(weight) di computeMapel, pakai KKM per mapel sebagai ambang predikat, dan hapus ambang 75 hardcode. Infrastrukturnya sudah lengkap dan tervalidasi, tinggal tidak dipakai.',
-  'Tambahkan semester + academic_year ke tahfidz_progress, lalu validasi 1 <= start_ayat <= end_ayat <= max_ayat. Program unggulan sekolah saat ini tidak masuk rapor sama sekali dan tidak bisa direkap per periode.',
+  'Tahfidz sudah punya semester + academic_year dan sudah tampil di eRapor (Jilid 90). Lanjutannya: ganti surah_name teks bebas dengan surah_id FK ke tabel 114 surah supaya validasi ayat bisa per-surah, bukan pagar umum 300.',
   'Tambahkan audit trail ke jalur tulis nilai, kunci GeneratedBy dari client, dan batasi /save + /unlock ke superadmin+bendahara. Nilai rapor boleh diubah tanpa jejak, dan kolom "siapa yang menerbitkan" bisa dipalsukan.',
 ];
 

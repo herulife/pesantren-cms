@@ -235,6 +235,7 @@ export default function ERaportPage() {
 				const v = raport.kesantrian_detail?.[a.key] ?? raport.kesantrian_detail?.[a.label];
 				return { aspek: a.label, score: v === undefined ? 0 : Number(v) };
 			}),
+			tahfidz: (raport.tahfidz?.entries || []).map(e => ({ surah: e.surah_name, juz: e.juz, ayat: `${e.start_ayat}-${e.end_ayat}`, status: e.status })),
 			printedAt: new Date().toLocaleString('id-ID'),
 		});
 	};
@@ -413,6 +414,54 @@ export default function ERaportPage() {
 											})}
 										</div>
 									</div>
+								</div>
+
+								<div className="rounded-3xl border border-slate-200 bg-white p-5">
+									<div className="flex flex-wrap items-center justify-between gap-3">
+										<h3 className="flex items-center gap-2 text-sm font-black text-slate-900"><BookOpen size={16} className="text-sky-600" /> Progres Tahfidz</h3>
+										<span className="rounded-full bg-violet-50 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-violet-700">Informatif — tidak memengaruhi nilai akhir</span>
+									</div>
+									{!raport.tahfidz?.has_data ? (
+										<p className="mt-3 text-sm text-slate-400">Belum ada progres tahfidz pada semester dan tahun ajaran ini.</p>
+									) : (
+										<>
+											<div className="mt-3 flex flex-wrap gap-2">
+												{[
+													{ label: 'Total setoran', value: String(raport.tahfidz.total) },
+													{ label: 'Lulus', value: String(raport.tahfidz.lulus) },
+													{ label: 'Setor', value: String(raport.tahfidz.setor) },
+													{ label: 'Proses', value: String(raport.tahfidz.proses) },
+													{ label: 'Persentase lulus', value: `${raport.tahfidz.score.toFixed(1)}%` },
+												].map(s => (
+													<span key={s.label} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">{s.label}: <span className="font-black text-slate-900">{s.value}</span></span>
+												))}
+											</div>
+											<div className="ap-table-wrap mt-3 overflow-x-auto">
+												<table className="w-full text-left text-sm">
+													<thead>
+														<tr className="border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
+															<th className="pb-2 font-bold">Surah</th>
+															<th className="pb-2 font-bold">Juz</th>
+															<th className="pb-2 font-bold">Ayat</th>
+															<th className="pb-2 font-bold">Status</th>
+															<th className="pb-2 font-bold">Evaluasi</th>
+														</tr>
+													</thead>
+													<tbody>
+														{raport.tahfidz.entries.map((e, i) => (
+															<tr key={`${e.surah_name}-${i}`} className="border-b border-slate-50">
+																<td className="py-2 font-semibold text-slate-700">{e.surah_name}</td>
+																<td className="py-2 text-slate-700">{e.juz}</td>
+																<td className="py-2 text-slate-700">{e.start_ayat}-{e.end_ayat}</td>
+																<td className="py-2 font-bold uppercase text-slate-900">{e.status}</td>
+																<td className="py-2 text-slate-700">{e.evaluation_date}</td>
+															</tr>
+														))}
+													</tbody>
+												</table>
+											</div>
+										</>
+									)}
 								</div>
 
 								<div className="flex flex-wrap gap-3">

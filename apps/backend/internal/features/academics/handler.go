@@ -214,11 +214,26 @@ func validateTahfidz(t *TahfidzProgress) map[string][]string {
 	if t.Juz < 1 || t.Juz > 30 {
 		errs["juz"] = []string{"Juz harus 1-30"}
 	}
-	if t.SurahName == "" {
+	if strings.TrimSpace(t.SurahName) == "" {
 		errs["surah_name"] = []string{"Nama surah wajib diisi"}
 	}
+	// Validasi rentang ayat (audit 3.4): dulu start/end tidak pernah diperiksa,
+	// sehingga baris `start=500, end=-5` diterima 200.
+	if t.StartAyat < 1 {
+		errs["start_ayat"] = []string{"Ayat awal minimal 1"}
+	}
+	if t.EndAyat < t.StartAyat {
+		errs["end_ayat"] = []string{"Ayat akhir tidak boleh kurang dari ayat awal"}
+	} else if t.EndAyat > 300 {
+		// Ayat terpanjang Al-Quran (Al-Baqarah) = 286; 300 jadi pagar longgar.
+		errs["end_ayat"] = []string{"Ayat akhir tidak wajar (maksimal 300)"}
+	}
 	validStatus := map[string]bool{"proses": true, "setor": true, "lulus": true}
-	if t.Status != "" && !validStatus[t.Status] {
+	if strings.TrimSpace(t.Status) == "" {
+		// Status kosong dulu lolos lalu menimpa DEFAULT 'proses' dengan ''.
+		t.Status = "proses"
+	}
+	if !validStatus[t.Status] {
 		errs["status"] = []string{"Status harus proses/setor/lulus"}
 	}
 	if len(errs) == 0 {

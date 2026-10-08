@@ -367,6 +367,8 @@ func createTables() {
 		status TEXT DEFAULT 'proses',
 		musyrif_notes TEXT DEFAULT '',
 		evaluation_date TEXT NOT NULL,
+		semester TEXT DEFAULT '',
+		academic_year TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (student_id) REFERENCES users(id)
 	);
@@ -950,6 +952,22 @@ func createTables() {
 	// DB fresh akan gagal saat SELECT. Ditambahkan di sini agar parity.
 	addColumnIfNotExists("santri", "father_occupation", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "mother_occupation", "TEXT DEFAULT ''")
+
+	// Jilid 90: progres tahfidz ikut komponen eRapor, jadi tiap baris wajib
+	// punya semester + tahun ajaran supaya bisa digabung dengan rapor.
+	// Aturan turunan (sama persis dengan handler Create/Update Tahfidz dan
+	// dengan backfill di bawah): bulan evaluasi >= Juli -> semester 1 (TA
+	// y/y+1), bulan < Juli -> semester 2 (TA y-1/y).
+	addColumnIfNotExists("tahfidz_progress", "semester", "TEXT DEFAULT ''")
+	addColumnIfNotExists("tahfidz_progress", "academic_year", "TEXT DEFAULT ''")
+	// Backfill data lama dari evaluation_date. Idempoten (WHERE kosong saja),
+	// jadi baris yang sudah punya periode tidak ditimpa.
+	_, _ = DB.Exec(`UPDATE tahfidz_progress
+		SET semester = CASE WHEN CAST(substr(evaluation_date, 6, 2) AS INTEGER) >= 7 THEN '1' ELSE '2' END,
+		    academic_year = CASE WHEN CAST(substr(evaluation_date, 6, 2) AS INTEGER) >= 7
+		                         THEN substr(evaluation_date, 1, 4) || '/' || (CAST(substr(evaluation_date, 1, 4) AS INTEGER) + 1)
+		                         ELSE (CAST(substr(evaluation_date, 1, 4) AS INTEGER) - 1) || '/' || substr(evaluation_date, 1, 4) END
+		WHERE academic_year IS NULL OR academic_year = ''`)
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 	_, _ = DB.Exec("UPDATE settings SET updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 

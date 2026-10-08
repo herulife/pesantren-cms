@@ -348,6 +348,8 @@ export type ERaportPDFPayload = {
 	mapel: { subject: string; score: number; weight?: number }[];
 	project: { name: string; score: number; weight?: number }[];
 	kesantrian: { aspek: string; score: number }[];
+	// Progres tahfidz (informatif — tidak dihitung ke nilai akhir, Jilid 90).
+	tahfidz?: { surah: string; juz: number; ayat: string; status: string }[];
 	printedAt?: string;
 	homeroomTeacher?: string;
 	parentName?: string;
@@ -589,7 +591,32 @@ export async function exportERaportPDF(payload: ERaportPDFPayload) {
 	});
 
 	const lastY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || 120;
-	renderSignatures(doc, lastY + 12, {
+
+	// Progres Tahfidz — informatif, TIDAK ikut nilai akhir (Jilid 90).
+	const tahfidzRows = payload.tahfidz || [];
+	if (tahfidzRows.length > 0) {
+		let ty = lastY + 8;
+		const pageH = doc.internal.pageSize.getHeight();
+		if (ty > pageH - 45) {
+			doc.addPage();
+			ty = 20;
+		}
+		doc.setFont('helvetica', 'bold');
+		doc.setFontSize(11);
+		doc.text('Progres Tahfidz (informatif — tidak memengaruhi nilai akhir)', 14, ty);
+		doc.setFont('helvetica', 'normal');
+		ty += 2;
+		autoTable(doc, {
+			startY: ty,
+			head: [['Surah', 'Juz', 'Ayat', 'Status']],
+			body: tahfidzRows.map(t => [t.surah, String(t.juz), t.ayat, t.status]),
+			styles: { fontSize: 9 },
+			headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+		});
+	}
+
+	const finalY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || lastY;
+	renderSignatures(doc, finalY + 12, {
 		homeroomTeacher: payload.homeroomTeacher,
 		parentName: payload.parentName,
 		placeDate: payload.placeDate,

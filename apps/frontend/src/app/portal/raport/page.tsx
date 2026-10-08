@@ -500,6 +500,7 @@ export default function PortalRaportPage() {
                     <p className="mt-3 text-sm text-slate-600">{item.musyrif_notes || 'Belum ada catatan musyrif.'}</p>
                     <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                       Evaluasi: {formatDateLabel(item.evaluation_date)}
+                      {item.academic_year && <> · Semester {item.semester === '1' ? 'Ganjil' : 'Genap'} TA {item.academic_year}</>}
                     </p>
                   </div>
                 ))}
