@@ -74,7 +74,8 @@ func newKasTestDB(t *testing.T) *sql.DB {
 	);
 	CREATE TABLE psb_payments (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		amount REAL DEFAULT 0,
+		code TEXT DEFAULT '',
+		amount INTEGER DEFAULT 0,
 		status TEXT DEFAULT 'pending',
 		paid_at DATETIME
 	);
