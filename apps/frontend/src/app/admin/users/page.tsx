@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword, getSettings, updateSetting } from '@/lib/api';
+import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword, updateUserProfile, getSettings, updateSetting } from '@/lib/api';
 import { ROLE_MENU_DEFS, standardMenusForRole, standardRolePermissions } from '@/lib/roleMenus';
 import { useAuth } from '@/components/AuthProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -24,7 +24,8 @@ import {
   Plus,
   Mail,
   Lock,
-  KeyRound
+  KeyRound,
+  Pencil
 } from 'lucide-react';
 
 interface UserRow {
@@ -106,6 +107,11 @@ export default function UsersPage() {
     password: '',
     confirmPassword: '',
   });
+  // Edit nama + email login (PUT /api/users/{id}) — sebelumnya hanya role dan
+  // password yang bisa diubah dari panel ini.
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '' });
   // customMenus dihapus — hanya Hak Akses Menu per role
   const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
   const [permsLoading, setPermsLoading] = useState(true);
@@ -234,6 +240,43 @@ export default function UsersPage() {
       showToast('error', message);
     } finally {
       setIsResettingPassword(false);
+    }
+  };
+
+  const openEditDialog = (userRow: UserRow) => {
+    setSelectedUser(userRow);
+    setEditForm({ name: userRow.name, email: userRow.email });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!selectedUser) return;
+    const name = editForm.name.trim();
+    const email = editForm.email.trim();
+    if (name.length < 3) {
+      showToast('error', 'Nama minimal 3 karakter.');
+      return;
+    }
+    if (!email) {
+      showToast('error', 'Email login wajib diisi.');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const res = await updateUserProfile(selectedUser.id, { name, email });
+      if (res.success) {
+        showToast('success', `Akun ${selectedUser.name} diperbarui.`);
+        setIsEditOpen(false);
+        setSelectedUser(null);
+        fetchUsers();
+      }
+    } catch (error) {
+      // Termasuk 409 "Email sudah terdaftar" dari backend.
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -626,6 +669,16 @@ export default function UsersPage() {
 
                           {!isSelf && (isSuper || u.role !== 'superadmin') && (
                             <button
+                              onClick={() => openEditDialog(u)}
+                              className="p-3 text-slate-300 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all"
+                              title="Ubah nama & email login"
+                            >
+                              <Pencil size={20} />
+                            </button>
+                          )}
+
+                          {!isSelf && (isSuper || u.role !== 'superadmin') && (
+                            <button
                               onClick={() => openResetPasswordDialog(u)}
                               className="p-3 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
                               title="Reset password"
@@ -711,6 +764,90 @@ export default function UsersPage() {
         message="Data personel ini akan dihapus permanen dari sistem otentikasi Al-Maa. Akses mereka akan segera terblokir."
         confirmText="YA, HAPUS PERMANEN"
       />
+
+      {isEditOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => {
+              setIsEditOpen(false);
+              setSelectedUser(null);
+            }}
+          />
+          <div className="relative w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">Ubah Akun</p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+                  {selectedUser?.name || 'User'}
+                </h3>
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+                  Email di bawah adalah yang dipakai user untuk login. Role dan password diatur lewat
+                  tombol masing-masing di tabel.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  <UserCheck size={14} /> Nama
+                </span>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  placeholder="Nama pengguna"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  <Mail size={14} /> Email Login
+                </span>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  placeholder="nama@almaparung.com"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="rounded-2xl bg-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition hover:bg-slate-200"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isSavingEdit}
+                onClick={handleUpdateProfile}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingEdit ? <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Pencil size={16} />}
+                {isSavingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isResetPasswordOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">

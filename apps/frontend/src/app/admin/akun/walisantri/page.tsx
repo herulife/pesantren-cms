@@ -7,7 +7,6 @@ import {
 	createWaliSantriAccount,
 	resetWaliSantriPassword,
 	getAttendanceStudents,
-	WaliAccount,
 	WaliList,
 	AttendanceStudent,
 } from '@/lib/api';
@@ -16,7 +15,6 @@ import { useAuth } from '@/components/AuthProvider';
 import {
 	AlertTriangle,
 	BadgeCheck,
-	KeyRound,
 	Pencil,
 	Plus,
 	RefreshCw,
@@ -29,7 +27,19 @@ import {
 const inputClass =
 	'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10';
 
-type EditDraft = { name: string; email: string; whatsapp: string };
+type EditDraft = {
+	name: string;
+	email: string;
+	whatsapp: string;
+	password: string;
+	confirmPassword: string;
+};
+
+// EditTarget dipakai akun wali (dengan Santri) sekaligus akun yatim — keduanya
+// role 'user' dan dilayani endpoint PUT /api/wali-santri/{id} yang sama.
+type EditTarget = { user_id: number; name: string; email: string; whatsapp: string };
+
+const emptyDraft: EditDraft = { name: '', email: '', whatsapp: '', password: '', confirmPassword: '' };
 
 export default function WaliSantriAccountsPage() {
 	const { showToast } = useToast();
@@ -40,8 +50,8 @@ export default function WaliSantriAccountsPage() {
 	const [loading, setLoading] = useState(true);
 	const [q, setQ] = useState('');
 	const [onlyPlaceholder, setOnlyPlaceholder] = useState(false);
-	const [editing, setEditing] = useState<number | null>(null);
-	const [draft, setDraft] = useState<EditDraft>({ name: '', email: '', whatsapp: '' });
+	const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+	const [draft, setDraft] = useState<EditDraft>(emptyDraft);
 	const [saving, setSaving] = useState(false);
 
 	const [showCreate, setShowCreate] = useState(false);
@@ -55,10 +65,6 @@ export default function WaliSantriAccountsPage() {
 	const [studentQ, setStudentQ] = useState('');
 	const [students, setStudents] = useState<AttendanceStudent[]>([]);
 	const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
-
-	const [resetting, setResetting] = useState<number | null>(null);
-	const [resetPass, setResetPass] = useState('');
-	const [resetSaving, setResetSaving] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -96,34 +102,75 @@ export default function WaliSantriAccountsPage() {
 		});
 	}, [data, q, onlyPlaceholder]);
 
-	function startEdit(a: WaliAccount) {
-		setEditing(a.user_id);
-		setDraft({ name: a.name, email: a.email, whatsapp: a.whatsapp || '' });
+	// Satu modal untuk semua: nama, email login, no. HP, dan (opsional) password
+	// baru. Password dikosongkan = tidak diganti, jadi edit data biasa tidak
+	// pernah menyentuh kredensial wali secara tidak sengaja.
+	function openEdit(target: EditTarget) {
+		setEditTarget(target);
+		setDraft({
+			name: target.name,
+			email: target.email,
+			whatsapp: target.whatsapp || '',
+			password: '',
+			confirmPassword: '',
+		});
 	}
 
-	function cancelEdit() {
-		setEditing(null);
-		setDraft({ name: '', email: '', whatsapp: '' });
+	function closeEdit() {
+		setEditTarget(null);
+		setDraft(emptyDraft);
 	}
 
-	async function saveEdit(a: WaliAccount) {
-		if (!draft.name.trim()) {
+	async function saveEdit() {
+		if (!editTarget) return;
+		const name = draft.name.trim();
+		const email = draft.email.trim();
+		if (!name) {
 			showToast('error', 'Nama wali wajib diisi.');
 			return;
 		}
+		if (!email) {
+			showToast('error', 'Email login wajib diisi.');
+			return;
+		}
+		const changingPassword = draft.password.length > 0 || draft.confirmPassword.length > 0;
+		if (changingPassword) {
+			if (draft.password.length < 8) {
+				showToast('error', 'Password baru minimal 8 karakter.');
+				return;
+			}
+			if (draft.password !== draft.confirmPassword) {
+				showToast('error', 'Konfirmasi password belum sama.');
+				return;
+			}
+		}
+
 		setSaving(true);
 		try {
-			const res = await updateWaliSantriAccount(a.user_id, {
-				name: draft.name.trim(),
-				email: draft.email.trim(),
+			const res = await updateWaliSantriAccount(editTarget.user_id, {
+				name,
+				email,
 				whatsapp: draft.whatsapp.trim() || undefined,
 			});
 			if (!res.ok) {
 				showToast('error', res.message || 'Gagal menyimpan akun wali.');
 				return;
 			}
-			showToast('success', `Akun wali ${a.email} berhasil diperbarui.`);
-			cancelEdit();
+			if (changingPassword) {
+				const pw = await resetWaliSantriPassword(editTarget.user_id, draft.password);
+				if (!pw.ok) {
+					showToast('error', pw.message || 'Data tersimpan, tetapi password gagal diganti.');
+					await load();
+					return;
+				}
+			}
+			showToast(
+				'success',
+				changingPassword
+					? 'Akun wali diperbarui. Password baru aktif dan sesi lama otomatis dicabut.'
+					: 'Akun wali diperbarui.'
+			);
+			closeEdit();
 			await load();
 		} finally {
 			setSaving(false);
@@ -198,26 +245,6 @@ export default function WaliSantriAccountsPage() {
 			await load();
 		} finally {
 			setCreating(false);
-		}
-	}
-
-	async function submitReset(userId: number) {
-		if (resetPass.length < 8) {
-			showToast('error', 'Password minimal 8 karakter.');
-			return;
-		}
-		setResetSaving(true);
-		try {
-			const res = await resetWaliSantriPassword(userId, resetPass);
-			if (!res.ok) {
-				showToast('error', res.message || 'Gagal mereset password.');
-				return;
-			}
-			showToast('success', 'Password akun wali direset. Sesinya ikut dicabut.');
-			setResetting(null);
-			setResetPass('');
-		} finally {
-			setResetSaving(false);
 		}
 	}
 
@@ -337,39 +364,14 @@ export default function WaliSantriAccountsPage() {
 							{filtered.map((a) => (
 								<tr key={a.user_id} className="align-top">
 									<td className="px-4 py-3">
-										{editing === a.user_id ? (
-											<input
-												value={draft.name}
-												onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-												className={inputClass + ' min-w-[220px]'}
-											/>
-										) : (
-											<span className="font-semibold text-slate-800">{a.name || '(kosong)'}</span>
-										)}
+										<span className="font-semibold text-slate-800">{a.name || '(kosong)'}</span>
 										<span className="mt-0.5 block text-xs text-slate-400">ID akun {a.user_id}</span>
 									</td>
 									<td className="px-4 py-3">
-										{editing === a.user_id ? (
-											<input
-												value={draft.email}
-												onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-												className={inputClass + ' min-w-[260px]'}
-											/>
-										) : (
-											<span className="font-mono text-xs text-slate-600">{a.email}</span>
-										)}
+										<span className="font-mono text-xs text-slate-600">{a.email}</span>
 									</td>
 									<td className="px-4 py-3">
-										{editing === a.user_id ? (
-											<input
-												value={draft.whatsapp}
-												onChange={(e) =>
-													setDraft({ ...draft, whatsapp: e.target.value })
-												}
-												placeholder="contoh: 08xx..."
-												className={inputClass + ' min-w-[150px] font-mono'}
-											/>
-										) : a.whatsapp ? (
+										{a.whatsapp ? (
 											<span className="font-mono text-xs text-slate-600">{a.whatsapp}</span>
 										) : (
 											<span className="font-mono text-xs font-medium text-amber-600">
@@ -413,49 +415,23 @@ export default function WaliSantriAccountsPage() {
 										)}
 									</td>
 									<td className="px-4 py-3">
-										{editing === a.user_id ? (
-											<div className="flex justify-end gap-2">
-												<button
-													type="button"
-													onClick={cancelEdit}
-													disabled={saving}
-													className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
-												>
-													<X className="h-3.5 w-3.5" />
-													Batal
-												</button>
-												<button
-													type="button"
-													onClick={() => void saveEdit(a)}
-													disabled={saving}
-													className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-sky-700 disabled:opacity-50"
-												>
-													{editing === a.user_id && saving ? 'Menyimpan...' : 'Simpan'}
-												</button>
-											</div>
-										) : (
-											<div className="flex justify-end gap-2">
-												<button
-													type="button"
-													onClick={() => {
-														setResetPass('');
-														setResetting(a.user_id);
-													}}
-													className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
-												>
-													<KeyRound className="h-3.5 w-3.5" />
-													Reset
-												</button>
-												<button
-													type="button"
-													onClick={() => startEdit(a)}
-													className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
-												>
-													<Pencil className="h-3.5 w-3.5" />
-													Ubah
-												</button>
-											</div>
-										)}
+										<div className="flex justify-end gap-2">
+											<button
+												type="button"
+												onClick={() =>
+													openEdit({
+														user_id: a.user_id,
+														name: a.name,
+														email: a.email,
+														whatsapp: a.whatsapp || '',
+													})
+												}
+												className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+											>
+												<Pencil className="h-3.5 w-3.5" />
+												Ubah
+											</button>
+										</div>
 									</td>
 								</tr>
 							))}
@@ -474,14 +450,45 @@ export default function WaliSantriAccountsPage() {
 						dihapus. Sebagian berasal dari import wali: saat saudara digabung ke satu
 						akun keluarga, akun lamanya menjadi tidak terpakai.
 					</p>
-					<div className="mt-3 flex flex-wrap gap-2">
+					<div className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-100">
 						{data.orphans.map((o) => (
-							<span
+							<div
 								key={o.user_id}
-								className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-600"
+								className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
 							>
-								#{o.user_id} {o.name} · <span className="font-mono">{o.email}</span>
-							</span>
+								<div className="min-w-0">
+									<p className="truncate text-sm font-semibold text-slate-800">
+										{o.name || '(kosong)'}
+										<span className="ml-2 text-xs font-normal text-slate-400">
+											ID akun {o.user_id}
+										</span>
+										{o.name_placeholder && (
+											<span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+												nama karangan
+											</span>
+										)}
+									</p>
+									<p className="mt-0.5 truncate font-mono text-xs text-slate-500">
+										{o.email}
+										{o.whatsapp ? ` · ${o.whatsapp}` : ''}
+									</p>
+								</div>
+								<button
+									type="button"
+									onClick={() =>
+										openEdit({
+											user_id: o.user_id,
+											name: o.name,
+											email: o.email,
+											whatsapp: o.whatsapp || '',
+										})
+									}
+									className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+								>
+									<Pencil className="h-3.5 w-3.5" />
+									Ubah
+								</button>
+							</div>
 						))}
 					</div>
 				</section>
@@ -606,55 +613,113 @@ export default function WaliSantriAccountsPage() {
 				</div>
 			)}
 
-			{resetting !== null && (
+			{editTarget && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-					<div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+					<div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
 						<div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-							<h2 className="text-base font-black text-slate-900">Reset Password</h2>
+							<h2 className="text-base font-black text-slate-900">Ubah Akun Wali</h2>
 							<button
 								type="button"
-								onClick={() => setResetting(null)}
-								disabled={resetSaving}
+								onClick={closeEdit}
+								disabled={saving}
 								className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
 							>
 								<X className="h-5 w-5" />
 							</button>
 						</div>
-						<div className="space-y-4 px-5 py-4">
-							<p className="text-sm text-slate-600">
-								Tulis password baru untuk akun ini. Sesi login wali yang masih aktif
-								otomatis dicabut — wali harus login ulang.
+						<div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
+							<p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+								ID akun <span className="font-bold">{editTarget.user_id}</span> — email di
+								bawah adalah yang dipakai wali untuk login portal.
 							</p>
 							<div className="space-y-1.5">
-								<label className="text-xs font-semibold text-slate-600">
-									Password baru * (min. 8 karakter)
-								</label>
+								<label className="text-xs font-semibold text-slate-600">Nama wali *</label>
 								<input
-									type="password"
-									value={resetPass}
-									onChange={(e) => setResetPass(e.target.value)}
-									placeholder="Password baru"
-									autoFocus
+									value={draft.name}
+									onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+									placeholder="Nama lengkap wali"
 									className={inputClass}
 								/>
+							</div>
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">Email login *</label>
+								<input
+									type="email"
+									value={draft.email}
+									onChange={(e) => setDraft({ ...draft, email: e.target.value })}
+									placeholder="nama@email.com"
+									className={inputClass}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<label className="text-xs font-semibold text-slate-600">
+									No. HP WhatsApp (opsional)
+								</label>
+								<input
+									value={draft.whatsapp}
+									onChange={(e) => setDraft({ ...draft, whatsapp: e.target.value })}
+									placeholder="contoh: 08xx..."
+									className={inputClass + ' font-mono'}
+								/>
+							</div>
+
+							<div className="border-t border-slate-100 pt-4">
+								<p className="text-xs font-black uppercase tracking-wide text-slate-500">
+									Ganti password (opsional)
+								</p>
+								<p className="mt-1 text-xs leading-5 text-slate-500">
+									Kosongkan kedua kolom ini kalau hanya ingin mengubah data di atas —
+									password wali tidak akan disentuh. Diisi = password diganti dan semua
+									sesi login wali otomatis dicabut.
+								</p>
+								<div className="mt-3 grid gap-3 sm:grid-cols-2">
+									<div className="space-y-1.5">
+										<label className="text-xs font-semibold text-slate-600">
+											Password baru
+										</label>
+										<input
+											type="password"
+											value={draft.password}
+											onChange={(e) => setDraft({ ...draft, password: e.target.value })}
+											placeholder="Minimal 8 karakter"
+											autoComplete="new-password"
+											className={inputClass}
+										/>
+									</div>
+									<div className="space-y-1.5">
+										<label className="text-xs font-semibold text-slate-600">
+											Ulangi password
+										</label>
+										<input
+											type="password"
+											value={draft.confirmPassword}
+											onChange={(e) =>
+												setDraft({ ...draft, confirmPassword: e.target.value })
+											}
+											placeholder="Ulangi password baru"
+											autoComplete="new-password"
+											className={inputClass}
+										/>
+									</div>
+								</div>
 							</div>
 						</div>
 						<div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
 							<button
 								type="button"
-								onClick={() => setResetting(null)}
-								disabled={resetSaving}
+								onClick={closeEdit}
+								disabled={saving}
 								className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
 							>
 								Batal
 							</button>
 							<button
 								type="button"
-								onClick={() => void submitReset(resetting)}
-								disabled={resetSaving}
-								className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+								onClick={() => void saveEdit()}
+								disabled={saving}
+								className="inline-flex items-center gap-1 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-sky-700 disabled:opacity-50"
 							>
-								{resetSaving ? 'Menyimpan...' : 'Reset Password'}
+								{saving ? 'Menyimpan...' : 'Simpan Perubahan'}
 							</button>
 						</div>
 					</div>

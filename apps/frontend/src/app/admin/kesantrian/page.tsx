@@ -17,7 +17,7 @@ import {
   linkSantriUser,
   getAvailableSantriAccounts,
   linkSantriAccount,
-  resetSantriPassword,
+  updateSantriAccount,
   Santri,
   normalizeApiAssetUrl,
 } from '@/lib/api';
@@ -74,7 +74,8 @@ export default function KesantrianPage() {
   const [linkUserId, setLinkUserId] = useState('');
   const [linking, setLinking] = useState(false);
   const [newPassword, setNewPassword] = useState('');
-  const [resetting, setResetting] = useState(false);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Opsi kelas diambil dari backend (distinct `santri.class` + jumlahnya), bukan
@@ -218,11 +219,53 @@ export default function KesantrianPage() {
     setLinkTarget(s);
     setLinkUserId(s.user_id ? String(s.user_id) : '');
     setNewPassword('');
+    setAccountEmail('');
     try {
       const users = await getAvailableSantriAccounts('', s.user_id || 0);
       setUserOptions(users);
+      // Email login akun yang sedang tertaut (bukan akun lain yang mungkin
+      // sedang dipilih di dropdown) — ini yang bisa diedit admin.
+      const linked = users.find((u) => u.id === (s.user_id || 0));
+      setAccountEmail(linked?.email || '');
     } catch {
       showToast('error', 'Gagal memuat daftar akun.');
+    }
+  };
+
+  // Simpan email login akun portal santri dan/atau password barunya dalam satu
+  // permintaan. Password dikosongkan = tidak diubah (beda dengan reset).
+  const savePortalAccount = async () => {
+    if (!linkTarget) return;
+    const email = accountEmail.trim();
+    if (!email) {
+      showToast('error', 'Email login wajib diisi.');
+      return;
+    }
+    if (newPassword && newPassword.length < 6) {
+      showToast('error', 'Password minimal 6 karakter.');
+      return;
+    }
+    setSavingAccount(true);
+    try {
+      const res = await updateSantriAccount(linkTarget.id, {
+        email,
+        password: newPassword || undefined,
+      });
+      if (!res.ok) {
+        showToast('error', res.message);
+        return;
+      }
+      const sharedNote =
+        res.shared && res.shared > 1
+          ? ` Akun ini dipakai bersama ${res.shared} santri, jadi wali saudaranya ikut memakai email baru itu.`
+          : '';
+      showToast('info', res.message + sharedNote);
+      setNewPassword('');
+      setUserOptions((prev) =>
+        prev.map((u) => (u.id === (linkTarget.user_id || 0) ? { ...u, email } : u))
+      );
+    } finally {
+      setSavingAccount(false);
     }
   };
 
@@ -567,31 +610,45 @@ export default function KesantrianPage() {
               </div>
               {linkTarget.user_id ? (
                 <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Reset password akun ini</p>
-                  <p className="mb-2 text-xs text-slate-500">Buat password baru untuk wali (minimal 6 karakter), lalu sampaikan ke wali.</p>
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Kelola akun login</p>
+                  <p className="mb-2 text-xs text-slate-500">
+                    Email di bawah dipakai wali untuk masuk portal. Password baru bersifat opsional —
+                    dikosongkan berarti password tidak diubah.
+                  </p>
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400" htmlFor="portal-email">
+                    Email login
+                  </label>
+                  <input
+                    id="portal-email"
+                    type="email"
+                    value={accountEmail}
+                    onChange={(e) => setAccountEmail(e.target.value)}
+                    placeholder="nama@email.com"
+                    className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400" htmlFor="portal-password">
+                    Password baru (opsional)
+                  </label>
                   <div className="flex gap-2">
                     <input
+                      id="portal-password"
                       type="text"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Password baru"
+                      placeholder="Minimal 6 karakter"
                       className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
                     />
                     <button
-                      onClick={async () => {
-                        if (newPassword.length < 6) { showToast('error', 'Password minimal 6 karakter'); return; }
-                        setResetting(true);
-                        const r = await resetSantriPassword(linkTarget.id, newPassword);
-                        setResetting(false);
-                        if (r.ok) { showToast('success', r.message); setNewPassword(''); }
-                        else showToast('error', r.message);
-                      }}
-                      disabled={resetting || newPassword.length < 6}
+                      onClick={() => void savePortalAccount()}
+                      disabled={savingAccount || !accountEmail.trim() || (newPassword.length > 0 && newPassword.length < 6)}
                       className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-700 disabled:opacity-50"
                     >
-                      {resetting ? '…' : 'Reset'}
+                      {savingAccount ? '…' : 'Simpan'}
                     </button>
                   </div>
+                  {newPassword.length > 0 && newPassword.length < 6 && (
+                    <p className="mt-1 text-xs font-semibold text-rose-600">Password minimal 6 karakter</p>
+                  )}
                 </div>
               ) : null}
             </div>
