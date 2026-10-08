@@ -381,11 +381,13 @@ func main() {
 			r.With(uploadLimiter.Middleware).Post("/upload", upload.HandleUpload)
 
 			// Manajemen user: superadmin/bendahara boleh kelola (lihat,
-			// tambah, ubah role, reset password). Hapus user tetap hanya superadmin.
+			// tambah, ubah nama+email, ubah role, reset password). Hapus user
+			// tetap hanya superadmin; akun portal (role=user) ditolak oleh handler.
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("superadmin", "bendahara"))
 				r.Get("/users", authHandler.GetAllUsers)
 				r.Post("/users", authHandler.CreateUser)
+				r.Put("/users/{id}", authHandler.UpdateUser)
 				r.Put("/users/{id}/password", authHandler.ResetUserPassword)
 				r.Put("/users/{id}/role", authHandler.UpdateUserRole)
 			})
