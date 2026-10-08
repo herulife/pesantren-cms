@@ -64,6 +64,34 @@ Keputusan user (final): `PIMPINAN (read-only) > ADMIN > WALI KELAS (kelasnya) / 
 ## 4. RIWAYAT (tambahkan entri baru di bawah, JANGAN hapus yang lama)
 Format entri: `## Jilid NN — JUDUL (tanggal, status)` + apa diubah (file+fungsi) + cara verifikasi + dampak.
 
+## Jilid 89 - Perbaikan data Tahfidz tidak tampil + portal raport wali 403 (8 Okt 2026, LIVE)
+
+Laporan user: "tahfidz sudah diinput tapi tidak tampil". Akar masalah ditemukan **dua** bug, keduanya kini diperbaiki di backend `alma-parung-backend:j89-fix-tahfidz` (berbasis kode Jilid 88 + fix; tidak ada migrasi skema).
+
+**Bug 1 — SEMUA baca tahfidz 500 (tidak ada data tahfidz yang bisa tampil):**
+- `apps/backend/internal/features/academics/repository.go`: `GetAllTahfidz` (sekitar L394) & `GetTahfidzByStudent` (sekitar L435) memakai `COALESCE(s.name,u.name)` tetapi query hanya `JOIN users u ON t.student_id = u.id` — tidak ada join/alias `s` → SQL error `no such column: s.name (1)` → handler `GetTahfidz` (list admin) dan `GetMyTahfidz` (`/portal/academics/tahfidz` untuk wali) balas **500** `"Gagal memproses permintaan (Internal Server Error)"`. `GetScopedTahfidz` di `scoped.go` memakai `u.name` sehingga kasus lain tidak kena.
+- Fix: pada kedua query, `COALESCE(s.name,u.name)` diganti `COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) AS student_name` (resolusi Nama Santri dari akun portal, fallback ke nama akun).
+- Catatan model data: `tahfidz_progress.student_id` = **`users.id` akun portal wali**, bukan `santri.id` (dropdown form tahfidz memakai `getAcademicStudents()` yang radius value `u.id`). Konsisten dengan `disciplines`. Data yang sudah ada tetap valid.
+
+**Bug 2 — halaman `/portal/raport` wali tidak pernah load (403), jadi bagian "Progres Hafalan" tak pernah tampil:**
+- `getMyRaport()` → `getActiveAcademicYear()` → `GET /school/years` yang dibatasi `RequireRole("superadmin","bendahara","panitia_psb","admin","wali_kelas","pimpinan")` → role `user` (wali portal) dapat **403** → `Promise.all` di `apps/frontend/src/app/portal/raport/page.tsx` gagal → seluruh halaman (termasuk section Progres Hafalan) tidak render.
+- Fix: `apps/backend/cmd/api/main.go` grup baca `/school` diubah menjadi `RequireRole(..., "user")` (READ `GET /years` + `GET /classes`; WRITE tetap superadmin/bendahara/panitia_psb/admin).
+- Akses portal dikendalikan status PSB di `portal/layout.tsx` (`hasStudentAccess = status accepted/santri`); akun pendaftar `pending` memang dialihkan ke wizard `/portal/biodata` (by design) — bukan bug.
+
+**Verifikasi (8 Okt 2026, live `https://almaparung.com`):**
+- `go build ./...` exit 0. API live: `GET /api/academics/tahfidz` (superadmin) **200** (11 baris, `student_name` = Nama Santri via subquery); `GET /api/portal/academics/tahfidz` akun berdata (user 168) **200** (3 baris; sebelumnya 500); `GET /api/school/years` role `user` (akun 125) **200** (2 tahun; sebelumnya 403); rute Jilid 88 tetap hidup (`PUT /users/999999` → 400 validasi, `PUT /santri/1/account` → 400 validasi).
+- Playwright terhadap live UI port 3002: tab Tahfidz `/admin/academics` **6/6 PASS** (tab ada, tanpa pesan 500, nama santri tampil, surat tampil, tanpa pageerror); `/portal/raport` akun accepted (user 136) **5/5** (halaman render, judul "Progres Hafalan" ada, tanpa pageerror — section kosong karena akun itu belum punya data tahfidz, wajar).
+- Endpoint portal (grades/attendance/tahfidz/arbain/`/portal/raport/me`) semua **200** untuk wali accepted.
+- Catatan: baris `tahfidz_progress` id 17 (albaqoroh) hilang dari DB antara verifikasi awal (12 → 11 baris); tidak ada `DELETE /academics/tahfidz` pada log container — diduga dihapus manual lewat UI oleh user, bukan bug.
+
+**Deploy & rollback**
+- Image baru `alma-parung-backend:j89-fix-tahfidz` (= id f69e989a0897; ada juga image `j85-fix-tahfidz` hasil build antara). Container `alma-parung-backend-j83` dijalankan ulang **healthy** dengan env identik dari container lama.
+- Rollback: **`alma-parung-backend-pre-j89`** (= image `j88-kelola-akun`, live sebelum fix, stopped) dan **`alma-parung-backend-pre-j89b`** (build antara tanpa fix `/school/years`, stopped). Frontend tidak berubah (tetap `j88-kelola-akun`). `build_backend_j89.done` dibuat.
+
+**Gotcha untuk agen berikutnya**
+- **Jilid penomoran melompat** (riwayat: 84 → 84b → 88): `/prd` yang menyebut "E-Rapor mulai Jilid 85–87" sudah tidak sinkron dengan kenyataan (88 = kelola akun, 89 = fix tahfidz) — roadmap produk itu soal E-Rapor, bukan urutan jilid live. Jangan jadikan acuan urutan.
+- Baca `RINGKASAN.md` §2 + `docker ps` untuk mengetahui state live, bukan memori/`AGENTS.md` §1 (file itu biasa ketinggalan).
+
 ## Jilid 88 - Kelola semua akun dari admin (8 Okt 2026, LIVE)
 
 Empat fitur kelola akun sekaligus: **(1) edit nama + email akun staf** di `/admin/users`,
