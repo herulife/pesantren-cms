@@ -12,6 +12,14 @@ Bacalah sebelum mengubah kode. Bahasa: Indonesia.
 - Container (**per 8 Okt 2026; JANGAN percaya angka lama di file ini — tag image berubah tiap jilid,
   selalu `docker ps` untuk memastikan**): `alma-parung-backend-j83` (image `alma-parung-backend:j90-tahfidz-erapor`, `-p 8090:8080`, `--restart always` — **Jilid 90**: Tahfidz komponen eRapor (informatif) + kolom periode semester/TA + validasi ayat; berbasis kode Jilid 89) dan **`alma-parung-frontend-j83` (image `alma-parung-frontend:j90-tahfidz-erapor`, `-p 3002:3000`, `--restart unless-stopped`). Container rollback frontend: `alma-parung-frontend-pre-j90` (image `j88-kelola-akun`) + `alma-parung-frontend-pre-j84b` (image `j84-kelola-wali`) + `alma-parung-frontend-pre-j84` (image `prd-preview`) + `alma-parung-frontend-pre-prd` (image `j83-notif-expand`) + `alma-parung-frontend-pre-j83` (image `j82-sysnotif`); rollback backend: `alma-parung-backend-pre-j90` (image `j89-fix-tahfidz`) + `alma-parung-backend-pre-j89` (image `j88-kelola-akun`) + `alma-parung-backend-pre-j89b` (build antara tanpa fix `/school/years`) + `alma-parung-backend-pre-j88` (image `j84-kelola-wali`) + `alma-parung-backend-pre-j84` (image `j83-notif-expand`) + `alma-parung-backend-pre-j83` (image `j82-sysnotif`) — semua di-stop, jangan `docker rm`, hanya `stop` + `rename`. Sumber kebenaran live: `RINGKASAN.md` §2.
 - Env backend aktual HANYA di dalam container (`docker inspect alma-parung-backend`). Jangan print secret (JWT_SECRET/password) ke chat/log. Template publik: `.env.example`.
+- **BATAS PROYEK — JANGAN CAMPURKAN Asyukro ke Alma (8 Okt 2026, perintah user).**
+  Fitur LMS (**courses/assignments/submissions/reports**, role `wali_murid`, API `:8081`)
+  adalah milik proyek **Asyukro** — `lms.benuatech.web.id` / `mvp.benuatech.web.id`,
+  repo `/home/alma/asyukro` (bukan repo ini). Repo ini = **Alma** (`almaparung.com`).
+  DILARANG mengimpor/menyalin modul LMS atau menambah role `wali_murid`/tabel `lms_*`
+  ke repo Alma. Ada permintaan fitur LMS → kerjakan di `/home/alma/asyukro`.
+  Komit LMS nyasar ke Alma (22:10–22:32 8 Okt, `fd92485`..`50522f1`) sudah di-revert;
+  jangan dibawa kembali. Backup ref: `backup/lms-crossover-2bcca40-d40e597` (HEAD 50522f1).
 
 - **`student_id` di fitur `disciplines` = `users.id`, bukan `santri.id`.** `POST /api/disciplines/violations`
   menolak akun non-Santri dengan **422** (`ErrNotSantri`); form WAJIB pakai dropdown (filter `user_id`
