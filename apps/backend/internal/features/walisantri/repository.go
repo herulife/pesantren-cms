@@ -38,11 +38,16 @@ type Account struct {
 }
 
 // Orphan adalah akun role=user yang tidak tertaut ke Santri mana pun.
-// Tidak dihapus otomatis, tapi ditampilkan agar terlihat.
+// Tidak dihapus otomatis, tapi ditampilkan agar terlihat dan bisa diedit
+// (nama/email/whatsapp) lewat endpoint yang sama dengan akun wali.
 type Orphan struct {
-	UserID int    `json:"user_id"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
+	UserID         int    `json:"user_id"`
+	Name           string `json:"name"`
+	Email          string `json:"email"`
+	Whatsapp       string `json:"whatsapp"`
+	IsPlaceholder  bool   `json:"is_placeholder"`
+	NamePlaceholder bool   `json:"name_placeholder"`
+	LastLoginAt    string `json:"last_login_at,omitempty"`
 }
 
 type Stats struct {
@@ -133,7 +138,8 @@ func (r *Repository) ListAll() (*List, error) {
 	}
 
 	// Tahap 3: akun yatim + statistik.
-	orows, err := r.db.Query(`SELECT u.id, u.name, u.email FROM users u
+	orows, err := r.db.Query(`SELECT u.id, u.name, u.email, COALESCE(u.whatsapp,''),
+		COALESCE(u.last_login_at,'') FROM users u
 		WHERE u.role='user'
 		  AND NOT EXISTS (SELECT 1 FROM santri s WHERE s.user_id=u.id)
 		ORDER BY u.id`)
@@ -143,16 +149,23 @@ func (r *Repository) ListAll() (*List, error) {
 	defer orows.Close()
 	for orows.Next() {
 		var o Orphan
-		if err := orows.Scan(&o.UserID, &o.Name, &o.Email); err != nil {
+		var lastLogin string
+		if err := orows.Scan(&o.UserID, &o.Name, &o.Email, &o.Whatsapp, &lastLogin); err != nil {
 			return nil, err
 		}
+		o.IsPlaceholder = isPlaceholderEmail(o.Email)
+		o.NamePlaceholder = isPlaceholderName(o.Name)
+		o.LastLoginAt = lastLogin
 		out.Orphans = append(out.Orphans, o)
 	}
 	if err := orows.Err(); err != nil {
 		return nil, err
 	}
 
-	for _, a := range out.Accounts {
+	// Hitung statistik lewat indeks: `for _, a := range` membuat salinan, jadi
+	// tulisan a.NeedsNote tidak pernah sampai ke slice (bug Jilid 84).
+	for i := range out.Accounts {
+		a := &out.Accounts[i]
 		out.Stats.TotalAccounts++
 		out.Stats.TotalSantri += len(a.Santri)
 		if len(a.Santri) > 1 {

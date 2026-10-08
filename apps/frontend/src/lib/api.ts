@@ -1992,6 +1992,10 @@ export interface WaliOrphan {
 	user_id: number;
 	name: string;
 	email: string;
+	whatsapp?: string;
+	is_placeholder?: boolean;
+	name_placeholder?: boolean;
+	last_login_at?: string;
 }
 
 export interface WaliStats {
@@ -2093,6 +2097,24 @@ export async function resetSantriPassword(id: number, password: string): Promise
 	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal mereset password' }; }
 }
 
+// updateSantriAccount — ubah email login akun portal santri dan/atau password
+// baru dalam satu permintaan. Password dikirim kosong = password tidak diubah.
+// shared = jumlah santri yang berbagi akun yang sama (saudara satu keluarga).
+export async function updateSantriAccount(
+	id: number,
+	payload: { email: string; password?: string }
+): Promise<{ ok: boolean; message: string; shared?: number }> {
+	try {
+		const r = await lmsFetch<{ user_id: number; shared_santri: number }>(`/santri/${id}/account`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		});
+		return { ok: r.success, message: r.message, shared: r.data?.shared_santri };
+	} catch (e) {
+		return { ok: false, message: e instanceof Error ? e.message : 'Gagal memperbarui akun santri' };
+	}
+}
+
 export async function getUsers(search: string = '') {
 	try {
         const url = search ? `${API_BASE_URL}/users?search=${encodeURIComponent(search)}` : `${API_BASE_URL}/users`;
@@ -2122,6 +2144,17 @@ export async function resetUserPassword(id: number, password: string) {
 		method: 'PUT',
 		headers: getAuthHeaders(),
 		body: JSON.stringify({ password })
+	});
+	return parseResponse(res);
+}
+
+// updateUserProfile — ubah nama + email login akun staf (role selain 'user').
+// Email duplikat dibalas backend 409 dan dilempar sebagai Error berisi pesannya.
+export async function updateUserProfile(id: number, payload: { name: string; email: string }) {
+	const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
 	});
 	return parseResponse(res);
 }

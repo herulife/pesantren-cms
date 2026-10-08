@@ -227,3 +227,30 @@ func ValidateWaliCreateRequest(req *WaliCreateRequest) ValidationErrors {
 	}
 	return errs
 }
+
+// UpdateUserRequest dipakai PUT /api/users/{id} untuk mengubah nama + email
+// login akun staf. Role dan password sengaja tidak dimuat di sini: role punya
+// endpoint sendiri (/users/{id}/role) dan reset password juga (/users/{id}/password),
+// supaya satu permintaan tidak bisa diam-diam mengubah dua hal sekaligus.
+type UpdateUserRequest struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func ValidateUpdateUserRequest(req *UpdateUserRequest) ValidationErrors {
+	errs := ValidationErrors{}
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = NormalizeEmail(req.Email)
+
+	if len(req.Name) < 3 {
+		errs.Add("name", "Nama minimal 3 karakter")
+	}
+	if req.Email == "" {
+		errs.Add("email", "Email wajib diisi")
+	} else if !ValidateEmail(req.Email) {
+		errs.Add("email", "Format email tidak valid")
+	} else if len(req.Email) > 190 {
+		errs.Add("email", "Email terlalu panjang")
+	}
+	return errs
+}
