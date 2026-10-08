@@ -125,6 +125,14 @@ func (r *Repository) BumpTokenVersion(id int) error {
 	return err
 }
 
+// UpdateIdentity mengubah nama + email login akun staf dalam satu UPDATE.
+// Cek duplikasi email dilakukan di handler (FindByEmail) supaya bisa membalas
+// 409 yang jelas, bukan error UNIQUE mentah dari SQLite.
+func (r *Repository) UpdateIdentity(id int, name, email string) error {
+	_, err := r.db.Exec("UPDATE users SET name = ?, email = ? WHERE id = ?", name, email, id)
+	return err
+}
+
 func (r *Repository) UpdatePassword(id int, newPassword string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {

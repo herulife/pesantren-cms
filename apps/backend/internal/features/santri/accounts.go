@@ -2,6 +2,7 @@ package santri
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -197,4 +198,126 @@ func (h *Handler) ResetSantriPassword(w http.ResponseWriter, r *http.Request) {
 		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
 	})
 	sendJSONResponse(w, http.StatusOK, true, "Password akun santri direset. Sampaikan password baru ke wali.", nil)
+}
+
+// ErrEmailTaken: email login baru sudah dipakai akun lain (balas 409).
+var ErrEmailTaken = errors.New("email sudah dipakai akun lain")
+
+// UpdateLinkedAccount mengganti email login (dan opsional password) akun
+// portal yang tertaut ke santri. Password diganti -> token_version ikut
+// dinaikkan supaya semua sesi lama langsung mati. Mengembalikan user_id akun
+// itu + jumlah santri yang berbagi akun yang sama (saudara satu keluarga),
+// supaya UI bisa memperingatkan admin sebelum mengubah login bersama.
+func (r *Repository) UpdateLinkedAccount(santriID int, email, newPassword string) (int, int, error) {
+	var userID sql.NullInt64
+	if err := r.db.QueryRow(`SELECT user_id FROM santri WHERE id = ?`, santriID).Scan(&userID); err != nil {
+		return 0, 0, err
+	}
+	if !userID.Valid || userID.Int64 == 0 {
+		return 0, 0, sql.ErrNoRows
+	}
+	uid := int(userID.Int64)
+
+	var role string
+	if err := r.db.QueryRow(`SELECT role FROM users WHERE id = ?`, uid).Scan(&role); err != nil {
+		return 0, 0, sql.ErrNoRows
+	}
+	if role != "user" {
+		return 0, 0, errors.New("akun tertaut bukan akun portal")
+	}
+
+	var taken bool
+	if err := r.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE email = ? AND id <> ?)`, email, uid).Scan(&taken); err != nil {
+		return 0, 0, err
+	}
+	if taken {
+		return 0, 0, ErrEmailTaken
+	}
+
+	var shared int
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM santri WHERE user_id = ?`, uid).Scan(&shared); err != nil {
+		return 0, 0, err
+	}
+
+	if newPassword == "" {
+		if _, err := r.db.Exec(`UPDATE users SET email = ? WHERE id = ?`, email, uid); err != nil {
+			return 0, 0, err
+		}
+		return uid, shared, nil
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return 0, 0, err
+	}
+	if _, err := r.db.Exec(`UPDATE users SET email = ?, password_hash = ?, token_version = COALESCE(token_version,0) + 1 WHERE id = ?`,
+		email, string(hash), uid); err != nil {
+		return 0, 0, err
+	}
+	return uid, shared, nil
+}
+
+// UpdateSantriAccount: PUT /santri/{id}/account {email, password?}
+// Satu permintaan untuk mengubah email login akun portal santri dan/atau
+// password-nya. Password dikosongkan = password tidak diubah (beda dengan
+// /reset-password yang selalu mengganti password).
+func (h *Handler) UpdateSantriAccount(w http.ResponseWriter, r *http.Request) {
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	if !scope.FullAccess(role) {
+		sendJSONResponse(w, http.StatusForbidden, false, "Hanya admin yang dapat mengubah akun portal", nil)
+		return
+	}
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if id <= 0 {
+		sendJSONResponse(w, http.StatusBadRequest, false, "ID santri tidak valid", nil)
+		return
+	}
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid: "+err.Error(), nil)
+		return
+	}
+	req.Email = validators.NormalizeEmail(req.Email)
+	if !validators.ValidateEmail(req.Email) {
+		sendValidationError(w, map[string]string{"email": "Format email tidak valid"})
+		return
+	}
+	if req.Password != "" && len(req.Password) < 6 {
+		sendValidationError(w, map[string]string{"password": "Password minimal 6 karakter"})
+		return
+	}
+
+	uid, shared, err := h.repo.UpdateLinkedAccount(id, req.Email, req.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrEmailTaken):
+			sendJSONResponse(w, http.StatusConflict, false, "Email itu sudah dipakai akun lain", nil)
+		case errors.Is(err, sql.ErrNoRows):
+			sendJSONResponse(w, http.StatusNotFound, false, "Santri belum punya akun tertaut", nil)
+		default:
+			logger.Error(r.Context(), "santri account update failed", logger.Field{"santri_id": id, "error": err.Error()})
+			sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memperbarui akun portal", nil)
+		}
+		return
+	}
+
+	actorID, _ := auth.GetAuthenticatedUserID(r.Context())
+	actorRole, _ := auth.GetAuthenticatedRole(r.Context())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: actorID, ActorRole: actorRole,
+		Action: "UPDATE_SANTRI_ACCOUNT", Entity: "santri", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"user_id": uid, "email": req.Email, "password_changed": req.Password != ""},
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	message := "Email login akun santri diperbarui"
+	if req.Password != "" {
+		message = "Email dan password akun santri diperbarui. Sesi login lama otomatis dicabut."
+	}
+	sendJSONResponse(w, http.StatusOK, true, message, map[string]interface{}{
+		"user_id":       uid,
+		"shared_santri": shared,
+	})
 }

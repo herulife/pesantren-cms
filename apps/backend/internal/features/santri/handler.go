@@ -152,6 +152,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/portal-users-available", h.GetAvailablePortalUsers)
 	r.Put("/{id}/link-user-exclusive", h.LinkUserExclusiveHandler)
 	r.Post("/{id}/reset-password", h.ResetSantriPassword)
+	r.Put("/{id}/account", h.UpdateSantriAccount)
 	r.Delete("/{id}", h.Delete)
 	r.Delete("/{id}/purge", h.Purge)
 	r.Delete("/bulk", h.BulkDelete)
