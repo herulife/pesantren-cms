@@ -393,7 +393,7 @@ func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
 // Tahfidz
 func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, COALESCE(s.name,u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		ORDER BY t.evaluation_date DESC
@@ -434,7 +434,7 @@ func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error)
 
 func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, COALESCE(s.name,u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		WHERE t.student_id = ?
