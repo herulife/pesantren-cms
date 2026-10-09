@@ -137,6 +137,21 @@ func ValidateDate(raw string) bool {
 	return err == nil
 }
 
+// ValidateDateTimeOrDate menerima tanggal saja (2006-01-02) atau tanggal+jam
+// (2006-01-02T15:04 / 2006-01-02T15:04:05). Dipakai untuk field jadwal PSB yang
+// di frontend memakai input datetime-local (Jadwal Tes, Batas Daftar Ulang).
+func ValidateDateTimeOrDate(raw string) bool {
+	if raw == "" {
+		return false
+	}
+	for _, layout := range []string{"2006-01-02", "2006-01-02T15:04", "2006-01-02T15:04:05"} {
+		if _, err := time.Parse(layout, raw); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func ValidateNIK(raw string) bool {
 	nik := strings.TrimSpace(raw)
 	if len(nik) != 16 {

@@ -30,14 +30,14 @@ func ValidateRegistrationStatusRequest(req *RegistrationStatusRequest) Validatio
 	default:
 		errs.Add("status", "Status harus salah satu dari pending, review, tes, accepted, re_registration, rejected")
 	}
-	if req.TestDate != "" && !ValidateDate(req.TestDate) {
-		errs.Add("test_date", "Tanggal tes harus format YYYY-MM-DD (boleh kosong)")
+	if req.TestDate != "" && !ValidateDateTimeOrDate(req.TestDate) {
+		errs.Add("test_date", "Tanggal tes harus format YYYY-MM-DD atau YYYY-MM-DDTHH:MM (boleh kosong)")
 	}
 	if req.TestScore != nil && (*req.TestScore < 0 || *req.TestScore > 100) {
 		errs.Add("test_score", "Nilai tes harus 0-100")
 	}
-	if req.ReRegistrationDeadline != "" && !ValidateDate(req.ReRegistrationDeadline) {
-		errs.Add("re_registration_deadline", "Batas daftar ulang harus format YYYY-MM-DD")
+	if req.ReRegistrationDeadline != "" && !ValidateDateTimeOrDate(req.ReRegistrationDeadline) {
+		errs.Add("re_registration_deadline", "Batas daftar ulang harus format YYYY-MM-DD atau YYYY-MM-DDTHH:MM")
 	}
 	if len(req.Note) > 1000 {
 		errs.Add("note", "Catatan maksimal 1000 karakter")

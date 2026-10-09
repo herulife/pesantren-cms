@@ -925,7 +925,7 @@ func notifyPSBTransition(r *http.Request, repo PSBRepository, id int, status, no
 	case "tes":
 		parts := []string{}
 		if reg.TestDate != "" {
-			parts = append(parts, "Jadwal: "+reg.TestDate)
+			parts = append(parts, "Jadwal: "+prettyJadwal(reg.TestDate))
 		}
 		if reg.TestLocation != "" {
 			parts = append(parts, "Lokasi: "+reg.TestLocation)
@@ -935,7 +935,7 @@ func notifyPSBTransition(r *http.Request, repo PSBRepository, id int, status, no
 		}
 	case "re_registration":
 		if reg.ReRegDeadline != "" {
-			detail = "Batas daftar ulang: " + reg.ReRegDeadline
+			detail = "Batas daftar ulang: " + prettyJadwal(reg.ReRegDeadline)
 		}
 	}
 
