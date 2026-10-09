@@ -950,6 +950,21 @@ func notifyPSBTransition(r *http.Request, repo PSBRepository, id int, status, no
 	}
 }
 
+// prettyJadwal merapikan nilai jadwal berformat ISO (2006-01-02T15:04) agar enak
+// dibaca di pesan WhatsApp: "2026-10-15 08:00". Nilai tanggal-saja dibiarkan.
+func prettyJadwal(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return raw
+	}
+	for _, layout := range []string{"2006-01-02T15:04", "2006-01-02T15:04:05"} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t.Format("02 Jan 2006 15:04") + " WIB"
+		}
+	}
+	return raw
+}
+
 // GetPengumuman adalah endpoint publik untuk cek kelulusan PSB. Cukup dengan
 // nomor pendaftaran (id registrasi) tanpa login — menampilkan data minimal.
 func (h *Handler) GetPengumuman(w http.ResponseWriter, r *http.Request) {
