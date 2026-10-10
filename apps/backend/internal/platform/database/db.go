@@ -689,6 +689,15 @@ func createTables() {
 		mother_occupation TEXT DEFAULT '',
 		registration_id INTEGER DEFAULT 0,
 		photo_url TEXT,
+		kk_url TEXT DEFAULT '',
+		akta_url TEXT DEFAULT '',
+		ktp_ortu_url TEXT DEFAULT '',
+		ijazah_url TEXT DEFAULT '',
+		surat_kelulusan_url TEXT DEFAULT '',
+		pasfoto_url TEXT DEFAULT '',
+		foto_pendaftaran_url TEXT DEFAULT '',
+		yatim_doc_url TEXT DEFAULT '',
+		sktm_doc_url TEXT DEFAULT '',
 		user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -954,6 +963,18 @@ func createTables() {
 	// DB fresh akan gagal saat SELECT. Ditambahkan di sini agar parity.
 	addColumnIfNotExists("santri", "father_occupation", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "mother_occupation", "TEXT DEFAULT ''")
+	// Jilid 93: dokumen santri diunggah dari form admin (Tambah/Edit Santri),
+	// bukan lagi lewat wizard PSB. Portal memakai kolom ini untuk tampil
+	// read-only, sehingga akun santri/wali tidak perlu mengisi ulang dokumen.
+	addColumnIfNotExists("santri", "kk_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "akta_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "ktp_ortu_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "ijazah_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "surat_kelulusan_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "pasfoto_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "foto_pendaftaran_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "yatim_doc_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "sktm_doc_url", "TEXT DEFAULT ''")
 
 	// Jilid 90: progres tahfidz ikut komponen eRapor, jadi tiap baris wajib
 	// punya semester + tahun ajaran supaya bisa digabung dengan rapor.

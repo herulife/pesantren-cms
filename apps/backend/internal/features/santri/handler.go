@@ -48,6 +48,15 @@ type Santri struct {
 	MotherOccupation string `json:"mother_occupation"`
 	RegistrationID   int    `json:"registration_id"`
 	PhotoURL         string `json:"photo_url"`
+	KKURL            string `json:"kk_url"`
+	AktaURL          string `json:"akta_url"`
+	KTPOrtuURL       string `json:"ktp_ortu_url"`
+	IjazahURL        string `json:"ijazah_url"`
+	SuratKelulusanURL string `json:"surat_kelulusan_url"`
+	PasfotoURL       string `json:"pasfoto_url"`
+	FotoPendaftaranURL string `json:"foto_pendaftaran_url"`
+	YatimDocURL      string `json:"yatim_doc_url"`
+	SKTMDocURL       string `json:"sktm_doc_url"`
 	UserID           *int   `json:"user_id,omitempty"`
 	CreatedAt        string `json:"created_at"`
 	UpdatedAt        string `json:"updated_at"`
@@ -79,6 +88,15 @@ type SantriInput struct {
 	MotherOccupation string `json:"mother_occupation"`
 	RegistrationID   int    `json:"registration_id"`
 	PhotoURL         string `json:"photo_url"`
+	KKURL            string `json:"kk_url"`
+	AktaURL          string `json:"akta_url"`
+	KTPOrtuURL       string `json:"ktp_ortu_url"`
+	IjazahURL        string `json:"ijazah_url"`
+	SuratKelulusanURL string `json:"surat_kelulusan_url"`
+	PasfotoURL       string `json:"pasfoto_url"`
+	FotoPendaftaranURL string `json:"foto_pendaftaran_url"`
+	YatimDocURL      string `json:"yatim_doc_url"`
+	SKTMDocURL       string `json:"sktm_doc_url"`
 }
 
 func (in *SantriInput) toSantri() *Santri {
@@ -87,6 +105,7 @@ func (in *SantriInput) toSantri() *Santri {
 		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
 		Class: in.Class, Jenjang: in.Jenjang, Angkatan: in.Angkatan, Status: in.Status, Category: in.Category,
 		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
+		KKURL: in.KKURL, AktaURL: in.AktaURL, KTPOrtuURL: in.KTPOrtuURL, IjazahURL: in.IjazahURL, SuratKelulusanURL: in.SuratKelulusanURL, PasfotoURL: in.PasfotoURL, FotoPendaftaranURL: in.FotoPendaftaranURL, YatimDocURL: in.YatimDocURL, SKTMDocURL: in.SKTMDocURL,
 	}
 }
 
@@ -244,6 +263,24 @@ func validateSantri(s *Santri) map[string]string {
 	}
 	if s.MotherPhone != "" && !validators.ValidatePhone(s.MotherPhone) {
 		errs["mother_phone"] = "No HP ibu tidak valid"
+	}
+	// Jilid 93: dokumen diunggah dari form admin. Nilai tidak wajib, tetapi
+	// bila diisi harus berupa URL media yang sah (path /uploads atau URL http).
+	docFields := map[string]string{
+		"kk_url":               s.KKURL,
+		"akta_url":             s.AktaURL,
+		"ktp_ortu_url":         s.KTPOrtuURL,
+		"ijazah_url":           s.IjazahURL,
+		"surat_kelulusan_url":  s.SuratKelulusanURL,
+		"pasfoto_url":          s.PasfotoURL,
+		"foto_pendaftaran_url": s.FotoPendaftaranURL,
+		"yatim_doc_url":        s.YatimDocURL,
+		"sktm_doc_url":         s.SKTMDocURL,
+	}
+	for key, val := range docFields {
+		if strings.TrimSpace(val) != "" && !validators.ValidateMediaURL(strings.TrimSpace(val)) {
+			errs[key] = "Tautan dokumen tidak valid"
+		}
 	}
 	if len(errs) == 0 {
 		return nil
