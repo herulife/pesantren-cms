@@ -91,6 +91,27 @@ func (r *Repository) CreateCategory(name, kind string, byID int) (int64, error) 
 	return id, nil
 }
 
+// EnsureCategoryByName mencari kategori (name, kind) dan membuatnya bila belum
+// ada. Dipakai untuk sinkronisasi otomatis dari fitur lain (mis. Saldo E-Money
+// dari mutasi dompet, Jilid 93) supaya bendahara tidak perlu membuat kategori
+// manual. Mengembalikan id kategori.
+func (r *Repository) EnsureCategoryByName(name, kind string, byID int) (int, error) {
+	name = strings.TrimSpace(name)
+	var id int
+	err := r.db.QueryRow(`SELECT id FROM kas_categories WHERE name = ? AND kind = ? ORDER BY id LIMIT 1`, name, kind).Scan(&id)
+	if err == nil {
+		return id, nil
+	}
+	if err != sql.ErrNoRows {
+		return 0, err
+	}
+	newID, err := r.CreateCategory(name, kind, byID)
+	if err != nil {
+		return 0, err
+	}
+	return int(newID), nil
+}
+
 func padCat(id int64) string {
 	n := ""
 	for v := id; v > 0; v /= 10 {

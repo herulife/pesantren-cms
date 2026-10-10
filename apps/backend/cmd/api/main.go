@@ -195,7 +195,7 @@ func main() {
 	examHandler := exams.NewHandler(examRepo)
 
 	walletRepo := wallet.NewRepository(database.DB)
-	walletHandler := wallet.NewHandler(walletRepo)
+	walletHandler := wallet.NewHandler(walletRepo, kasRepo)
 
 	otpRepo := otp.NewRepository(database.DB)
 	otpHandler := otp.NewHandler(otpRepo)
@@ -401,6 +401,18 @@ func main() {
 
 				// Wallet Admin
 				r.Post("/wallet/topup", walletHandler.TopUp)
+			})
+
+			// E-Money (Dompet) Admin: superadmin + bendahara. CRUD penuh +
+			// sinkron otomatis ke jurnal Kas (Jilid 93).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Get("/wallet/admin/list", walletHandler.AdminList)
+				r.Get("/wallet/admin/{userID}/history", walletHandler.AdminHistory)
+				r.Post("/wallet/admin/adjust", walletHandler.AdminAdjust)
+				r.Put("/wallet/admin/{userID}/active", walletHandler.AdminSetActive)
+				r.Post("/wallet/admin/{userID}/reset-pin", walletHandler.AdminResetPIN)
+				r.Delete("/wallet/admin/{userID}", walletHandler.AdminDelete)
 			})
 
 			// CBT Admin: superadmin + guru (mapel sendiri dicek di handler)
