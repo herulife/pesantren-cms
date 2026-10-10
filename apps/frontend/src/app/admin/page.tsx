@@ -36,11 +36,11 @@ const quickLinks = [
     roles: ['superadmin', 'bendahara'],
   },
   {
-    href: '/admin/wallet/topup',
-    label: 'Top Up Wallet',
-    description: 'Kelola saldo santri dari panel admin.',
+    href: '/admin/emoney',
+    label: 'E-Money (Dompet)',
+    description: 'Kelola saldo, PIN, dan mutasi dompet santri.',
     icon: Wallet,
-    roles: ['superadmin'],
+    roles: ['superadmin', 'bendahara'],
   },
   {
     href: '/admin/settings',

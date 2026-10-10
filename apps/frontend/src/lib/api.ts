@@ -798,6 +798,18 @@ export interface WalletTransaction {
 	created_at: string;
 }
 
+export interface AdminWalletRow {
+	user_id: number;
+	name: string;
+	email: string;
+	nis: string;
+	santri_name: string;
+	balance: number;
+	has_pin: boolean;
+	is_active: boolean;
+	updated_at: string;
+}
+
 export async function getPrograms(params: { category?: string, search?: string } = {}) {
 	try {
 		const queryParams = new URLSearchParams();
@@ -3409,6 +3421,54 @@ export async function topUpWalletAdmin(userID: number, amount: number, descripti
 	}
 }
 
+// ===== E-Money (Dompet) Admin — Jilid 93 =====
+
+export async function getAdminWalletList(params: { search?: string; limit?: number; offset?: number } = {}): Promise<{ items: AdminWalletRow[]; total: number }> {
+	try {
+		const qs = new URLSearchParams();
+		if (params.search) qs.append('search', params.search);
+		if (params.limit !== undefined) qs.append('limit', String(params.limit));
+		if (params.offset !== undefined) qs.append('offset', String(params.offset));
+		const r = await lmsFetch<{ items: AdminWalletRow[]; total: number }>(`/wallet/admin/list?${qs.toString()}`);
+		return r.data || { items: [], total: 0 };
+	} catch (e) { console.error('[E-Money] list:', e); return { items: [], total: 0 }; }
+}
+
+export async function getAdminWalletHistory(userID: number, limit: number = 50): Promise<WalletTransaction[]> {
+	try {
+		const r = await lmsFetch<WalletTransaction[]>(`/wallet/admin/${userID}/history?limit=${limit}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Money] history:', e); return []; }
+}
+
+export async function adjustWalletBalance(userID: number, kind: 'deposit' | 'withdrawal', amount: number, description: string): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch('/wallet/admin/adjust', { method: 'POST', body: JSON.stringify({ user_id: userID, kind, amount, description }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal memproses mutasi' }; }
+}
+
+export async function setAdminWalletActive(userID: number, isActive: boolean): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wallet/admin/${userID}/active`, { method: 'PUT', body: JSON.stringify({ is_active: isActive }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal memperbarui status' }; }
+}
+
+export async function resetAdminWalletPIN(userID: number, pin: string): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wallet/admin/${userID}/reset-pin`, { method: 'POST', body: JSON.stringify({ pin }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal reset PIN' }; }
+}
+
+export async function deleteAdminWallet(userID: number): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wallet/admin/${userID}`, { method: 'DELETE' });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus dompet' }; }
+}
+
 // ========== LMS ALMAA: Project & E-Raport ==========
 
 export interface SubProject {
@@ -3780,6 +3840,15 @@ export interface Santri {
 	mother_occupation?: string;
 	registration_id: number;
 	photo_url: string;
+	kk_url?: string;
+	akta_url?: string;
+	ktp_ortu_url?: string;
+	ijazah_url?: string;
+	surat_kelulusan_url?: string;
+	pasfoto_url?: string;
+	foto_pendaftaran_url?: string;
+	yatim_doc_url?: string;
+	sktm_doc_url?: string;
 	user_id?: number | null;
 	created_at: string;
 	updated_at: string;

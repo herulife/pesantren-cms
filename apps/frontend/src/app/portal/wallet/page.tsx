@@ -138,12 +138,13 @@ export default function WalletPage() {
                 <Lock size={16} /> Atur PIN
               </button>
             )}
-            <Link 
-              href="/portal/wallet/topup"
+            <button
+              type="button"
+              onClick={() => showToast('info', 'Top up saldo dilakukan oleh admin/kasir. Silakan hubungi pengelola dompet.')}
               className="flex items-center gap-2 rounded-[1.25rem] bg-white px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-900 shadow-xl transition-all hover:bg-cyan-50 hover:-translate-y-1"
             >
               <Plus size={16} /> Top Up
-            </Link>
+            </button>
           </div>
         </div>
       </div>

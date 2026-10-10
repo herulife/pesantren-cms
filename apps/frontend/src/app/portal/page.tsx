@@ -6,7 +6,7 @@ import { Activity, AlertCircle, CheckCircle2, ChevronRight, CreditCard, FileText
 import { useAuth } from '@/components/AuthProvider';
 import StudentQRCard from '@/components/StudentQRCard';
 import WalletCard from '@/components/WalletCard';
-import { getMyPSBRegistration, type Registration, normalizeApiAssetUrl } from '@/lib/api';
+import { getMyPSBRegistration, getMySantri, type Registration, normalizeApiAssetUrl } from '@/lib/api';
 
 type ChecklistItem = {
   href?: string;
@@ -92,14 +92,19 @@ function formatDateLabel(value?: string | null) {
 export default function PortalDashboard() {
   const { user } = useAuth();
   const [registration, setRegistration] = useState<Registration | null>(null);
+  const [hasLinkedSantri, setHasLinkedSantri] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchRegistration = async () => {
       setIsLoading(true);
       try {
-        const data = await getMyPSBRegistration();
+        const [data, mySantri] = await Promise.all([
+          getMyPSBRegistration(),
+          getMySantri(),
+        ]);
         setRegistration(data);
+        setHasLinkedSantri(Array.isArray(mySantri) && mySantri.length > 0);
       } finally {
         setIsLoading(false);
       }
@@ -109,7 +114,7 @@ export default function PortalDashboard() {
   }, []);
 
   const registrationStatus = registration?.status || 'pending';
-  const hasStudentAccess = registrationStatus === 'accepted' || registrationStatus === 'santri';
+  const hasStudentAccess = hasLinkedSantri || registrationStatus === 'accepted' || registrationStatus === 'santri';
 
   const portalState = useMemo(() => {
     const biodataFields = [

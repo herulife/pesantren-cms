@@ -5,7 +5,7 @@ import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { User, Upload, ArrowLeft, HelpCircle, LayoutDashboard, GraduationCap, Wallet, QrCode, RefreshCw, Lock, Home, Folder, MoreHorizontal, LogOut, CreditCard, Check } from 'lucide-react';
-import { getMyPSBRegistration, type Registration } from '@/lib/api';
+import { getMyPSBRegistration, getMySantri, type Registration } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import UserAvatar from '@/components/UserAvatar';
 import { useToast } from '@/components/Toast';
@@ -58,6 +58,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   const isRaportPage = pathname.startsWith('/portal/raport');
   const isPortalDashboard = pathname === '/portal';
   const [registration, setRegistration] = useState<Registration | null>(null);
+  const [hasLinkedSantri, setHasLinkedSantri] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleLogout = () => {
@@ -70,9 +71,16 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     const loadRegistration = async () => {
       setIsLoading(true);
       try {
-        const data = await getMyPSBRegistration();
+        // Akun yang sudah tertaut ke data santri (dibuat admin manual atau
+        // hasil PSB) otomatis punya akses santri, jadi tidak perlu melewati
+        // wizard biodata/dokumen lagi (Jilid 93).
+        const [data, mySantri] = await Promise.all([
+          getMyPSBRegistration(),
+          getMySantri(),
+        ]);
         if (!cancelled) {
           setRegistration(data);
+          setHasLinkedSantri(Array.isArray(mySantri) && mySantri.length > 0);
         }
       } finally {
         if (!cancelled) {
@@ -89,7 +97,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const registrationStatus = registration?.status || 'pending';
-  const hasStudentAccess = registrationStatus === 'accepted' || registrationStatus === 'santri';
+  const hasStudentAccess = hasLinkedSantri || registrationStatus === 'accepted' || registrationStatus === 'santri';
   const isServicePath = pathname.startsWith('/portal/raport') || pathname.startsWith('/portal/wallet') || pathname.startsWith('/portal/exams');
   const paymentStatus = registration?.payment_status || 'unpaid';
   const dataSiswaCompleted = [

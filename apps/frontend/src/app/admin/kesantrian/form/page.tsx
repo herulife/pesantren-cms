@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import SelectField, { type SelectOption } from '@/components/SelectField';
 import { opsiKelasForm } from '@/lib/kelas';
-import { createSantri, getSantri, updateSantri } from '@/lib/api';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { createSantri, getSantri, updateSantri, uploadImage, normalizeApiAssetUrl } from '@/lib/api';
+import { ArrowLeft, Loader2, Save, Upload, FileText, Trash2, ExternalLink } from 'lucide-react';
 
 const genderOptions = [
   { value: '', label: 'Pilih Jenis Kelamin' },
@@ -52,7 +52,31 @@ const initialForm = {
   father_occupation: '',
   mother_occupation: '',
   registration_id: 0,
+  kk_url: '',
+  akta_url: '',
+  ktp_ortu_url: '',
+  ijazah_url: '',
+  surat_kelulusan_url: '',
+  pasfoto_url: '',
+  foto_pendaftaran_url: '',
+  yatim_doc_url: '',
+  sktm_doc_url: '',
 };
+
+// Daftar dokumen yang diunggah dari form admin. Dokumen ini otomatis terbaca
+// di portal santri/wali (read-only), sehingga mereka tak perlu mengisi ulang
+// wizard biodata/dokumen (Jilid 93).
+const DOC_FIELDS: Array<{ key: keyof typeof initialForm; label: string }> = [
+  { key: 'kk_url', label: 'Kartu Keluarga (KK)' },
+  { key: 'akta_url', label: 'Akta Kelahiran' },
+  { key: 'ktp_ortu_url', label: 'KTP Orang Tua' },
+  { key: 'ijazah_url', label: 'Ijazah / Raport Terakhir' },
+  { key: 'surat_kelulusan_url', label: 'Surat Kelulusan' },
+  { key: 'pasfoto_url', label: 'Pas Foto 3x4' },
+  { key: 'foto_pendaftaran_url', label: 'Foto Pendaftaran' },
+  { key: 'yatim_doc_url', label: 'Surat Keterangan Kematian (yatim)' },
+  { key: 'sktm_doc_url', label: 'SKTM (dhuafa)' },
+];
 
 
 export default function SantriFormPage() {
@@ -74,6 +98,7 @@ function SantriFormContent() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -103,6 +128,15 @@ function SantriFormContent() {
             father_occupation: s.father_occupation || '',
             mother_occupation: s.mother_occupation || '',
             registration_id: s.registration_id || 0,
+            kk_url: s.kk_url || '',
+            akta_url: s.akta_url || '',
+            ktp_ortu_url: s.ktp_ortu_url || '',
+            ijazah_url: s.ijazah_url || '',
+            surat_kelulusan_url: s.surat_kelulusan_url || '',
+            pasfoto_url: s.pasfoto_url || '',
+            foto_pendaftaran_url: s.foto_pendaftaran_url || '',
+            yatim_doc_url: s.yatim_doc_url || '',
+            sktm_doc_url: s.sktm_doc_url || '',
           });
         } else {
           showToast('error', 'Santri tidak ditemukan');
@@ -116,6 +150,28 @@ function SantriFormContent() {
   const set = (key: keyof typeof initialForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
     setErrors((prev) => ({ ...prev, [key]: '' }));
+  };
+
+  const handleDocUpload = async (key: keyof typeof initialForm, file: File) => {
+    setUploadingDoc(key);
+    try {
+      const res = await uploadImage(file);
+      if (res?.url) {
+        setForm((prev) => ({ ...prev, [key]: res.url as string }));
+        setErrors((prev) => ({ ...prev, [key]: '' }));
+        showToast('success', 'Dokumen berhasil diunggah');
+      } else {
+        showToast('error', res?.message || 'Gagal mengunggah dokumen');
+      }
+    } catch {
+      showToast('error', 'Gagal mengunggah dokumen');
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
+
+  const handleDocRemove = (key: keyof typeof initialForm) => {
+    setForm((prev) => ({ ...prev, [key]: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,6 +200,15 @@ function SantriFormContent() {
       mother_phone: form.mother_phone.trim(),
       father_occupation: form.father_occupation.trim(),
       mother_occupation: form.mother_occupation.trim(),
+      kk_url: form.kk_url,
+      akta_url: form.akta_url,
+      ktp_ortu_url: form.ktp_ortu_url,
+      ijazah_url: form.ijazah_url,
+      surat_kelulusan_url: form.surat_kelulusan_url,
+      pasfoto_url: form.pasfoto_url,
+      foto_pendaftaran_url: form.foto_pendaftaran_url,
+      yatim_doc_url: form.yatim_doc_url,
+      sktm_doc_url: form.sktm_doc_url,
     };
 
     let res;
@@ -422,6 +487,66 @@ function SantriFormContent() {
                   />
                   {errors.mother_phone && <p className="mt-1 text-xs font-semibold text-red-500">{errors.mother_phone}</p>}
                 </div>
+              </div>
+            </div>
+            <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Dokumen Santri</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Unggah dokumen dari sini. Portal santri/wali akan otomatis menampilkannya (read-only) tanpa perlu mengisi ulang.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                {DOC_FIELDS.map((doc) => {
+                  const url = form[doc.key] as string;
+                  const busy = uploadingDoc === doc.key;
+                  return (
+                    <div key={doc.key} className="rounded-xl border border-slate-200 bg-white p-3.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-700">{doc.label}</span>
+                        {url ? (
+                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600">Ada</span>
+                        ) : (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">Kosong</span>
+                        )}
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-100 ${busy ? 'opacity-60' : ''}`}>
+                          {busy ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                          {url ? 'Ganti' : 'Unggah'}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="hidden"
+                            disabled={busy}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) void handleDocUpload(doc.key, file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        {url ? (
+                          <>
+                            <a
+                              href={normalizeApiAssetUrl(url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-bold text-sky-700 transition hover:bg-sky-100"
+                            >
+                              <FileText size={13} /> Lihat <ExternalLink size={11} />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDocRemove(doc.key)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100"
+                            >
+                              <Trash2 size={13} /> Hapus
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 md:col-span-2">
