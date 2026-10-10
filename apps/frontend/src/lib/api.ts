@@ -470,6 +470,7 @@ export interface Registration {
 	nickname: string;
 	gender: string;
 	nik?: string;
+	nisn?: string;
 	birth_place: string;
 	birth_date: string;
 	address?: string;
@@ -3832,6 +3833,7 @@ export interface Santri {
 	parent_name: string;
 	parent_phone: string;
 	nik: string;
+	nisn?: string;
 	father_name: string;
 	father_phone: string;
 	mother_name: string;
@@ -4485,4 +4487,127 @@ export async function markAllSysNotificationsRead(): Promise<{ success?: boolean
 		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
+}
+
+// ── E-Rapor sync (RDM/EMIS) — Jilid 84-86 ─────────────────
+export interface EraporKelengkapanRow {
+	id: number;
+	nis: string;
+	nisn: string;
+	nik: string;
+	name: string;
+	gender: string;
+	birth_place: string;
+	birth_date: string;
+	class: string;
+	jenjang: string;
+	angkatan: string;
+	status: string;
+	category: string;
+	has_nisn: boolean;
+	has_nik: boolean;
+	has_birth: boolean;
+	has_class: boolean;
+	emis_ready: boolean;
+	missing: string[];
+}
+
+export interface EraporPokokRow {
+	id: number;
+	nis: string;
+	nisn: string;
+	nik: string;
+	name: string;
+	gender: string;
+	birth_place: string;
+	birth_date: string;
+	class: string;
+	jenjang: string;
+	angkatan: string;
+	status: string;
+	category: string;
+	father_name: string;
+	mother_name: string;
+}
+
+export interface EraporNilaiRow {
+	id: number;
+	student_id: number;
+	nis: string;
+	nisn: string;
+	name: string;
+	class: string;
+	jenjang: string;
+	status: string;
+	semester: string;
+	academic_year: string;
+	mapel_score: number;
+	project_score: number;
+	kesantrian_score: number;
+	final_score: number;
+	predikat: string;
+	raport_status: string;
+}
+
+export interface EraporSyncRow {
+	id: number;
+	student_id: number;
+	name: string;
+	nis: string;
+	nisn: string;
+	class: string;
+	sync_type: string;
+	status: string;
+	semester: string;
+	academic_year: string;
+	error: string;
+	exported_at: string;
+	imported_at: string;
+}
+
+export async function getEraporKelengkapan(params: { class?: string; q?: string } = {}): Promise<EraporKelengkapanRow[]> {
+	try {
+		const q = new URLSearchParams();
+		if (params.class) q.set('class', params.class);
+		if (params.q) q.set('q', params.q);
+		const r = await lmsFetch<EraporKelengkapanRow[]>(`/erapor/kelengkapan?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] kelengkapan:', e); return []; }
+}
+
+export async function getEraporPokok(params: { class?: string } = {}): Promise<EraporPokokRow[]> {
+	try {
+		const q = new URLSearchParams();
+		if (params.class) q.set('class', params.class);
+		const r = await lmsFetch<EraporPokokRow[]>(`/erapor/pokok?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] pokok:', e); return []; }
+}
+
+export async function getEraporNilai(params: { semester: string; academic_year?: string }): Promise<EraporNilaiRow[]> {
+	try {
+		const year = params.academic_year || (await getActiveAcademicYear());
+		const q = new URLSearchParams({ semester: params.semester, academic_year: year });
+		const r = await lmsFetch<EraporNilaiRow[]>(`/erapor/nilai?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] nilai:', e); return []; }
+}
+
+export async function exportErapor(params: { type: 'pokok' | 'nilai'; semester: string; academic_year?: string }): Promise<{ ok: boolean; message: string; data?: { count: number } }> {
+	try {
+		const year = params.academic_year || (await getActiveAcademicYear());
+		const q = new URLSearchParams({ type: params.type, semester: params.semester, academic_year: year });
+		const r = await lmsFetch<{ count: number }>(`/erapor/export?${q.toString()}`, { method: 'POST' });
+		return { ok: r.success, message: r.message, data: r.data };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal mencatat export' }; }
+}
+
+export async function getEraporSyncStatus(params: { type?: string; semester: string; academic_year?: string }): Promise<EraporSyncRow[]> {
+	try {
+		const year = params.academic_year || (await getActiveAcademicYear());
+		const q = new URLSearchParams({ semester: params.semester, academic_year: year });
+		if (params.type) q.set('type', params.type);
+		const r = await lmsFetch<EraporSyncRow[]>(`/erapor/sync-status?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] sync-status:', e); return []; }
 }

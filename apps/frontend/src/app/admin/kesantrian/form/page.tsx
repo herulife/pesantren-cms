@@ -43,6 +43,8 @@ const initialForm = {
   angkatan: '',
   status: 'aktif',
   category: 'reguler',
+  nik: '',
+  nisn: '',
   parent_name: '',
   parent_phone: '',
   father_name: '',
@@ -119,6 +121,8 @@ function SantriFormContent() {
             // Data lama belum punya kategori; perlakukan sebagai reguler supaya
             // dropdown tidak kosong saat form edit dibuka.
             category: s.category || 'reguler',
+            nik: s.nik || '',
+            nisn: s.nisn || '',
             parent_name: s.parent_name || '',
             parent_phone: s.parent_phone || '',
             father_name: s.father_name || '',
@@ -192,6 +196,10 @@ function SantriFormContent() {
       // Backend jadi default "reguler" kalau kosong, tapi kirim eksplisit
       // supaya PUT (full-replace) tidak pernah mengosongkan kolom kategori.
       category: form.category || 'reguler',
+      nik: form.nik.trim(),
+      // Jilid 84: NISN = Nomor Induk Siswa Nasional (RDM/EMIS). Opsional di
+      // form ini, namun wajib diisi untuk status "siap EMIS" di /admin/erapor.
+      nisn: form.nisn.trim(),
       parent_name: form.parent_name.trim(),
       parent_phone: form.parent_phone.trim(),
       father_name: form.father_name.trim(),
@@ -277,6 +285,32 @@ function SantriFormContent() {
                 className={inputClass(errors.nis)}
               />
               {errors.nis && <p className="mt-1 text-xs font-semibold text-red-500">{errors.nis}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                NISN <span className="text-xs font-normal normal-case tracking-normal text-sky-500">(opsional, utk RDM/EMIS)</span>
+              </label>
+              <input
+                value={form.nisn}
+                onChange={set('nisn')}
+                placeholder="Contoh: 0012345678"
+                className={inputClass(errors.nisn)}
+              />
+              {errors.nisn && <p className="mt-1 text-xs font-semibold text-red-500">{errors.nisn}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                NIK <span className="text-xs font-normal normal-case tracking-normal text-sky-500">(opsional)</span>
+              </label>
+              <input
+                value={form.nik}
+                onChange={set('nik')}
+                placeholder="16 digit angka"
+                className={inputClass(errors.nik)}
+              />
+              {errors.nik && <p className="mt-1 text-xs font-semibold text-red-500">{errors.nik}</p>}
             </div>
 
             <div>

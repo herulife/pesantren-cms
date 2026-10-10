@@ -40,6 +40,7 @@ type Santri struct {
 	ParentName       string `json:"parent_name"`
 	ParentPhone      string `json:"parent_phone"`
 	NIK              string `json:"nik"`
+	NISN             string `json:"nisn"`
 	FatherName       string `json:"father_name"`
 	FatherPhone      string `json:"father_phone"`
 	MotherName       string `json:"mother_name"`
@@ -80,6 +81,7 @@ type SantriInput struct {
 	ParentName       string `json:"parent_name"`
 	ParentPhone      string `json:"parent_phone"`
 	NIK              string `json:"nik"`
+	NISN             string `json:"nisn"`
 	FatherName       string `json:"father_name"`
 	FatherPhone      string `json:"father_phone"`
 	MotherName       string `json:"mother_name"`
@@ -104,7 +106,7 @@ func (in *SantriInput) toSantri() *Santri {
 		NIS: in.NIS, Name: in.Name, Nickname: in.Nickname, Gender: in.Gender,
 		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
 		Class: in.Class, Jenjang: in.Jenjang, Angkatan: in.Angkatan, Status: in.Status, Category: in.Category,
-		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
+		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, NISN: in.NISN, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
 		KKURL: in.KKURL, AktaURL: in.AktaURL, KTPOrtuURL: in.KTPOrtuURL, IjazahURL: in.IjazahURL, SuratKelulusanURL: in.SuratKelulusanURL, PasfotoURL: in.PasfotoURL, FotoPendaftaranURL: in.FotoPendaftaranURL, YatimDocURL: in.YatimDocURL, SKTMDocURL: in.SKTMDocURL,
 	}
 }
@@ -257,6 +259,12 @@ func validateSantri(s *Santri) map[string]string {
 		if !validNIK {
 			errs["nik"] = "NIK harus 16 digit angka"
 		}
+	}
+	// Jilid 84: NISN opsional untuk create/update manual, tapi bila diisi harus
+	// valid (8-16 digit angka, standar RDM Kemenag 10 digit).
+	s.NISN = strings.TrimSpace(s.NISN)
+	if !validators.ValidateNISN(s.NISN) {
+		errs["nisn"] = "NISN harus 8-16 digit angka (kosongkan bila belum punya)"
 	}
 	if s.FatherPhone != "" && !validators.ValidatePhone(s.FatherPhone) {
 		errs["father_phone"] = "No HP ayah tidak valid"

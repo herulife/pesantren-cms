@@ -7,7 +7,7 @@ import { useAuth } from './AuthProvider';
 import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS, ROLE_MENU_PANELS } from '@/lib/roleMenus';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, School, Wallet, Receipt, ScanLine, BarChart3, Nfc } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, School, Wallet, Receipt, ScanLine, BarChart3, Nfc, FileSpreadsheet } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -60,6 +60,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     '/admin/kasir': <ScanLine size={18} />,
     '/admin/kas': <Wallet size={18} />,
     '/admin/emoney': <Nfc size={18} />,
+    '/admin/erapor': <FileSpreadsheet size={18} />,
     '/admin/school': <School size={18} />,
     '/admin/teachers/report': <UserCheck size={18} />,
     '/admin/laporan/tagihan': <BarChart3 size={18} />,

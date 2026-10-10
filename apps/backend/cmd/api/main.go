@@ -8,6 +8,7 @@ import (
 	"almaparung-api/internal/features/autobilling"
 	"almaparung-api/internal/features/disciplines"
 	"almaparung-api/internal/features/donations"
+	"almaparung-api/internal/features/erapor"
 	"almaparung-api/internal/features/exams"
 	"almaparung-api/internal/features/facilities"
 	"almaparung-api/internal/features/faqs"
@@ -112,6 +113,9 @@ func main() {
 	raportRepo := raport.NewRepository(database.DB)
 	raportHandler := raport.NewHandler(raportRepo)
 	psbHandler := psb.NewHandler(psbRepo)
+
+	eraporRepo := erapor.NewRepository(database.DB)
+	eraporHandler := erapor.NewHandler(eraporRepo)
 
 	teacherRepo := teachers.NewRepository(database.DB)
 	teacherHandler := teachers.NewHandler(teacherRepo)
@@ -483,6 +487,14 @@ func main() {
 				r.Use(auth.RequireRole("superadmin", "admin", "pimpinan", "wali_kelas", "ustadz"))
 				r.Mount("/project", projectHandler.Routes())
 				r.Mount("/raport", raportHandler.Routes())
+			})
+
+			// E-Rapor / RDM Kemenag (Jilid 84-86): export data pokok & nilai +
+			// log sinkron. Dibatasi superadmin/admin/pimpinan (tanpa wali_kelas
+			// & ustadz) karena menyangkut data identitas lintas kelas.
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "admin", "pimpinan"))
+				r.Mount("/erapor", eraporHandler.Routes())
 			})
 
 			// Invoice manual oleh panitia/bendahara. Webhook gateway tetap publik + HMAC.

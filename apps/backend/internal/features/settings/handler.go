@@ -88,6 +88,10 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 		"school_phone",
 		"school_email",
 		"school_website",
+		// Jilid 84 (E-Rapor): identitas madrasah untuk sync RDM/EMIS Kemenag.
+		"nama_madrasah",
+		"npsn",
+		"jenjang_madrasah",
 		"whatsapp_admin_numbers",
 		"social_instagram",
 		"social_facebook",

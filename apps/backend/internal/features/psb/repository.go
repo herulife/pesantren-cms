@@ -21,6 +21,7 @@ type Registration struct {
 	Nickname           string    `json:"nickname"`
 	Gender             string    `json:"gender"`
 	NIK                string    `json:"nik"`
+	NISN               string    `json:"nisn"`
 	BirthPlace         string    `json:"birth_place"`
 	BirthDate          string    `json:"birth_date"`
 	Address            string    `json:"address"`
@@ -94,6 +95,7 @@ const registrationSelectColumns = `
 	COALESCE(nickname, ''),
 	COALESCE(gender, ''),
 	COALESCE(nik, ''),
+	COALESCE(nisn, ''),
 	COALESCE(birth_place, ''),
 	COALESCE(birth_date, ''),
 	COALESCE(address, ''),
@@ -148,6 +150,7 @@ func scanRegistration(scanner interface {
 		&reg.Nickname,
 		&reg.Gender,
 		&reg.NIK,
+		&reg.NISN,
 		&reg.BirthPlace,
 		&reg.BirthDate,
 		&reg.Address,
@@ -419,12 +422,12 @@ func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registrat
 	if existing != nil {
 		_, err = tx.ExecContext(ctx, `
 			UPDATE registrations
-			SET full_name = ?, nickname = ?, gender = ?, nik = ?, birth_place = ?, birth_date = ?, address = ?,
+			SET full_name = ?, nickname = ?, gender = ?, nik = ?, nisn = ?, birth_place = ?, birth_date = ?, address = ?,
 			    parent_name = ?, parent_phone = ?, father_name = ?, father_job = ?, father_phone = ?,
 			    mother_name = ?, mother_job = ?, mother_phone = ?, school_origin = ?, program_choice = ?, jenjang = ?, category = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE user_id = ?
 		`,
-			reg.FullName, reg.Nickname, reg.Gender, reg.NIK, reg.BirthPlace, reg.BirthDate, reg.Address,
+			reg.FullName, reg.Nickname, reg.Gender, reg.NIK, reg.NISN, reg.BirthPlace, reg.BirthDate, reg.Address,
 			parentName, parentPhone, reg.FatherName, reg.FatherJob, reg.FatherPhone,
 			reg.MotherName, reg.MotherJob, reg.MotherPhone, reg.SchoolOrigin, reg.ProgramChoice, reg.Jenjang, reg.Category, userID,
 		)
@@ -434,12 +437,12 @@ func (r *Repository) SaveByUserID(ctx context.Context, userID int, reg Registrat
 	} else {
 		_, err = tx.ExecContext(ctx, `
 			INSERT INTO registrations (
-				user_id, full_name, nickname, gender, nik, birth_place, birth_date, address,
+				user_id, full_name, nickname, gender, nik, nisn, birth_place, birth_date, address,
 				parent_name, parent_phone, father_name, father_job, father_phone,
 				mother_name, mother_job, mother_phone, school_origin, program_choice, jenjang, category, status
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
 		`,
-			userID, reg.FullName, reg.Nickname, reg.Gender, reg.NIK, reg.BirthPlace, reg.BirthDate, reg.Address,
+			userID, reg.FullName, reg.Nickname, reg.Gender, reg.NIK, reg.NISN, reg.BirthPlace, reg.BirthDate, reg.Address,
 			parentName, parentPhone, reg.FatherName, reg.FatherJob, reg.FatherPhone,
 			reg.MotherName, reg.MotherJob, reg.MotherPhone, reg.SchoolOrigin, reg.ProgramChoice, reg.Jenjang, reg.Category,
 		)
@@ -982,11 +985,11 @@ func (r *Repository) AcceptToSantri(ctx context.Context, id int) (*SantriResult,
 		found := false
 		for nextID := maxID + 1; nextID <= maxID+1+999 && !found; nextID++ {
 			nis := fmt.Sprintf("%s%04d", year, nextID)
-			res, err := tx.ExecContext(ctx, `
-				INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, category, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, registration_id, photo_url, user_id, jenjang, created_at, updated_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aktif', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+res, err := tx.ExecContext(ctx, `
+				INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, angkatan, status, category, parent_name, parent_phone, nik, nisn, father_name, father_phone, mother_name, mother_phone, registration_id, photo_url, user_id, jenjang, created_at, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aktif', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 			`, nis, reg.FullName, reg.Nickname, reg.Gender, reg.BirthPlace, reg.BirthDate,
-				reg.Address, initialClass, year, category, parentName, parentPhone, reg.NIK, reg.FatherName, reg.FatherPhone, reg.MotherName, reg.MotherPhone, id, reg.PasfotoURL, nullableUserID(reg.UserID), jenjang)
+				reg.Address, initialClass, year, category, parentName, parentPhone, reg.NIK, reg.NISN, reg.FatherName, reg.FatherPhone, reg.MotherName, reg.MotherPhone, id, reg.PasfotoURL, nullableUserID(reg.UserID), jenjang)
 			if err != nil {
 				if strings.Contains(strings.ToLower(err.Error()), "unique") {
 					continue

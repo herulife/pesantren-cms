@@ -13,6 +13,7 @@ type BiodataForm = {
   nickname: string;
   gender: string;
   nik: string;
+  nisn: string;
   birth_place: string;
   birth_date: string;
   address: string;
@@ -33,6 +34,7 @@ const initialForm: BiodataForm = {
   nickname: '',
   gender: '',
   nik: '',
+  nisn: '',
   birth_place: '',
   birth_date: '',
   address: '',
@@ -150,6 +152,7 @@ function BiodataPageContent() {
           nickname: data?.nickname || '',
           gender: data?.gender || '',
           nik: data?.nik || '',
+          nisn: data?.nisn || '',
           birth_place: data?.birth_place || '',
           birth_date: data?.birth_date || '',
           address: data?.address || '',
@@ -518,6 +521,20 @@ function BiodataPageContent() {
                     required
                   />
                   {errors.nik ? <p id="err-nik" className="mt-1 text-xs font-bold text-rose-600">{errors.nik}</p> : null}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-700">NISN <span className="text-rose-500"><span className="text-[10px] font-bold normal-case tracking-normal text-amber-600">(opsional)</span></span></label>
+                  <input
+                    type="text"
+                    value={formData.nisn}
+                    onChange={(e) => handleChange('nisn', e.target.value)}
+                    aria-invalid={!!errors.nisn}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    placeholder="10 digit NISN (bila sudah punya, utk E-Rapor RDM/EMIS)"
+                    maxLength={16}
+                  />
+                  {errors.nisn ? <p className="mt-1 text-xs font-bold text-rose-600">{errors.nisn}</p> : null}
                 </div>
 
                 <div>

@@ -30,6 +30,7 @@ type ExportRow struct {
 	Status           string `json:"status"`
 	Category         string `json:"category"`
 	NIK              string `json:"nik"`
+	NISN             string `json:"nisn"`
 	BirthPlace       string `json:"birth_place"`
 	BirthDate        string `json:"birth_date"`
 	Address          string `json:"address"`
@@ -88,7 +89,7 @@ func (r *Repository) queryExport(whereStr string, args []interface{}) ([]ExportR
 		COALESCE(s.nis,''), COALESCE(s.name,''), COALESCE(s.nickname,''),
 		COALESCE(s.gender,''), COALESCE(s.class,''), COALESCE(s.jenjang,''),
 		COALESCE(s.angkatan,''), COALESCE(s.status,''), COALESCE(s.category,''),
-		COALESCE(s.nik,''), COALESCE(s.birth_place,''), COALESCE(s.birth_date,''),
+		COALESCE(s.nik,''), COALESCE(s.nisn,''), COALESCE(s.birth_place,''), COALESCE(s.birth_date,''),
 		COALESCE(s.address,''), COALESCE(s.parent_name,''), COALESCE(s.parent_phone,''),
 		COALESCE(s.father_name,''), COALESCE(s.father_phone,''),
 		COALESCE(s.mother_name,''), COALESCE(s.mother_phone,''),
@@ -114,7 +115,7 @@ func (r *Repository) queryExport(whereStr string, args []interface{}) ([]ExportR
 		var userID sql.NullInt64
 		if err := rows.Scan(
 			&e.ID, &e.NIS, &e.Name, &e.Nickname, &e.Gender, &e.Class, &e.Jenjang,
-			&e.Angkatan, &e.Status, &e.Category, &e.NIK, &e.BirthPlace, &e.BirthDate,
+			&e.Angkatan, &e.Status, &e.Category, &e.NIK, &e.NISN, &e.BirthPlace, &e.BirthDate,
 			&e.Address, &e.ParentName, &e.ParentPhone, &e.FatherName, &e.FatherPhone,
 			&e.MotherName, &e.MotherPhone, &e.FatherOccupation, &e.MotherOccupation,
 			&e.RegistrationID, &e.PhotoURL, &e.CreatedAt, &e.UpdatedAt,

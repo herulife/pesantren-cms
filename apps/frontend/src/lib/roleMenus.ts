@@ -39,6 +39,7 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Laporan', label: 'Laporan Tagihan', href: '/admin/laporan/tagihan', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Laporan', label: 'Laporan Transaksi', href: '/admin/laporan/transaksi', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
+  { category: 'Akademik', label: 'Sinkron E-Rapor', href: '/admin/erapor', roles: ['superadmin', 'admin', 'pimpinan'], docRef: 'academics' },
   { category: 'Akademik', label: 'Nilai Akademik', href: '/admin/academics', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'], docRef: 'academics' },
   { category: 'Akademik', label: 'Project & Kegiatan', href: '/admin/project', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },
   { category: 'Akademik', label: 'Kedisiplinan', href: '/admin/disciplines', roles: ['panitia_psb'], docRef: 'disciplines' },

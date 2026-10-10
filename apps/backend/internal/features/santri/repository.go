@@ -45,7 +45,7 @@ func (r *Repository) FindAll(search, class, status string, limit, offset int) ([
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(category,''), registration_id, COALESCE(photo_url,''), user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
+	query := fmt.Sprintf(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(nisn,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(category,''), registration_id, COALESCE(photo_url,''), user_id, created_at, updated_at FROM santri WHERE %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereStr)
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -58,7 +58,7 @@ func (r *Repository) FindAll(search, class, status string, limit, offset int) ([
 		var s Santri
 		var userID sql.NullInt64
 		var createdAt, updatedAt sql.NullString
-		if err := rows.Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.Category, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.NISN, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.Category, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
 			return nil, 0, err
 		}
 		if userID.Valid {
@@ -104,7 +104,7 @@ func (r *Repository) FindByID(id int) (*Santri, error) {
 	var s Santri
 	var userID sql.NullInt64
 	var createdAt, updatedAt sql.NullString
-	err := r.db.QueryRow(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(category,''), registration_id, COALESCE(photo_url,''), COALESCE(kk_url,''), COALESCE(akta_url,''), COALESCE(ktp_ortu_url,''), COALESCE(ijazah_url,''), COALESCE(surat_kelulusan_url,''), COALESCE(pasfoto_url,''), COALESCE(foto_pendaftaran_url,''), COALESCE(yatim_doc_url,''), COALESCE(sktm_doc_url,''), user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.Category, &s.RegistrationID, &s.PhotoURL, &s.KKURL, &s.AktaURL, &s.KTPOrtuURL, &s.IjazahURL, &s.SuratKelulusanURL, &s.PasfotoURL, &s.FotoPendaftaranURL, &s.YatimDocURL, &s.SKTMDocURL, &userID, &createdAt, &updatedAt)
+	err := r.db.QueryRow(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(nisn,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(category,''), registration_id, COALESCE(photo_url,''), COALESCE(kk_url,''), COALESCE(akta_url,''), COALESCE(ktp_ortu_url,''), COALESCE(ijazah_url,''), COALESCE(surat_kelulusan_url,''), COALESCE(pasfoto_url,''), COALESCE(foto_pendaftaran_url,''), COALESCE(yatim_doc_url,''), COALESCE(sktm_doc_url,''), user_id, created_at, updated_at FROM santri WHERE id = ?`, id).Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.NISN, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.Category, &s.RegistrationID, &s.PhotoURL, &s.KKURL, &s.AktaURL, &s.KTPOrtuURL, &s.IjazahURL, &s.SuratKelulusanURL, &s.PasfotoURL, &s.FotoPendaftaranURL, &s.YatimDocURL, &s.SKTMDocURL, &userID, &createdAt, &updatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +129,8 @@ func (r *Repository) Create(s *Santri) error {
 	if err != nil {
 		return err
 	}
-	res, err := tx.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, category, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, kk_url, akta_url, ktp_ortu_url, ijazah_url, surat_kelulusan_url, pasfoto_url, foto_pendaftaran_url, yatim_doc_url, sktm_doc_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.KKURL, s.AktaURL, s.KTPOrtuURL, s.IjazahURL, s.SuratKelulusanURL, s.PasfotoURL, s.FotoPendaftaranURL, s.YatimDocURL, s.SKTMDocURL, s.UserID, now, now)
+	res, err := tx.Exec(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, category, parent_name, parent_phone, nik, nisn, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, kk_url, akta_url, ktp_ortu_url, ijazah_url, surat_kelulusan_url, pasfoto_url, foto_pendaftaran_url, yatim_doc_url, sktm_doc_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.NISN, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.KKURL, s.AktaURL, s.KTPOrtuURL, s.IjazahURL, s.SuratKelulusanURL, s.PasfotoURL, s.FotoPendaftaranURL, s.YatimDocURL, s.SKTMDocURL, s.UserID, now, now)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
@@ -217,7 +217,7 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	stmt, err := tx.Prepare(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, category, parent_name, parent_phone, nik, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := tx.Prepare(`INSERT INTO santri (nis, name, nickname, gender, birth_place, birth_date, address, class, jenjang, angkatan, status, category, parent_name, parent_phone, nik, nisn, father_name, father_phone, mother_name, mother_phone, father_occupation, mother_occupation, registration_id, photo_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -233,7 +233,7 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 		if s.Category == "" {
 			s.Category = validators.CategoryReguler
 		}
-		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
+		res, err := stmt.Exec(s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.NISN, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.UserID, now, now)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE") {
 				continue
@@ -267,8 +267,8 @@ func (r *Repository) BulkCreate(items []Santri) (int, error) {
 
 func (r *Repository) Update(s *Santri) error {
 	now := time.Now().Format("2006-01-02 15:04:05")
-	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, jenjang=?, angkatan=?, status=?, category=?, parent_name=?, parent_phone=?, nik=?, father_name=?, father_phone=?, mother_name=?, mother_phone=?, father_occupation=?, mother_occupation=?, registration_id=?, photo_url=?, kk_url=?, akta_url=?, ktp_ortu_url=?, ijazah_url=?, surat_kelulusan_url=?, pasfoto_url=?, foto_pendaftaran_url=?, yatim_doc_url=?, sktm_doc_url=?, updated_at=? WHERE id=?`,
-		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.KKURL, s.AktaURL, s.KTPOrtuURL, s.IjazahURL, s.SuratKelulusanURL, s.PasfotoURL, s.FotoPendaftaranURL, s.YatimDocURL, s.SKTMDocURL, now, s.ID)
+	_, err := r.db.Exec(`UPDATE santri SET nis=?, name=?, nickname=?, gender=?, birth_place=?, birth_date=?, address=?, class=?, jenjang=?, angkatan=?, status=?, category=?, parent_name=?, parent_phone=?, nik=?, nisn=?, father_name=?, father_phone=?, mother_name=?, mother_phone=?, father_occupation=?, mother_occupation=?, registration_id=?, photo_url=?, kk_url=?, akta_url=?, ktp_ortu_url=?, ijazah_url=?, surat_kelulusan_url=?, pasfoto_url=?, foto_pendaftaran_url=?, yatim_doc_url=?, sktm_doc_url=?, updated_at=? WHERE id=?`,
+		s.NIS, s.Name, s.Nickname, s.Gender, s.BirthPlace, s.BirthDate, s.Address, s.Class, s.Jenjang, s.Angkatan, s.Status, s.Category, s.ParentName, s.ParentPhone, s.NIK, s.NISN, s.FatherName, s.FatherPhone, s.MotherName, s.MotherPhone, s.FatherOccupation, s.MotherOccupation, s.RegistrationID, s.PhotoURL, s.KKURL, s.AktaURL, s.KTPOrtuURL, s.IjazahURL, s.SuratKelulusanURL, s.PasfotoURL, s.FotoPendaftaranURL, s.YatimDocURL, s.SKTMDocURL, now, s.ID)
 	return err
 }
 
@@ -304,7 +304,7 @@ func (r *Repository) FindAllScoped(search string, classes []string, status strin
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`SELECT s.id, COALESCE(s.nis,''), COALESCE(s.name,''), COALESCE(s.nickname,''), COALESCE(s.gender,''), COALESCE(s.birth_place,''), COALESCE(s.birth_date,''), COALESCE(s.address,''), COALESCE(s.class,''), COALESCE(s.jenjang,''), COALESCE(s.angkatan,''), COALESCE(s.status,''), COALESCE(s.parent_name,''), COALESCE(s.parent_phone,''), COALESCE(s.nik,''), COALESCE(s.father_name,''), COALESCE(s.father_phone,''), COALESCE(s.mother_name,''), COALESCE(s.mother_phone,''), COALESCE(s.father_occupation,''), COALESCE(s.mother_occupation,''), COALESCE(s.category,''), s.registration_id, COALESCE(s.photo_url,''), s.user_id, s.created_at, s.updated_at FROM santri s WHERE %s ORDER BY s.created_at DESC LIMIT ? OFFSET ?`, whereStr)
+	query := fmt.Sprintf(`SELECT s.id, COALESCE(s.nis,''), COALESCE(s.name,''), COALESCE(s.nickname,''), COALESCE(s.gender,''), COALESCE(s.birth_place,''), COALESCE(s.birth_date,''), COALESCE(s.address,''), COALESCE(s.class,''), COALESCE(s.jenjang,''), COALESCE(s.angkatan,''), COALESCE(s.status,''), COALESCE(s.parent_name,''), COALESCE(s.parent_phone,''), COALESCE(s.nik,''), COALESCE(s.nisn,''), COALESCE(s.father_name,''), COALESCE(s.father_phone,''), COALESCE(s.mother_name,''), COALESCE(s.mother_phone,''), COALESCE(s.father_occupation,''), COALESCE(s.mother_occupation,''), COALESCE(s.category,''), s.registration_id, COALESCE(s.photo_url,''), s.user_id, s.created_at, s.updated_at FROM santri s WHERE %s ORDER BY s.created_at DESC LIMIT ? OFFSET ?`, whereStr)
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -317,7 +317,7 @@ func (r *Repository) FindAllScoped(search string, classes []string, status strin
 		var s Santri
 		var userID sql.NullInt64
 		var createdAt, updatedAt sql.NullString
-		if err := rows.Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.Category, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.NIS, &s.Name, &s.Nickname, &s.Gender, &s.BirthPlace, &s.BirthDate, &s.Address, &s.Class, &s.Jenjang, &s.Angkatan, &s.Status, &s.ParentName, &s.ParentPhone, &s.NIK, &s.NISN, &s.FatherName, &s.FatherPhone, &s.MotherName, &s.MotherPhone, &s.FatherOccupation, &s.MotherOccupation, &s.Category, &s.RegistrationID, &s.PhotoURL, &userID, &createdAt, &updatedAt); err != nil {
 			return nil, 0, err
 		}
 		if userID.Valid {
@@ -363,7 +363,7 @@ func (r *Repository) UnlinkUser(santriID int) error {
 }
 
 func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
-	rows, err := r.db.Query(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(category,''), registration_id, COALESCE(photo_url,''), COALESCE(kk_url,''), COALESCE(akta_url,''), COALESCE(ktp_ortu_url,''), COALESCE(ijazah_url,''), COALESCE(surat_kelulusan_url,''), COALESCE(pasfoto_url,''), COALESCE(foto_pendaftaran_url,''), COALESCE(yatim_doc_url,''), COALESCE(sktm_doc_url,''), user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
+	rows, err := r.db.Query(`SELECT id, COALESCE(nis,''), COALESCE(name,''), COALESCE(nickname,''), COALESCE(gender,''), COALESCE(birth_place,''), COALESCE(birth_date,''), COALESCE(address,''), COALESCE(class,''), COALESCE(jenjang,''), COALESCE(angkatan,''), COALESCE(status,''), COALESCE(parent_name,''), COALESCE(parent_phone,''), COALESCE(nik,''), COALESCE(nisn,''), COALESCE(father_name,''), COALESCE(father_phone,''), COALESCE(mother_name,''), COALESCE(mother_phone,''), COALESCE(father_occupation,''), COALESCE(mother_occupation,''), COALESCE(category,''), registration_id, COALESCE(photo_url,''), COALESCE(kk_url,''), COALESCE(akta_url,''), COALESCE(ktp_ortu_url,''), COALESCE(ijazah_url,''), COALESCE(surat_kelulusan_url,''), COALESCE(pasfoto_url,''), COALESCE(foto_pendaftaran_url,''), COALESCE(yatim_doc_url,''), COALESCE(sktm_doc_url,''), user_id, created_at, updated_at FROM santri WHERE user_id = ? ORDER BY name`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +373,7 @@ func (r *Repository) FindByUserID(userID int) ([]Santri, error) {
 		var x Santri
 		var userID sql.NullInt64
 		var createdAt, updatedAt string
-		if err := rows.Scan(&x.ID, &x.NIS, &x.Name, &x.Nickname, &x.Gender, &x.BirthPlace, &x.BirthDate, &x.Address, &x.Class, &x.Jenjang, &x.Angkatan, &x.Status, &x.ParentName, &x.ParentPhone, &x.NIK, &x.FatherName, &x.FatherPhone, &x.MotherName, &x.MotherPhone, &x.FatherOccupation, &x.MotherOccupation, &x.Category, &x.RegistrationID, &x.PhotoURL, &x.KKURL, &x.AktaURL, &x.KTPOrtuURL, &x.IjazahURL, &x.SuratKelulusanURL, &x.PasfotoURL, &x.FotoPendaftaranURL, &x.YatimDocURL, &x.SKTMDocURL, &userID, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&x.ID, &x.NIS, &x.Name, &x.Nickname, &x.Gender, &x.BirthPlace, &x.BirthDate, &x.Address, &x.Class, &x.Jenjang, &x.Angkatan, &x.Status, &x.ParentName, &x.ParentPhone, &x.NIK, &x.NISN, &x.FatherName, &x.FatherPhone, &x.MotherName, &x.MotherPhone, &x.FatherOccupation, &x.MotherOccupation, &x.Category, &x.RegistrationID, &x.PhotoURL, &x.KKURL, &x.AktaURL, &x.KTPOrtuURL, &x.IjazahURL, &x.SuratKelulusanURL, &x.PasfotoURL, &x.FotoPendaftaranURL, &x.YatimDocURL, &x.SKTMDocURL, &userID, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		if userID.Valid {

@@ -127,6 +127,7 @@ type portalRegistrationRequest struct {
 	Nickname      string `json:"nickname"`
 	Gender        string `json:"gender"`
 	NIK           string `json:"nik"`
+	NISN          string `json:"nisn"`
 	BirthPlace    string `json:"birth_place"`
 	BirthDate     string `json:"birth_date"`
 	Address       string `json:"address"`
@@ -165,6 +166,7 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 	req.FullName = validators.NormalizeText(req.FullName)
 	req.Gender = validators.NormalizeText(req.Gender)
 	req.NIK = validators.NormalizeText(req.NIK)
+	req.NISN = validators.NormalizeText(req.NISN)
 	req.BirthDate = validators.NormalizeText(req.BirthDate)
 	req.ProgramChoice = validators.NormalizeText(req.ProgramChoice)
 	req.Jenjang = validators.NormalizeText(req.Jenjang)
@@ -177,6 +179,12 @@ func validatePortalRegistration(req *portalRegistrationRequest) validators.Valid
 		if !matched {
 			errs.Add("nik", "NIK harus 16 digit angka")
 		}
+	}
+	// Jilid 84: NISN opsional di pendaftaran (banyak calon belum tahu NISN),
+	// tetapi bila diisi harus valid agar carry-over ke santri tidak menyimpan
+	// nilai kotor.
+	if !validators.ValidateNISN(req.NISN) {
+		errs.Add("nisn", "NISN harus 8-16 digit angka (kosongkan bila belum punya)")
 	}
 	if req.Gender != "" {
 		lower := strings.ToLower(validators.NormalizeText(req.Gender))
@@ -368,6 +376,7 @@ func (h *Handler) SaveMine(w http.ResponseWriter, r *http.Request) {
 		Nickname:      req.Nickname,
 		Gender:        req.Gender,
 		NIK:           req.NIK,
+		NISN:          req.NISN,
 		BirthPlace:    req.BirthPlace,
 		BirthDate:     req.BirthDate,
 		Address:       req.Address,

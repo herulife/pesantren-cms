@@ -165,6 +165,26 @@ func ValidateNIK(raw string) bool {
 	return true
 }
 
+// ValidateNISN memvalidasi Nomor Induk Siswa Nasional (RDM/EMIS Kemenag).
+// NISN resmi selalu 10 digit angka, tapi data lama/lintas jenjang bisa 8-16
+// digit. Fungsi ini hanya untuk yang SUDAH DIISI; kosong dianggap valid
+// (NISN bersifat wajib pelengkap, bukan prasyarat create santri).
+func ValidateNISN(raw string) bool {
+	nisn := strings.TrimSpace(raw)
+	if nisn == "" {
+		return true
+	}
+	if len(nisn) < 8 || len(nisn) > 16 {
+		return false
+	}
+	for _, c := range nisn {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func ValidatePhone(raw string) bool {
 	phone := strings.TrimSpace(raw)
 	if phone == "" {

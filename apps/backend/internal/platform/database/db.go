@@ -954,6 +954,11 @@ func createTables() {
 	addColumnIfNotExists("santri", "father_phone", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "father_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("santri", "nik", "TEXT DEFAULT ''")
+	// Jilid 84 (E-Rapor): NISN = Nomor Induk Siswa Nasional (RDM/EMIS Kemenag).
+	// Registrasi PSB menyimpannya lebih dulu supaya bisa ikut carry-over ke
+	// santri saat pendaftar diterima (AcceptToSantri).
+	addColumnIfNotExists("santri", "nisn", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "nisn", "TEXT DEFAULT ''")
 	// Kategori Santri: reguler | yatim | dhuafa. Kolom ini disinkronkan dari
 	// registrations.category saat pendaftar PSB naik menjadi Santri
 	// (lihat psb.AcceptToSantri), jadi ejaan nilainya harus sama dengan PSB.
@@ -1347,6 +1352,29 @@ func runMigrations() {
 				read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY (user_id, notification_id)
 			);`,
+		},
+		{
+			// Jilid 86 (E-Rapor): log sinkron data pokok & nilai ke RDM/EMIS.
+			// Satu baris per (santri, semester, tahun) per jenis sinkron.
+			name: "erapor_sync_table",
+			sql: `CREATE TABLE IF NOT EXISTS erapor_sync (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				student_id INTEGER NOT NULL DEFAULT 0,
+				sync_type TEXT NOT NULL DEFAULT 'pokok',
+				status TEXT NOT NULL DEFAULT 'pending',
+				semester TEXT NOT NULL DEFAULT '',
+				academic_year TEXT NOT NULL DEFAULT '',
+				nisn TEXT NOT NULL DEFAULT '',
+				error TEXT NOT NULL DEFAULT '',
+				exported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				imported_at DATETIME,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);`,
+		},
+		{
+			name: "erapor_sync_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_erapor_sync_student ON erapor_sync(student_id, sync_type, semester, academic_year);`,
 		},
 	}
 
