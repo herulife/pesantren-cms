@@ -77,6 +77,83 @@ func ValidateDate(raw string) bool {
 	return err == nil
 }
 
+// Kategori scheme bantuan (kategori pendaftar & kategori Santri).
+// Satu-satunya daftar nilai yang sah untuk KEDUA tabel, supaya
+// registrations.category dan santri.category tidak pernah berbeda ejaan:
+// "yatim" (anak yatim) dan "dhuafa" (dhuafa). Nilai kosong dianggap
+// "reguler". Ejaan "duafa" diterima sebagai alias lalu dinormalkan menjadi
+// "dhuafa" supaya data dari sheet/API lama tidak ditolak.
+const (
+	CategoryReguler = "reguler"
+	CategoryYatim   = "yatim"
+	CategoryDhuafa  = "dhuafa"
+)
+
+// CategoryOptions adalah daftar nilai sah dalam urutan tampil untuk UI.
+var CategoryOptions = []string{CategoryReguler, CategoryYatim, CategoryDhuafa}
+
+// NormalizeCategory menormalkan input kategori (lowercase + trim), memetakan
+// alias "duafa" -> "dhuafa", dan mengembalikan "" kalau nilainya di luar
+// daftar sah. Pemanggil yang butuh default memakai CategoryOrDefault.
+func NormalizeCategory(value string) string {
+	switch v := strings.ToLower(strings.TrimSpace(value)); v {
+	case "":
+		return ""
+	case CategoryReguler, CategoryYatim, CategoryDhuafa:
+		return v
+	case "duafa", "dhufa", "poor":
+		return CategoryDhuafa
+	default:
+		return ""
+	}
+}
+
+// CategoryOrDefault seperti NormalizeCategory, tapi nilai kosong (atau tidak
+// dikenal) menjadi "reguler".
+func CategoryOrDefault(value string) string {
+	if v := NormalizeCategory(value); v != "" {
+		return v
+	}
+	return CategoryReguler
+}
+
+// IsValidCategory melapor apakah nilai sudah berupa kategori kanonik.
+func IsValidCategory(value string) bool {
+	return NormalizeCategory(value) != ""
+}
+
+func ValidateNIK(raw string) bool {
+	nik := strings.TrimSpace(raw)
+	if len(nik) != 16 {
+		return false
+	}
+	for _, c := range nik {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func ValidatePhone(raw string) bool {
+	phone := strings.TrimSpace(raw)
+	if phone == "" {
+		return false
+	}
+	clean := strings.ReplaceAll(phone, " ", "")
+	clean = strings.ReplaceAll(clean, "-", "")
+	clean = strings.TrimPrefix(clean, "+")
+	if len(clean) < 8 || len(clean) > 15 {
+		return false
+	}
+	for _, c := range clean {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func NormalizeSlug(raw string) string {
 	normalized := strings.ToLower(NormalizeText(raw))
 	normalized = strings.ReplaceAll(normalized, " ", "-")

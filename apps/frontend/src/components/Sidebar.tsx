@@ -32,6 +32,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     
     // Akademik & Kesantrian
     { category: 'Kesantrian', icon: <Users size={18} />, label: "Data Santri (PSB)", href: "/admin/psb", roles: ["panitia_psb"], docRef: 'psb' },
+    { category: 'Kesantrian', icon: <Users size={18} />, label: "Data Santri", href: "/admin/kesantrian", roles: ["superadmin","panitia_psb","wali_kelas","pimpinan"], docRef: 'kesantrian' },
+    { category: 'Kesantrian', icon: <UserCog size={18} />, label: "Akun Wali", href: "/admin/akun/walisantri", roles: ["superadmin","bendahara"], docRef: 'walisantri' },
+
     { category: 'Kesantrian', icon: <GraduationCap size={18} />, label: "eRapor", href: "/admin/academics", roles: ["bendahara"], docRef: 'academics' },
     { category: 'Kesantrian', icon: <UserCheck size={18} />, label: "Staf Pengajar", href: "/admin/teachers", roles: ["tim_media"], docRef: 'teachers' },
     { category: 'Kesantrian', icon: <Shield size={18} />, label: "Kedisiplinan", href: "/admin/disciplines", roles: ["panitia_psb"], docRef: 'disciplines' },

@@ -20,14 +20,21 @@ import (
 	"darussunnah-api/internal/features/payments"
 	"darussunnah-api/internal/features/programs"
 	"darussunnah-api/internal/features/psb"
+	"darussunnah-api/internal/features/santri"
+	"darussunnah-api/internal/features/school"
 	"darussunnah-api/internal/features/settings"
+	"darussunnah-api/internal/features/sysnotif"
 	"darussunnah-api/internal/features/teachers"
 	"darussunnah-api/internal/features/upload"
 	"darussunnah-api/internal/features/videos"
+	"darussunnah-api/internal/features/walisantri"
 	"darussunnah-api/internal/features/wallet"
+	"darussunnah-api/internal/platform/audit"
 	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
 	appmiddleware "darussunnah-api/internal/platform/middleware"
+	"darussunnah-api/internal/platform/wagate"
+	"darussunnah-api/internal/platform/wanotif"
 	"fmt"
 	"net/http"
 	"os"
@@ -60,6 +67,15 @@ func main() {
 	if err != nil {
 		logger.Warn(context.Background(), "license public key not found or invalid", logger.Field{"error": err.Error()})
 	}
+
+	// 2b. WhatsApp gateway mandiri (auto-connect bila sesi tersimpan ada)
+	go wagate.GetManager().Start(context.Background())
+
+	// 2c. Pengirim-ulang otomatis notifikasi WA (outbox wa_notifications).
+	wanotif.StartRetrier()
+
+	// 2d. Audit log (aktivitas) terpusat.
+	audit.Configure(database.DB)
 
 	// 3. Setup Router
 	r := chi.NewRouter()
@@ -138,6 +154,17 @@ func main() {
 
 	notificationRepo := notifications.NewRepository(database.DB)
 	notificationHandler := notifications.NewHandler(notificationRepo)
+
+	sysnotifHandler := sysnotif.NewHandler(database.DB)
+
+	schoolRepo := school.NewRepository(database.DB)
+	schoolHandler := school.NewHandler(schoolRepo)
+
+	santriRepo := santri.NewRepository(database.DB)
+	santriHandler := santri.NewHandler(santriRepo)
+
+	waliSantriRepo := walisantri.NewRepository(database.DB)
+	waliSantriHandler := walisantri.NewHandler(waliSantriRepo)
 
 	attendanceRepo := attendance.NewRepository(database.DB)
 	attendanceHandler := attendance.NewHandler(attendanceRepo)
@@ -328,10 +355,10 @@ func main() {
 			).Post("/upload/document", upload.HandleDocumentUpload)
 			r.Get("/documents/{userID}/{filename}", upload.ServeDocument)
 
-			// Admin notification bell summary (staff roles)
+			// Admin notification bell (system notifications with per-user read state)
 			r.With(
 				auth.RequireRole("superadmin", "tim_media", "panitia_psb", "bendahara"),
-			).Get("/admin/notifications/summary", notificationHandler.NotificationsSummary)
+			).Mount("/snotif", sysnotifHandler.Routes())
 
 			// Superadmin Only
 			r.Group(func(r chi.Router) {
@@ -359,6 +386,39 @@ func main() {
 				r.Mount("/donations", donationHandler.Routes())
 			})
 
+			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
+			// daftar ini memuat email/nama wali (data pribadi orang tua).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Mount("/wali-santri", waliSantriHandler.Routes())
+			})
+
+			// Master Sekolah (kelas + tahun ajaran).
+			// READ (kelas + tahun ajaran) dibuka ke semua role operasional: form
+			// Kesantrian & halaman raport milik wali_kelas/pimpinan memanggil
+			// GET /school/classes. Sebelumnya grup ini hanya superadmin/setting
+			// -> 403 -> dropdown "Kelas" kosong dan wali kelas tidak bisa memilih
+			// kelas sama sekali.
+			// WRITE (create/update/delete/activate) tetap superadmin/bendahara/
+			// panitia_psb.
+			r.Route("/school", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "wali_kelas", "pimpinan"))
+					r.Get("/classes", schoolHandler.ListClasses)
+					r.Get("/years", schoolHandler.ListYears)
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb"))
+					r.Mount("/", schoolHandler.Routes())
+				})
+			})
+
+			// Kesantrian (Data Santri)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "panitia_psb", "wali_kelas", "pimpinan"))
+				r.Mount("/santri", santriHandler.Routes())
+			})
+
 			// Panitia PSB Ops
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("panitia_psb"))
@@ -375,8 +435,9 @@ func main() {
 				r.Put("/psb/me/payment", psbHandler.SaveMyPayment)
 				r.Get("/portal/academics/grades", academicHandler.GetMyGrades)
 				r.Get("/portal/academics/attendance-summary", academicHandler.GetMyAttendanceSummary)
-				r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
-				r.Get("/attendance/token", attendanceHandler.GetToken)
+r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
+			r.Get("/attendance/token", attendanceHandler.GetToken)
+			r.Get("/my-santri", santriHandler.GetMySantri)
 
 				// CBT Student
 				r.Get("/exams", examHandler.GetAvailableExams)

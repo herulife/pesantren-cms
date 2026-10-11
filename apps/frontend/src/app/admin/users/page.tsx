@@ -42,6 +42,11 @@ const ROLE_OPTIONS = [
   { value: 'panitia_psb', label: 'Panitia PSB', icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-200' },
   { value: 'tim_media', label: 'Tim Media', icon: Camera, color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200' },
   { value: 'user', label: 'User Biasa', icon: User, color: 'text-slate-600', bg: 'bg-slate-50', ring: 'ring-slate-200' },
+  { value: 'pimpinan', label: 'Pimpinan', icon: UserCog, color: 'text-indigo-600', bg: 'bg-indigo-50', ring: 'ring-indigo-200' },
+  { value: 'wali_kelas', label: 'Wali Kelas', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50', ring: 'ring-cyan-200' },
+  { value: 'guru', label: 'Guru', icon: GraduationCap, color: 'text-teal-600', bg: 'bg-teal-50', ring: 'ring-teal-200' },
+  { value: 'ustadz', label: 'Ustadz', icon: User, color: 'text-green-600', bg: 'bg-green-50', ring: 'ring-green-200' },
+
 ];
 
 function getRoleConfig(role: string) {

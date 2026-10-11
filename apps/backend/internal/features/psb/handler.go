@@ -3,8 +3,13 @@ package psb
 import (
 	"context"
 	"darussunnah-api/internal/features/auth"
+	"darussunnah-api/internal/platform/database"
+	"darussunnah-api/internal/platform/logger"
+	platsysnotif "darussunnah-api/internal/platform/sysnotif"
 	"darussunnah-api/internal/validators"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -179,6 +184,9 @@ func (h *Handler) SaveMine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, findErr := h.repo.FindByUserID(r.Context(), userID)
+	isNewRegistration := errors.Is(findErr, sql.ErrNoRows)
+
 	reg, err := h.repo.SaveByUserID(r.Context(), userID, Registration{
 		FullName:      req.FullName,
 		Nickname:      req.Nickname,
@@ -199,6 +207,12 @@ func (h *Handler) SaveMine(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		SendErrorResponse(w, http.StatusInternalServerError, "Gagal menyimpan biodata PSB")
 		return
+	}
+
+	if isNewRegistration {
+		if err := platsysnotif.Emit(r.Context(), database.DB, "psb_pendaftar", "Pendaftar PSB Baru", req.FullName+" mendaftar PSB", "/admin/psb"); err != nil {
+			logger.Warn(r.Context(), "sysnotif emit psb_pendaftar failed", logger.Field{"operation": "psb_save_mine", "error": err.Error()})
+		}
 	}
 
 	SendSuccessResponse(w, http.StatusOK, reg, "Biodata PSB berhasil disimpan")
@@ -269,6 +283,10 @@ func (h *Handler) SaveMyPayment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		SendErrorResponse(w, http.StatusBadRequest, "Lengkapi biodata PSB terlebih dahulu sebelum unggah bukti pembayaran")
 		return
+	}
+
+	if err := platsysnotif.Emit(r.Context(), database.DB, "pembayaran", "Pembayaran PSB", reg.FullName+" mengunggah bukti pembayaran", "/admin/psb"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit pembayaran failed", logger.Field{"operation": "psb_save_my_payment", "error": err.Error()})
 	}
 
 	SendSuccessResponse(w, http.StatusOK, reg, "Bukti pembayaran berhasil dikirim dan menunggu verifikasi")

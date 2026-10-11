@@ -4,12 +4,15 @@ import (
 	"darussunnah-api/internal/features/auth"
 	"darussunnah-api/internal/platform/logger"
 	"darussunnah-api/internal/platform/telegram"
+	"darussunnah-api/internal/platform/wagate"
+	"darussunnah-api/internal/platform/wanotif"
 	"darussunnah-api/internal/platform/whatsapp"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,11 +30,17 @@ func NewHandler(repo Repository) *Handler {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/status", h.GetStatus)
+	r.Get("/wa/status", h.GetWAStatus)
+	r.Get("/wa/qr", h.GetWAQR)
+	r.Post("/wa/pair-code", h.PostWAPairCode)
+	r.Post("/wa/disconnect", h.PostWADisconnect)
 	r.Post("/send-wa", h.SendWhatsApp)
 	r.Post("/send-telegram", h.SendTelegram)
 	r.Post("/broadcast-tagihan", h.BroadcastTagihan)
 	r.Post("/broadcast-nilai", h.BroadcastNilai)
 	r.Post("/broadcast-psb", h.BroadcastPSB)
+	r.Get("/wa-log", h.GetWALog)
+	r.Post("/wa-retry", h.PostWARetry)
 	return r
 }
 
@@ -56,51 +65,6 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 	writeJSONResponse(w, status, false, message, nil)
 }
 
-// NotificationsSummary aggregates counts + latest items of unprocessed records
-// for the admin notification bell. Role-aware: each staff role only sees the
-// modules they operate on.
-func (h *Handler) NotificationsSummary(w http.ResponseWriter, r *http.Request) {
-	role, _ := auth.CurrentUserRole(r.Context())
-	sections := make([]SummarySection, 0, 3)
-	total := 0
-
-	if role == "superadmin" || role == "panitia_psb" {
-		count, items, err := h.repo.GetPendingRegistrations()
-		if err != nil {
-			logger.Warn(r.Context(), "notification summary psb failed", logger.Field{"error": err.Error()})
-		} else {
-			total += count
-			if count > 0 {
-				sections = append(sections, SummarySection{Type: "psb", Label: "Daftar PSB Baru", Count: count, Items: items})
-			}
-		}
-
-		count, items, err = h.repo.GetUnreadMessages()
-		if err != nil {
-			logger.Warn(r.Context(), "notification summary messages failed", logger.Field{"error": err.Error()})
-		} else {
-			total += count
-			if count > 0 {
-				sections = append(sections, SummarySection{Type: "message", Label: "Pesan Kontak Baru", Count: count, Items: items})
-			}
-		}
-	}
-
-	if role == "superadmin" || role == "bendahara" {
-		count, items, err := h.repo.GetPendingDonations()
-		if err != nil {
-			logger.Warn(r.Context(), "notification summary donations failed", logger.Field{"error": err.Error()})
-		} else {
-			total += count
-			if count > 0 {
-				sections = append(sections, SummarySection{Type: "donation", Label: "Donasi Baru", Count: count, Items: items})
-			}
-		}
-	}
-
-	writeJSONResponse(w, http.StatusOK, true, "", Summary{Total: total, Sections: sections})
-}
-
 func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
 	logger.Info(r.Context(), "notification status started", logger.Field{"operation": "notifications_status"})
@@ -117,6 +81,71 @@ func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		"operation":   "notifications_status",
 		"duration_ms": time.Since(startedAt).Milliseconds(),
 	})
+}
+
+// GetWAStatus mengembalikan status koneksi gateway WA mandiri.
+func (h *Handler) GetWAStatus(w http.ResponseWriter, r *http.Request) {
+	st := wagate.GetManager().StatusNow()
+	writeJSONResponse(w, http.StatusOK, true, "Status gateway WA berhasil dimuat", map[string]interface{}{
+		"connected": st.Connected,
+		"phone":     st.Phone,
+		"pushname":  st.PushName,
+	})
+}
+
+// GetWAQR mengembalikan PNG QR pairing (atau 409 bila sudah terhubung/gagal).
+func (h *Handler) GetWAQR(w http.ResponseWriter, r *http.Request) {
+	png, ttl, err := wagate.GetManager().RequestQR(r.Context())
+	if err != nil {
+		if err.Error() == "sudah terhubung" {
+			writeJSONResponse(w, http.StatusConflict, false, "WhatsApp sudah terhubung", nil)
+			return
+		}
+		// 429 agar UI menunggu (pairing berjalan / throttling), bukan retry brutal.
+		// 503 hanya untuk kegagalan tak terduga.
+		code := http.StatusTooManyRequests
+		if ttl == 0 && err.Error() != "pairing sedang berjalan, tunggu sebentar" {
+			code = http.StatusServiceUnavailable
+		}
+		writeJSONResponse(w, code, false, err.Error(), nil)
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-QR-TTL", strconv.Itoa(int(ttl.Seconds())))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(png)
+}
+
+// PostWAPairCode meminta kode taut 8 digit untuk nomor HP.
+// Body: { "phone": "62812xxxxxxx" }
+func (h *Handler) PostWAPairCode(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Phone string `json:"phone"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil || req.Phone == "" {
+		writeJSONError(w, http.StatusBadRequest, "Nomor HP wajib diisi")
+		return
+	}
+	code, err := wagate.GetManager().RequestPairCode(r.Context(), req.Phone)
+	if err != nil {
+		if err.Error() == "sudah terhubung" {
+			writeJSONResponse(w, http.StatusConflict, false, "WhatsApp sudah terhubung", nil)
+			return
+		}
+		writeJSONError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Masukkan kode berikut di HP (Perangkat Tertaut > Tautkan dengan nomor telepon)", map[string]interface{}{
+		"pair_code": code,
+		"phone":     req.Phone,
+	})
+}
+
+// PostWADisconnect memutus socket (sesi tersimpan, auto-connect saat boot).
+func (h *Handler) PostWADisconnect(w http.ResponseWriter, r *http.Request) {
+	wagate.GetManager().Disconnect()
+	writeJSONResponse(w, http.StatusOK, true, "Koneksi WhatsApp diputus", nil)
 }
 
 func (h *Handler) SendWhatsApp(w http.ResponseWriter, r *http.Request) {
@@ -417,6 +446,39 @@ func (h *Handler) BroadcastPSB(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
+}
+
+// GetWALog mengembalikan log pengiriman WhatsApp untuk satu registrasi PSB.
+func (h *Handler) GetWALog(w http.ResponseWriter, r *http.Request) {
+	raw := r.URL.Query().Get("registration_id")
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		writeJSONError(w, http.StatusBadRequest, "registration_id wajib diisi berupa angka")
+		return
+	}
+	items, err := wanotif.ListByRegistration(r.Context(), id)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Gagal memuat log WhatsApp")
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Log WhatsApp berhasil dimuat", map[string]interface{}{"items": items})
+}
+
+// PostWARetry memicu kirim-ulang manual satu baris log WhatsApp.
+func (h *Handler) PostWARetry(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ID int64 `json:"id"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil || req.ID <= 0 {
+		writeJSONError(w, http.StatusBadRequest, "id wajib diisi berupa angka")
+		return
+	}
+	rec, err := wanotif.Retry(r.Context(), req.ID)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Gagal kirim ulang WhatsApp")
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Kirim ulang WhatsApp diproses", rec)
 }
 
 // Code generated by ifacemaker; DO NOT EDIT.

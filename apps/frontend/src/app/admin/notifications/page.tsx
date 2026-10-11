@@ -16,6 +16,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
+import WAGatewayCard from '@/components/WAGatewayCard';
 
 export default function NotificationsPage() {
   const { showToast } = useToast();
@@ -168,6 +169,8 @@ export default function NotificationsPage() {
         <p className="text-slate-500 mt-1">Sistem notifikasi otomatis dan broadcast pesan WhatsApp.</p>
       </div>
 
+      <WAGatewayCard />
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left: Configuration & Broadcasts */}

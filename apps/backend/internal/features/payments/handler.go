@@ -2,7 +2,9 @@ package payments
 
 import (
 	"darussunnah-api/internal/features/auth"
+	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
+	platsysnotif "darussunnah-api/internal/platform/sysnotif"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
 	"fmt"
@@ -87,6 +89,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.RecordActivity(&adminID, "CREATE_PAYMENT", fmt.Sprintf("Mencatat pembayaran Rp %d untuk User ID %d", p.Amount, p.UserID), r.RemoteAddr, r.UserAgent())
 	logger.Info(r.Context(), "payments create completed", logger.Field{"operation": "payments_create", "user_id": p.UserID, "amount": p.Amount})
+
+	if err := platsysnotif.Emit(r.Context(), database.DB, "pembayaran", "Pembayaran Baru", fmt.Sprintf("Rp %d untuk user ID %d tercatat", p.Amount, p.UserID), "/admin/payments"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit pembayaran failed", logger.Field{"operation": "payments_create", "error": err.Error()})
+	}
 
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran berhasil dicatat", nil)
 }

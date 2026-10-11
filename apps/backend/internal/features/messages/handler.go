@@ -1,7 +1,9 @@
 package messages
 
 import (
+	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
+	platsysnotif "darussunnah-api/internal/platform/sysnotif"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
 	"io"
@@ -122,6 +124,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		logger.Error(r.Context(), "message create failed", logger.Field{"operation": "messages_create_public", "error": err.Error()})
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (API Error)", nil)
 		return
+	}
+
+	if err := platsysnotif.Emit(r.Context(), database.DB, "pesan_kontak", "Pesan Kontak Baru", "Pesan dari "+m.Name, "/admin/messages"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit pesan_kontak failed", logger.Field{"operation": "messages_create_public", "error": err.Error()})
 	}
 
 	logger.Info(r.Context(), "message create completed", logger.Field{

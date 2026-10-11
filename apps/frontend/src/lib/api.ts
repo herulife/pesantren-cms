@@ -1516,6 +1516,64 @@ export async function createContactMessage(data: { name: string, email?: string,
 	return parseResponse(res);
 }
 
+// Notifikasi Sistem (lonceng admin)
+export interface SysNotificationItem {
+	id: number;
+	type: string;
+	title: string;
+	message: string;
+	link: string;
+	created_at: string;
+	read: boolean;
+}
+
+export interface SysNotificationsData {
+	items: SysNotificationItem[];
+	unread_count: number;
+}
+
+export interface SysNotificationsResponse {
+	success?: boolean;
+	message?: string;
+	data?: SysNotificationsData;
+}
+
+export interface SysNotificationUnreadResponse {
+	success?: boolean;
+	message?: string;
+	data?: { count: number };
+}
+
+export async function getSysNotifications(): Promise<SysNotificationsResponse> {
+	const res = await fetch(`${API_BASE_URL}/snotif`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function getSysNotificationUnread(): Promise<SysNotificationUnreadResponse> {
+	const res = await fetch(`${API_BASE_URL}/snotif/unread`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function markSysNotificationRead(id: number): Promise<{ success?: boolean; message?: string }> {
+	const res = await fetch(`${API_BASE_URL}/snotif/read/${id}`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function markAllSysNotificationsRead(): Promise<{ success?: boolean; message?: string }> {
+	const res = await fetch(`${API_BASE_URL}/snotif/read-all`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function createPayment(data: Omit<Payment, 'id' | 'created_at' | 'user_name' | 'user_email'>) {
 	const res = await fetch(`${API_BASE_URL}/payments`, {
 		method: 'POST',
@@ -2323,4 +2381,390 @@ export function getStorageSourceDetail(sourceID: number) {
 
 export function getStorageStats() {
 	return storageRequest<StorageTotals>('/admin/storage/stats');
+}
+
+// ── Master Sekolah (Kelas + Tahun Ajaran) ──────────────────
+
+export interface SchoolClass {
+	id: number;
+	code: string;
+	name: string;
+	jenjang: string;
+	wali_name: string;
+	wali_user_id: number;
+	academic_year: string;
+	is_active: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface AcademicYear {
+	id: number;
+	name: string;
+	start_date: string;
+	end_date: string;
+	is_active: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export async function getSchoolClasses(params: { active_only?: boolean } = {}) {
+	const q = params.active_only ? '?active_only=true' : '';
+	try {
+		const res = await fetch(`${API_BASE_URL}/school/classes${q}`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return [] as SchoolClass[];
+		const result = await parseResponse(res);
+		return (result.data || []) as SchoolClass[];
+	} catch (e) {
+		console.error('[API] Fetch school classes error:', e);
+		return [] as SchoolClass[];
+	}
+}
+
+export async function getSchoolYears() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/school/years`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return [] as AcademicYear[];
+		const result = await parseResponse(res);
+		return (result.data || []) as AcademicYear[];
+	} catch (e) {
+		console.error('[API] Fetch school years error:', e);
+		return [] as AcademicYear[];
+	}
+}
+
+export async function createSchoolClass(payload: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string; is_active?: boolean }) {
+	const res = await fetch(`${API_BASE_URL}/school/classes`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
+export async function updateSchoolClass(id: number, payload: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string; is_active?: boolean }) {
+	const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteSchoolClass(id: number) {
+	const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+export async function createSchoolYear(payload: { name: string; start_date?: string; end_date?: string; is_active?: boolean }) {
+	const res = await fetch(`${API_BASE_URL}/school/years`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
+export async function updateSchoolYear(id: number, payload: { name?: string; start_date?: string; end_date?: string; is_active?: boolean }) {
+	const res = await fetch(`${API_BASE_URL}/school/years/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
+export async function activateSchoolYear(id: number) {
+	const res = await fetch(`${API_BASE_URL}/school/years/${id}/activate`, { method: 'POST', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+export async function deleteSchoolYear(id: number) {
+	const res = await fetch(`${API_BASE_URL}/school/years/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+// ── Kesantrian (Data Santri) ──────────────────
+
+export interface Santri {
+	id: number;
+	nis: string;
+	name: string;
+	nickname: string;
+	gender: string;
+	birth_place: string;
+	birth_date: string;
+	address: string;
+	class: string;
+	jenjang: string;
+	angkatan: string;
+	status: string;
+	category: string;
+	parent_name: string;
+	parent_phone: string;
+	nik: string;
+	father_name: string;
+	father_phone: string;
+	mother_name: string;
+	mother_phone: string;
+	father_occupation: string;
+	mother_occupation: string;
+	registration_id: number;
+	photo_url: string;
+	user_id: number | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface SantriInput {
+	nis: string;
+	name: string;
+	nickname?: string;
+	gender?: string;
+	birth_place?: string;
+	birth_date?: string;
+	address?: string;
+	class: string;
+	jenjang?: string;
+	angkatan?: string;
+	status?: string;
+	category?: string;
+	parent_name?: string;
+	parent_phone?: string;
+	nik?: string;
+	father_name?: string;
+	father_phone?: string;
+	mother_name?: string;
+	mother_phone?: string;
+	father_occupation?: string;
+	mother_occupation?: string;
+	registration_id?: number;
+	photo_url?: string;
+}
+
+export async function getSantriList(params: { search?: string; class?: string; status?: string; limit?: number; offset?: number } = {}) {
+	try {
+		const queryParams = new URLSearchParams();
+		if (params.search) queryParams.append('search', params.search);
+		if (params.class) queryParams.append('class', params.class);
+		if (params.status) queryParams.append('status', params.status);
+		if (params.limit) queryParams.append('limit', params.limit.toString());
+		if (params.offset) queryParams.append('offset', params.offset.toString());
+
+		const res = await fetch(`${API_BASE_URL}/santri?${queryParams.toString()}`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return { data: [] as Santri[], total: 0, limit: params.limit || 20, offset: params.offset || 0 };
+		const result = await parseResponse(res);
+		const list = result.data as { items?: Santri[]; total?: number; limit?: number; offset?: number };
+		return {
+			data: list.items || [],
+			total: list.total || 0,
+			limit: list.limit || params.limit || 20,
+			offset: list.offset || params.offset || 0
+		};
+	} catch (e) {
+		console.error('[API] Fetch santri list error:', e);
+		return { data: [] as Santri[], total: 0, limit: params.limit || 20, offset: params.offset || 0 };
+	}
+}
+
+export async function getSantriByID(id: number): Promise<Santri | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/santri/${id}`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return null;
+		const result = await parseResponse(res);
+		return (result.data || null) as Santri | null;
+	} catch (e) {
+		console.error('[API] Fetch santri error:', e);
+		return null;
+	}
+}
+
+export async function createSantri(data: SantriInput) {
+	const res = await fetch(`${API_BASE_URL}/santri`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
+	return parseResponse(res);
+}
+
+export async function updateSantri(id: number, data: SantriInput) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
+	return parseResponse(res);
+}
+
+export async function deleteSantri(id: number) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+export async function purgeSantri(id: number) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}/purge`, { method: 'DELETE', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+export async function bulkDeleteSantri(ids: number[]) {
+	const res = await fetch(`${API_BASE_URL}/santri/bulk`, { method: 'DELETE', headers: getAuthHeaders(), body: JSON.stringify({ ids }) });
+	return parseResponse(res);
+}
+
+export async function setSantriClass(items: { id: number; class: string }[]) {
+	const res = await fetch(`${API_BASE_URL}/santri/set-class`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ items }) });
+	return parseResponse(res);
+}
+
+export async function linkSantriUser(id: number, userId: number) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}/link-user`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ user_id: userId }) });
+	return parseResponse(res);
+}
+
+export async function unlinkSantriUser(id: number) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}/unlink-user`, { method: 'PUT', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+export async function resetSantriPassword(id: number) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}/reset-password`, { method: 'POST', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+export async function getSantriClasses() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/santri/classes`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return [] as string[];
+		const result = await parseResponse(res);
+		return (result.data || []) as string[];
+	} catch (e) {
+		console.error('[API] Fetch santri classes error:', e);
+		return [] as string[];
+	}
+}
+
+export async function exportSantri(): Promise<Santri[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/santri/export`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		const list = result.data as { items?: Santri[]; total?: number };
+		return list.items || [];
+	} catch (e) {
+		console.error('[API] Fetch santri export error:', e);
+		return [];
+	}
+}
+
+// ── Akun Wali (wali-santri) ──────────────────
+
+export interface WaliSantri {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+}
+
+export interface WaliAccount {
+	user_id: number;
+	name: string;
+	email: string;
+	whatsapp: string;
+	role: string;
+	is_placeholder: boolean;
+	name_placeholder: boolean;
+	needs_note?: string;
+	last_login_at?: string;
+	santri: WaliSantri[];
+}
+
+export interface WaliList {
+	accounts: WaliAccount[];
+	orphans: { user_id: number; name: string; email: string }[];
+	stats: { total_accounts: number; total_santri: number; placeholder: number; orphan: number; multi_santri: number };
+}
+
+export async function getWaliAccounts(): Promise<WaliList> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/wali-santri`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return { accounts: [], orphans: [], stats: { total_accounts: 0, total_santri: 0, placeholder: 0, orphan: 0, multi_santri: 0 } };
+		const result = await parseResponse(res);
+		const d = result.data as WaliList;
+		return d || { accounts: [], orphans: [], stats: { total_accounts: 0, total_santri: 0, placeholder: 0, orphan: 0, multi_santri: 0 } };
+	} catch (e) {
+		console.error('[API] Fetch wali accounts error:', e);
+		return { accounts: [], orphans: [], stats: { total_accounts: 0, total_santri: 0, placeholder: 0, orphan: 0, multi_santri: 0 } };
+	}
+}
+
+export async function updateWaliAccount(id: number, payload: { name: string; email: string }) {
+	const res = await fetch(`${API_BASE_URL}/wali-santri/${id}`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(payload) });
+	return parseResponse(res);
+}
+
+export async function getMySantri(): Promise<Santri[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/my-santri`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		return extractListData<Santri>(result);
+	} catch (e) {
+		console.error('[API] Fetch my-santri error:', e);
+		return [];
+	}
+}
+
+// ── WA Gateway (wagate) ──────────────────
+
+export interface WAGatewayStatus {
+	connected: boolean;
+	phone: string;
+	pushname: string;
+}
+
+export async function getWAGatewayStatus(): Promise<WAGatewayStatus> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa/status`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return { connected: false, phone: '', pushname: '' };
+		const result = await parseResponse(res);
+		return (result.data || { connected: false, phone: '', pushname: '' }) as WAGatewayStatus;
+	} catch (e) {
+		console.error('[API] Fetch WA gateway status error:', e);
+		return { connected: false, phone: '', pushname: '' };
+	}
+}
+
+export async function requestWAQR(): Promise<{ image: Blob; url: string; ttlSeconds: number }> {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa/qr`, { headers: getAuthHeaders(), cache: 'no-store' });
+	if (res.ok) {
+		const blob = await res.blob();
+		const ttlRaw = res.headers.get('X-QR-TTL');
+		return { image: blob, url: URL.createObjectURL(blob), ttlSeconds: ttlRaw ? parseInt(ttlRaw, 10) : 0 };
+	}
+	return { image: new Blob(), url: '', ttlSeconds: 0 };
+}
+
+export async function requestWAPairCode(phone: string) {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa/pair-code`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ phone })
+	});
+	return parseResponse(res);
+}
+
+export async function disconnectWA() {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa/disconnect`, { method: 'POST', headers: getAuthHeaders() });
+	return parseResponse(res);
+}
+
+export async function getWALog(registrationId: number) {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa-log?registration_id=${registrationId}`, { headers: getAuthHeaders(), cache: 'no-store' });
+		if (!res.ok) return [] as unknown[];
+		const result = await parseResponse(res);
+		const d = result.data as { items?: unknown[] };
+		return d.items || [];
+	} catch (e) {
+		console.error('[API] Fetch WA log error:', e);
+		return [] as unknown[];
+	}
+}
+
+export async function retryWAMessage(id: number) {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa-retry`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ id }) });
+	return parseResponse(res);
 }

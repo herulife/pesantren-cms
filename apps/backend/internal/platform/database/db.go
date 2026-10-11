@@ -79,7 +79,7 @@ func createTables() {
 		role TEXT NOT NULL DEFAULT 'user',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		whatsapp TEXT DEFAULT '',
-		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'user'))
+		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'pimpinan', 'wali_kelas', 'guru', 'ustadz', 'user'))
 	);
 
 	CREATE TABLE IF NOT EXISTS faqs (
@@ -461,6 +461,83 @@ func createTables() {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (wallet_id) REFERENCES user_wallets(id)
 	);
+
+	CREATE TABLE IF NOT EXISTS santri (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nis TEXT UNIQUE NOT NULL,
+		name TEXT NOT NULL,
+		nickname TEXT,
+		gender TEXT,
+		birth_place TEXT,
+		birth_date TEXT,
+		address TEXT,
+		class TEXT NOT NULL,
+		jenjang TEXT DEFAULT '',
+		angkatan TEXT,
+		status TEXT DEFAULT 'aktif',
+		category TEXT DEFAULT 'reguler',
+		parent_name TEXT,
+		parent_phone TEXT,
+		nik TEXT DEFAULT '',
+		father_name TEXT DEFAULT '',
+		father_phone TEXT DEFAULT '',
+		mother_name TEXT DEFAULT '',
+		mother_phone TEXT DEFAULT '',
+		father_occupation TEXT DEFAULT '',
+		mother_occupation TEXT DEFAULT '',
+		registration_id INTEGER DEFAULT 0,
+		photo_url TEXT,
+		user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS classes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
+		name TEXT NOT NULL UNIQUE,
+		jenjang TEXT DEFAULT '',
+		wali_name TEXT DEFAULT '',
+		wali_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+		academic_year TEXT DEFAULT '',
+		is_active INTEGER NOT NULL DEFAULT 1,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS academic_years (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL UNIQUE,
+		start_date TEXT DEFAULT '',
+		end_date TEXT DEFAULT '',
+		is_active INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS audit_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		request_id TEXT,
+		actor_id INTEGER,
+		actor_role TEXT,
+		action TEXT NOT NULL,
+		entity_type TEXT,
+		entity_id TEXT,
+		before_json TEXT,
+		after_json TEXT,
+		ip_address TEXT,
+		user_agent TEXT,
+		result TEXT DEFAULT 'ok',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_santri_nis ON santri(nis);
+	CREATE INDEX IF NOT EXISTS idx_santri_class ON santri(class);
+	CREATE INDEX IF NOT EXISTS idx_santri_status ON santri(status);
+	CREATE INDEX IF NOT EXISTS idx_santri_name ON santri(name);
+	CREATE INDEX IF NOT EXISTS idx_santri_user ON santri(user_id);
+	CREATE INDEX IF NOT EXISTS idx_classes_wali_user ON classes(wali_user_id);
+	CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id, created_at DESC);
 	`
 
 	_, err := DB.Exec(query)
@@ -470,6 +547,7 @@ func createTables() {
 
 	addColumnIfNotExists("users", "whatsapp", "TEXT DEFAULT ''")
 	addColumnIfNotExists("users", "last_login_at", "DATETIME")
+	addColumnIfNotExists("classes", "wali_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("gallery", "album_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "album_slug", "TEXT DEFAULT ''")
@@ -659,6 +737,27 @@ func runMigrations() {
 				FOREIGN KEY (campaign_id) REFERENCES donation_campaigns(id)
 			);`,
 		},
+		{
+			name: "create_sys_notifications_table",
+			sql: `CREATE TABLE IF NOT EXISTS sys_notifications (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				type TEXT NOT NULL,
+				title TEXT NOT NULL,
+				message TEXT NOT NULL,
+				link TEXT NOT NULL DEFAULT '',
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+			);
+			CREATE INDEX IF NOT EXISTS idx_sys_notif_created ON sys_notifications(created_at DESC);`,
+		},
+		{
+			name: "create_sys_notification_reads_table",
+			sql: `CREATE TABLE IF NOT EXISTS sys_notification_reads (
+				user_id INTEGER NOT NULL,
+				notification_id INTEGER NOT NULL,
+				read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY (user_id, notification_id)
+			);`,
+		},
 	}
 
 	for _, migration := range migrations {
@@ -671,6 +770,71 @@ func runMigrations() {
 
 	// Idempotent column additions for token revocation support.
 	addColumnIfNotExists("users", "token_version", "INTEGER NOT NULL DEFAULT 0")
+
+	// Fase fondasi (port struktur Alma): role baru pimpinan/wali_kelas/guru/
+	// ustadz ditambahkan. CHECK constraint lama harus ikut diperluas lewat
+	// rebuild tabel users (SQLite tidak bisa ALTER CONSTRAINT). Rebuild hanya
+	// terjadi bila CHECK lama masih terpasang, data tidak hilang.
+	migrateUsersRoleCheck()
+}
+
+// legacyRoleCheck adalah CHECK role lama (5 role pra-fondasi). Bila masih
+// terpasang di users, seluruh tabel di-rebuild agar CHECK baru berlaku.
+const legacyRoleCheck = "CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'user'))"
+
+const expandedRoleCheck = "CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'pimpinan', 'wali_kelas', 'guru', 'ustadz', 'user'))"
+
+func migrateUsersRoleCheck() {
+	var sqlStr string
+	err := DB.QueryRow(`SELECT sql FROM sqlite_master WHERE type='table' AND name='users'`).Scan(&sqlStr)
+	if err != nil {
+		log.Printf("[DB] users role check scan failed: %v", err)
+		return
+	}
+	normalized := strings.ReplaceAll(strings.ReplaceAll(sqlStr, "\n", " "), "\t", " ")
+	if strings.Contains(normalized, "CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'pimpinan'") {
+		return
+	}
+	if !strings.Contains(normalized, legacyRoleCheck) {
+		// CHECK sudah tidak berisi daftar lama (mis. sudah lolos rebuild).
+		return
+	}
+	if _, err := DB.Exec("PRAGMA foreign_keys=OFF"); err != nil {
+		log.Printf("[DB] users role check rebuild failed (fk off): %v", err)
+		return
+	}
+	defer DB.Exec("PRAGMA foreign_keys=ON")
+
+	rebuild := `
+		BEGIN;
+		CREATE TABLE users_new (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT NOT NULL,
+			password_hash TEXT NOT NULL,
+			name TEXT NOT NULL,
+			role TEXT NOT NULL DEFAULT 'user',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			whatsapp TEXT DEFAULT '',
+			last_login_at DATETIME,
+			token_version INTEGER NOT NULL DEFAULT 0,
+			` + expandedRoleCheck + `
+		);
+		INSERT INTO users_new (id, email, password_hash, name, role, created_at, whatsapp, last_login_at, token_version)
+			SELECT id, email, password_hash, name, role, created_at, COALESCE(whatsapp,''), last_login_at,
+			       COALESCE(token_version,0)
+			FROM users;
+		DROP TABLE users;
+		ALTER TABLE users_new RENAME TO users;
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users(email);
+		CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+		COMMIT;
+	`
+	if _, err := DB.Exec(rebuild); err != nil {
+		log.Printf("[DB] users role check rebuild failed: %v", err)
+		_, _ = DB.Exec("ROLLBACK")
+		return
+	}
+	log.Printf("[DB] users role CHECK diperluas (rebuild tabel users)")
 }
 
 func addColumnIfNotExists(table, column, colType string) {

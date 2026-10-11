@@ -30,9 +30,6 @@ type Repository interface {
 	GetPendingTagihan() ([]TagihanTarget, error)
 	GetNilai() ([]NilaiTarget, error)
 	GetPSBStatus() ([]PSBTarget, error)
-	GetPendingRegistrations() (int, []SummaryItem, error)
-	GetUnreadMessages() (int, []SummaryItem, error)
-	GetPendingDonations() (int, []SummaryItem, error)
 }
 
 type repository struct {

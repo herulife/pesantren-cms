@@ -1,139 +1,215 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { Bell } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Bell, CheckCheck, X } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
+import {
+	getSysNotifications,
+	getSysNotificationUnread,
+	markAllSysNotificationsRead,
+	markSysNotificationRead,
+	type SysNotificationItem
+} from '@/lib/api';
 
-type SummaryItem = { id: number; title: string; time: string };
-type Section = { type: string; label: string; count: number; items: SummaryItem[] };
-type Summary = { total: number; sections: Section[] };
+function formatRelativeTime(iso: string): string {
+	if (!iso) return '';
+	const then = new Date(iso).getTime();
+	if (Number.isNaN(then)) return '';
+	const diff = Date.now() - then;
+	const mins = Math.floor(diff / 60000);
+	if (mins < 1) return 'baru saja';
+	if (mins < 60) return `${mins} mnt lalu`;
+	const hours = Math.floor(mins / 60);
+	if (hours < 24) return `${hours} jam lalu`;
+	const days = Math.floor(hours / 24);
+	return days === 1 ? 'kemarin' : `${days} hari lalu`;
+}
 
-const SECTION_LINKS: Record<string, string> = {
-  psb: '/admin/psb',
-  message: '/admin/messages',
-  donation: '/admin/donations',
+const TYPE_ICON: Record<string, string> = {
+	psb_pendaftar: '📝',
+	pesan_kontak: '✉️',
+	donasi: '💝',
+	pembayaran: '💳',
+	user_baru: '👤',
+	tagihan: '🧾'
 };
 
-const POLL_INTERVAL_MS = 30_000;
-
 export default function NotificationBell() {
-  const [summary, setSummary] = useState<Summary>({ total: 0, sections: [] });
-  const [open, setOpen] = useState(false);
-  const activeRef = useRef(true);
-  const panelRef = useRef<HTMLDivElement>(null);
+	const { user } = useAuth();
+	const router = useRouter();
+	const [open, setOpen] = useState(false);
+	const [items, setItems] = useState<SysNotificationItem[]>([]);
+	const [unread, setUnread] = useState(0);
+	const [loading, setLoading] = useState(false);
+	const panelRef = useRef<HTMLDivElement>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/notifications/summary', { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (data?.success) {
-        setSummary({
-          total: data.data?.total ?? 0,
-          sections: data.data?.sections ?? [],
-        });
-      }
-    } catch (err) {
-      console.error('NotificationBell: gagal memuat notifikasi', err);
-      setSummary({ total: 0, sections: [] });
-    }
-  }, []);
+	const isAdmin = !!user && user.role !== 'user';
 
-  useEffect(() => {
-    activeRef.current = true;
-    void load();
-    const timer = window.setInterval(() => {
-      if (activeRef.current) void load();
-    }, POLL_INTERVAL_MS);
-    const onFocus = () => {
-      if (activeRef.current) void load();
-    };
-    window.addEventListener('focus', onFocus);
-    return () => {
-      activeRef.current = false;
-      window.clearInterval(timer);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [load]);
+	const refreshUnread = useCallback(async () => {
+		if (!isAdmin) return;
+		try {
+			const res = await getSysNotificationUnread();
+			if (res.data && typeof res.data.count === 'number') {
+				setUnread(res.data.count);
+			}
+		} catch {
+			// abaikan; polling berikutnya akan mencoba lagi
+		}
+	}, [isAdmin]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onClickOutside = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onClickOutside);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onClickOutside);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
+	const refreshList = useCallback(async () => {
+		if (!isAdmin) return;
+		setLoading(true);
+		try {
+			const res = await getSysNotifications();
+			if (res.data) {
+				setItems(res.data.items ?? []);
+				setUnread(res.data.unread_count ?? 0);
+			}
+		} catch {
+			// abaikan; dropdown menampilkan data lama bila ada
+		} finally {
+			setLoading(false);
+		}
+	}, [isAdmin]);
 
-  const total = summary.total;
+	useEffect(() => {
+		if (!isAdmin) return;
+		refreshUnread();
+		const id = setInterval(refreshUnread, 30000);
+		return () => clearInterval(id);
+	}, [isAdmin, refreshUnread]);
 
-  return (
-    <div className="relative" ref={panelRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={total > 0 ? `Notifikasi belum diproses: ${total}` : 'Notifikasi'}
-        aria-expanded={open}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-      >
-        <Bell size={19} />
-        {total > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white shadow">
-            {total > 99 ? '99+' : total}
-          </span>
-        )}
-      </button>
+	useEffect(() => {
+		const onClickOutside = (e: MouseEvent) => {
+			if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+				setOpen(false);
+			}
+		};
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') setOpen(false);
+		};
+		document.addEventListener('mousedown', onClickOutside);
+		document.addEventListener('keydown', onKeyDown);
+		return () => {
+			document.removeEventListener('mousedown', onClickOutside);
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, []);
 
-      {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
-          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-            <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-700">Notifikasi</p>
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto p-2">
-            {summary.sections.length === 0 ? (
-              <p className="px-3 py-6 text-center text-sm text-slate-400">Tidak ada notifikasi baru</p>
-            ) : (
-              summary.sections.map((section) => (
-                <div key={section.type} className="py-1">
-                  <div className="flex items-center justify-between px-3 py-1.5">
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">{section.label}</p>
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">{section.count}</span>
-                  </div>
-                  <div className="rounded-xl bg-slate-50/80 p-1">
-                    {section.items.map((item) => (
-                      <Link
-                        key={`${section.type}-${item.id}`}
-                        href={SECTION_LINKS[section.type] ?? '/admin'}
-                        onClick={() => setOpen(false)}
-                        className="flex items-start justify-between gap-3 rounded-lg px-3 py-2.5 transition hover:bg-white"
-                      >
-                        <span className="text-sm font-medium text-slate-700">{item.title}</span>
-                        <span className="shrink-0 pt-0.5 text-xs text-slate-400">{item.time}</span>
-                      </Link>
-                    ))}
-                  </div>
-                  <Link
-                    href={SECTION_LINKS[section.type] ?? '/admin'}
-                    onClick={() => setOpen(false)}
-                    className="block px-3 pb-1 pt-2 text-xs font-semibold text-emerald-600 hover:underline"
-                  >
-                    Lihat semua →
-                  </Link>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+	if (!isAdmin) return null;
+
+	const toggle = () => {
+		const next = !open;
+		setOpen(next);
+		if (next) refreshList();
+	};
+
+	const openItem = async (item: SysNotificationItem) => {
+		if (!item.read) {
+			setUnread((n) => Math.max(0, n - 1));
+			setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, read: true } : it)));
+			markSysNotificationRead(item.id).catch(() => {});
+		}
+		setOpen(false);
+		if (item.link) router.push(item.link);
+	};
+
+	const markAll = async () => {
+		setUnread(0);
+		setItems((prev) => prev.map((it) => ({ ...it, read: true })));
+		await markAllSysNotificationsRead().catch(() => {});
+	};
+
+	return (
+		<div ref={panelRef} className="relative">
+			<button
+				type="button"
+				aria-label="Notifikasi"
+				title="Notifikasi"
+				onClick={toggle}
+				className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 shadow-sm transition-colors hover:bg-slate-100 hover:text-emerald-700"
+			>
+				<Bell size={18} />
+				{unread > 0 && (
+					<span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow">
+						{unread > 99 ? '99+' : unread}
+					</span>
+				)}
+			</button>
+
+			{open && (
+				<div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.18)] focus:outline-none sm:w-96">
+					<div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+						<p className="text-sm font-black uppercase tracking-[0.14em] text-emerald-700">
+							Notifikasi
+						</p>
+						<div className="flex items-center gap-1">
+							{items.length > 0 && (
+								<button
+									type="button"
+									onClick={markAll}
+									className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+									title="Tandai semua dibaca"
+								>
+									<CheckCheck size={14} />
+									Semua dibaca
+								</button>
+							)}
+							<button
+								type="button"
+								onClick={() => setOpen(false)}
+								className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+								aria-label="Tutup notifikasi"
+							>
+								<X size={16} />
+							</button>
+						</div>
+					</div>
+
+					<div className="max-h-96 overflow-y-auto">
+						{loading && items.length === 0 ? (
+							<p className="px-4 py-8 text-center text-sm text-slate-400">Memuat…</p>
+						) : items.length === 0 ? (
+							<p className="px-4 py-8 text-center text-sm text-slate-400">
+								Belum ada notifikasi
+							</p>
+						) : (
+							items.map((item) => (
+								<button
+									key={item.id}
+									type="button"
+									onClick={() => openItem(item)}
+									className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-emerald-50 ${
+										item.read ? 'opacity-60' : ''
+									}`}
+								>
+									<span className="mt-0.5 text-lg leading-none" aria-hidden="true">
+										{TYPE_ICON[item.type] ?? '🔔'}
+									</span>
+									<span className="min-w-0 flex-1">
+										<span className="flex items-center gap-2">
+											<span className="truncate text-[13px] font-bold text-slate-800">
+												{item.title}
+											</span>
+											{!item.read && (
+												<span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+											)}
+										</span>
+										<span className="mt-0.5 block truncate text-xs text-slate-500">
+											{item.message}
+										</span>
+										<span className="mt-0.5 block text-[11px] text-slate-400">
+											{formatRelativeTime(item.created_at)}
+										</span>
+									</span>
+								</button>
+							))
+						)}
+					</div>
+				</div>
+			)}
+		</div>
+	);
 }

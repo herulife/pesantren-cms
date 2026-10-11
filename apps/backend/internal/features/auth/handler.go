@@ -4,6 +4,7 @@ import (
 	"context"
 	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
+	platsysnotif "darussunnah-api/internal/platform/sysnotif"
 	"darussunnah-api/internal/validators"
 	"database/sql"
 	"encoding/json"
@@ -469,6 +470,10 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	logger.RecordActivity(&adminID, "CREATE_USER", fmt.Sprintf("Membuat user baru %s dengan role %s", newUser.Email, newUser.Role), r.RemoteAddr, r.UserAgent())
+
+	if err := platsysnotif.Emit(r.Context(), database.DB, "user_baru", "User Baru", "Akun baru: "+newUser.Email+" ("+newUser.Role+")", "/admin/users"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit user_baru failed", logger.Field{"operation": "auth_create_user", "error": err.Error()})
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

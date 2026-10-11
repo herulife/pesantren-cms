@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"darussunnah-api/internal/platform/wagate"
 )
 
 type Message struct {
@@ -17,11 +19,27 @@ type Message struct {
 	Message string `json:"message"` // isi pesan
 }
 
-// SendMessage mengirim pesan WA via Fonnte API
+// SendMessage mengirim pesan WA. Prioritas: gateway mandiri (wagate/whatsmeow)
+// bila sudah pairing; jatuh ke Fonnte bila belum (kompatibilitas lama).
 func SendMessage(target string, message string) error {
+	if strings.TrimSpace(message) == "" {
+		return fmt.Errorf("pesan kosong")
+	}
+	if wagate.GetManager().StatusNow().Connected {
+		if err := wagate.SendText(target, message); err != nil {
+			log.Printf("[WA] Gagal kirim via wagate ke %s: %v", target, err)
+			return err
+		}
+		log.Printf("[WA] Terkirim via wagate ke %s", target)
+		return nil
+	}
+	return sendFonnte(target, message)
+}
+
+func sendFonnte(target string, message string) error {
 	apiKey := os.Getenv("FONNTE_API_KEY")
 	apiURL := os.Getenv("FONNTE_API_URL")
-	if !IsConfigured(apiKey, apiURL) {
+	if !fonnteConfigured(apiKey, apiURL) {
 		log.Println("[WA] FONNTE_API_KEY atau FONNTE_API_URL belum diset di .env")
 		return fmt.Errorf("WhatsApp gateway not configured")
 	}
@@ -93,6 +111,13 @@ func extractGatewayMessage(payload map[string]interface{}) string {
 }
 
 func IsConfigured(apiKey, apiURL string) bool {
+	if wagate.GetManager().StatusNow().Connected {
+		return true
+	}
+	return fonnteConfigured(apiKey, apiURL)
+}
+
+func fonnteConfigured(apiKey, apiURL string) bool {
 	apiKey = strings.TrimSpace(apiKey)
 	apiURL = strings.TrimSpace(apiURL)
 
