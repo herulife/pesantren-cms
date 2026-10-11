@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import TabHalamanPSB from '@/app/admin/settings/tabs/TabHalamanPSB';
+import TabTesSeleksi from './TabTesSeleksi';
 
 const TABS = [
   { id: 'halaman', label: 'Halaman PSB' },
+  { id: 'tes', label: 'Tes Seleksi' },
   { id: 'pembayaran', label: 'Pembayaran PSB' },
   { id: 'data', label: 'Data Pendaftar' },
 ] as const;
@@ -14,7 +16,7 @@ export default function PsbPengaturanPage() {
   const [active, setActive] = useState<string>('halaman');
 
   return (
-    <div className="mx-auto max-w-4xl pb-12">
+    <div className="mx-auto max-w-6xl pb-12">
       <h1 className="mt-2 text-2xl font-bold text-slate-900">Pengaturan PSB</h1>
       <p className="mt-1 text-sm text-slate-600">Semua pengaturan PSB dalam satu tempat.</p>
 
@@ -36,6 +38,7 @@ export default function PsbPengaturanPage() {
 
       <div className="mt-5">
         {active === 'halaman' && <TabHalamanPSB />}
+        {active === 'tes' && <TabTesSeleksi />}
         {active === 'pembayaran' && (
           <div className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <p className="text-sm text-slate-600">Pengaturan pembayaran PSB pindah ke Pengaturan Website agar satu pintu dengan rekening Donasi &amp; SPP.</p>
