@@ -364,6 +364,15 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	}
 	aid := adminID(r)
 	logger.RecordActivity(&aid, "PAY_SPP", fmt.Sprintf("Pembayaran SPP ID %d sebesar Rp %d", id, req.Amount), r.RemoteAddr, r.UserAgent())
+	// Notifikasi sistem: admin lain tahu pembayaran SPP baru dicatat (juga
+	// untuk pembayaran yang diinput langsung oleh admin/kasir, bukan hanya
+	// lewat submit bukti wali). Replay idempotent tidak mengirim ulang.
+	if !payDup {
+		if err := sysnotif.Emit(r.Context(), database.DB, "pembayaran", "Pembayaran SPP dicatat",
+			fmt.Sprintf("Tagihan #%d — Rp%d dicatat (via kasir)", id, req.Amount), "/admin/spp"); err != nil {
+			logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_spp_pay", "error": err.Error()})
+		}
+	}
 	h.notifyKwitansiWA(id, r, aid)
 	sendJSONResponse(w, http.StatusOK, true, "Pembayaran SPP berhasil dicatat", map[string]interface{}{"duplicate": payDup})
 }
