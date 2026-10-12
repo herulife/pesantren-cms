@@ -546,6 +546,59 @@ export default function LandingPage() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-40 bg-gradient-to-t from-primary-dark via-primary-dark/60 to-transparent" />
       </section>
 
+      {/* ===== PPDB / PSB Banner ===== */}
+      <section className="relative overflow-hidden bg-gradient-to-r from-primary to-primary-dark py-14">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-accent/10" />
+        <div className="container relative mx-auto max-w-6xl px-4">
+          <div className="flex flex-col items-start gap-8 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-white">
+                <Sparkles size={14} />
+                Penerimaan Santri Baru
+              </span>
+              <h2 className="mt-5 font-headline text-3xl font-black leading-tight text-white md:text-4xl">
+                Pendaftaran Santri Baru Darussunnah Parung telah dibuka
+              </h2>
+              <p className="mt-4 text-base leading-8 text-white/80">
+                Wujudkan generasi Qurani bersama Pondok Pesantren Tahfidzul Qur&apos;an Darussunnah.
+                Kuota terbatas — daftarkan putra/putri Anda sekarang dan ikuti seluruh prosesnya
+                lewat Portal Wali Santri.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href="/psb-daftar"
+                  className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-black text-primary-dark shadow-lg shadow-black/10 transition hover:brightness-105"
+                >
+                  Daftar Sekarang <ArrowRight size={16} />
+                </Link>
+                <Link
+                  href="/psb"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
+                >
+                  Info Pendaftaran
+                </Link>
+              </div>
+            </div>
+            <div className="grid w-full max-w-sm shrink-0 gap-3">
+              {[
+                'Pendaftaran & unggah berkas online',
+                'Pantau status seleksi secara real-time',
+                'Notifikasi WhatsApp & Portal Wali Santri',
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur"
+                >
+                  <CheckCircle2 size={18} className="shrink-0 text-accent" />
+                  <span className="text-sm font-semibold text-white/90">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ===== 2. TENTANG ===== */}
       <section className="bg-white py-24">
         <div className="container mx-auto max-w-6xl px-4">

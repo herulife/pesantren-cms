@@ -28,6 +28,7 @@ import (
 	"darussunnah-api/internal/features/programs"
 	"darussunnah-api/internal/features/project"
 	"darussunnah-api/internal/features/psb"
+	"darussunnah-api/internal/features/push"
 	"darussunnah-api/internal/features/raport"
 	"darussunnah-api/internal/features/santri"
 	"darussunnah-api/internal/features/school"
@@ -223,6 +224,9 @@ func main() {
 	noteRepo := notes.NewRepository(database.DB)
 	noteHandler := notes.NewHandler(noteRepo)
 
+	// Web Push Notification (PPDB/pengumuman ke HP pengunjung).
+	pushHandler := push.NewHandler(database.DB)
+
 	loginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	googleLoginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
 	registerLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
@@ -233,6 +237,7 @@ func main() {
 	webhookLimiter := appmiddleware.NewRateLimiter(120, time.Minute)
 	newsGenLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
 	noteLimiter := appmiddleware.NewRateLimiter(60, time.Hour)
+	pushLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 	otpRequestLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
 	otpVerifyLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 
@@ -279,6 +284,11 @@ func main() {
 
 		// Public PSB Pengumuman: cek kelulusan dengan nomor pendaftaran (tanpa login).
 		r.Get("/psb/pengumuman", psbHandler.GetPengumuman)
+
+		// Web Push (tanpa login): kunci publik, langganan, & berhenti berlangganan.
+		r.Get("/push/public-key", pushHandler.PublicKey)
+		r.With(pushLimiter.Middleware).Post("/push/subscribe", pushHandler.Subscribe)
+		r.With(pushLimiter.Middleware).Post("/push/unsubscribe", pushHandler.Unsubscribe)
 
 		// ── Public Access + Protected Writes ──────────────────
 		r.Route("/faqs", func(r chi.Router) {
@@ -596,6 +606,13 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin", "pimpinan", "wali_kelas", "guru", "ustadz"))
 				r.Mount("/snotif", sysnotifHandler.Routes())
+			})
+
+			// Web Push admin: lihat pelanggan & kirim broadcast ke HP pengunjung.
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "tim_media"))
+				r.Get("/push/list", pushHandler.List)
+				r.With(pushLimiter.Middleware).Post("/push/broadcast", pushHandler.Broadcast)
 			})
 		})
 

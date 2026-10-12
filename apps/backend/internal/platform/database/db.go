@@ -1447,6 +1447,23 @@ func runMigrations() {
 			name: "erapor_sync_index",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_erapor_sync_student ON erapor_sync(student_id, sync_type, semester, academic_year);`,
 		},
+		{
+			// Web Push: satu baris per perangkat (browser/HP) yang berlangganan.
+			name: "push_subscriptions_table",
+			sql: `CREATE TABLE IF NOT EXISTS push_subscriptions (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				endpoint TEXT NOT NULL UNIQUE,
+				p256dh TEXT NOT NULL,
+				auth TEXT NOT NULL,
+				user_agent TEXT NOT NULL DEFAULT '',
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+			);`,
+		},
+		{
+			name: "push_subscriptions_created_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_push_subs_created ON push_subscriptions(created_at DESC);`,
+		},
 	}
 
 	for _, migration := range migrations {

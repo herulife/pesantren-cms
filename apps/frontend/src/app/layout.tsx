@@ -52,6 +52,7 @@ export const metadata: Metadata = {
 import { ToastProvider } from "@/components/Toast";
 import { ConfirmProvider } from "@/components/ConfirmProvider";
 import { AuthProvider } from "@/components/AuthProvider";
+import PushNotifProvider from "@/components/PushNotifProvider";
 
 export default function RootLayout({
   children,
@@ -97,6 +98,7 @@ export default function RootLayout({
               {children}
             </AuthProvider>
           </ConfirmProvider>
+          <PushNotifProvider />
         </ToastProvider>
       </body>
     </html>
