@@ -5,27 +5,38 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   getNews,
-  getCampaigns,
+  getAgendas,
   getGallery,
   getPublicSettingsMap,
   getPrograms,
   getVideos,
-  Campaign,
+  getTeachers,
+  getFacilities,
   News,
+  Agenda,
   GalleryItem,
   Program,
   SettingsMap,
   Video,
+  Teacher,
+  Facility,
   resolveDisplayImageUrl,
   formatGalleryAlbumTitle,
   getGallerySortTimestamp,
   getYouTubeThumbnailUrl,
+  extractYouTubeVideoId,
 } from '@/lib/api';
 import PublicLayout from '@/components/PublicLayout';
+import HomePageRenderer from '@/components/website-builder/HomePageRenderer';
 import { PublicEmptyState, PublicGridSkeleton } from '@/components/PublicState';
-import PublicSectionIntro from '@/components/PublicSectionIntro';
 import NewsCard from '@/components/NewsCard';
-import { featuredOpenDonation, findFeaturedDonationCampaign, buildCampaignDetailHref } from '@/lib/donations';
+
+
+import TimelineSantri from '@/components/TimelineSantri';
+import AccordionFAQ from '@/components/AccordionFAQ';
+import VideoEmbed from '@/components/VideoEmbed';
+import FasilitasGallery from '@/components/FasilitasGallery';
+import { parseWebsiteBuilderState } from '@/lib/website-builder';
 import {
   ArrowRight,
   BookOpen,
@@ -33,9 +44,11 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Compass,
   GraduationCap,
-  HeartHandshake,
+  Heart,
   Landmark,
   MapPin,
   Newspaper,
@@ -44,14 +57,29 @@ import {
   School,
   ShieldCheck,
   Sparkles,
+
   Users,
+  Trophy,
+  Award,
+  Target,
+  Quote,
+  BookCopy,
+  Clock,
+  Library,
+  Monitor,
+  Dumbbell,
+  Shield,
 } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Autoplay, Navigation } from 'swiper/modules';
+import { Pagination, Autoplay, Navigation, EffectFade } from 'swiper/modules';
 import { motion } from 'framer-motion';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import 'swiper/css/effect-fade';
+
+// HIDDEN SECTION TOGGLE: ganti ke true untuk menampilkan section "Kehidupan Santri / Rutinitas Harian"
+const SHOW_RUTINITAS_SECTION = false;
 
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 32 },
@@ -78,72 +106,13 @@ type HeroSlide = {
 
 type MaybeListResponse<T> = T[] | { data?: T[] | null } | null | undefined;
 
-const institutionFacts = [
-  { label: 'Lokasi', value: 'Parung, Bogor', icon: <Sparkles size={18} /> },
-  { label: 'Lembaga', value: 'PPTQ Darussunnah', icon: <Building2 size={18} /> },
-  { label: 'Jenjang', value: 'SMP - SMK', icon: <ShieldCheck size={18} /> },
-  { label: 'Fokus', value: 'Tahfidz & Adab', icon: <Landmark size={18} /> },
-];
-
-
-const focusAreas = [
-  {
-    title: 'Profil dan Visi',
-    desc: 'Kenali profil pondok, visi-misi, identitas lembaga, dan arah pembinaan Darussunnah.',
-    href: '/profil',
-    icon: <School size={24} />,
-  },
-  {
-    title: 'Program Pendidikan',
-    desc: 'Lihat program unggulan, kurikulum terpadu, dan target pembinaan santri.',
-    href: '/program',
-    icon: <BookOpen size={24} />,
-  },
-  {
-    title: 'Fasilitas Pondok',
-    desc: 'Telusuri sarana belajar, asrama, ibadah, olahraga, dan ruang keterampilan santri.',
-    href: '/facilities',
-    icon: <Building2 size={24} />,
-  },
-  {
-    title: 'Info Pendaftaran',
-    desc: 'Masuk ke halaman PSB untuk melihat alur pendaftaran dan informasi santri baru.',
-    href: '/psb',
-    icon: <GraduationCap size={24} />,
-  },
-];
-
-const fallbackCurriculumTracks = ['Kurikulum Pondok', 'Kurikulum DIKNAS', 'Kurikulum Tahfidz'];
-
-const fallbackFeaturedProgramCards = [
-  {
-    title: 'Akselerasi Tahfidz 30 Juz',
-    subtitle: 'Target hafalan 30 juz dengan muraja\'ah yang terjadwal.',
-    image: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    title: 'Tsaqofah Islamiyah',
-    subtitle: 'Kajian kitab dan wawasan keislaman yang luas.',
-    image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    title: 'Tarbiyah Aqidah & Akhlak',
-    subtitle: 'Pembinaan aqidah lurus dan akhlak karimah.',
-    image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    title: 'Mahasantri Bahasa Arab',
-    subtitle: 'Kemampuan baca kitab dan berbahasa Arab aktif.',
-    image: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?auto=format&fit=crop&w=900&q=60',
-  },
-];
-
-const institutionHighlights = [
-  { value: '20 Juz', label: 'Target Hafalan', icon: <Calendar size={18} /> },
-  { value: '30', label: 'Kuota Ikhwan', icon: <BookOpen size={18} /> },
-  { value: '30', label: 'Kuota Akhwat', icon: <GraduationCap size={18} /> },
-  { value: 'SMP - SMK', label: 'Jenjang', icon: <Building2 size={18} /> },
-  { value: 'Rp200rb', label: 'Biaya Formulir', icon: <Users size={18} /> },
+const faqData = [
+  { q: 'Bagaimana cara mendaftar di Darussunnah?', a: 'Pendaftaran dilakukan secara online melalui halaman PSB. Isi formulir, unggah dokumen, dan lakukan pembayaran biaya pendaftaran.' },
+  { q: 'Apa saja program unggulan yang ditawarkan?', a: 'Darussunnah memiliki program Tahfidz Al-Quran, Kajian Kitab Kuning, Tasmi\' & Murajaah, dan Halaqah Pembinaan, dengan kurikulum terpadu Pondok, DIKNAS, dan Tahfidz.' },
+  { q: 'Berapa biaya pendaftaran dan SPP?', a: 'Informasi biaya pendaftaran dan SPP dapat dilihat di halaman PSB. Kami berusaha memberikan biaya pendidikan yang terjangkau.' },
+  { q: 'Apakah ada asrama untuk santri?', a: 'Ya, Darussunnah menyediakan asrama putra dan putri dengan pengawasan 24 jam oleh pengasuh pondok.' },
+  { q: 'Bagaimana perkembangan hafalan santri dipantau?', a: 'Setiap santri memiliki target hafalan harian dengan setoran kepada ustadz pembimbing, dipantau melalui buku murojaah dan evaluasi pekanan.' },
+  { q: 'Apakah Darussunnah menerima santri dari luar kota?', a: 'Tentu. Santri berasal dari berbagai daerah. Tersedia asrama bagi santri yang tinggal di pondok.' },
 ];
 
 const buildHeroSlideId = (overrides: Partial<HeroSlide> = {}, fallbackKey = 'slide') => {
@@ -170,99 +139,141 @@ const buildHeroSlideId = (overrides: Partial<HeroSlide> = {}, fallbackKey = 'sli
 
 const createHeroSlide = (overrides: Partial<HeroSlide> = {}, fallbackKey?: string): HeroSlide => ({
   id: buildHeroSlideId(overrides, fallbackKey),
-  title: 'Tahfidz, adab, dan ilmu dalam satu ritme pembinaan',
-  subtitle: 'Darussunnah Parung menumbuhkan hafalan, akhlak, dan pembelajaran terpadu dalam suasana yang tertata.',
-  image_url: fullHeroSlideImage('1564769625905-50e93615e769'),
-  button_text: 'Lihat PSB',
+  title: 'Tahfidz, Adab, dan Ilmu dalam Satu Pembinaan',
+  subtitle: 'Darussunnah Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.',
+  image_url: '/assets/img/gedung.webp',
+  button_text: 'Lihat Info PSB',
   button_url: '/psb',
   ...overrides,
 });
 
+const formatAgendaDay = (dateStr: string) => new Date(dateStr).getDate();
 
-const fullHeroSlideImage = (id: string) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1920&q=80`;
+const formatAgendaMonth = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString('id-ID', { month: 'short' });
+
+const formatAgendaFullDate = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
 const defaultHeroSlides = [
   createHeroSlide(
     {
-      title: 'Menghafal Al-Quran, tumbuh dengan adab',
+      title: 'Menghafal Al-Quran, Tumbuh dengan Adab',
       subtitle:
-        'Lingkungan pesantren yang menjaga hafalan, ilmu, ibadah, dan kemandirian santri dalam keseharian.',
-      image_url: fullHeroSlideImage('1564769625905-50e93615e769'),
-      button_text: 'Daftar PSB',
+        'Lingkungan pesantren yang menata hafalan, ilmu, ibadah, dan kemandirian santri.',
+      image_url: '/assets/img/tahfidz.jpg',
+      button_text: 'Daftar Santri Baru',
       button_url: '/psb',
     },
     'default-slide-1'
   ),
   createHeroSlide(
     {
-      title: 'Tahfidz dan kurikulum yang berjalan seimbang',
+      title: 'Tahfidz dan Kurikulum yang Seimbang',
       subtitle:
-        'Target hafalan, diniyah, akademik, dan karakter disusun menyatu dalam ritme pembinaan harian.',
-      image_url: fullHeroSlideImage('1768152859503-084ed0e5507d'),
-      button_text: 'Buka Program',
+        'Target hafalan, diniyah, akademik, dan karakter berjalan dalam ritme pembinaan harian.',
+      image_url: '/assets/img/belajar-kitab.jpg',
+      button_text: 'Lihat Program',
       button_url: '/program',
     },
     'default-slide-2'
   ),
   createHeroSlide(
     {
-      title: 'Belajar, beribadah, dan tumbuh mandiri',
+      title: 'Belajar, Beribadah, dan Mandiri',
       subtitle:
-        'Fasilitas pondok mendukung ibadah, belajar, olahraga, dan life skill dalam satu lingkungan yang terarah.',
-      image_url: fullHeroSlideImage('1566747675140-317e7484b10d'),
-      button_text: 'Buka Fasilitas',
+        'Fasilitas pondok mendukung kegiatan ibadah, belajar, olahraga, dan life skill santri.',
+      image_url: '/assets/img/asrama.jpg',
+      button_text: 'Lihat Fasilitas',
       button_url: '/facilities',
     },
     'default-slide-3'
   ),
+  createHeroSlide(
+    {
+      title: 'Pondok Pesantren Tahfidz Darussunnah Parung',
+      subtitle:
+        'Membangun generasi Qurani yang berakhlak mulia, berilmu, dan mandiri.',
+      image_url: '/assets/img/khalaqoh.jpg',
+      button_text: 'Tentang Kami',
+      button_url: '/profil',
+    },
+    'default-slide-4'
+  ),
 ];
 
 function parseHeroSlides(settings: SettingsMap): HeroSlide[] {
-  const raw = (settings.hero_slides || '').trim();
+  const raw = settings.hero_slides;
+
   if (raw) {
     try {
-      const parsed: unknown = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         const slides = parsed
-          .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
-          .map((item, index) => {
-            const str = (v: unknown) => (typeof v === 'string' ? v : '');
-            return createHeroSlide(
+          .filter((item) => item && typeof item === 'object')
+          .map((item, index) =>
+            createHeroSlide(
               {
-                id: str(item.id) || undefined,
-                title: str(item.title) || undefined,
-                subtitle: str(item.subtitle) || undefined,
-                image_url: str(item.image_url) || undefined,
-                button_text: str(item.button_text) || undefined,
-                button_url: str(item.button_url) || undefined,
+                id: typeof item.id === 'string' ? item.id : undefined,
+                title: typeof item.title === 'string' ? item.title : undefined,
+                subtitle: typeof item.subtitle === 'string' ? item.subtitle : undefined,
+                image_url: typeof item.image_url === 'string' ? item.image_url : undefined,
+                button_text: typeof item.button_text === 'string' ? item.button_text : undefined,
+                button_url: typeof item.button_url === 'string' ? item.button_url : undefined,
               },
               `slide-${index + 1}`
-            );
-          })
-          .filter((slide) => slide.title.trim() || slide.subtitle.trim());
-        if (slides.length > 0) return slides;
+            )
+          )
+          .filter((slide) => slide.title || slide.subtitle || slide.image_url);
+
+        if (slides.length > 1) {
+          return slides;
+        }
+
+        if (slides.length === 1) {
+          const [primarySlide] = slides;
+          const supplementalSlides = defaultHeroSlides.filter((slide) => slide.id !== primarySlide.id);
+          return [primarySlide, ...supplementalSlides];
+        }
       }
     } catch {
-      // abaikan JSON rusak, lanjut ke fallback
+      // Fallback ke banner lama jika JSON slider belum valid.
     }
   }
-  const bannerTitle = (settings.banner_title || '').trim();
-  if (bannerTitle) {
-    return [
-      createHeroSlide(
-        {
-          title: bannerTitle,
-          subtitle: (settings.banner_subtitle || '').trim() || undefined,
-          image_url: (settings.banner_image_url || '').trim() || undefined,
-          button_text: (settings.banner_button_text || '').trim() || undefined,
-          button_url: (settings.banner_button_url || '').trim() || undefined,
-        },
-        'banner-single'
-      ),
-    ];
+
+  const bannerValues = [
+    settings.banner_title,
+    settings.banner_subtitle,
+    settings.banner_image_url,
+    settings.banner_button_text,
+    settings.banner_button_url,
+  ];
+  const hasBannerContent = bannerValues.some(
+    (value) => typeof value === 'string' && value.trim().length > 0
+  );
+
+  if (!hasBannerContent) {
+    return defaultHeroSlides;
   }
-  return defaultHeroSlides;
+
+  const legacySlide = createHeroSlide(
+    {
+      title: settings.banner_title || undefined,
+      subtitle: settings.banner_subtitle || undefined,
+      image_url: settings.banner_image_url || undefined,
+      button_text: settings.banner_button_text || undefined,
+      button_url: settings.banner_button_url || undefined,
+    },
+    'slide-1'
+  );
+
+  const supplementalSlides = defaultHeroSlides.filter((slide) => slide.id !== legacySlide.id);
+  return [legacySlide, ...supplementalSlides];
 }
 
 function extractListItems<T>(payload: MaybeListResponse<T>): T[] {
@@ -277,14 +288,41 @@ function extractListItems<T>(payload: MaybeListResponse<T>): T[] {
   return [];
 }
 
+const fallbackPrograms: Program[] = [
+  { id: 1, title: 'Tahfidz Al-Quran', slug: 'tahfidz', category: 'Unggulan', excerpt: 'Target hafalan 5 juz per tahun dengan setoran harian dan murojaah berkala.', content: '', image_url: '/assets/img/tahfidz.jpg', is_featured: true, order_index: 1 },
+  { id: 2, title: 'Kajian Kitab Kuning', slug: 'kajian-kitab', category: 'Unggulan', excerpt: 'Pembiasaan membaca, memahami, dan mengkaji kitab kuning sebagai fondasi diniyah.', content: '', image_url: '/assets/img/belajar-kitab.jpg', is_featured: true, order_index: 2 },
+  { id: 3, title: 'Tasmi\' & Murajaah', slug: 'tasmi-murajaah', category: 'Unggulan', excerpt: 'Penguatan bacaan, kelancaran hafalan, dan ketelitian melalui tasmi\' bergilir.', content: '', image_url: '/assets/img/tasmi.jpg', is_featured: true, order_index: 3 },
+  { id: 4, title: 'Halaqah Pembinaan', slug: 'halaqah', category: 'Karakter', excerpt: 'Ruang pembentukan karakter, kedisiplinan, dan adab santri dalam lingkaran halaqah.', content: '', image_url: '/assets/img/khalaqoh.jpg', is_featured: true, order_index: 4 },
+  { id: 5, title: 'Olahraga & Keterampilan', slug: 'olahraga', category: 'Ekskul', excerpt: 'Panahan, basket, futsal, karate, dan keterampilan hidup seperti tata boga dan otomotif.', content: '', image_url: '/assets/img/manasik.jpg', is_featured: false, order_index: 5 },
+  { id: 6, title: 'Kemandirian Santri', slug: 'kemandirian', category: 'Karakter', excerpt: 'Pembiasaan hidup mandiri, tertib, dan saling menjaga dalam lingkungan asrama.', content: '', image_url: '/assets/img/asrama.jpg', is_featured: false, order_index: 6 },
+];
+
+const programIcons: Record<string, React.ReactNode> = {
+  'Tahfidz Al-Quran': <BookCopy size={28} />,
+  'Kajian Kitab Kuning': <BookOpen size={28} />,
+  'Tasmi\' & Murajaah': <BookOpen size={28} />,
+  'Halaqah Pembinaan': <Users size={28} />,
+  'Olahraga & Keterampilan': <Dumbbell size={28} />,
+  'Kemandirian Santri': <Target size={28} />,
+};
+
+const categoryColors: Record<string, string> = {
+  Unggulan: 'bg-primary/10 text-primary',
+  Karakter: 'bg-secondary/10 text-secondary',
+  Ekskul: 'bg-accent/10 text-accent-dark',
+};
+
 export default function LandingPage() {
   const [news, setNews] = useState<News[]>([]);
+  const [agendas, setAgendas] = useState<Agenda[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
   const [settings, setSettings] = useState<SettingsMap>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'gallery' | 'video'>('gallery');
 
   const galleryAlbums = useMemo(() => {
     const grouped = new Map<string, GalleryItem[]>();
@@ -344,20 +382,24 @@ export default function LandingPage() {
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [newsData, galleryData, videosData, programsData, settingsData, campaignsData] = await Promise.all([
+        const [newsData, agendasData, galleryData, videosData, programsData, teachersData, facilitiesData, settingsData] = await Promise.all([
           getNews(),
+          getAgendas(),
           getGallery({ limit: 24, offset: 0 }),
           getVideos({ limit: 24, offset: 0 }),
           getPrograms(),
+          getTeachers(),
+          getFacilities(),
           getPublicSettingsMap(),
-          getCampaigns({ activeOnly: true }),
         ]);
 
         setNews(extractListItems(newsData).slice(0, 3));
+        setAgendas(extractListItems(agendasData).slice(0, 3));
         setGallery(extractListItems(galleryData));
         setVideos(extractListItems(videosData));
         setPrograms(extractListItems(programsData));
-        setCampaigns(campaignsData.filter((campaign) => campaign.is_active));
+        setTeachers(extractListItems(teachersData));
+        setFacilities(extractListItems(facilitiesData));
         setSettings(settingsData || {});
       } catch (error) {
         console.error('Error fetching landing page data:', error);
@@ -370,259 +412,188 @@ export default function LandingPage() {
   }, []);
 
   const heroSlides = useMemo(() => parseHeroSlides(settings), [settings]);
-  const isLoadingHero = isLoading;
-  const renderedHeroSlides = isLoadingHero ? [] : heroSlides;
-  const canSlideHero = renderedHeroSlides.length > 1;
-  const featuredCampaign = useMemo(() => findFeaturedDonationCampaign(campaigns), [campaigns]);
-  const featuredTargetAmount = featuredCampaign?.target_amount ?? featuredOpenDonation.target;
-  const featuredCollectedAmount = featuredCampaign?.collected_amount ?? featuredOpenDonation.progressAmount;
-  const featuredProgressPct = featuredTargetAmount > 0 ? Math.min(100, Math.round((featuredCollectedAmount / featuredTargetAmount) * 100)) : 0;
-  const featuredDetailHref = featuredCampaign ? buildCampaignDetailHref(featuredCampaign) : `/donations/${featuredOpenDonation.slug}`;
+  const canSlideHero = heroSlides.length > 1;
+  const builderState = useMemo(() => parseWebsiteBuilderState(settings), [settings]);
 
-  // --- Program Inti & Ekstrakurikuler dinamis dari API /programs ---
-  // Admin kelola di /admin/programs dengan kategori 'program' (inti) dan 'ekskul'.
-  // Jika API kosong / gagal, fallback ke konstanta statis di atas agar tampilan tidak kosong.
-  const sortedPrograms = useMemo(() => {
-    return [...programs].sort((a, b) => {
-      const orderDiff = (a.order_index ?? 0) - (b.order_index ?? 0);
-      if (orderDiff !== 0) return orderDiff;
-      return a.title.localeCompare(b.title);
-    });
+  const displayPrograms = useMemo(() => {
+    if (programs.length > 0) {
+      return [...programs]
+        .sort((a, b) => a.order_index - b.order_index)
+        .slice(0, 6);
+    }
+    return fallbackPrograms;
   }, [programs]);
 
-  const intiPrograms = useMemo(
-    () => sortedPrograms.filter((p) => (p.category || 'program') === 'program'),
-    [sortedPrograms]
-  );
-  const toCard = (p: Program, fallbackImage: string) => ({
-    title: p.title,
-    subtitle:
-      p.excerpt ||
-      p.content ||
-      'Program pembinaan untuk membentuk hafalan, adab, dan kemandirian santri.',
-    image: resolveDisplayImageUrl(p.image_url) || fallbackImage,
-  });
+  const profileVideoUrl = settings.profile_video_url || '';
+  const profileVideoId = extractYouTubeVideoId(profileVideoUrl);
 
-  const displayFeaturedProgramCards = useMemo(
-    () =>
-      intiPrograms.length > 0
-        ? intiPrograms
-            .slice(0, 4)
-            .map((p) =>
-              toCard(p, fallbackFeaturedProgramCards[0]?.image || '')
-            )
-        : fallbackFeaturedProgramCards,
-    [intiPrograms]
-  );
-
-  const displayCurriculumTracks = useMemo(
-    () =>
-      intiPrograms.length > 0
-        ? intiPrograms.slice(0, 6).map((p) => p.title)
-        : fallbackCurriculumTracks,
-    [intiPrograms]
-  );
-
-  const schoolPhone =
-    settings.school_phone || '0857 7694 8779';
+  if (builderState.enabled) {
+    return (
+      <PublicLayout>
+        <HomePageRenderer
+          layout={builderState.homePublished}
+          dataSources={{
+            news,
+            agendas,
+            programs: displayPrograms,
+            galleryAlbums,
+            videoSeries,
+            settings,
+            isLoading,
+          }}
+        />
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#f4fbff_0%,#e6f4ff_100%)]">
+      {/* ===== 1. HERO ===== */}
+      <section className="relative overflow-hidden bg-primary-dark h-screen">
         <Swiper
-          modules={[Pagination, Autoplay, Navigation]}
+          modules={[Pagination, Autoplay, Navigation, EffectFade]}
           loop={canSlideHero}
-          navigation={canSlideHero}
+          navigation={{
+            nextEl: '.hero-next',
+            prevEl: '.hero-prev',
+          }}
           allowTouchMove={canSlideHero}
-          pagination={canSlideHero ? { clickable: true } : false}
-          autoplay={canSlideHero ? { delay: 6500, disableOnInteraction: false, pauseOnMouseEnter: true } : false}
-          speed={950}
-          key={`hero-${renderedHeroSlides.length}`}
-          className="hero-swiper"
+          pagination={canSlideHero ? { type: 'progressbar' } : false}
+          autoplay={canSlideHero ? { delay: 7000, disableOnInteraction: false, pauseOnMouseEnter: true } : false}
+          effect="fade"
+          speed={1200}
+          key={`hero-${heroSlides.length}`}
+          className="hero-swiper h-full"
         >
-          {renderedHeroSlides.map((slide) => {
-            const slideImage = resolveDisplayImageUrl(
-              slide.image_url || fullHeroSlideImage('1564769625905-50e93615e769')
-            );
+          {heroSlides.map((slide) => {
+            const slideImage = resolveDisplayImageUrl(slide.image_url || '/assets/img/gedung.webp');
+            const isPoster = !slide.title;
             return (
               <SwiperSlide key={slide.id}>
-                <div className="relative min-h-[520px] overflow-hidden sm:min-h-[620px] lg:min-h-[710px]">
+                <div className={`relative h-screen min-h-[610px] sm:min-h-[660px] lg:min-h-[780px] ${isPoster ? 'bg-primary-dark' : ''}`}>
                   <div
-                    className="absolute inset-0 bg-cover bg-center"
+                    className="absolute inset-0 bg-no-repeat bg-cover bg-center"
                     style={{ backgroundImage: `url('${slideImage}')` }}
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,0.82)_0%,rgba(2,6,23,0.55)_38%,rgba(2,6,23,0.18)_68%,rgba(2,6,23,0)_92%)]" />
-                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-slate-950/60 to-transparent" />
+                  {!isPoster && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary-dark/40 via-primary/20 to-transparent" />
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(15,109,63,0.1),transparent_50%)]" />
+                    </>
+                  )}
 
-                  <div className="container relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-8 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-20">
-                    <div className="max-w-3xl">
+                  {slide.title ? (
+                    <div className="container relative z-10 mx-auto max-w-6xl px-4 h-full flex items-center">
                       <motion.div
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.75, delay: 0.08 }}
-                        className="max-w-3xl"
+                        className="max-w-2xl"
                       >
-                        <div className="lg:max-w-[42rem]">
-                          <p className="text-sm font-semibold text-sky-100">
-                            Darussunnah Parung — Pondok Pesantren
-                          </p>
-                          <h1 className="mt-4 line-clamp-3 max-w-[19ch] text-balance text-[2.1rem] font-bold leading-tight tracking-tight text-white sm:mt-6 sm:text-5xl md:text-[3.65rem] lg:text-[4rem]">
-                            {slide.title}
-                          </h1>
-                          <p className="mt-3 line-clamp-3 max-w-[32rem] text-[13px] font-medium leading-6 text-slate-200 sm:mt-5 sm:text-base md:line-clamp-3 md:text-lg">
-                            {slide.subtitle}
-                          </p>
-                          <div className="mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row">
-                            <Link
-                              href={slide.button_url || '/psb'}
-                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full bg-sky-500 px-5 py-3 text-xs font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-sky-400 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
-                            >
-                              {slide.button_text || 'Lihat PSB'} <ArrowRight size={16} />
-                            </Link>
-                            <Link
-                              href="/program"
-                              className="inline-flex w-full items-center justify-center gap-2 self-start rounded-full border border-white/25 bg-white/10 px-5 py-3 text-xs font-bold text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/20 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
-                            >
-                              Buka Program
-                            </Link>
-                          </div>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md">
+                          <Sparkles size={14} />
+                          Darussunnah Parung
+                        </span>
+                        <h1 className="mt-6 text-[clamp(2.5rem,7vw,5.5rem)] font-black leading-[0.92] tracking-[-0.04em] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+                          {slide.title}
+                        </h1>
+                        <p className="mt-6 text-lg md:text-xl leading-relaxed text-white/80 max-w-[36rem]">
+                          {slide.subtitle}
+                        </p>
+                        <div className="mt-10 flex flex-col sm:flex-row gap-4">
+                          <Link
+                            href={slide.button_url || '/psb'}
+                            className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-primary-dark transition-all hover:-translate-y-1 hover:bg-white/90"
+                          >
+                            {slide.button_text || 'Lihat Info PSB'} <ArrowRight size={18} />
+                          </Link>
+                          <Link
+                            href="/program"
+                            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-8 py-4 text-sm font-bold text-white backdrop-blur-md transition-all hover:bg-white/15"
+                          >
+                            Lihat Program
+                          </Link>
                         </div>
                       </motion.div>
                     </div>
-                  </div>
+                  ) : isPoster && slide.button_url ? (
+                    <div className="absolute inset-x-0 bottom-10 z-10 flex justify-center">
+                      <Link
+                        href={slide.button_url}
+                        className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-primary-dark shadow-xl shadow-black/30 transition-all hover:-translate-y-1 hover:bg-white/90"
+                      >
+                        {slide.button_text || 'Daftar PSB'} <ArrowRight size={18} />
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
               </SwiperSlide>
             );
           })}
         </Swiper>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-[#eaf6ff] via-[#eef8ff]/70 to-transparent" />
+        {canSlideHero && (
+          <>
+            <button className="hero-prev absolute left-6 top-1/2 -translate-y-1/2 z-20 hidden lg:flex items-center justify-center w-12 h-12 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all">
+              <ChevronLeft size={24} />
+            </button>
+            <button className="hero-next absolute right-6 top-1/2 -translate-y-1/2 z-20 hidden lg:flex items-center justify-center w-12 h-12 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all">
+              <ChevronRight size={24} />
+            </button>
+          </>
+        )}
 
-        <div className="relative z-20 -mt-16 px-4 lg:-mt-12">
-          <div className="container mx-auto max-w-6xl">
-            <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4 md:gap-4 md:p-6">
-              {institutionFacts.map((fact) => (
-                <div key={fact.label} className="rounded-xl border border-slate-100 bg-white px-4 py-4 md:px-5">
-                  <div className="mb-3 inline-flex rounded-xl bg-sky-50 p-2.5 text-sky-600 md:p-3">
-                    {fact.icon}
-                  </div>
-                  <p className="text-xs font-semibold text-slate-400">{fact.label}</p>
-                  <p className="mt-2 text-[13px] font-bold leading-5 text-slate-800 md:text-sm">{fact.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-40 bg-gradient-to-t from-primary-dark via-primary-dark/60 to-transparent" />
       </section>
 
-      <section className="relative overflow-hidden bg-transparent py-4 md:py-5">
-        <div className="container relative mx-auto max-w-6xl px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUpVariant}
-            className="group overflow-hidden rounded-[1.4rem] border border-sky-200/80 bg-[linear-gradient(90deg,#f0f9ff_0%,#ffffff_48%,#ecfeff_100%)] shadow-[0_22px_50px_-34px_rgba(14,165,233,0.24)]"
-          >
-            <div className="grid items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 lg:grid-cols-[1fr_auto] lg:px-6 lg:py-4">
-              <div className="flex min-w-0 items-start gap-4">
-                <div className="relative hidden h-14 w-14 shrink-0 overflow-hidden rounded-[0.9rem] border border-white/70 bg-white shadow-[0_18px_34px_-26px_rgba(250,204,21,0.28)] sm:block">
-                  <Image
-                    src={featuredOpenDonation.posterImage}
-                    alt={`${featuredOpenDonation.title} poster`}
-                    fill
-                    unoptimized
-                    className="object-cover object-top"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-sky-700">
-                    <HeartHandshake size={14} />
-                    Open Donasi
-                  </span>
-                  <h2 className="mt-2 max-w-3xl text-sm font-black leading-tight tracking-[-0.03em] text-slate-950 sm:text-base md:text-[1.15rem]">
-                    {featuredOpenDonation.title}
-                  </h2>
-                  <p className="mt-1.5 max-w-3xl text-xs leading-5 text-slate-600 sm:text-[13px] sm:leading-5">
-                    {featuredOpenDonation.summary}
-                  </p>
-                  <div className="mt-2.5 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-sky-100 bg-white px-3 py-2 text-xs font-bold text-slate-700">
-                      Target Rp {featuredTargetAmount.toLocaleString('id-ID')}
-                    </span>
-                    <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
-                      Terkumpul Rp {featuredCollectedAmount.toLocaleString('id-ID')} ({featuredProgressPct}%)
-                    </span>
-                    <span className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-800">
-                      {featuredOpenDonation.focus}
-                    </span>
-                  </div>
-                  <div className="mt-2.5 h-2.5 w-full max-w-3xl overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-all"
-                      style={{ width: `${featuredProgressPct}%` }}
-                      role="progressbar"
-                      aria-valuenow={featuredProgressPct}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label="Progress donasi terkumpul"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2.5 lg:items-end">
-                <Link
-                  href={featuredDetailHref}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 px-5 py-3 text-sm font-bold text-white shadow-[0_18px_40px_-24px_rgba(14,165,233,0.45)] transition-all hover:-translate-y-0.5 hover:brightness-105 lg:w-auto"
-                >
-                  Lihat Open Donasi <ArrowRight size={16} />
-                </Link>
-                <a
-                  href={featuredOpenDonation.whatsappUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-sky-200 bg-white px-5 py-3 text-sm font-bold text-sky-700 transition-all hover:-translate-y-0.5 hover:bg-sky-50 lg:w-auto"
-                >
-                  Hubungi Donasi
-                </a>
-                <p className="hidden max-w-xs text-xs font-medium leading-5 text-slate-500 lg:block lg:text-right">
-                  Banner singkat ini mengarah ke halaman detail campaign dengan informasi dan ajakan donasi lengkap.
-                </p>
-              </div>
-                </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="relative overflow-hidden border-y border-slate-200/70 bg-[#f6f7f4] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.08),_transparent_28%)]" />
-        <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
+      {/* ===== 2. TENTANG ===== */}
+      <section className="bg-white py-24">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-sky-700">
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 <Compass size={14} />
-                Profil Singkat
+                Tentang Darussunnah
               </span>
-              <h2 className="mt-5 text-[2.15rem] font-black leading-[1.02] tracking-[-0.03em] text-slate-900 md:mt-6 md:text-[3.1rem]">
-                Darussunnah membangun iklim belajar Qurani yang hangat, tertib, dan bertumbuh.
+              <h2 className="mt-6 font-headline text-4xl md:text-5xl font-black text-foreground leading-[1.05]">
+                Pondok Pesantren Tahfidz Al-Quran yang membina generasi Qurani sejak 2009.
               </h2>
-              <p className="mt-5 text-[15px] leading-8 text-slate-600 md:mt-6 md:text-lg">
-                Berlokasi di Parung, Bogor, Darussunnah memadukan tahfidz, adab, ilmu syar&apos;i dasar,
-                dan ritme belajar yang membantu santri tumbuh mandiri sekaligus siap memberi manfaat.
+              <p className="mt-6 text-base leading-8 text-foreground/60">
+                Pondok Pesantren Tahfidz Al Quran Darussunnah didirikan pada tahun 2009 di Kp. Lengkong
+                Barang, Ds. Iwul, Kec. Parung, Bogor. Berkomitmen membina generasi Qurani yang berakhlak mulia,
+                berilmu amaliah, dan mandiri.
               </p>
-              <div className="mt-7 flex flex-wrap gap-3 md:mt-8">
-                <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-bold text-white md:px-5">
-                  <MapPin size={16} className="text-sky-300" />
+              <div className="mt-8 flex flex-wrap gap-4">
+                <span className="inline-flex items-center gap-2 rounded-full bg-primary-dark px-5 py-3 text-sm font-bold text-white">
+                  <MapPin size={16} className="text-primary/60" />
                   Parung, Bogor 16330
                 </span>
                 <a
-                  href={`tel:${schoolPhone.replace(/[^\d+]/g, '')}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-sky-200 hover:text-sky-700 md:px-5"
+                  href="tel:081382410582"
+                  className="inline-flex items-center gap-2 rounded-full border border-surface-200 bg-white px-5 py-3 text-sm font-bold text-foreground/70 transition-colors hover:border-primary/30 hover:text-primary"
                 >
-                  <PhoneCall size={16} className="text-sky-500" />
-                  {schoolPhone}
+                  <PhoneCall size={16} className="text-primary" />
+                  0813 8241 0582
                 </a>
               </div>
+              <div className="mt-8 space-y-4">
+                {[
+                  'Menjadikan Al-Quran sebagai media utama pembelajaran',
+                  'Membentuk akhlak karimah dan kemandirian santri',
+                  'Mengembangkan intelektual, kreativitas, dan jiwa kaderisasi umat',
+                ].map((point) => (
+                  <div key={point} className="flex gap-4">
+                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-primary" />
+                    <p className="text-sm leading-7 text-foreground/60">{point}</p>
+                  </div>
+                ))}
+              </div>
+              <Link
+                href="/profil"
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-primary-dark"
+              >
+                Profil Lengkap <ArrowRight size={16} />
+              </Link>
             </motion.div>
 
             <motion.div
@@ -630,482 +601,548 @@ export default function LandingPage() {
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUpVariant}
-              className="rounded-[1.8rem] border border-sky-100/80 bg-white p-6 shadow-[0_30px_70px_-35px_rgba(250,204,21,0.18)] md:rounded-[2rem] md:p-8"
+              className="relative"
             >
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-600">Arah Pembinaan</p>
-              <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
-                Pembinaan diarahkan agar santri tumbuh utuh.
-              </h3>
-              <div className="mt-6 space-y-4">
-                {[
-                  'Menjadikan Al-Quran sebagai media utama pembelajaran.',
-                  'Membentuk akhlak karimah dan kemandirian santri.',
-                  'Mengembangkan intelektual, kreativitas, dan jiwa kaderisasi umat.',
-                ].map((point) => (
-                  <div key={point} className="flex gap-4 rounded-[1.5rem] border border-slate-100 bg-slate-50 px-5 py-4">
-                    <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
-                      <CheckCircle2 size={18} />
-                    </div>
-                    <p className="text-sm leading-7 text-slate-600">{point}</p>
+              <div className="rounded-2xl border border-surface-200 bg-surface-50 p-8">
+                <div className="flex items-start gap-5">
+                  <div className="shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden ring-2 ring-primary/20 bg-surface-100">
+                    <Image
+                      src={resolveDisplayImageUrl(settings.welcome_speech_image || '/assets/img/kepsek.png')}
+                      alt={settings.welcome_speech_name || 'Pimpinan Pondok'}
+                      width={96}
+                      height={96}
+                      unoptimized
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                ))}
-              </div>
-              <Link
-                href="/profil"
-                className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-sky-600 transition-colors hover:text-sky-700"
-              >
-                Lihat profil dan visi-misi lengkap <ArrowRight size={16} />
-              </Link>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f3_100%)] py-12 md:py-16">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-200 to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.06),_transparent_24%)]" />
-        <div className="container mx-auto max-w-6xl px-4">
-          <div className="relative z-10">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
-              <PublicSectionIntro
-                eyebrow="Program Inti"
-                title="Program utama yang membentuk ritme belajar santri"
-                description="Tahfidz, adab, wawasan Islam, dan kesiapan hidup disusun berjalan seimbang setiap hari."
-              />
-              <div className="mt-7 grid gap-4 sm:mt-8 sm:grid-cols-2 lg:grid-cols-4">
-                {displayFeaturedProgramCards.map((program) => (
-                  <div
-                    key={program.title}
-                    className="group overflow-hidden rounded-[1.7rem] border border-white/70 bg-white/90 shadow-[0_22px_48px_-34px_rgba(250,204,21,0.22)] backdrop-blur-sm transition-all hover:-translate-y-1 md:rounded-[1.9rem]"
-                  >
-                    <div className="relative h-48 md:h-52">
-                      <Image
-                        src={program.image}
-                        alt={program.title}
-                        fill
-                        unoptimized
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/24 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-4 text-white md:p-5">
-                        <span className="inline-flex rounded-full border border-white/15 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-200 backdrop-blur-sm">
-                          Program Unggulan
-                        </span>
-                        <p className="mt-3 text-lg font-black leading-tight">{program.title}</p>
-                        <p className="mt-2 max-w-xs text-sm leading-6 text-slate-200">{program.subtitle}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap gap-3">
-                {displayCurriculumTracks.map((track) => (
-                  <span
-                    key={track}
-                    className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-sky-700"
-                  >
-                    {track}
-                  </span>
-                ))}
-              </div>
-              <Link
-                href="/program"
-                className="inline-flex items-center gap-3 self-start rounded-full border border-sky-200 bg-white px-6 py-3 text-sm font-bold text-sky-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700 lg:self-auto"
-              >
-                Jelajahi program <ArrowRight size={16} />
-              </Link>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative overflow-hidden bg-slate-950 py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.10),_transparent_24%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <div className="container mx-auto max-w-6xl px-4">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="relative z-10">
-            <PublicSectionIntro
-              eyebrow="Potret Kegiatan"
-              title="Lihat ritme belajar dan kebersamaan santri di Darussunnah"
-              description="Dokumentasi ini memberi gambaran suasana belajar, ibadah, dan keseharian pondok."
-              actionHref="/galeri"
-              actionLabel="Jelajahi galeri"
-              theme="dark"
-            />
-          </motion.div>
-
-          {isLoading ? (
-            <PublicGridSkeleton
-              count={3}
-              className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3"
-              itemClassName="h-52 rounded-[1.75rem]"
-            />
-          ) : galleryAlbums.length > 0 ? (
-            <div className="relative z-10 mt-7 grid gap-4 md:mt-8 lg:grid-cols-[1.15fr_0.85fr]">
-              <Link
-                href={`/galeri/${galleryAlbums[0].slug}`}
-                className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-[0_25px_55px_-35px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-1 hover:shadow-[0_30px_65px_-35px_rgba(0,0,0,0.55)]"
-              >
-                <div className="relative h-[300px] sm:h-[420px]">
-                  <Image
-                    src={resolveDisplayImageUrl(galleryAlbums[0].cover.image_url)}
-                    alt={galleryAlbums[0].title}
-                    fill
-                    unoptimized
-                    sizes="(max-width: 1024px) 100vw, 60vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-7">
-                    <p className="text-[10px] font-black uppercase tracking-[0.32em] text-sky-200">{galleryAlbums[0].category}</p>
-                    <h3 className="mt-3 max-w-xl text-2xl font-black tracking-tight sm:text-3xl">{galleryAlbums[0].title}</h3>
-                    <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-100">
-                      <span className="rounded-full bg-white/10 px-3 py-2 backdrop-blur-sm">{galleryAlbums[0].photoCount} foto</span>
-                      {galleryAlbums[0].eventDate ? <span className="rounded-full bg-white/10 px-3 py-2 backdrop-blur-sm">{galleryAlbums[0].eventDate}</span> : null}
-                    </div>
+                  <div>
+                    <h3 className="text-xl font-black text-foreground">{settings.welcome_speech_name || 'Ust. Rusdi'}</h3>
+                    <p className="text-sm text-primary font-semibold">{settings.welcome_speech_role || 'Pimpinan Pondok'}</p>
                   </div>
                 </div>
-              </Link>
-
-              <div className="grid gap-4">
-                {galleryAlbums.slice(1, 3).map((album) => (
-                  <Link
-                    key={album.key}
-                    href={`/galeri/${album.slug}`}
-                    className="group overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-[0_18px_42px_-30px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-1 hover:shadow-[0_26px_50px_-28px_rgba(0,0,0,0.52)]"
-                  >
-                    <div className="relative h-[150px] sm:h-[200px]">
-                      <Image
-                        src={resolveDisplayImageUrl(album.cover.image_url)}
-                        alt={album.title}
-                        fill
-                        unoptimized
-                        sizes="(max-width: 1024px) 100vw, 40vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                        <p className="text-[9px] font-black uppercase tracking-[0.28em] text-sky-200">{album.category}</p>
-                        <h3 className="mt-2 line-clamp-2 text-sm font-black tracking-tight sm:text-base">{album.title}</h3>
-                        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-100">{album.photoCount} foto</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-8">
-              <PublicEmptyState
-                icon={Camera}
-                title="Belum ada dokumentasi galeri"
-                description="Album kegiatan terbaru akan muncul di sini setelah dipublikasikan."
-                className="border-white/10 bg-white/6 shadow-[0_30px_70px_-40px_rgba(0,0,0,0.6)] backdrop-blur-sm"
-                iconClassName="text-sky-200/70"
-                titleClassName="text-white"
-                descriptionClassName="text-slate-300"
-              />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="pb-12 md:pb-16">
-        <div className="container mx-auto max-w-6xl px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUpVariant}
-            className="overflow-hidden rounded-[2rem] border border-sky-200/80 bg-[linear-gradient(135deg,#f0f9ff_0%,#e0f2fe_42%,#ecfeff_100%)] px-5 py-7 text-slate-900 shadow-[0_26px_60px_-34px_rgba(14,165,233,0.24)] md:rounded-[2.25rem] md:px-8 md:py-8"
-          >
-            <div className="grid gap-8 lg:grid-cols-[1.1fr_1.9fr] lg:items-center">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-700">Darussunnah dalam Angka</p>
-                <h2 className="mt-3 text-2xl font-black tracking-tight md:text-4xl">
-                  Angka-angka ringkas yang menggambarkan arah pembinaan Darussunnah.
-                </h2>
-                <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600 md:text-base">
-                  Mulai dari target hafalan, jenjang pendidikan, hingga biaya formulir yang paling sering dicari pengunjung.
+                <p className="mt-5 text-base leading-8 text-foreground/60">
+                  {settings.welcome_speech_text
+                    ? settings.welcome_speech_text.split(/\n+/).map(s => s.trim()).filter(Boolean).slice(0, 2).join(' ')
+                    : 'Pondok Pesantren Tahfidz Al Quran yang berkomitmen membina generasi Qurani yang berakhlak mulia, berilmu amaliah, dan mandiri sejak tahun 2009.'}
                 </p>
                 <Link
-                  href="/profil"
-                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-slate-900"
+                  href="/sambutan"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-primary-dark"
                 >
-                  Jelajahi profil <ArrowRight size={16} />
+                  Baca Sambutan <ArrowRight size={16} />
                 </Link>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-5">
-                {institutionHighlights.map((item, index) => (
-                  <div key={item.label} className={`rounded-[1.35rem] border px-4 py-4 backdrop-blur-sm md:rounded-[1.5rem] md:py-5 ${
-                    index === 0
-                      ? 'border-sky-300 bg-sky-600 text-white shadow-[0_20px_42px_-30px_rgba(14,165,233,0.45)]'
-                      : 'border-white/70 bg-white/78'
-                  }`}>
-                    <div className={`mb-3 inline-flex rounded-2xl p-3 md:mb-4 ${
-                      index === 0 ? 'bg-white/16 text-white' : 'bg-sky-50 text-sky-600'
-                    }`}>
-                      {item.icon}
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                {[
+                  { label: 'Kurikulum Terpadu', value: 'Pondok + DIKNAS + Tahfidz', icon: BookOpen },
+                  { label: 'Tenaga Pengajar', value: 'Ustadz berpengalaman', icon: Users },
+                  { label: 'Kegiatan Harian', value: 'Terjadwal & terstruktur', icon: Clock },
+                  { label: 'Prestasi', value: 'Tingkat Kab. s.d Provinsi', icon: Trophy },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-xl border border-surface-200 bg-white p-4">
+                      <Icon size={18} className="text-primary" />
+                      <p className="mt-2 text-sm font-bold text-foreground">{item.label}</p>
+                      <p className="mt-0.5 text-xs text-foreground/50">{item.value}</p>
                     </div>
-                    <p className={`text-2xl font-black tracking-tight ${index === 0 ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
-                    <p className={`mt-1 text-xs font-bold uppercase tracking-[0.18em] ${index === 0 ? 'text-sky-100/90' : 'text-slate-500'}`}>{item.label}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#f8fbff_0%,#edf6ff_100%)] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.10),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.08),_transparent_22%)]" />
-        <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
-            <PublicSectionIntro
-              eyebrow="Video Pilihan"
-              title="Video pilihan untuk melihat suasana Darussunnah dari dekat"
-              description="Beberapa tayangan singkat yang memperlihatkan kegiatan, pembinaan, dan kehidupan pondok."
-              actionHref="/video-youtube"
-              actionLabel="Jelajahi video"
-            />
-          </motion.div>
+      {/* ===== 3. PROGRAM ===== */}
+      <section className="bg-surface-50 py-24">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">Program</span>
+            <h2 className="mt-4 font-headline text-4xl md:text-5xl font-black text-foreground">
+              Program Unggulan Pondok
+            </h2>
+            <p className="mt-4 text-lg text-foreground/60 max-w-xl mx-auto">
+              Pembinaan utama Darussunnah menguatkan hafalan, adab, wawasan Islam, dan kesiapan hidup santri.
+            </p>
+          </div>
 
           {isLoading ? (
-            <PublicGridSkeleton
-              count={3}
-              className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3"
-              itemClassName="h-56 rounded-[1.75rem]"
-            />
-          ) : videoSeries.length > 0 ? (
-            <div className="mt-7 grid gap-4 md:mt-8 md:grid-cols-3">
-              {videoSeries.map((series) => {
-                const thumbnail = series.lead.thumbnail || getYouTubeThumbnailUrl(series.lead.url);
-                return (
+            <PublicGridSkeleton count={6} className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" itemClassName="h-64 rounded-2xl" />
+          ) : (
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-60px' }}
+              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {displayPrograms.map((program) => (
+                <motion.div key={program.id || program.slug} variants={fadeUpVariant}>
                   <Link
-                    key={series.key}
-                    href={`/videos/${series.slug}`}
-                    className="group overflow-hidden rounded-[1.7rem] border border-sky-100/80 bg-white shadow-[0_24px_50px_-34px_rgba(250,204,21,0.18)] transition-all hover:-translate-y-1 hover:border-sky-200 md:rounded-[1.9rem]"
+                    href={`/program`}
+                    className="group block h-full rounded-2xl border border-surface-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary/30 overflow-hidden"
                   >
-                    <div className="relative h-52 overflow-hidden bg-slate-900 md:h-56">
-                      {thumbnail ? (
-                        <div
-                          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                          style={{ backgroundImage: `url('${thumbnail}')` }}
+                    <div className="relative h-44 overflow-hidden">
+                      {program.image_url ? (
+                        <Image
+                          src={resolveDisplayImageUrl(program.image_url)}
+                          alt={program.title}
+                          fill
+                          unoptimized
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-[linear-gradient(135deg,#facc15_0%,#10251d_100%)]" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
-                          <PlayCircle size={34} />
+                        <div className="w-full h-full bg-primary/5 flex items-center justify-center">
+                          {programIcons[program.title] || <BookOpen size={40} className="text-primary/30" />}
                         </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute top-3 left-3">
+                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${categoryColors[program.category] || 'bg-surface-100 text-foreground/60'}`}>
+                          {program.category || 'Program'}
+                        </span>
                       </div>
-                      <div className="absolute inset-x-0 bottom-0 p-4 text-white md:p-5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200">
-                          {series.count} video
-                        </p>
-                        <h3 className="mt-2 text-xl font-black leading-tight">{series.title}</h3>
-                        {series.eventDate ? (
-                          <p className="mt-2 text-sm text-slate-200">{series.eventDate}</p>
-                        ) : null}
+                    </div>
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{program.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-foreground/60 line-clamp-2">{program.excerpt}</p>
+                      <div className="mt-4 flex items-center gap-2 text-xs font-bold text-primary">
+                        Selengkapnya <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                       </div>
                     </div>
                   </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="mt-8">
-              <PublicEmptyState
-                icon={PlayCircle}
-                title="Belum ada dokumentasi video"
-                description="Video kegiatan pondok akan tampil di bagian ini setelah dipublikasikan."
-                className="bg-white shadow-[0_24px_50px_-34px_rgba(250,204,21,0.12)]"
-              />
-            </div>
+                </motion.div>
+              ))}
+            </motion.div>
           )}
+
+          <div className="text-center mt-10">
+            <Link
+              href="/program"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-primary-dark"
+            >
+              Lihat Semua Program <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-t border-slate-200/70 bg-[linear-gradient(180deg,#fcfcfa_0%,#f7f7f3_100%)] py-12 md:py-16">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(14,165,233,0.06),_transparent_24%)]" />
-        <div className="container mx-auto max-w-6xl px-4">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
-            <PublicSectionIntro
-              eyebrow="Berita Pondok"
-              title="Kabar terbaru dari lingkungan Darussunnah"
-              description="Ikuti pengumuman, cerita kegiatan, dan perkembangan terbaru dari pondok."
-              actionHref="/news"
-              actionLabel="Jelajahi berita"
-            />
-          </motion.div>
+      {SHOW_RUTINITAS_SECTION && (
+        <>
+          {/* ===== 4. KEHIDUPAN SANTRI (TIMELINE) - HIDDEN ===== */}
+          <section className="bg-white py-24">
+            <div className="container mx-auto max-w-6xl px-4">
+              <div className="text-center mb-14">
+                <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">Kehidupan Santri</span>
+                <h2 className="mt-4 font-headline text-4xl md:text-5xl font-black text-foreground">
+                  Rutinitas Harian Santri
+                </h2>
+                <p className="mt-4 text-lg text-foreground/60 max-w-xl mx-auto">
+                  Dari qiyamul lail hingga istirahat, setiap waktu menjadi momen pembinaan.
+                </p>
+              </div>
+              <TimelineSantri />
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* ===== 5. FASILITAS ===== */}
+      <section className="bg-gradient-to-b from-white to-emerald-50/40 py-12">
+        <div className="mx-auto w-full max-w-[1400px] px-4 md:px-8">
+          <div className="mb-8 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-emerald-50/70 px-4 py-1.5 text-xs font-black uppercase tracking-[0.25em] text-primary">
+              Fasilitas
+            </span>
+          </div>
 
           {isLoading ? (
-            <PublicGridSkeleton
-              count={2}
-              className="mt-8 grid grid-cols-1 gap-6"
-              itemClassName="h-56 rounded-[1.75rem]"
-            />
-          ) : news.length > 0 ? (
-            <div className="mt-7 grid grid-cols-1 gap-5 md:mt-8 md:gap-6 xl:grid-cols-[minmax(0,1.14fr)_minmax(0,0.86fr)] xl:items-stretch xl:gap-8">
-              <NewsCard news={news[0]} featured />
-              <div className="grid gap-6 md:grid-cols-2 md:auto-rows-fr xl:grid-cols-1">
-                {news.slice(1, 3).map((item) => (
-                  <NewsCard key={item.id} news={item} />
-                ))}
-              </div>
-            </div>
+            <PublicGridSkeleton count={5} className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5" itemClassName="h-48 rounded-2xl" />
           ) : (
-            <div className="mt-8">
-              <PublicEmptyState
-                icon={Newspaper}
-                title="Belum ada berita"
-                description="Berita terbaru pondok akan tampil di bagian ini."
-                className="bg-slate-50"
-              />
-            </div>
+            <FasilitasGallery facilities={facilities} />
           )}
         </div>
       </section>
 
-      
+      {/* ===== 6. VIDEO PROFIL ===== */}
+      {(profileVideoUrl || profileVideoId) && (
+        <section className="bg-surface-50 py-24">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="text-center mb-14">
+              <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">Video</span>
+              <h2 className="mt-4 font-headline text-4xl md:text-5xl font-black text-foreground">
+                Video Profil Pondok
+              </h2>
+              <p className="mt-4 text-lg text-foreground/60 max-w-xl mx-auto">
+                Tonton perjalanan dan suasana Darussunnah dalam video berikut.
+              </p>
+            </div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUpVariant}
+              className="max-w-3xl mx-auto"
+            >
+              <VideoEmbed
+                url={profileVideoUrl}
+                thumbnail={getYouTubeThumbnailUrl(profileVideoUrl)}
+                title="Video Profil Darussunnah Parung"
+              />
+            </motion.div>
+          </div>
+        </section>
+      )}
 
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#f5f7f3_0%,#ffffff_24%,#ffffff_100%)] pb-12 pt-8 md:pb-16 md:pt-14">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-sky-50/80 to-transparent" />
-        <div className="pointer-events-none absolute left-1/2 top-10 h-28 w-28 -translate-x-1/2 rounded-full bg-sky-100/70 blur-3xl" />
-        <div className="container relative mx-auto max-w-6xl px-4">
+      {/* ===== 7. BERITA ===== */}
+      <section className="bg-surface-50 py-24">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">Berita</span>
+            <h2 className="mt-4 font-headline text-4xl md:text-5xl font-black text-foreground">
+              Kabar Terbaru dari Pondok
+            </h2>
+            <p className="mt-4 text-lg text-foreground/60 max-w-xl mx-auto">
+              Informasi kegiatan, jadwal penting, dan acara mendatang.
+            </p>
+          </div>
+
+          {isLoading ? (
+            <PublicGridSkeleton count={3} className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" itemClassName="h-72 rounded-2xl" />
+          ) : news.length > 0 ? (
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-60px' }}
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            >
+              {news.map((item, i) => (
+                <motion.div key={item.id} variants={fadeUpVariant}>
+                  <NewsCard news={item} featured={i === 0} />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <PublicEmptyState icon={Newspaper} title="Belum ada berita" description="Berita terbaru pondok akan tampil di sini." />
+          )}
+
+          <div className="text-center mt-10">
+            <Link
+              href="/news"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-primary-dark"
+            >
+              Semua Berita <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== VIDEO SLIDER ===== */}
+      <section className="bg-white py-24">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">Video</span>
+            <h2 className="mt-4 font-headline text-4xl md:text-5xl font-black text-foreground">
+              Dokumentasi Kegiatan Pondok
+            </h2>
+            <p className="mt-4 text-lg text-foreground/60 max-w-xl mx-auto">
+              Momen haru, sambutan, dan kebersamaan di lingkungan pondok.
+            </p>
+          </div>
+
+          <div className="relative">
+            <Swiper
+              modules={[Navigation]}
+              navigation
+              spaceBetween={24}
+              slidesPerView={1}
+              className="!pb-2"
+            >
+              <SwiperSlide>
+                <div className="relative rounded-2xl overflow-hidden bg-black shadow-lg aspect-video">
+                  <div className="absolute top-3 left-3 z-10 rounded-full bg-primary/80 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                    Tasmi' Akhir
+                  </div>
+                  <iframe
+                    src="https://drive.google.com/file/d/1vH5SA9aDPCgeGCPimc1d1MV-x1yh7ukJ/preview"
+                    className="absolute inset-0 w-full h-full"
+                    allow="autoplay"
+                    allowFullScreen
+                  />
+                </div>
+              </SwiperSlide>
+              <SwiperSlide>
+                <div className="relative rounded-2xl overflow-hidden bg-black shadow-lg aspect-video">
+                  <div className="absolute top-3 left-3 z-10 rounded-full bg-primary/80 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                    Sambutan Santriwan
+                  </div>
+                  <iframe
+                    src="https://drive.google.com/file/d/1qlqlxmsSdPZi_NOfDwNsTBDBnbAUTvqm/preview"
+                    className="absolute inset-0 w-full h-full"
+                    allow="autoplay"
+                    allowFullScreen
+                  />
+                </div>
+              </SwiperSlide>
+              <SwiperSlide>
+                <div className="relative rounded-2xl overflow-hidden bg-black shadow-lg aspect-video">
+                  <div className="absolute top-3 left-3 z-10 rounded-full bg-primary/80 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                    Sambutan Santriwati
+                  </div>
+                  <iframe
+                    src="https://drive.google.com/file/d/1trKJ2BKSl8UDeuTF7m07Av2JZOI4oyzM/preview"
+                    className="absolute inset-0 w-full h-full"
+                    allow="autoplay"
+                    allowFullScreen
+                  />
+                </div>
+              </SwiperSlide>
+            </Swiper>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 8. DOKUMENTASI ===== */}
+      <section className="bg-white py-24">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">Dokumentasi</span>
+            <h2 className="mt-4 font-headline text-4xl md:text-5xl font-black text-foreground">
+              Sekilas kegiatan dan pembinaan di Darussunnah
+            </h2>
+            <p className="mt-4 text-lg text-foreground/60 max-w-xl mx-auto">
+              Lihat suasana belajar, ibadah, kebersamaan, dan ritme keseharian santri.
+            </p>
+          </div>
+
+          <div className="flex justify-center gap-2 mb-10">
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`px-6 py-3 rounded-full text-sm font-bold transition-all ${
+                activeTab === 'gallery'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'bg-surface-100 text-foreground/60 hover:bg-surface-200'
+              }`}
+            >
+              <Camera size={16} className="inline mr-2 -mt-0.5" />
+              Galeri Foto
+            </button>
+            <button
+              onClick={() => setActiveTab('video')}
+              className={`px-6 py-3 rounded-full text-sm font-bold transition-all ${
+                activeTab === 'video'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'bg-surface-100 text-foreground/60 hover:bg-surface-200'
+              }`}
+            >
+              <PlayCircle size={16} className="inline mr-2 -mt-0.5" />
+              Video
+            </button>
+          </div>
+
+          {activeTab === 'gallery' && (
+            <>
+              {isLoading ? (
+                <PublicGridSkeleton count={3} className="grid grid-cols-1 gap-4 sm:grid-cols-3" itemClassName="h-52 rounded-xl" />
+              ) : galleryAlbums.length > 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]"
+                >
+                  <Link
+                    href={`/galeri/${galleryAlbums[0].slug}`}
+                    className="group overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                  >
+                    <div className="relative h-[300px] sm:h-[420px]">
+                      <Image
+                        src={resolveDisplayImageUrl(galleryAlbums[0].cover.image_url)}
+                        alt={galleryAlbums[0].title}
+                        fill
+                        unoptimized
+                        sizes="(max-width: 1024px) 100vw, 60vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-7">
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary/80">{galleryAlbums[0].category}</p>
+                        <h3 className="mt-3 max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">{galleryAlbums[0].title}</h3>
+                        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.15em] text-white">
+                          <span className="rounded-full bg-white/15 px-3 py-2 backdrop-blur-sm">{galleryAlbums[0].photoCount} foto</span>
+                          {galleryAlbums[0].eventDate ? <span className="rounded-full bg-white/15 px-3 py-2 backdrop-blur-sm">{galleryAlbums[0].eventDate}</span> : null}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  <div className="grid gap-4">
+                    {galleryAlbums.slice(1, 3).map((album) => (
+                      <Link
+                        key={album.key}
+                        href={`/galeri/${album.slug}`}
+                        className="group overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                      >
+                        <div className="relative h-[150px] sm:h-[200px]">
+                          <Image
+                            src={resolveDisplayImageUrl(album.cover.image_url)}
+                            alt={album.title}
+                            fill
+                            unoptimized
+                            sizes="(max-width: 1024px) 100vw, 40vw"
+                            className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
+                          <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary/80">{album.category}</p>
+                            <h3 className="mt-2 line-clamp-2 text-sm font-bold tracking-tight">{album.title}</h3>
+                            <p className="mt-2 text-xs font-bold uppercase tracking-[0.15em] text-white/80">{album.photoCount} foto</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <PublicEmptyState icon={Camera} title="Belum ada dokumentasi galeri" description="Album kegiatan terbaru akan muncul di sini setelah dipublikasikan." />
+              )}
+              <div className="text-center mt-10">
+                <Link
+                  href="/galeri"
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white px-6 py-3 text-sm font-bold text-primary transition-all hover:bg-primary hover:text-white"
+                >
+                  Lihat galeri lengkap <ArrowRight size={16} />
+                </Link>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'video' && (
+            <>
+              {isLoading ? (
+                <PublicGridSkeleton count={3} className="grid grid-cols-1 gap-4 md:grid-cols-3" itemClassName="h-56 rounded-xl bg-surface-100" />
+              ) : videoSeries.length > 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="grid gap-4 md:grid-cols-3"
+                >
+                  {videoSeries.map((series) => {
+                    const thumbnail = series.lead.thumbnail || getYouTubeThumbnailUrl(series.lead.url);
+                    return (
+                      <Link
+                        key={series.key}
+                        href={`/videos/${series.slug}`}
+                        className="group overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                      >
+                        <div className="relative h-52 bg-surface-100 md:h-56">
+                          {thumbnail ? (
+                            <div
+                              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                              style={{ backgroundImage: `url('${thumbnail}')` }}
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-surface-200" />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                              <PlayCircle size={34} />
+                            </div>
+                          </div>
+                          <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary/80">
+                              {series.count} video
+                            </p>
+                            <h3 className="mt-2 text-lg font-bold leading-tight">{series.title}</h3>
+                            {series.eventDate ? (
+                              <p className="mt-2 text-sm text-white/70">{series.eventDate}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </motion.div>
+              ) : (
+                <PublicEmptyState icon={PlayCircle} title="Belum ada dokumentasi video" description="Video kegiatan pondok akan tampil di sini setelah dipublikasikan." />
+              )}
+              <div className="text-center mt-10">
+                <Link
+                  href="/videos"
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white px-6 py-3 text-sm font-bold text-primary transition-all hover:bg-primary hover:text-white"
+                >
+                  Lihat semua video <ArrowRight size={16} />
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* ===== 9. FAQ ===== */}
+      <section className="bg-white py-24">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">FAQ</span>
+            <h2 className="mt-4 font-headline text-4xl md:text-5xl font-black text-foreground">
+              Pertanyaan yang Sering Diajukan
+            </h2>
+            <p className="mt-4 text-lg text-foreground/60 max-w-xl mx-auto">
+              Butuh bantuan? Mungkin jawaban Anda ada di sini.
+            </p>
+          </div>
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUpVariant}
-            className="mb-8 border-b border-slate-200/80 pb-7 md:mb-10 md:pb-8 md:flex md:items-end md:justify-between md:gap-6"
+            className="max-w-2xl mx-auto"
           >
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-600">Akses Cepat</p>
-                  <h2 className="mt-3 max-w-3xl text-[2rem] font-black leading-[1.02] tracking-[-0.03em] text-slate-900 md:text-[3.1rem]">
-                    Lanjutkan ke halaman yang paling sering dicari pengunjung.
-                  </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 md:text-base">
-                Profil, program, fasilitas, dan PSB kami kumpulkan di sini agar perjalanan menjelajah situs terasa lebih ringkas.
-              </p>
-            </div>
-            <Link
-              href="/psb"
-              className="mt-5 inline-flex items-center gap-2 self-start rounded-full border border-sky-200 bg-white px-5 py-3 text-sm font-bold text-sky-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-800 md:mt-0"
-            >
-              Lihat PSB <ArrowRight size={16} />
-            </Link>
-          </motion.div>
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="grid gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4"
-          >
-            {focusAreas.map((item) => (
-              <motion.div key={item.title} variants={fadeUpVariant}>
-                <Link
-                  href={item.href}
-                  className="group block h-full rounded-[1.8rem] border border-sky-100/70 bg-[linear-gradient(180deg,#ffffff_0%,#eff6ff_100%)] p-6 shadow-[0_18px_44px_-34px_rgba(250,204,21,0.16)] transition-all duration-300 hover:-translate-y-2 hover:border-sky-200 hover:shadow-[0_24px_60px_-30px_rgba(14,165,233,0.18)] md:rounded-[2rem] md:p-7"
-                >
-                  <div className="mb-5 inline-flex rounded-2xl bg-white p-4 text-sky-600 ring-1 ring-sky-100 transition-colors group-hover:bg-sky-500 group-hover:text-white group-hover:ring-sky-500">
-                    {item.icon}
-                  </div>
-                  <h2 className="text-xl font-black tracking-tight text-slate-900">{item.title}</h2>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">{item.desc}</p>
-                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-sky-700">
-                    Selengkapnya <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+            <AccordionFAQ items={faqData} />
           </motion.div>
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#0d1522_0%,#0d2f27_58%,#08231e_100%)] py-16 lg:py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(250,204,21,0.14),_transparent_22%),radial-gradient(circle_at_bottom_left,_rgba(14,165,233,0.18),_transparent_24%)]" />
-        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-sky-300/16 blur-[110px]" />
-        <div className="absolute -bottom-36 left-0 h-72 w-72 rounded-full bg-sky-300/14 blur-[110px]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/30 to-transparent" />
+      {/* ===== 10. CTA ===== */}
+      <section className="relative overflow-hidden bg-primary-dark py-24">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
-            <div className="overflow-hidden rounded-[2.25rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] shadow-[0_34px_90px_-42px_rgba(0,0,0,0.55)] backdrop-blur-sm">
-              <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
-                <div className="p-7 sm:p-8 lg:p-10">
-                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-sky-200">Langkah Berikutnya</p>
-                  <h2 className="mt-4 max-w-3xl text-[2.3rem] font-black leading-[1.02] tracking-tight text-white md:text-6xl">
-                    Siap melangkah lebih dekat ke Darussunnah?
-                  </h2>
-                  <p className="mt-6 max-w-2xl text-base leading-8 text-sky-50/88 md:text-lg">
-                    Mulai dari profil, program, dan fasilitas, lalu lanjutkan ke PSB saat arah pembinaannya terasa cocok untuk keluarga Anda.
-                  </p>
-
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    {[
-                      'Profil dan visi pondok',
-                      'Program pembinaan santri',
-                      'Informasi PSB terbaru',
-                    ].map((item) => (
-                      <span
-                        key={item}
-                        className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs font-semibold text-sky-50/90 backdrop-blur-sm"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <Link
-                      href="/psb"
-                      className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-black text-sky-800 shadow-[0_24px_55px_-28px_rgba(255,255,255,0.42)] transition-all hover:-translate-y-1 hover:bg-sky-50 sm:w-auto"
-                    >
-                      Lihat PSB <ArrowRight size={18} />
-                    </Link>
-                    <Link
-                      href="/profil"
-                      className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/20 bg-white/10 px-8 py-4 text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/15 sm:w-auto"
-                    >
-                      Jelajahi profil
-                    </Link>
-                  </div>
-                </div>
-
-                <div className="border-t border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)] p-7 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-                  <div className="grid gap-4">
-                    <div className="rounded-[1.6rem] border border-white/10 bg-slate-950/28 p-5 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.45)]">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/90">Jalur Cepat</p>
-                      <p className="mt-3 text-2xl font-black leading-tight text-white">Kenali arah pondok, lalu lanjut daftar dengan lebih mantap.</p>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                      {[
-                        { step: '01', label: 'Jelajahi profil pondok', href: '/profil' },
-                        { step: '02', label: 'Lihat program utama', href: '/program' },
-                        { step: '03', label: 'Buka halaman PSB', href: '/psb' },
-                      ].map((item) => (
-                        <Link
-                          key={item.step}
-                          href={item.href}
-                          className="group rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition-all hover:-translate-y-1 hover:bg-white/10"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/80">{item.step}</span>
-                            <ArrowRight size={16} className="text-sky-200/80 transition-transform group-hover:translate-x-1" />
-                          </div>
-                          <p className="mt-3 text-sm font-bold text-white">{item.label}</p>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUpVariant}
+            className="text-center"
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-white/80 backdrop-blur-sm">
+              <Sparkles size={14} />
+              Langkah Berikutnya
+            </span>
+            <h2 className="mt-6 font-headline text-4xl md:text-5xl font-black text-white">
+              Siap Bergabung dengan Darussunnah?
+            </h2>
+            <p className="mt-6 text-lg text-white/70 max-w-2xl mx-auto">
+              Mulai dari mengenal profil, program, dan fasilitas. Lanjutkan ke pendaftaran ketika Anda
+              sudah merasa cocok dengan visi pembinaan kami.
+            </p>
+            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/psb"
+                className="inline-flex items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-bold text-primary-dark transition-all hover:-translate-y-1 hover:bg-white/90"
+              >
+                Daftar Santri Baru <ArrowRight size={18} />
+              </Link>
+              <Link
+                href="/profil"
+                className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-8 py-4 text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/15"
+              >
+                Kenali Profil Pondok
+              </Link>
             </div>
           </motion.div>
         </div>
@@ -1113,4 +1150,3 @@ export default function LandingPage() {
     </PublicLayout>
   );
 }
-

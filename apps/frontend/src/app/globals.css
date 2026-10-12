@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #0ea5e9;
-  --color-accent: #facc15;
-  --color-surface-50: #f8fafc;
-  --color-surface-100: #f1f5f9;
-  --color-surface-200: #e2e8f0;
+  --color-primary: #0F6D3F;
+  --color-primary-dark: #0A4F2E;
+  --color-secondary: #1E8E5A;
+  --color-surface-50: #F7F9F7;
+  --color-surface-100: #EFF2EF;
+  --color-surface-200: #DDE3DD;
+  --color-accent: #F4C542;
+  --color-accent-dark: #D4A52E;
 }
 
 :root {
-  --background: #fbfbfc;
-  --foreground: #0f172a;
+  --background: #F7F9F7;
+  --foreground: #1E293B;
 }
 
 body {
@@ -18,6 +21,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   letter-spacing: -0.01em;
+}
+
+.font-headline {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .glass-card {
@@ -76,11 +83,11 @@ html, body {
 }
 
 .hero-swiper .swiper-pagination-bullet-active {
-  background: #0ea5e9;
-  border-color: #0ea5e9;
+  background: #0F6D3F;
+  border-color: #0F6D3F;
   width: 36px;
   border-radius: 6px;
-  box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
+  box-shadow: 0 0 15px rgba(15, 109, 63, 0.5);
 }
 
 .hero-swiper .swiper-button-prev,
@@ -258,9 +265,9 @@ html, body {
 }
 
 .admin-panel-shell .form-input:focus {
-  border-color: #0ea5e9;
+  border-color: #0F6D3F;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 4px rgba(15, 109, 63, 0.15);
 }
 
 .admin-panel-shell textarea.form-input {
@@ -346,7 +353,7 @@ html, body {
 
 /* ===== Darussunnah UI kit — pola jurnal-guru-design, warna inti Darussunnah (sky/emerald/slate) =====
  * Struktur & ritme diambil dari skill jurnal-guru-design; SEMUA warna memakai
- * token Darussunnah (sky #0ea5e9, cyan #06b6d4, emerald #10b981, slate). Bukan hijau JG. */
+ * token Darussunnah (sky #0F6D3F, cyan #1E8E5A, emerald #10b981, slate). Bukan hijau JG. */
 .ap-card {
   background: #fff;
   border-radius: 1rem;
@@ -356,7 +363,7 @@ html, body {
 }
 .ap-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(14, 165, 233, 0.12);
+  box-shadow: 0 8px 30px rgba(15, 109, 63, 0.12);
 }
 .ap-stat { position: relative; overflow: hidden; }
 .ap-stat-deco {
@@ -384,14 +391,14 @@ html, body {
   flex-shrink: 0;
 }
 .ap-btn:active { transform: scale(0.97); }
-.ap-btn-primary { background: #0ea5e9; color: #fff; }
-.ap-btn-primary:hover { background: #0284c7; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); }
-.ap-btn-gradient { background: linear-gradient(to right, #0ea5e9, #06b6d4); color: #fff; }
-.ap-btn-gradient:hover { filter: brightness(1.05); box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35); }
+.ap-btn-primary { background: #0F6D3F; color: #fff; }
+.ap-btn-primary:hover { background: #0A4F2E; box-shadow: 0 4px 15px rgba(15, 109, 63, 0.3); }
+.ap-btn-gradient { background: linear-gradient(to right, #0F6D3F, #1E8E5A); color: #fff; }
+.ap-btn-gradient:hover { filter: brightness(1.05); box-shadow: 0 4px 15px rgba(15, 109, 63, 0.35); }
 .ap-btn-success { background: #10b981; color: #fff; }
 .ap-btn-success:hover { background: #059669; }
 .ap-btn-outline { background: transparent; color: #475569; border: 2px solid #e2e8f0; }
-.ap-btn-outline:hover { border-color: #0ea5e9; color: #0284c7; background: #f0f9ff; }
+.ap-btn-outline:hover { border-color: #0F6D3F; color: #0A4F2E; background: #EFF2EF; }
 .ap-btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
 .ap-input {
   width: 100%;
@@ -403,8 +410,8 @@ html, body {
   outline: none;
 }
 .ap-input:focus {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+  border-color: #0F6D3F;
+  box-shadow: 0 0 0 3px rgba(15, 109, 63, 0.12);
 }
 .ap-label {
   display: block;
@@ -448,7 +455,7 @@ html, body {
 }
 .ap-table-wrap tbody tr { background: #fff; }
 .ap-table-wrap tbody tr:nth-child(even) { background: #f8fafc; }
-.ap-table-wrap tbody tr:hover { background: #f0f9ff; }
+.ap-table-wrap tbody tr:hover { background: #EFF2EF; }
 /* Header halaman ala JG: sticky blur di atas konten */
 .ap-page-header {
   position: sticky;
@@ -509,7 +516,7 @@ html, body {
   box-shadow: 0 25px 60px rgba(2, 6, 23, 0.2);
 }
 .ap-btn:focus-visible, .ap-input:focus-visible, .ap-card:focus-visible {
-  outline: 2px solid #0ea5e9;
+  outline: 2px solid #0F6D3F;
   outline-offset: 2px;
 }
 /* Print: dokumen resmi A4 */
