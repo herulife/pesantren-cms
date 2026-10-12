@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
           Selamat datang, {user?.name || 'Administrator'}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-          Kelola modul utama Darussunnah melalui pintasan cepat untuk konten, data santri,
+          Kelola modul utama Alma Parung melalui pintasan cepat untuk konten, data santri,
           pengaturan sistem, dan kebutuhan operasional harian.
         </p>
       </section>

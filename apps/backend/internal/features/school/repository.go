@@ -56,16 +56,7 @@ func (r *Repository) ListClasses(activeOnly bool) ([]Class, error) {
 }
 
 func (r *Repository) CreateClass(name, jenjang, wali, year string, waliUserID int) (int64, error) {
-	// 0 (tidak ada wali terpilih) bukan id user: kolom ber-FK ke users(id),
-	// jadi 0 akan melanggar FK. NULL adalah nilai yang benar.
-	if waliUserID <= 0 {
-		waliUserID = 0
-	}
-	var waliID any
-	if waliUserID > 0 {
-		waliID = waliUserID
-	}
-	res, err := r.db.Exec(`INSERT INTO classes (name, jenjang, wali_name, wali_user_id, academic_year) VALUES (?, ?, ?, ?, ?)`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), waliID, strings.TrimSpace(year))
+	res, err := r.db.Exec(`INSERT INTO classes (name, jenjang, wali_name, wali_user_id, academic_year) VALUES (?, ?, ?, ?, ?)`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), waliUserID, strings.TrimSpace(year))
 	if err != nil {
 		return 0, err
 	}
@@ -90,11 +81,7 @@ func padClass(id int64) string {
 }
 
 func (r *Repository) UpdateClass(id int, name, jenjang, wali, year string, waliUserID, active int) error {
-	var waliID any
-	if waliUserID > 0 {
-		waliID = waliUserID
-	}
-	_, err := r.db.Exec(`UPDATE classes SET name=?, jenjang=?, wali_name=?, wali_user_id=?, academic_year=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), waliID, strings.TrimSpace(year), active, id)
+	_, err := r.db.Exec(`UPDATE classes SET name=?, jenjang=?, wali_name=?, wali_user_id=?, academic_year=?, is_active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, strings.TrimSpace(name), strings.TrimSpace(jenjang), strings.TrimSpace(wali), waliUserID, strings.TrimSpace(year), active, id)
 	return err
 }
 

@@ -66,7 +66,7 @@ func TestSetPINCreatesWalletIfMissing(t *testing.T) {
 func TestProcessTransactionCreatesWalletForFirstTopUp(t *testing.T) {
 	repo := NewRepository(newWalletTestDB(t))
 
-	err := repo.ProcessTransaction(22, &Transaction{
+	_, err := repo.ProcessTransaction(22, &Transaction{
 		Type:        "deposit",
 		Amount:      5000,
 		ReferenceID: "ADMIN_TOPUP_22",

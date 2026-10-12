@@ -2,10 +2,11 @@ package notifications
 
 import (
 	"darussunnah-api/internal/features/auth"
+	"darussunnah-api/internal/platform/ai"
 	"darussunnah-api/internal/platform/logger"
-	"darussunnah-api/internal/platform/telegram"
 	"darussunnah-api/internal/platform/wagate"
 	"darussunnah-api/internal/platform/wanotif"
+	"darussunnah-api/internal/platform/telegram"
 	"darussunnah-api/internal/platform/whatsapp"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
@@ -34,53 +35,15 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/wa/qr", h.GetWAQR)
 	r.Post("/wa/pair-code", h.PostWAPairCode)
 	r.Post("/wa/disconnect", h.PostWADisconnect)
+	r.Get("/wa-recipients", h.GetWARecipients)
+	r.Post("/wa-ai-message", h.GenerateWAMessage)
 	r.Post("/send-wa", h.SendWhatsApp)
 	r.Post("/send-telegram", h.SendTelegram)
 	r.Post("/broadcast-tagihan", h.BroadcastTagihan)
 	r.Post("/broadcast-nilai", h.BroadcastNilai)
-	r.Post("/broadcast-psb", h.BroadcastPSB)
 	r.Get("/wa-log", h.GetWALog)
 	r.Post("/wa-retry", h.PostWARetry)
 	return r
-}
-
-func getAdminID(r *http.Request) int {
-	if userID, ok := auth.CurrentUserID(r.Context()); ok {
-		return userID
-	}
-	return 0
-}
-
-func writeJSONResponse(w http.ResponseWriter, status int, success bool, message string, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": success,
-		"message": message,
-		"data":    data,
-	})
-}
-
-func writeJSONError(w http.ResponseWriter, status int, message string) {
-	writeJSONResponse(w, status, false, message, nil)
-}
-
-func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
-	startedAt := time.Now()
-	logger.Info(r.Context(), "notification status started", logger.Field{"operation": "notifications_status"})
-	waAPIKey := os.Getenv("FONNTE_API_KEY")
-	waAPIURL := os.Getenv("FONNTE_API_URL")
-	waConfigured := whatsapp.IsConfigured(waAPIKey, waAPIURL)
-	telegramConfigured := telegram.IsConfigured(os.Getenv("TELEGRAM_BOT_TOKEN"))
-	writeJSONResponse(w, http.StatusOK, true, "Status WhatsApp berhasil dimuat", map[string]interface{}{
-		"configured":          waConfigured,
-		"whatsapp_configured": waConfigured,
-		"telegram_configured": telegramConfigured,
-	})
-	logger.Info(r.Context(), "notification status completed", logger.Field{
-		"operation":   "notifications_status",
-		"duration_ms": time.Since(startedAt).Milliseconds(),
-	})
 }
 
 // GetWAStatus mengembalikan status koneksi gateway WA mandiri.
@@ -146,6 +109,45 @@ func (h *Handler) PostWAPairCode(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) PostWADisconnect(w http.ResponseWriter, r *http.Request) {
 	wagate.GetManager().Disconnect()
 	writeJSONResponse(w, http.StatusOK, true, "Koneksi WhatsApp diputus", nil)
+}
+
+func getAdminID(r *http.Request) int {
+	if userID, ok := auth.CurrentUserID(r.Context()); ok {
+		return userID
+	}
+	return 0
+}
+
+func writeJSONResponse(w http.ResponseWriter, status int, success bool, message string, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": success,
+		"message": message,
+		"data":    data,
+	})
+}
+
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	writeJSONResponse(w, status, false, message, nil)
+}
+
+func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
+	startedAt := time.Now()
+	logger.Info(r.Context(), "notification status started", logger.Field{"operation": "notifications_status"})
+	waStatus := wagate.GetManager().StatusNow()
+	waConfigured := waStatus.Connected
+	telegramConfigured := telegram.IsConfigured(os.Getenv("TELEGRAM_BOT_TOKEN"))
+	writeJSONResponse(w, http.StatusOK, true, "Status WhatsApp berhasil dimuat", map[string]interface{}{
+		"configured":          waConfigured,
+		"whatsapp_configured": waConfigured,
+		"whatsapp_phone":      waStatus.Phone,
+		"telegram_configured": telegramConfigured,
+	})
+	logger.Info(r.Context(), "notification status completed", logger.Field{
+		"operation":   "notifications_status",
+		"duration_ms": time.Since(startedAt).Milliseconds(),
+	})
 }
 
 func (h *Handler) SendWhatsApp(w http.ResponseWriter, r *http.Request) {
@@ -311,7 +313,7 @@ func (h *Handler) handleTelegramCommand(command string) string {
 	case "/start", "/help":
 		return "Perintah tersedia:\n/status\n/tagihan\n/nilai\n/psb\n/help"
 	case "/status":
-		waConfigured := whatsapp.IsConfigured(os.Getenv("FONNTE_API_KEY"), os.Getenv("FONNTE_API_URL"))
+		waConfigured := wagate.GetManager().StatusNow().Connected
 		return fmt.Sprintf("Status sistem:\nWhatsApp: %s\nTelegram: aktif", boolLabel(waConfigured))
 	case "/tagihan":
 		targets, err := h.repo.GetPendingTagihan()
@@ -447,6 +449,110 @@ func (h *Handler) BroadcastPSB(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 }
+
+// GetWARecipients mengembalikan daftar santri + wali + kwitansi terakhir
+// untuk dropdown "kirim pesan" di halaman WhatsApp Gateway.
+func (h *Handler) GetWARecipients(w http.ResponseWriter, r *http.Request) {
+	recipients, err := h.repo.GetWARecipients()
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Gagal memuat daftar santri")
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Daftar penerima WhatsApp siap", recipients)
+}
+
+// GenerateWAMessage membuat draft pesan WhatsApp via AI
+// (Xkiro/OpenAI-compatible bila key ada, fallback Gemini, terakhir template aman).
+// Key AI diambil dari Pengaturan -> AI Config bila tersimpan.
+func (h *Handler) GenerateWAMessage(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Nama     string `json:"nama"`
+		Wali     string `json:"wali"`
+		Phone    string `json:"phone"`
+		Tujuan   string `json:"tujuan"`
+		Kwitansi *struct {
+			ReceiptNo string `json:"receipt_no"`
+			Period    string `json:"period"`
+			Total     int    `json:"total"`
+			Method    string `json:"method"`
+		} `json:"kwitansi"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "Payload permintaan tidak valid")
+		return
+	}
+	if req.Nama == "" {
+		writeJSONError(w, http.StatusBadRequest, "Nama santri wajib diisi")
+		return
+	}
+
+	// Wire key + model dari Pengaturan -> AI Config ke env runtime.
+	if key := h.getSetting("ai_openai_key"); key != "" {
+		os.Setenv("AI_OPENAI_KEY", key)
+	}
+	if model := h.getSetting("ai_model"); model != "" {
+		os.Setenv("AI_MODEL", model)
+	}
+	if apiURL := h.getSetting("ai_api_url"); apiURL != "" {
+		os.Setenv("XKIRO_API_URL", apiURL)
+		os.Setenv("OPENAI_API_URL", apiURL)
+	}
+
+	var prompt strings.Builder
+	prompt.WriteString("Tulis draft pesan WhatsApp bahasa Indonesia yang ramah dan santun dari admin Pesantren Darussunnah kepada wali santri. Format plain text (boleh *bold* singkat), pakai baris baru antar paragraf, maksimal 3-4 paragraf pendek. Jangan pakai markdown judul atau HTML.\n")
+	prompt.WriteString("Nama santri: " + req.Nama + "\n")
+	if req.Wali != "" {
+		prompt.WriteString("Nama wali: " + req.Wali + "\n")
+	}
+	if req.Kwitansi != nil && req.Kwitansi.ReceiptNo != "" {
+		prompt.WriteString("Lampirkan informasi kwitansi yang sudah dibayar:\n")
+		prompt.WriteString("- No. Kwitansi: " + req.Kwitansi.ReceiptNo + "\n")
+		prompt.WriteString("- Periode: " + req.Kwitansi.Period + "\n")
+		prompt.WriteString("- Total: Rp " + formatThousands(req.Kwitansi.Total) + "\n")
+		if req.Kwitansi.Method != "" {
+			prompt.WriteString("- Metode: " + req.Kwitansi.Method + "\n")
+		}
+	}
+	if req.Tujuan != "" {
+		prompt.WriteString("Tujuan pesan: " + req.Tujuan + "\n")
+	} else {
+		prompt.WriteString("Tujuan pesan: memberi kabar/notifikasi umum yang sopan.\n")
+	}
+	prompt.WriteString("Tutup dengan salam penutup yang wajar.")
+
+	msg, err := ai.GenerateWAMessage(prompt.String())
+	if err != nil {
+		writeJSONError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Draft pesan AI siap", map[string]interface{}{
+		"message": msg,
+	})
+}
+
+func (h *Handler) getSetting(key string) string {
+	v, err := h.repo.GetSetting(key)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(v)
+}
+
+func formatThousands(n int) string {
+	s := fmt.Sprintf("%d", n)
+	if len(s) <= 3 {
+		return s
+	}
+	out := ""
+	for i, ch := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			out += "."
+		}
+		out += string(ch)
+	}
+	return out
+}
+
 
 // GetWALog mengembalikan log pengiriman WhatsApp untuk satu registrasi PSB.
 func (h *Handler) GetWALog(w http.ResponseWriter, r *http.Request) {

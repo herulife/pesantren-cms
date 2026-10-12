@@ -1,15 +1,10 @@
 package whatsapp
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"darussunnah-api/internal/platform/wagate"
 )
@@ -19,126 +14,34 @@ type Message struct {
 	Message string `json:"message"` // isi pesan
 }
 
-// SendMessage mengirim pesan WA. Prioritas: gateway mandiri (wagate/whatsmeow)
-// bila sudah pairing; jatuh ke Fonnte bila belum (kompatibilitas lama).
+// SendMessage mengirim pesan WA via gateway mandiri (whatsmeow).
 func SendMessage(target string, message string) error {
 	if strings.TrimSpace(message) == "" {
 		return fmt.Errorf("pesan kosong")
 	}
-	if wagate.GetManager().StatusNow().Connected {
-		if err := wagate.SendText(target, message); err != nil {
-			log.Printf("[WA] Gagal kirim via wagate ke %s: %v", target, err)
-			return err
-		}
-		log.Printf("[WA] Terkirim via wagate ke %s", target)
-		return nil
-	}
-	return sendFonnte(target, message)
-}
-
-func sendFonnte(target string, message string) error {
-	apiKey := os.Getenv("FONNTE_API_KEY")
-	apiURL := os.Getenv("FONNTE_API_URL")
-	if !fonnteConfigured(apiKey, apiURL) {
-		log.Println("[WA] FONNTE_API_KEY atau FONNTE_API_URL belum diset di .env")
-		return fmt.Errorf("WhatsApp gateway not configured")
-	}
-
-	payload, _ := json.Marshal(map[string]string{
-		"target":  target,
-		"message": message,
-	})
-
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payload))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	resp, err := client.Do(req)
-	if err != nil {
+	if err := wagate.SendText(target, message); err != nil {
 		log.Printf("[WA] Gagal kirim ke %s: %v", target, err)
 		return err
 	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	bodyText := strings.TrimSpace(string(bodyBytes))
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		log.Printf("[WA] Gateway menolak pesan ke %s (status: %d, body: %s)", target, resp.StatusCode, bodyText)
-		return fmt.Errorf("WhatsApp gateway error: HTTP %d", resp.StatusCode)
-	}
-
-	if bodyText != "" {
-		var payload map[string]interface{}
-		if err := json.Unmarshal(bodyBytes, &payload); err == nil {
-			if ok, exists := payload["status"]; exists {
-				if statusBool, isBool := ok.(bool); isBool && !statusBool {
-					msg := extractGatewayMessage(payload)
-					log.Printf("[WA] Gateway membalas gagal ke %s: %s", target, msg)
-					return fmt.Errorf("WhatsApp gateway rejected message: %s", msg)
-				}
-			}
-
-			if ok, exists := payload["success"]; exists {
-				if successBool, isBool := ok.(bool); isBool && !successBool {
-					msg := extractGatewayMessage(payload)
-					log.Printf("[WA] Gateway membalas gagal ke %s: %s", target, msg)
-					return fmt.Errorf("WhatsApp gateway rejected message: %s", msg)
-				}
-			}
-		}
-	}
-
-	log.Printf("[WA] Pesan diterima gateway untuk %s (status: %d, body: %s)", target, resp.StatusCode, bodyText)
+	log.Printf("[WA] Terkirim ke %s", target)
 	return nil
 }
 
-func extractGatewayMessage(payload map[string]interface{}) string {
-	for _, key := range []string{"message", "detail", "reason"} {
-		if value, ok := payload[key]; ok {
-			if msg, ok := value.(string); ok && strings.TrimSpace(msg) != "" {
-				return msg
-			}
-		}
-	}
-	return "unknown gateway error"
-}
-
+// IsConfigured melaporkan status koneksi gateway mandiri.
+// Parameter apiKey/apiURL dipertahankan agar 3 call-site lama tak berubah.
 func IsConfigured(apiKey, apiURL string) bool {
-	if wagate.GetManager().StatusNow().Connected {
-		return true
-	}
-	return fonnteConfigured(apiKey, apiURL)
+	_ = apiKey
+	_ = apiURL
+	return wagate.GetManager().StatusNow().Connected
 }
 
-func fonnteConfigured(apiKey, apiURL string) bool {
-	apiKey = strings.TrimSpace(apiKey)
-	apiURL = strings.TrimSpace(apiURL)
-
-	if apiKey == "" || apiURL == "" {
-		return false
+// PortalBaseURL membaca APP_URL (default domain produksi) untuk link dashboard di pesan WA.
+func PortalBaseURL() string {
+	base := strings.TrimSpace(os.Getenv("APP_URL"))
+	if base == "" {
+		return "https://darussunnahparung.com"
 	}
-
-	placeholders := []string{
-		"your_fonnte_api_key_here",
-		"changeme",
-		"your_api_key_here",
-	}
-
-	lowerKey := strings.ToLower(apiKey)
-	for _, placeholder := range placeholders {
-		if lowerKey == placeholder {
-			return false
-		}
-	}
-
-	return true
+	return strings.TrimRight(base, "/")
 }
 
 // Template pesan
@@ -147,7 +50,8 @@ func FormatTagihanSPP(namaSantri string, bulan string, jumlah int) string {
 		"Assalamu'alaikum Wr. Wb.\n\n"+
 			"Yth. Wali Santri *%s*,\n"+
 			"Kami mengingatkan bahwa tagihan SPP bulan *%s* sebesar *Rp %s* belum terbayarkan.\n\n"+
-			"Mohon segera melakukan pembayaran melalui portal atau transfer ke rekening pondok.\n\n"+
+			"Mohon segera melakukan pembayaran melalui portal atau transfer ke rekening pondok.\n" +
+			"Lihat & bayar di dashboard: " + PortalBaseURL() + "/portal/payment-spp\n\n" +
 			"Jazakumullahu khairan.\n"+
 			"_Admin Darussunnah_",
 		namaSantri, bulan, formatRupiah(jumlah))
@@ -177,6 +81,20 @@ func FormatPSBStatus(namaCalon string, status string) string {
 			"Silakan cek detail di Portal Wali Santri Darussunnah.\n\n"+
 			"_Panitia PSB Darussunnah_",
 		namaCalon, statusText)
+}
+
+// FormatPSBUpdate adalah template notifikasi per transisi status pendaftaran
+// (verifikasi → tes → diterima → daftar ulang / ditolak). detail boleh kosong.
+func FormatPSBUpdate(namaCalon string, statusText string, detail string) string {
+	msg := "Assalamu'alaikum Wr. Wb.\n\n" +
+		"Kepada Yth. Wali dari *" + namaCalon + "*,\n\n" +
+		"Status pendaftaran santri baru Darussunnah: *" + statusText + "*.\n"
+	if strings.TrimSpace(detail) != "" {
+		msg += "\n" + strings.TrimSpace(detail) + ".\n"
+	}
+	msg += "\nSilakan cek detail dan langkah berikutnya di Portal Wali Santri Darussunnah:\n" + PortalBaseURL() + "/portal/payment\n\n" +
+		"_Panitia PSB Darussunnah_"
+	return msg
 }
 
 func FormatNilaiRaport(namaSantri string, semester string, tahunAjaran string, nilaiAkhir float64, gradeLetter string) string {
@@ -218,4 +136,80 @@ func formatRupiah(amount int) string {
 		result += string(c)
 	}
 	return result
+}
+
+// NormalizePhone: 08xx / +62xx / spasi-strip -> 628xx
+func NormalizePhone(raw string) string {
+	digits := ""
+	for _, ch := range raw {
+		if ch >= '0' && ch <= '9' {
+			digits += string(ch)
+		}
+	}
+	if strings.HasPrefix(digits, "62") {
+		return digits
+	}
+	if strings.HasPrefix(digits, "0") {
+		return "62" + digits[1:]
+	}
+	return digits
+}
+
+// FormatKwitansi: notifikasi kwitansi rekap bulanan ke wali
+func FormatKwitansi(namaSantri, receiptNo, periode string, total int) string {
+	return fmt.Sprintf(
+		"Assalamu'alaikum Wr. Wb.\n\n"+
+			"Yth. Wali Santri *%s*,\n"+
+			"Alhamdulillah, pembayaran periode *%s* telah kami terima dengan rincian:\n\n"+
+			"No. Kwitansi: *%s*\n"+
+			"Total: *Rp %s*\n\n"+
+			"Kwitansi rekap dapat dilihat/diunduh di dashboard pembayaran:\n" + PortalBaseURL() + "/portal/payment-spp\n\n" +
+			"Jazakumullahu khairan.\n"+
+			"_Bendahara Darussunnah_",
+		namaSantri, periode, receiptNo, formatRupiah(total))
+}
+
+// FormatPSBRegistrationComplete adalah notifikasi saat pendaftaran selesai &
+// wali diarahkan membayar biaya pendaftaran (instruksi transfer + unggah bukti).
+func FormatPSBRegistrationComplete(namaCalon string, amount int, bankName, accountNumber, accountName, note string) string {
+	var b strings.Builder
+	b.WriteString("Assalamu'alaikum Wr. Wb.\n\n")
+	b.WriteString("Kepada Yth. Wali dari *" + namaCalon + "*,\n\n")
+	b.WriteString("Pendaftaran santri baru Darussunnah Anda telah kami terima. Mohon selesaikan pembayaran biaya pendaftaran ")
+	if amount > 0 {
+		b.WriteString("sebesar *" + formatRupiah(amount) + "*")
+	} else {
+		b.WriteString("pendaftaran")
+	}
+	if bankName != "" && accountNumber != "" {
+		b.WriteString(" dengan transfer ke rekening *" + bankName + "*: *" + accountNumber + "*")
+		if accountName != "" {
+			b.WriteString(" a.n. " + accountName)
+		}
+	}
+	b.WriteString(".\n\n")
+	b.WriteString("Setelah transfer, mohon unggah bukti pembayaran (foto/scan bukti transfer) di Portal Wali Santri:\n" + PortalBaseURL() + "/portal/payment\n\n")
+	b.WriteString("Bukti akan diverifikasi panitia. Setelah pembayaran dinyatakan lunas, berkas pendaftaran Anda akan diperiksa.")
+	if strings.TrimSpace(note) != "" {
+		b.WriteString("\n\n" + strings.TrimSpace(note))
+	}
+	b.WriteString("\n\nJazakumullahu khairan.\n_Panitia PSB Darussunnah_")
+	return b.String()
+}
+
+// FormatPSBPaymentSubmitted adalah notifikasi saat wali mengunggah bukti
+// pembayaran lewat portal (menunggu verifikasi panitia).
+func FormatPSBPaymentSubmitted(namaCalon string, amount int) string {
+	var b strings.Builder
+	b.WriteString("Assalamu'alaikum Wr. Wb.\n\n")
+	b.WriteString("Yth. Wali dari *" + namaCalon + "*,\n")
+	if amount > 0 {
+		b.WriteString("Bukti pembayaran pendaftaran santri baru Darussunnah sebesar *" + formatRupiah(amount) + "* telah kami terima.\n")
+	} else {
+		b.WriteString("Bukti pembayaran pendaftaran santri baru Darussunnah telah kami terima.\n")
+	}
+	b.WriteString("Pembayaran Anda sedang diverifikasi panitia. Setelah dinyatakan lunas, berkas pendaftaran akan dilakukan verifikasi.\n\n")
+	b.WriteString("Pantau perkembangan status di Portal Wali Santri:\n" + PortalBaseURL() + "/portal/payment\n\n")
+	b.WriteString("Jazakumullahu khairan.\n_Panitia PSB Darussunnah_")
+	return b.String()
 }

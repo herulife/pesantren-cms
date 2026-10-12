@@ -69,13 +69,14 @@ export default function TabKontak() {
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="space-y-4">
                    <label className="text-[10px] font-black text-rose-700 uppercase tracking-[0.2em] flex items-center gap-2">
-                     <Phone size={12} /> No. Telepon / WA
-                   </label>
-                   <input 
-                      value={formValues['school_phone'] || ''}
-                      onChange={(e) => handleChange('school_phone', e.target.value)}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
-                   />
+                      <Phone size={12} /> No. Telepon
+                    </label>
+                    <input 
+                       value={formValues['school_phone'] || ''}
+                       onChange={(e) => handleChange('school_phone', e.target.value)}
+                       placeholder="Contoh: +6281234567890"
+                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
+                    />
                 </div>
                 <div className="space-y-4">
                    <label className="text-[10px] font-black text-rose-700 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -110,7 +111,7 @@ export default function TabKontak() {
                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
                 />
                 <p className="text-xs font-medium text-slate-500">
-                  Isi satu nomor per baris. Nomor ini akan dipakai untuk tombol chat admin di halaman kontak publik.
+                  Isi satu nomor per baris. Nomor ini dipakai untuk SEMUA tombol WhatsApp di website (tombol mengambang, kontak, Hubungi Panitia PSB, footer, dll).
                 </p>
              </div>
           </div>
@@ -120,7 +121,7 @@ export default function TabKontak() {
           <button 
              onClick={handleSaveAll}
              disabled={isSaving}
-             className="px-8 py-4 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition flex items-center gap-3 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+             className="px-8 py-4 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition flex items-center gap-3 shadow-lg shadow-sky-600/20 disabled:opacity-50"
           >
              {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
              SIMPAN KONTAK

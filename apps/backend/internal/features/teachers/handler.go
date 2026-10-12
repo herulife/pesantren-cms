@@ -25,6 +25,21 @@ func sendJSONResponse(w http.ResponseWriter, status int, success bool, message s
 	})
 }
 
+func parsePagination(r *http.Request) (limit, offset int) {
+	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
 func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
@@ -37,10 +52,22 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
+	limit, offset := parsePagination(r)
+	if len(list) > limit {
+		end := offset + limit
+		if end > len(list) {
+			end = len(list)
+		}
+		if offset < len(list) {
+			list = list[offset:end]
+		} else {
+			list = make([]Teacher, 0)
+		}
+	}
 	if list == nil {
 		list = make([]Teacher, 0)
 	}
-	sendJSONResponse(w, http.StatusOK, true, "Daftar pengajar berhasil dimuat", list)
+	sendJSONResponse(w, http.StatusOK, true, "Daftar pengajar berhasil dimuat", toPublicList(list))
 }
 
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +81,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, http.StatusNotFound, false, "Pengajar tidak ditemukan", nil)
 		return
 	}
-	sendJSONResponse(w, http.StatusOK, true, "Detail pengajar berhasil dimuat", t)
+	sendJSONResponse(w, http.StatusOK, true, "Detail pengajar berhasil dimuat", toPublic(*t))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

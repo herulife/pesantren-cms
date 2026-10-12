@@ -1,13 +1,13 @@
-# Darussunnah VPS Deploy
+# Alma Parung VPS Deploy
 
 This folder contains the Docker Compose and nginx snippets used to deploy the
-Next.js frontend and Go backend for `darussunnahparung.com`.
+Next.js frontend and Go backend for `almaparung.com`.
 
 Expected persistent data paths beside `docker-compose.yml`:
 
-- `./data/darussunnah.db`
-- `./data/darussunnah.db-wal`
-- `./data/darussunnah.db-shm`
+- `./data/alma.db`
+- `./data/alma.db-wal`
+- `./data/alma.db-shm`
 - `./data/uploads/`
 
 The backend mounts the whole `./data` directory into `/data` so SQLite WAL/SHM

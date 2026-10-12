@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
 	"database/sql"
 	"fmt"
@@ -17,30 +16,25 @@ type contextKey string
 
 const UserContextKey contextKey = "user"
 
-func CurrentUserID(ctx context.Context) (int, bool) {
-	claims, ok := ctx.Value(UserContextKey).(jwt.MapClaims)
-	if !ok {
-		return 0, false
-	}
-	idFloat, ok := claims["id"].(float64)
-	if !ok {
-		return 0, false
-	}
-	return int(idFloat), true
+// validRoles adalah daftar role yang diakui sistem.
+var validRoles = map[string]bool{
+	"superadmin": true, "bendahara": true, "panitia_psb": true,
+	"tim_media": true, "admin": true, "user": true,
+	"pimpinan": true, "wali_kelas": true, "guru": true, "ustadz": true,
 }
 
-// CurrentUserRole returns the role claim from the verified token. The second
-// return value is false when there is no authenticated user in the context.
-func CurrentUserRole(ctx context.Context) (string, bool) {
-	claims, ok := ctx.Value(UserContextKey).(jwt.MapClaims)
-	if !ok {
-		return "", false
-	}
-	role, ok := claims["role"].(string)
-	if !ok || role == "" {
-		return "", false
-	}
-	return role, true
+func IsValidRole(role string) bool { return validRoles[role] }
+
+// sessionDB diisi via ConfigureSessionValidation (dipanggil main setelah
+// database.Connect, sehingga migrasi token_version sudah berjalan).
+var sessionDB *sql.DB
+
+// ConfigureSessionValidation mengaktifkan validasi sesi berbasis DB
+// (user exists + role cocok + token_version cocok) di AuthMiddleware.
+func ConfigureSessionValidation(db *sql.DB) { sessionDB = db }
+
+func CurrentUserID(ctx context.Context) (int, bool) {
+	return GetAuthenticatedUserID(ctx)
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -56,31 +50,12 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			writeAPIError(w, http.StatusUnauthorized, correlationID, "Sesi login tidak ditemukan", nil)
 			return
 		}
-		// Fail closed when no signing key is configured. Parsing with a nil HMAC
-		// key would otherwise accept a token signed with an empty secret.
-		if !SecretConfigured() {
-			logger.Error(r.Context(), "auth rejected: JWT_SECRET is not configured", logger.Field{
-				"correlation_id": correlationID,
-				"path":           r.URL.Path,
-			})
-			writeAPIError(w, http.StatusInternalServerError, correlationID, "Konfigurasi server tidak valid", nil)
-			return
-		}
-
-		// Pin the algorithm to HS256. The previous check accepted any HMAC variant
-		// (HS256/HS384/HS512), so a caller could pick the signing algorithm.
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if token.Method != jwt.SigningMethodHS256 {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return GetJWTSecret(), nil
-		},
-			// Bind the token to this service so a token minted elsewhere with the
-			// same secret cannot be replayed against this API.
-			jwt.WithIssuer(tokenIssuer),
-			jwt.WithAudience(tokenAudience),
-			jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
-		)
+		})
 
 		if err != nil || !token.Valid {
 			fields := logger.Field{
@@ -107,14 +82,15 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Enforce token revocation (logout / password / role change).
-		if denied := isTokenDenied(claims); denied {
-			logger.Warn(r.Context(), "auth failed revoked or stale token", logger.Field{
+		// PHASE 2: validasi sesi ke database (revocable session).
+		if err := validateSession(claims); err != nil {
+			logger.Warn(r.Context(), "auth failed session revoked", logger.Field{
 				"correlation_id": correlationID,
 				"ip":             r.RemoteAddr,
 				"path":           r.URL.Path,
+				"reason":         err.Error(),
 			})
-			writeAPIError(w, http.StatusUnauthorized, correlationID, "Sesi login sudah tidak valid", nil)
+			writeAPIError(w, http.StatusUnauthorized, correlationID, err.Error(), nil)
 			return
 		}
 
@@ -123,8 +99,40 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// validateSession memastikan: user ada, role valid & cocok, token_version cocok.
+// Token lama tanpa claim token_version DITOLAK (wajib login ulang pasca-deploy).
+func validateSession(claims jwt.MapClaims) error {
+	if sessionDB == nil {
+		return nil // validasi DB belum dikonfigurasi (mis. unit test)
+	}
+	id, ok := claimInt(claims["id"])
+	if !ok || id <= 0 {
+		return fmt.Errorf("data sesi login tidak valid")
+	}
+	tv, ok := claimInt(claims["token_version"])
+	if !ok {
+		return fmt.Errorf("sesi kedaluwarsa, silakan login ulang")
+	}
+	claimRole, _ := claims["role"].(string)
+	if !IsValidRole(claimRole) {
+		return fmt.Errorf("role sesi tidak valid")
+	}
+	repo := &Repository{db: sessionDB}
+	user, err := repo.FindByID(id)
+	if err != nil {
+		return fmt.Errorf("akun tidak ditemukan atau sudah dihapus")
+	}
+	if user.Role != claimRole {
+		return fmt.Errorf("role berubah, silakan login ulang")
+	}
+	if user.TokenVersion != tv {
+		return fmt.Errorf("sesi sudah diakhiri, silakan login ulang")
+	}
+	return nil
+}
+
 func extractToken(r *http.Request) string {
-	if cookie, err := r.Cookie("darussunnah_token"); err == nil && strings.TrimSpace(cookie.Value) != "" {
+	if cookie, err := r.Cookie("alma_token"); err == nil && strings.TrimSpace(cookie.Value) != "" {
 		return cookie.Value
 	}
 
@@ -136,54 +144,59 @@ func extractToken(r *http.Request) string {
 	return strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 }
 
-// isTokenDenied enforces revocation: a token is rejected if its jti was
-// explicitly revoked (logout) or its embedded version no longer matches the
-// user's current token_version (password/role change).
-func isTokenDenied(claims jwt.MapClaims) bool {
-	if database.DB == nil {
-		return false
-	}
+// RequireRole middleware: only allows users with specified roles.
+// "superadmin" always passes regardless of allowed list.
+func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, ok := GetAuthenticatedUser(r)
+			if !ok {
+				writeAPIError(w, http.StatusUnauthorized, logger.CorrelationID(r), "Akses belum diizinkan", nil)
+				return
+			}
 
-	if jti, _ := claims["jti"].(string); jti != "" {
-		var count int
-		if err := database.DB.QueryRow("SELECT COUNT(1) FROM revoked_tokens WHERE jti = ?", jti).Scan(&count); err == nil && count > 0 {
-			return true
-		}
-	}
+			// superadmin bypasses all role checks
+			if user.Role == "superadmin" {
+				next.ServeHTTP(w, r)
+				return
+			}
 
-	if ver, ok := claims["ver"].(float64); ok {
-		idf, ok := claims["id"].(float64)
-		if !ok {
-			return false
-		}
-		var dbVer int
-		err := database.DB.QueryRow("SELECT COALESCE(token_version, 0) FROM users WHERE id = ?", int(idf)).Scan(&dbVer)
-		if err != nil {
-			// User missing or DB error: fail closed.
-			return true
-		}
-		if int(ver) != dbVer {
-			return true
-		}
-	}
+			for _, role := range allowedRoles {
+				if user.Role == role {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
 
-	return false
+			logger.Warn(r.Context(), "rbac denied", logger.Field{
+				"correlation_id": logger.CorrelationID(r),
+				"role":           user.Role,
+				"allowed_roles":  allowedRoles,
+				"ip":             r.RemoteAddr,
+				"path":           r.URL.Path,
+			})
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Fprintf(w, `{"success":false,"message":"Akses ditolak. Role '%s' tidak memiliki izin untuk fitur ini."}`, user.Role)
+		})
+	}
 }
 
+// RequireLicense menolak request bila lisensi (settings.app_license_key) tidak
+// valid. Bypass saat DEV_MODE=true atau untuk bootstrap superadmin. SENGAJA
+// tidak dipasang di router default Darussunnah (agar tidak mem-brick aplikasi
+// ketika DB belum memiliki app_license_key); disediakan untuk aktivasi nanti.
 func RequireLicense(db *sql.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Bypass license check in development mode
 			if os.Getenv("DEV_MODE") == "true" {
 				next.ServeHTTP(w, r)
 				return
 			}
-
-			if canBypassLicenseForBootstrap(r) {
+			if u, ok := GetAuthenticatedUser(r); ok && u.Role == "superadmin" {
 				next.ServeHTTP(w, r)
 				return
 			}
-
 			status, _ := CheckLicense(db)
 			if !status.IsValid {
 				logger.Warn(r.Context(), "license check failed", logger.Field{
@@ -196,69 +209,6 @@ func RequireLicense(db *sql.DB) func(http.Handler) http.Handler {
 				return
 			}
 			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func canBypassLicenseForBootstrap(r *http.Request) bool {
-	claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims)
-	if !ok {
-		return false
-	}
-
-	role, _ := claims["role"].(string)
-	if role != "superadmin" {
-		return false
-	}
-
-	switch {
-	case r.URL.Path == "/api/me":
-		return true
-	case strings.HasPrefix(r.URL.Path, "/api/settings"):
-		return true
-	case strings.HasPrefix(r.URL.Path, "/api/users"):
-		return true
-	default:
-		return false
-	}
-}
-
-// RequireRole middleware: only allows users with specified roles.
-// "superadmin" always passes regardless of allowed list.
-func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims)
-			if !ok {
-				writeAPIError(w, http.StatusUnauthorized, logger.CorrelationID(r), "Akses belum diizinkan", nil)
-				return
-			}
-
-			userRole, _ := claims["role"].(string)
-
-			// superadmin bypasses all role checks
-			if userRole == "superadmin" {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			for _, role := range allowedRoles {
-				if userRole == role {
-					next.ServeHTTP(w, r)
-					return
-				}
-			}
-
-			logger.Warn(r.Context(), "rbac denied", logger.Field{
-				"correlation_id": logger.CorrelationID(r),
-				"role":           userRole,
-				"allowed_roles":  allowedRoles,
-				"ip":             r.RemoteAddr,
-				"path":           r.URL.Path,
-			})
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Fprintf(w, `{"success":false,"message":"Akses ditolak. Role '%s' tidak memiliki izin untuk fitur ini."}`, userRole)
 		})
 	}
 }

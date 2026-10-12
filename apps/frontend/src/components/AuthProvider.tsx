@@ -13,6 +13,8 @@ interface UserData {
   email: string;
   name: string;
   role: string;
+  /** Path relatif /uploads/avatars/...; null = belum pasang foto (avatar inisial). */
+  photo_url?: string | null;
 }
 
 interface AuthContextType {
@@ -21,6 +23,7 @@ interface AuthContextType {
   login: (user: UserData) => void;
   logout: () => Promise<void>;
   hasRole: (...roles: string[]) => boolean;
+  setUserPhoto: (photoUrl: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -103,8 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return roles.includes(user.role);
   };
 
+  // Dipakai setelah user mengganti avatar: header/sidebar harus langsung
+  // menampilkan foto baru tanpa perlu reload halaman.
+  const setUserPhoto = (photoUrl: string | null) => {
+    setUser((prev) => (prev ? { ...prev, photo_url: photoUrl } : prev));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasRole, setUserPhoto }}>
       {children}
     </AuthContext.Provider>
   );

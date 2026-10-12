@@ -19,17 +19,15 @@ type VideoSeries = {
 };
 
 const videoHighlights = [
-  { value: 'all', label: 'Semua' },
-  { value: 'Kajian', label: 'Kajian' },
-  { value: 'Santri', label: 'Santri' },
-  { value: 'Video', label: 'Dokumentasi' },
+  { value: 'Kajian', label: 'Seri Utama' },
+  { value: 'Santri', label: 'Kegiatan Pondok' },
+  { value: 'Video', label: 'Dokumentasi Berkala' },
 ];
 
 export default function VideosPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
 
   useEffect(() => {
     async function fetchVideosData() {
@@ -71,25 +69,15 @@ export default function VideosPage() {
 
   const filteredSeries = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let result = seriesList;
-
-    if (activeCategory !== 'all') {
-      result = result.filter((series) =>
-        series.lead.series_name?.toLowerCase().includes(activeCategory.toLowerCase()) ||
-        series.lead.title?.toLowerCase().includes(activeCategory.toLowerCase())
-      );
+    if (!q) {
+      return seriesList;
     }
-
-    if (q) {
-      result = result.filter((series) => series.title.toLowerCase().includes(q));
-    }
-
-    return result;
-  }, [seriesList, searchQuery, activeCategory]);
+    return seriesList.filter((series) => series.title.toLowerCase().includes(q));
+  }, [seriesList, searchQuery]);
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-emerald-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_38%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-24 text-white lg:py-28">
+      <section className="relative overflow-hidden border-b border-sky-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_38%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-24 text-white lg:py-28">
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
             <PublicSectionIntro
@@ -98,26 +86,12 @@ export default function VideosPage() {
               description="Kumpulan video kegiatan, kajian, dan momen penting pondok yang tersusun per seri atau kegiatan."
               theme="dark"
             />
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
               {videoHighlights.map((item) => (
-                <button
-                  key={item.value}
-                  onClick={() => setActiveCategory(item.value)}
-                  className={`rounded-[1.4rem] border px-5 py-4 text-left transition-all duration-300 ${
-                    activeCategory === item.value
-                      ? 'border-emerald-400/60 bg-emerald-400/15 shadow-[0_0_30px_rgba(52,211,153,0.15)]'
-                      : 'border-white/10 bg-white/8 hover:bg-white/12 hover:border-white/20'
-                  }`}
-                >
-                  <p className={`text-lg font-black transition-colors ${
-                    activeCategory === item.value ? 'text-emerald-300' : 'text-white'
-                  }`}>{item.label}</p>
-                  {item.value !== 'all' && (
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200/60">
-                      {item.value === 'Kajian' ? 'Seri Utama' : item.value === 'Santri' ? 'Kegiatan Pondok' : 'Dokumentasi Berkala'}
-                    </p>
-                  )}
-                </button>
+                <div key={item.label} className="rounded-[1.6rem] border border-white/10 bg-white/8 px-5 py-5 shadow-[0_20px_42px_-30px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                  <p className="text-2xl font-black text-white">{item.value}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/82">{item.label}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -126,7 +100,7 @@ export default function VideosPage() {
 
       <section className="bg-[#f6f4ee] py-10">
         <div className="container mx-auto max-w-6xl px-4">
-          <div className="rounded-[1.5rem] border border-[#e8e0d1] bg-white/90 p-4 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.2)] md:p-5">
+          <div className="rounded-[1.5rem] border border-[#e8e0d1] bg-white/90 p-4 shadow-[0_20px_50px_-30px_rgba(250,204,21,0.2)] md:p-5">
             <div className="relative w-full md:max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
@@ -134,7 +108,7 @@ export default function VideosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari seri, kajian, atau kegiatan..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-500/10"
               />
             </div>
           </div>
@@ -150,7 +124,7 @@ export default function VideosPage() {
               {filteredSeries.map((series) => {
                 const thumbnail = series.lead.thumbnail || getYouTubeThumbnailUrl(series.lead.url);
                 return (
-                <Link key={series.key} href={`/videos/${series.slug}`} className="group overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_20px_50px_-30px_rgba(15,23,42,0.18)] transition-all duration-500 hover:shadow-[0_25px_60px_-20px_rgba(16,185,129,0.2)] hover:-translate-y-1 hover:border-emerald-200/60">
+                <Link key={series.key} href={`/videos/${series.slug}`} className="group overflow-hidden rounded-[1.5rem] border border-white/70 bg-white shadow-[0_20px_50px_-30px_rgba(250,204,21,0.25)]">
                   <div className="relative aspect-video overflow-hidden bg-slate-900">
                     {thumbnail ? (
                       <Image
@@ -159,36 +133,29 @@ export default function VideosPage() {
                         fill
                         unoptimized
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                        className="object-cover opacity-80 transition-all duration-700 group-hover:scale-110 group-hover:opacity-100"
+                        className="object-cover opacity-75 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-90"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-900 to-slate-900 text-emerald-300">
+                      <div className="flex h-full w-full items-center justify-center text-slate-600">
                         <VideoIcon size={40} />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-100" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md border border-white/25 transition-all duration-500 group-hover:scale-125 group-hover:bg-emerald-500/40 group-hover:border-emerald-300/50 group-hover:shadow-[0_0_40px_rgba(52,211,153,0.3)]">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
                         <PlayCircle size={34} />
                       </div>
                     </div>
-                    <div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-md">
-                      <PlayCircle size={12} />
-                      {series.count} video
-                    </div>
                   </div>
                   <div className="p-6">
-                    <h2 className="text-xl font-black tracking-tight text-slate-900 transition-colors duration-300 group-hover:text-emerald-700 line-clamp-2">{series.title}</h2>
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">{series.count} video</p>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-900">{series.title}</h2>
                     {series.eventDate && (
-                      <p className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-slate-400">
-                        <CalendarDays size={13} className="text-emerald-500" />
+                      <p className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-slate-500">
+                        <CalendarDays size={14} className="text-sky-600" />
                         {series.eventDate}
                       </p>
                     )}
-                    <div className="mt-4 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-600 transition-all duration-300 group-hover:gap-3">
-                      Tonton Sekarang
-                      <svg className="transition-transform duration-300 group-hover:translate-x-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                    </div>
                   </div>
                 </Link>
               )})}

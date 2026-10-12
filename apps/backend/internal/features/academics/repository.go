@@ -2,7 +2,11 @@ package academics
 
 import (
 	"database/sql"
+	"strconv"
+	"strings"
 	"time"
+
+	"darussunnah-api/internal/platform/weight"
 )
 
 type Subject struct {
@@ -24,10 +28,21 @@ type Grade struct {
 	UTSScore     float64 `json:"uts_score"`
 	UASScore     float64 `json:"uas_score"`
 	TaskScore    float64 `json:"task_score"`
+	UHScore      float64 `json:"uh_score"`
 	FinalScore   float64 `json:"final_score"`
 	GradeLetter  string  `json:"grade_letter"`
 	Notes        string  `json:"notes"`
 	CreatedAt    string  `json:"created_at"`
+}
+
+// SubjectWeight adalah bobot prosentase komponen nilai per mapel.
+type SubjectWeight struct {
+	SubjectID   int     `json:"subject_id"`
+	SubjectName string  `json:"subject_name,omitempty"`
+	UtsWeight   float64 `json:"uts_weight"`
+	UasWeight   float64 `json:"uas_weight"`
+	TaskWeight  float64 `json:"task_weight"`
+	UhWeight    float64 `json:"uh_weight"`
 }
 
 type Attendance struct {
@@ -51,6 +66,10 @@ type TahfidzProgress struct {
 	Status         string `json:"status"` // proses, setor, lulus
 	MusyrifNotes   string `json:"musyrif_notes"`
 	EvaluationDate string `json:"evaluation_date"`
+	// Periode rapor (Jilid 90): diturunkan server-side dari evaluation_date
+	// (bulan >= Juli -> semester 1 TA y/y+1, selain itu semester 2 TA y-1/y).
+	Semester     string `json:"semester"`
+	AcademicYear string `json:"academic_year"`
 }
 
 type Repository struct {
@@ -101,10 +120,10 @@ func (r *Repository) DeleteSubject(id int) error {
 }
 
 // Grades
-func (r *Repository) GetAllGrades(semester, year string) ([]Grade, error) {
+func (r *Repository) GetAllGrades(semester, year string, limit, offset int) ([]Grade, error) {
 	query := `
-		SELECT g.id, g.student_id, u.name as student_name, g.subject_id, s.name as subject_name,
-		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, 
+		SELECT g.id, g.student_id, COALESCE(s.name,u.name) as student_name, g.subject_id, s.name as subject_name,
+		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score,
 		       g.final_score, g.grade_letter, g.notes, g.created_at
 		FROM grades g
 		JOIN users u ON g.student_id = u.id
@@ -122,7 +141,11 @@ func (r *Repository) GetAllGrades(semester, year string) ([]Grade, error) {
 			args = append(args, year)
 		}
 	}
-	query += " ORDER BY u.name ASC"
+	query += " ORDER BY COALESCE(s.name,u.name) ASC"
+	if limit > 0 {
+		query += " LIMIT ? OFFSET ?"
+		args = append(args, limit, offset)
+	}
 
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -134,7 +157,7 @@ func (r *Repository) GetAllGrades(semester, year string) ([]Grade, error) {
 	for rows.Next() {
 		var g Grade
 		if err := rows.Scan(&g.ID, &g.StudentID, &g.StudentName, &g.SubjectID, &g.SubjectName,
-			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore,
+			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore, &g.UHScore,
 			&g.FinalScore, &g.GradeLetter, &g.Notes, &g.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -146,7 +169,7 @@ func (r *Repository) GetAllGrades(semester, year string) ([]Grade, error) {
 func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 	query := `
 		SELECT g.id, g.student_id, g.subject_id, s.name as subject_name,
-		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, 
+		       g.semester, g.academic_year, g.uts_score, g.uas_score, g.task_score, g.uh_score,
 		       g.final_score, g.grade_letter, g.notes, g.created_at
 		FROM grades g
 		JOIN subjects s ON g.subject_id = s.id
@@ -163,7 +186,7 @@ func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 	for rows.Next() {
 		var g Grade
 		if err := rows.Scan(&g.ID, &g.StudentID, &g.SubjectID, &g.SubjectName,
-			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore,
+			&g.Semester, &g.AcademicYear, &g.UTSScore, &g.UASScore, &g.TaskScore, &g.UHScore,
 			&g.FinalScore, &g.GradeLetter, &g.Notes, &g.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -173,46 +196,42 @@ func (r *Repository) GetGradesByStudent(studentID int) ([]Grade, error) {
 }
 
 func (r *Repository) CreateGrade(g *Grade) error {
-	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
-	if g.FinalScore >= 85 {
-		g.GradeLetter = "A"
-	} else if g.FinalScore >= 75 {
-		g.GradeLetter = "B"
-	} else if g.FinalScore >= 60 {
-		g.GradeLetter = "C"
-	} else if g.FinalScore >= 45 {
-		g.GradeLetter = "D"
-	} else {
-		g.GradeLetter = "E"
+	weights, err := r.GetSubjectWeights(g.SubjectID)
+	if err != nil {
+		return err
 	}
+	final, err := weight.CalculateGradeFinal(g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, weights)
+	if err != nil {
+		return err
+	}
+	g.FinalScore = final
+	g.GradeLetter = weight.GradeLetter100(g.FinalScore)
 
 	query := `
-		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, final_score, grade_letter, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, uh_score, final_score, grade_letter, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	_, err := r.db.Exec(query, g.StudentID, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.FinalScore, g.GradeLetter, g.Notes)
+	_, err = r.db.Exec(query, g.StudentID, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, g.FinalScore, g.GradeLetter, g.Notes)
 	return err
 }
 
 func (r *Repository) UpdateGrade(id int, g *Grade) error {
-	g.FinalScore = (g.UTSScore*30 + g.UASScore*40 + g.TaskScore*30) / 100
-	if g.FinalScore >= 85 {
-		g.GradeLetter = "A"
-	} else if g.FinalScore >= 75 {
-		g.GradeLetter = "B"
-	} else if g.FinalScore >= 60 {
-		g.GradeLetter = "C"
-	} else if g.FinalScore >= 45 {
-		g.GradeLetter = "D"
-	} else {
-		g.GradeLetter = "E"
+	weights, err := r.GetSubjectWeights(g.SubjectID)
+	if err != nil {
+		return err
 	}
+	final, err := weight.CalculateGradeFinal(g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, weights)
+	if err != nil {
+		return err
+	}
+	g.FinalScore = final
+	g.GradeLetter = weight.GradeLetter100(g.FinalScore)
 
 	query := `
-		UPDATE grades SET subject_id=?, semester=?, academic_year=?, uts_score=?, uas_score=?, task_score=?, final_score=?, grade_letter=?, notes=?
+		UPDATE grades SET subject_id=?, semester=?, academic_year=?, uts_score=?, uas_score=?, task_score=?, uh_score=?, final_score=?, grade_letter=?, notes=?
 		WHERE id=?
 	`
-	_, err := r.db.Exec(query, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.FinalScore, g.GradeLetter, g.Notes, id)
+	_, err = r.db.Exec(query, g.SubjectID, g.Semester, g.AcademicYear, g.UTSScore, g.UASScore, g.TaskScore, g.UHScore, g.FinalScore, g.GradeLetter, g.Notes, id)
 	return err
 }
 
@@ -221,17 +240,88 @@ func (r *Repository) DeleteGrade(id int) error {
 	return err
 }
 
+// GetSubjectWeights mengambil bobot komponen nilai subjek; fallback ke default.
+// Bila tabel bobot belum termigrasi atau baris belum diset, selalu kembalikan
+// default (UTS 25 / UAS 30 / Tugas 25 / UH 20) supaya input nilai guru tidak
+// pernah gagal hanya karena pengaturan bobot belum siap.
+func (r *Repository) GetSubjectWeights(subjectID int) (weight.GradeWeights, error) {
+	fallback := weight.DefaultGradeWeights()
+	var uts, uas, task, uh float64
+	err := r.db.QueryRow(`SELECT uts_weight, uas_weight, task_weight, uh_weight FROM subject_grade_weights WHERE subject_id = ?`, subjectID).
+		Scan(&uts, &uas, &task, &uh)
+	if err != nil {
+		return fallback, nil
+	}
+	if uts == 0 && uas == 0 && task == 0 && uh == 0 {
+		return fallback, nil
+	}
+	return weight.GradeWeights{UTS: uts, UAS: uas, Task: task, UH: uh}, nil
+}
+
+// GetAllSubjectWeights mengambil daftar bobot per mapel (diisi default bila belum diset).
+func (r *Repository) GetAllSubjectWeights() ([]SubjectWeight, error) {
+	query := `
+		SELECT s.id, s.name,
+		       COALESCE(w.uts_weight, 25), COALESCE(w.uas_weight, 30),
+		       COALESCE(w.task_weight, 25), COALESCE(w.uh_weight, 20)
+		FROM subjects s
+		LEFT JOIN subject_grade_weights w ON w.subject_id = s.id
+		ORDER BY s.name
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []SubjectWeight
+	for rows.Next() {
+		var sw SubjectWeight
+		if err := rows.Scan(&sw.SubjectID, &sw.SubjectName, &sw.UtsWeight, &sw.UasWeight, &sw.TaskWeight, &sw.UhWeight); err != nil {
+			return nil, err
+		}
+		out = append(out, sw)
+	}
+	return out, rows.Err()
+}
+
+// UpsertSubjectWeights menyimpan bobot komponen nilai per mapel (satu transaksi).
+func (r *Repository) UpsertSubjectWeights(items []SubjectWeight) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, item := range items {
+		if _, err := tx.Exec(`
+			INSERT INTO subject_grade_weights (subject_id, uts_weight, uas_weight, task_weight, uh_weight, updated_at)
+			VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			ON CONFLICT(subject_id) DO UPDATE SET
+				uts_weight=excluded.uts_weight,
+				uas_weight=excluded.uas_weight,
+				task_weight=excluded.task_weight,
+				uh_weight=excluded.uh_weight,
+				updated_at=CURRENT_TIMESTAMP
+		`, item.SubjectID, item.UtsWeight, item.UasWeight, item.TaskWeight, item.UhWeight); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 // Attendance
 func (r *Repository) GetAttendance(date string) ([]Attendance, error) {
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
 	}
 	query := `
-		SELECT a.id, a.student_id, u.name as student_name, COALESCE(u.whatsapp, '') as student_phone, a.date, a.status, a.notes
+		SELECT a.id, a.student_id, s.name as student_name,
+		       COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as student_phone,
+		       a.date, a.status, a.notes
 		FROM attendance a
-		JOIN users u ON a.student_id = u.id
+		JOIN santri s ON s.id = a.student_id
 		WHERE a.date = ?
-		ORDER BY u.name ASC
+		ORDER BY s.name ASC
 	`
 	rows, err := r.db.Query(query, date)
 	if err != nil {
@@ -267,9 +357,27 @@ func (r *Repository) DeleteAttendance(id int) error {
 	return err
 }
 
-func (r *Repository) GetAttendanceSummary(studentID int) (map[string]int, error) {
-	query := `SELECT status, COUNT(*) FROM attendance WHERE student_id = ? GROUP BY status`
-	rows, err := r.db.Query(query, studentID)
+// GetAttendanceSummary menjumlahkan presensi seorang Santri. Parametriknya
+// adalah akun portal (users.id) supaya pemanggil lama - raport dan ringkasan
+// wali - tetap bekerja; semua Santri milik akun tersebut ikut dihitung.
+func (r *Repository) GetAttendanceSummary(userID int) (map[string]int, error) {
+	// Akun lama (dibuat sebelum Jilid 76) belum punya baris Santri.user_id,
+	// jadi hanya bisa dikenali lewat nama. Pencocokan nama HANYA dipakai bila
+	// nama itu unik di tabel Santri; kalau ambigu, akun itu sengaja diabaikan
+	// agar tidak salah menghitung presensi orang lain. Aturan ini sama dengan
+	// fallback resolveStudents saat pindai QR.
+	query := `
+		SELECT status, COUNT(*) FROM attendance
+		WHERE student_id IN (
+			SELECT id FROM santri WHERE user_id = ?
+			UNION
+			SELECT s.id FROM santri s
+			WHERE s.name = (SELECT u.name FROM users u WHERE u.id = ?)
+			  AND (SELECT COUNT(*) FROM santri uniq WHERE uniq.name = s.name) = 1
+		)
+		GROUP BY status
+	`
+	rows, err := r.db.Query(query, userID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -288,13 +396,30 @@ func (r *Repository) GetAttendanceSummary(studentID int) (map[string]int, error)
 }
 
 // Tahfidz
-func (r *Repository) GetAllTahfidz() ([]TahfidzProgress, error) {
+func (r *Repository) GetAllTahfidz(limit, offset int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, u.name as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date, t.semester, t.academic_year
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		ORDER BY t.evaluation_date DESC
 	`
+	if limit > 0 {
+		query += " LIMIT ? OFFSET ?"
+		rows, err := r.db.Query(query, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var ts []TahfidzProgress
+		for rows.Next() {
+			var t TahfidzProgress
+			if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate, &t.Semester, &t.AcademicYear); err != nil {
+				return nil, err
+			}
+			ts = append(ts, t)
+		}
+		return ts, nil
+	}
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -304,7 +429,7 @@ func (r *Repository) GetAllTahfidz() ([]TahfidzProgress, error) {
 	var ts []TahfidzProgress
 	for rows.Next() {
 		var t TahfidzProgress
-		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate); err != nil {
+		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate, &t.Semester, &t.AcademicYear); err != nil {
 			return nil, err
 		}
 		ts = append(ts, t)
@@ -314,7 +439,7 @@ func (r *Repository) GetAllTahfidz() ([]TahfidzProgress, error) {
 
 func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, error) {
 	query := `
-		SELECT t.id, t.student_id, u.name as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date
+		SELECT t.id, t.student_id, COALESCE((SELECT s.name FROM santri s WHERE s.user_id = t.student_id ORDER BY s.id LIMIT 1), u.name) as student_name, t.surah_name, t.juz, t.start_ayat, t.end_ayat, t.status, t.musyrif_notes, t.evaluation_date, t.semester, t.academic_year
 		FROM tahfidz_progress t
 		JOIN users u ON t.student_id = u.id
 		WHERE t.student_id = ?
@@ -329,7 +454,7 @@ func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, erro
 	var ts []TahfidzProgress
 	for rows.Next() {
 		var t TahfidzProgress
-		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate); err != nil {
+		if err := rows.Scan(&t.ID, &t.StudentID, &t.StudentName, &t.SurahName, &t.Juz, &t.StartAyat, &t.EndAyat, &t.Status, &t.MusyrifNotes, &t.EvaluationDate, &t.Semester, &t.AcademicYear); err != nil {
 			return nil, err
 		}
 		ts = append(ts, t)
@@ -337,15 +462,40 @@ func (r *Repository) GetTahfidzByStudent(studentID int) ([]TahfidzProgress, erro
 	return ts, nil
 }
 
+// DeriveTahfidzPeriod menurunkan semester & tahun ajaran dari tanggal
+// evaluasi tahfidz. Aturan identik dengan migrasi backfill di db.go (Jilid 90):
+// bulan >= Juli -> semester 1 (TA y/y+1), selain itu semester 2 (TA y-1/y).
+// Tanggal kosong/tidak valid memakai hari ini supaya baris selalu punya periode.
+func DeriveTahfidzPeriod(evaluationDate string) (semester, academicYear string) {
+	d := strings.TrimSpace(evaluationDate)
+	if len(d) < 10 {
+		d = time.Now().Format("2006-01-02")
+	}
+	year, err := strconv.Atoi(d[0:4])
+	if err != nil {
+		return "", ""
+	}
+	month, err := strconv.Atoi(d[5:7])
+	if err != nil {
+		return "", ""
+	}
+	if month >= 7 {
+		return "1", strconv.Itoa(year) + "/" + strconv.Itoa(year+1)
+	}
+	return "2", strconv.Itoa(year-1) + "/" + strconv.Itoa(year)
+}
+
 func (r *Repository) CreateTahfidz(t *TahfidzProgress) error {
-	query := `INSERT INTO tahfidz_progress (student_id, surah_name, juz, start_ayat, end_ayat, status, musyrif_notes, evaluation_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate)
+	t.Semester, t.AcademicYear = DeriveTahfidzPeriod(t.EvaluationDate)
+	query := `INSERT INTO tahfidz_progress (student_id, surah_name, juz, start_ayat, end_ayat, status, musyrif_notes, evaluation_date, semester, academic_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate, t.Semester, t.AcademicYear)
 	return err
 }
 
 func (r *Repository) UpdateTahfidz(id int, t *TahfidzProgress) error {
-	query := `UPDATE tahfidz_progress SET student_id=?, surah_name=?, juz=?, start_ayat=?, end_ayat=?, status=?, musyrif_notes=?, evaluation_date=? WHERE id=?`
-	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate, id)
+	t.Semester, t.AcademicYear = DeriveTahfidzPeriod(t.EvaluationDate)
+	query := `UPDATE tahfidz_progress SET student_id=?, surah_name=?, juz=?, start_ayat=?, end_ayat=?, status=?, musyrif_notes=?, evaluation_date=?, semester=?, academic_year=? WHERE id=?`
+	_, err := r.db.Exec(query, t.StudentID, t.SurahName, t.Juz, t.StartAyat, t.EndAyat, t.Status, t.MusyrifNotes, t.EvaluationDate, t.Semester, t.AcademicYear, id)
 	return err
 }
 
@@ -359,7 +509,7 @@ func (r *Repository) GetStudents() ([]struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }, error) {
-	query := "SELECT id, name, email FROM users WHERE role = 'user' ORDER BY name ASC"
+	query := "SELECT u.id, s.name, u.email FROM santri s JOIN users u ON u.id = s.user_id WHERE u.role = 'user' ORDER BY s.name ASC"
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -383,4 +533,103 @@ func (r *Repository) GetStudents() ([]struct {
 		students = append(students, s)
 	}
 	return students, nil
+}
+
+// AttendanceStudent adalah satu Santri untuk form presensi. Modul presensi
+// memakai Santri.id, bukan users.id, supaya dua saudara dari satu akun wali
+// tidak saling menimpa.
+type AttendanceStudent struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Class string `json:"class"`
+	NIS   string `json:"nis"`
+}
+
+// GetAttendanceStudents daftar Santri untuk form presensi. classes kosong
+// berarti semua kelas.
+func (r *Repository) GetAttendanceStudents(classes []string) ([]AttendanceStudent, error) {
+	query := `SELECT id, name, nis, class FROM santri WHERE 1=1`
+	args := []interface{}{}
+	if len(classes) > 0 {
+		ph := make([]string, len(classes))
+		for i, c := range classes {
+			ph[i] = "?"
+			args = append(args, c)
+		}
+		query += " AND class IN (" + strings.Join(ph, ",") + ")"
+	}
+	query += " ORDER BY class ASC, name ASC"
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []AttendanceStudent{}
+	for rows.Next() {
+		var s AttendanceStudent
+		var nis sql.NullString
+		if err := rows.Scan(&s.ID, &s.Name, &nis, &s.Class); err != nil {
+			return nil, err
+		}
+		s.NIS = nis.String
+		out = append(out, s)
+	}
+	return out, nil
+}
+
+type PerGuruRow struct {
+	TeacherID    int     `json:"teacher_id"`
+	TeacherName  string  `json:"teacher_name"`
+	SubjectCount int     `json:"subject_count"`
+	Subjects     string  `json:"subjects"`
+	StudentCount int     `json:"student_count"`
+	GradeCount   int     `json:"grade_count"`
+	AvgFinal     float64 `json:"avg_final"`
+}
+
+func (r *Repository) ReportPerGuru(semester, year string) ([]PerGuruRow, error) {
+	args := []interface{}{}
+	gradeFilter := ""
+	if semester != "" {
+		gradeFilter += " AND g.semester = ?"
+		args = append(args, semester)
+	}
+	if year != "" {
+		gradeFilter += " AND g.academic_year = ?"
+		args = append(args, year)
+	}
+	query := `
+		SELECT s.teacher_id, COALESCE(u.name, 'Belum ada pengampu'),
+			COUNT(DISTINCT s.id),
+			GROUP_CONCAT(DISTINCT s.name),
+			COUNT(DISTINCT g.student_id),
+			COUNT(g.id),
+			COALESCE(AVG(g.final_score), 0)
+		FROM subjects s
+		LEFT JOIN users u ON u.id = s.teacher_id
+		LEFT JOIN grades g ON g.subject_id = s.id` + gradeFilter + `
+		GROUP BY s.teacher_id
+		ORDER BY COALESCE(u.name, 'zzz')`
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PerGuruRow{}
+	for rows.Next() {
+		var row PerGuruRow
+		var tid sql.NullInt64
+		if err := rows.Scan(&tid, &row.TeacherName, &row.SubjectCount, &row.Subjects, &row.StudentCount, &row.GradeCount, &row.AvgFinal); err != nil {
+			return nil, err
+		}
+		if tid.Valid {
+			row.TeacherID = int(tid.Int64)
+		}
+		if row.Subjects == "" {
+			row.Subjects = "-"
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
 }

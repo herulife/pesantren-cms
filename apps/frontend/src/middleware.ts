@@ -1,51 +1,36 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-// Soft client-side gate: decodes (does NOT verify signature) the JWT payload
-// to check expiry. Real authorization is still enforced server-side.
-function isTokenValid(token: string | undefined): boolean {
-  if (!token) return false;
-  const parts = token.split('.');
-  if (parts.length < 2) return false;
-  try {
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-    if (typeof payload.exp === 'number') {
-      return payload.exp * 1000 > Date.now();
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Cookie auth utama (baru) + fallback legacy agar backward compatible.
   const token =
-    request.cookies.get('darussunnah_token')?.value ||
+    request.cookies.get('alma_token')?.value ||
     request.cookies.get('token')?.value;
 
-  const authenticated = isTokenValid(token);
-
-  // Jika user mengakses /admin tanpa token valid, redirect ke /login
-  if (pathname.startsWith('/admin') && !authenticated) {
+  // Jika user mengakses /admin tanpa token, redirect ke /login
+  if (pathname.startsWith('/admin') && !token) {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Jika user mengakses /portal tanpa token valid, redirect ke alur login PSB
-  if (pathname.startsWith('/portal') && !authenticated) {
+  // Jika user mengakses /portal tanpa token, redirect ke alur login PSB
+  if (pathname.startsWith('/portal') && !token) {
     const loginUrl = new URL('/login?from=psb', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // /audit adalah dashboard audit internal: memuat versi stack, mesin database,
-  // dan daftar temuan kerentanan. Ini petaattack yang tidak boleh publik meski
-  // sudah noindex. /audit-hacked tetap publik karena itu laporan insiden.
-  if (pathname === '/audit' && !authenticated) {
+  // Screenshot tutorial memakai data dari sistem, jadi hanya bisa dibuka setelah login
+  if (pathname.startsWith('/assets/tutorials') && !token) {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Mode Classic (/admin-bs) dihapus di Jilid 73: semua fiturnya sudah ada di
+  // /admin. Bookmark lama tetap dialihkan, bukan 404.
+  if (pathname === '/admin-bs' || pathname.startsWith('/admin-bs/')) {
+    return NextResponse.redirect(new URL('/admin', request.url));
   }
 
   return NextResponse.next();

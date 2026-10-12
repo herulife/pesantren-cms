@@ -49,7 +49,7 @@ func usage() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  licensectl genkeypair --private-out license-private.pem --public-out public.key")
-	fmt.Println("  licensectl issue --private-key license-private.pem --days 365 --customer \"Darussunnah\" --domain darussunnahparung.com")
+	fmt.Println("  licensectl issue --private-key license-private.pem --days 365 --customer \"Darussunnah\" --domain pondpes-darussunnah.vercel.app")
 	fmt.Println("  licensectl inspect --token <jwt>")
 }
 

@@ -1,15 +1,31 @@
 package auth
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
 
+	"darussunnah-api/internal/validators"
 	"golang.org/x/crypto/bcrypt"
-
-	"darussunnah-api/internal/platform/roles"
 )
+
+// AUDIT FIX [6.1]: OAuth/p registered users must not share one guessable
+// password hash. Each gets a unique random 256-bit dummy so password-login
+// into SSO accounts is infeasible without a real password set.
+func randomDummyPasswordHash() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(raw)), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
 
 type User struct {
 	ID           int        `json:"id"`
@@ -17,13 +33,20 @@ type User struct {
 	PasswordHash string     `json:"-"`
 	Name         string     `json:"name"`
 	Role         string     `json:"role"`
+	TokenVersion int        `json:"-"`
 	CreatedAt    time.Time  `json:"created_at"`
 	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
+	// PhotoURL path relatif hasil upload avatar sendiri (Jilid 69). NULL = belum
+	// pasang foto, frontend harus fallback ke inisial. Sengaja TIDAK di-json
+	// sebagai omitempty supaya frontend bisa bedakan "" (kosong) vs tidak ada.
+	PhotoURL *string `json:"photo_url"`
 }
 
 type Repository struct {
 	db *sql.DB
 }
+
+var ErrLastSuperadmin = errors.New("cannot remove the last superadmin")
 
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
@@ -33,8 +56,9 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 	var u User
 	var createdAt string
 	var lastLoginAt sql.NullString
-	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, created_at, last_login_at FROM users WHERE email = ?", email).
-		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt)
+	var photoURL sql.NullString
+	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, created_at, last_login_at, photo_url FROM users WHERE email = ?", email).
+		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt, &photoURL)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("user not found")
@@ -49,11 +73,64 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 			u.LastLoginAt = &parsed
 		}
 	}
+	if photoURL.Valid && photoURL.String != "" {
+		u.PhotoURL = &photoURL.String
+	}
 	return &u, nil
 }
 
 func (r *Repository) CheckPassword(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+
+// FindByID mengambil user by ID beserta token_version (untuk validasi sesi).
+func (r *Repository) FindByID(id int) (*User, error) {
+	var u User
+	var createdAt string
+	var lastLoginAt sql.NullString
+	var photoURL sql.NullString
+	err := r.db.QueryRow("SELECT id, email, password_hash, name, role, COALESCE(token_version,0), created_at, last_login_at, photo_url FROM users WHERE id = ?", id).
+		Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &u.TokenVersion, &createdAt, &lastLoginAt, &photoURL)
+	if err == sql.ErrNoRows {
+		return nil, errors.New("user not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	u.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+	if lastLoginAt.Valid && lastLoginAt.String != "" {
+		if parsed, parseErr := time.Parse("2006-01-02 15:04:05", lastLoginAt.String); parseErr == nil {
+			u.LastLoginAt = &parsed
+		}
+	}
+	if photoURL.Valid && photoURL.String != "" {
+		u.PhotoURL = &photoURL.String
+	}
+	return &u, nil
+}
+
+// GetTokenVersion mengambil versi sesi user (0 bila kolom belum ada/error).
+func (r *Repository) GetTokenVersion(id int) int {
+	var tv int
+	if err := r.db.QueryRow("SELECT COALESCE(token_version,0) FROM users WHERE id = ?", id).Scan(&tv); err != nil {
+		return 0
+	}
+	return tv
+}
+
+// BumpTokenVersion menaikkan versi sesi sehingga SEMUA token lama user
+// tersebut invalid (dipakai saat logout, reset password, ganti role).
+func (r *Repository) BumpTokenVersion(id int) error {
+	_, err := r.db.Exec("UPDATE users SET token_version = COALESCE(token_version,0) + 1 WHERE id = ?", id)
+	return err
+}
+
+// UpdateIdentity mengubah nama + email login akun staf dalam satu UPDATE.
+// Cek duplikasi email dilakukan di handler (FindByEmail) supaya bisa membalas
+// 409 yang jelas, bukan error UNIQUE mentah dari SQLite.
+func (r *Repository) UpdateIdentity(id int, name, email string) error {
+	_, err := r.db.Exec("UPDATE users SET name = ?, email = ? WHERE id = ?", name, email, id)
+	return err
 }
 
 func (r *Repository) UpdatePassword(id int, newPassword string) error {
@@ -62,6 +139,17 @@ func (r *Repository) UpdatePassword(id int, newPassword string) error {
 		return err
 	}
 	_, err = r.db.Exec("UPDATE users SET password_hash = ? WHERE id = ?", string(hash), id)
+	return err
+}
+
+// SetPhotoURL menyimpan/menghapus path avatar user. photoURL == nil berarti
+// lepaskan avatar (kembali ke inisial).
+func (r *Repository) SetPhotoURL(id int, photoURL *string) error {
+	if photoURL == nil {
+		_, err := r.db.Exec("UPDATE users SET photo_url = NULL WHERE id = ?", id)
+		return err
+	}
+	_, err := r.db.Exec("UPDATE users SET photo_url = ? WHERE id = ?", *photoURL, id)
 	return err
 }
 
@@ -74,8 +162,13 @@ func (r *Repository) CreateUser(user *User) error {
 			return err
 		}
 	} else {
-		// DUMMY hash for OAuth users
-		hash, _ = bcrypt.GenerateFromPassword([]byte("oauth_dummy_secret"), bcrypt.DefaultCost)
+		// AUDIT FIX [6.1]: unique random dummy — see randomDummyPasswordHash.
+		var dummy string
+		dummy, err = randomDummyPasswordHash()
+		if err != nil {
+			return err
+		}
+		hash = []byte(dummy)
 	}
 
 	res, err := r.db.Exec("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
@@ -95,11 +188,11 @@ func (r *Repository) CreateUser(user *User) error {
 }
 
 func (r *Repository) GetAllUsers(search string) ([]User, error) {
-	query := `SELECT id, email, COALESCE(password_hash,''), name, role, created_at, last_login_at FROM users`
-	var args []interface{}
+	query := `SELECT id, email, COALESCE(password_hash,''), name, role, created_at, last_login_at, photo_url FROM users WHERE role IN (?, ?, ?, ?, ?, ?, ?, ?)`
+	args := []interface{}{"superadmin", "bendahara", "panitia_psb", "tim_media", "pimpinan", "wali_kelas", "guru", "ustadz"}
 
 	if search != "" {
-		query += " WHERE email LIKE ? OR name LIKE ?"
+		query += " AND (email LIKE ? OR name LIKE ?)"
 		args = append(args, "%"+search+"%", "%"+search+"%")
 	}
 
@@ -116,7 +209,8 @@ func (r *Repository) GetAllUsers(search string) ([]User, error) {
 		var u User
 		var createdAt string
 		var lastLoginAt sql.NullString
-		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt); err != nil {
+		var photoURL sql.NullString
+		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Role, &createdAt, &lastLoginAt, &photoURL); err != nil {
 			return nil, err
 		}
 		u.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
@@ -125,10 +219,13 @@ func (r *Repository) GetAllUsers(search string) ([]User, error) {
 				u.LastLoginAt = &parsed
 			}
 		}
-		u.PasswordHash = "" // never expose
+		if photoURL.Valid && photoURL.String != "" {
+			u.PhotoURL = &photoURL.String
+		}
+		u.PasswordHash = ""
 		users = append(users, u)
 	}
-	return users, nil
+	return users, rows.Err()
 }
 
 func (r *Repository) UpdateLastLogin(id int) error {
@@ -136,7 +233,7 @@ func (r *Repository) UpdateLastLogin(id int) error {
 	return err
 }
 
-func (r *Repository) DeleteUser(id int) error {
+func (r *Repository) DeleteUser(id int) (err error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -162,11 +259,15 @@ func (r *Repository) DeleteUser(id int) error {
 		{query: "DELETE FROM student_points WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM violation_logs WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM grades WHERE student_id = ?", args: []interface{}{id}},
-		{query: "DELETE FROM attendance WHERE student_id = ?", args: []interface{}{id}},
+		// Presensi dikunci ke Santri.id, jadi ikutkan seluruh Santri milik akun.
+		{query: "DELETE FROM attendance WHERE student_id IN (SELECT id FROM santri WHERE user_id = ?)", args: []interface{}{id}},
 		{query: "DELETE FROM tahfidz_progress WHERE student_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM payments WHERE user_id = ?", args: []interface{}{id}},
 		{query: "DELETE FROM registrations WHERE user_id = ?", args: []interface{}{id}},
-		{query: "DELETE FROM activity_logs WHERE user_id = ?", args: []interface{}{id}},
+		// PHASE 2/7: audit history TIDAK dihapus saat user dihapus (retensi forensik).
+		{query: "UPDATE activity_logs SET user_id = NULL WHERE user_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM kesantrian_aspek WHERE student_id = ?", args: []interface{}{id}},
+		{query: "DELETE FROM raports WHERE student_id = ?", args: []interface{}{id}},
 	}
 
 	for _, stmt := range statements {
@@ -179,7 +280,11 @@ func (r *Repository) DeleteUser(id int) error {
 		}
 	}
 
-	result, err := tx.Exec("DELETE FROM users WHERE id = ?", id)
+	result, err := tx.Exec(`DELETE FROM users
+		WHERE id = ?
+		  AND (role <> 'superadmin' OR EXISTS (
+			SELECT 1 FROM users WHERE role = 'superadmin' AND id <> ?
+		))`, id, id)
 	if err != nil {
 		return err
 	}
@@ -189,6 +294,11 @@ func (r *Repository) DeleteUser(id int) error {
 		return err
 	}
 	if rowsAffected == 0 {
+		var role string
+		lookupErr := tx.QueryRow("SELECT role FROM users WHERE id = ?", id).Scan(&role)
+		if lookupErr == nil && role == "superadmin" {
+			return ErrLastSuperadmin
+		}
 		return sql.ErrNoRows
 	}
 
@@ -201,47 +311,32 @@ func isMissingTableError(err error) bool {
 }
 
 func (r *Repository) UpdateRole(userID int, role string) error {
-	if !roles.IsAssignable(role) {
+	if !validators.IsManageableRole(role) {
 		return errors.New("invalid role: " + role)
 	}
-	_, err := r.db.Exec("UPDATE users SET role = ? WHERE id = ?", role, userID)
-	return err
-}
-
-// GetTokenVersion returns the current token version for a user.
-func (r *Repository) GetTokenVersion(id int) (int, error) {
-	var v int
-	err := r.db.QueryRow("SELECT COALESCE(token_version, 0) FROM users WHERE id = ?", id).Scan(&v)
+	if role == "superadmin" {
+		_, err := r.db.Exec("UPDATE users SET role = ? WHERE id = ?", role, userID)
+		return err
+	}
+	result, err := r.db.Exec(`UPDATE users SET role = ?
+		WHERE id = ?
+		  AND (role <> 'superadmin' OR EXISTS (
+			SELECT 1 FROM users WHERE role = 'superadmin' AND id <> ?
+		))`, role, userID, userID)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return v, nil
-}
-
-// BumpTokenVersion invalidates every existing token for a user (password/role change).
-func (r *Repository) BumpTokenVersion(id int) error {
-	_, err := r.db.Exec("UPDATE users SET token_version = COALESCE(token_version, 0) + 1 WHERE id = ?", id)
-	return err
-}
-
-// RevokeToken records a single JWT jti as revoked until its expiry.
-func (r *Repository) RevokeToken(jti string, expiresAt int64) error {
-	if jti == "" {
-		return nil
-	}
-	_, err := r.db.Exec("INSERT OR REPLACE INTO revoked_tokens (jti, expires_at) VALUES (?, ?)", jti, expiresAt)
-	return err
-}
-
-// IsTokenRevoked reports whether the given jti has been revoked.
-func (r *Repository) IsTokenRevoked(jti string) (bool, error) {
-	if jti == "" {
-		return false, nil
-	}
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(1) FROM revoked_tokens WHERE jti = ?", jti).Scan(&count)
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return false, err
+		return err
 	}
-	return count > 0, nil
+	if rowsAffected == 0 {
+		var currentRole string
+		lookupErr := r.db.QueryRow("SELECT role FROM users WHERE id = ?", userID).Scan(&currentRole)
+		if lookupErr == nil && currentRole == "superadmin" {
+			return ErrLastSuperadmin
+		}
+		return sql.ErrNoRows
+	}
+	return nil
 }

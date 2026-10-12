@@ -3,7 +3,18 @@ function getApiBaseUrl() {
 	if (typeof window !== 'undefined') {
 		return '/api';
 	}
-	return configured || 'http://localhost:8080/api';
+	const backendOrigin = process.env.NEXT_PUBLIC_SITE_API_ORIGIN?.trim();
+	const defaultBackendOrigin =
+		process.env.NODE_ENV === 'production'
+			? 'https://darussunnahparung.com'
+			: 'http://localhost:8080';
+	if (configured) {
+		return configured;
+	}
+	if (backendOrigin) {
+		return `${backendOrigin.replace(/\/+$/, '')}/api`;
+	}
+	return `${defaultBackendOrigin}/api`;
 }
 
 const API_BASE_URL = getApiBaseUrl();
@@ -45,7 +56,9 @@ function resolveApiOrigin() {
 	try {
 		return new URL(API_BASE_URL).origin;
 	} catch {
-		return 'http://localhost:8080';
+		return process.env.NODE_ENV === 'production'
+			? 'https://darussunnahparung.com'
+			: 'http://localhost:8080';
 	}
 }
 
@@ -196,10 +209,17 @@ export function normalizeApiAssetUrl(url?: string | null) {
 	try {
 		const parsed = new URL(trimmed);
 		if (parsed.pathname.startsWith('/api/uploads/')) {
-			return new URL(parsed.pathname.replace('/api/uploads/', '/uploads/'), parsed.origin).toString();
+			return new URL(parsed.pathname.replace('/api/uploads/', '/uploads/'), apiOrigin).toString();
+		}
+		if (parsed.pathname.startsWith('/uploads/')) {
+			return new URL(parsed.pathname, apiOrigin).toString();
 		}
 		if (parsed.pathname.startsWith('/assets/')) {
 			return parsed.pathname;
+		}
+		// rewrite localhost origins to apiOrigin
+		if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+			return new URL(parsed.pathname + parsed.search + parsed.hash, apiOrigin).toString();
 		}
 		return parsed.toString();
 	} catch {
@@ -341,6 +361,15 @@ export function getGallerySortTimestamp(eventDate?: string | null, createdAt?: s
 
 async function parseResponse(res: Response) {
 	if (!res.ok) {
+		// Sesi kedaluwarsa/hilang: arahkan ke login (kecuali sedang di login/register).
+		if (res.status === 401 && typeof window !== 'undefined') {
+			const path = window.location.pathname;
+			if (!path.startsWith('/login') && !path.startsWith('/register')) {
+				const from = encodeURIComponent(path + window.location.search);
+				window.location.href = `/login?from=${from}`;
+				throw new Error('Sesi berakhir. Mengalihkan ke halaman masuk…');
+			}
+		}
 		const contentType = res.headers.get("content-type");
 		let errMsg = `Permintaan gagal: ${res.status} ${res.statusText}`;
 		if (contentType && contentType.includes("application/json")) {
@@ -352,7 +381,8 @@ async function parseResponse(res: Response) {
 		} else {
 			errMsg = localizeApiMessage(errMsg);
 		}
-		console.error(`[API] Request failed: ${res.url} - ${errMsg}`);
+		// AUDIT FIX [6.10]: URL & detail mentah tidak di-log ke console browser.
+		console.error('[API] Request failed');
 		throw new Error(errMsg);
 	}
 	
@@ -411,6 +441,7 @@ async function fetchJsonWithFallback<T>(
 
 export interface News {
   id: number;
+  is_pinned?: number;
   title: string;
   slug: string;
   content: string;
@@ -432,13 +463,6 @@ export interface NewsPayload {
 	category_id: number;
 }
 
-export interface LicenseStatus {
-  is_valid: boolean;
-  is_warning: boolean;
-  days_left: number;
-  message: string;
-}
-
 export interface Registration {
 	id: number;
 	user_id?: number;
@@ -446,6 +470,7 @@ export interface Registration {
 	nickname: string;
 	gender: string;
 	nik?: string;
+	nisn?: string;
 	birth_place: string;
 	birth_date: string;
 	address?: string;
@@ -459,14 +484,28 @@ export interface Registration {
 	mother_job?: string;
 	mother_phone?: string;
 	program_choice: string;
+	jenjang: string;
+	category?: string;
+	yatim_doc_url?: string;
+	sktm_doc_url?: string;
 	kk_url?: string;
 	ijazah_url?: string;
 	pasfoto_url?: string;
+	akta_url?: string;
+	ktp_ortu_url?: string;
+	surat_kelulusan_url?: string;
+	foto_pendaftaran_url?: string;
 	payment_proof_url?: string;
 	payment_amount?: number;
 	payment_date?: string;
 	payment_status?: string;
 	payment_note?: string;
+	rejection_note?: string;
+	test_date?: string;
+	test_location?: string;
+	test_score?: number;
+	test_note?: string;
+	re_registration_deadline?: string;
 	status: string;
 	created_at: string;
 	updated_at?: string;
@@ -494,25 +533,13 @@ export interface GalleryItem {
 	created_at: string;
 }
 
-// Gallery album metadata (Drive links, descriptions)
-export interface GalleryAlbumMeta {
-  id: number;
-  album_slug: string;
-  album_name: string;
-  event_date: string;
-  category: string;
-  description: string;
-  drive_url: string;
-  drive_folder_id: string;
-  is_active: boolean;
-}
-
 export interface Campaign {
 	id: number;
 	title: string;
 	description: string;
 	target_amount: number;
 	collected_amount: number;
+	donor_count?: number;
 	image_url: string;
 	is_active: number;
 	end_date: string | null;
@@ -522,13 +549,15 @@ export interface Donation {
 	id: number;
 	campaign_id: number;
 	campaign_title: string;
+	donor_id?: number | null;
 	donor_name: string;
 	donor_phone: string;
 	amount: number;
-	message: string;
+	type?: string;
 	payment_method: string;
 	status: string;
-	donation_date: string;
+	verified_at?: string | null;
+	notes?: string;
 	created_at: string;
 }
 
@@ -635,6 +664,18 @@ export interface CompactUser {
 	email: string;
 }
 
+/**
+ * Santri untuk form presensi. Berbeda dengan CompactUser yang id-nya akun
+ * portal (users.id), di sini id adalah Santri.id supaya dua saudara dari satu
+ * akun wali tetap dapat dipilih terpisah.
+ */
+export interface AttendanceStudent {
+	id: number;
+	name: string;
+	nis: string;
+	class: string;
+}
+
 export interface Subject {
 	id: number;
 	name: string;
@@ -653,6 +694,7 @@ export interface Grade {
 	uts_score: number;
 	uas_score: number;
 	task_score: number;
+	uh_score: number;
 	final_score: number;
 	grade_letter: string;
 	notes: string;
@@ -679,6 +721,42 @@ export interface TahfidzProgress {
 	status: string;
 	musyrif_notes: string;
 	evaluation_date: string;
+	semester?: string;
+	academic_year?: string;
+}
+
+export interface HadisArbain {
+	number: number;
+	title: string;
+	category: string;
+	translation: string;
+	source: string;
+	arabic: string;
+}
+
+export interface ArbainProgress {
+	id: number;
+	student_id: number;
+	student_name?: string;
+	hadith_number: number;
+	hadith_title?: string;
+	category?: string;
+	translation?: string;
+	source?: string;
+	status: string;
+	nilai: number;
+	notes: string;
+	evaluation_date: string;
+}
+
+export interface ArbainSummary {
+	total: number;
+	status: Record<string, number>;
+}
+
+export interface MyArbainResponse {
+	progress: ArbainProgress[];
+	summary: ArbainSummary;
 }
 
 export interface Exam {
@@ -721,12 +799,24 @@ export interface WalletTransaction {
 	created_at: string;
 }
 
+export interface AdminWalletRow {
+	user_id: number;
+	name: string;
+	email: string;
+	nis: string;
+	santri_name: string;
+	balance: number;
+	has_pin: boolean;
+	is_active: boolean;
+	updated_at: string;
+}
+
 export async function getPrograms(params: { category?: string, search?: string } = {}) {
 	try {
 		const queryParams = new URLSearchParams();
 		if (params.category) queryParams.append('category', params.category);
 		if (params.search) queryParams.append('search', params.search);
-		
+
 		const res = await fetch(`${API_BASE_URL}/programs?${queryParams.toString()}`, withCredentials({ cache: 'no-store' }));
 		if (!res.ok) return [];
 		const result = await parseResponse(res);
@@ -760,6 +850,8 @@ export async function getFaqs(search: string = '') {
 		return [];
 	}
 }
+
+
 
 export async function getFacilities(params: { category?: string, search?: string } = {}) {
 	try {
@@ -798,21 +890,6 @@ export async function getNews() {
   } catch (e) {
     console.error(`[API] Fetch news error:`, e);
     return [];
-  }
-}
-
-export async function getLicenseStatus() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/premium-check`, withCredentials({ cache: 'no-store' }));
-    if (res.status === 402) {
-      const errorBody = await res.json();
-      return { is_valid: false, message: errorBody.message } as LicenseStatus;
-    }
-    if (!res.ok) return { is_valid: false, message: 'SERVER_OFFLINE' } as LicenseStatus;
-    
-    return await res.json() as LicenseStatus;
-  } catch {
-    return { is_valid: false, message: 'SERVER_OFFLINE' } as LicenseStatus;
   }
 }
 
@@ -867,6 +944,26 @@ export async function getGallery(params: { category?: string, search?: string, l
 	}
 }
 
+export type DonationStats = {
+	total_donors: number;
+	total_verified_amount: number;
+	total_campaigns: number;
+};
+
+export async function getDonationStats(): Promise<DonationStats> {
+	try {
+		const r = await lmsFetch('/donations/stats', { method: 'GET' });
+		const d = (r as { data?: Partial<DonationStats> })?.data;
+		return {
+			total_donors: d?.total_donors ?? 0,
+			total_verified_amount: d?.total_verified_amount ?? 0,
+			total_campaigns: d?.total_campaigns ?? 0,
+		};
+	} catch {
+		return { total_donors: 0, total_verified_amount: 0, total_campaigns: 0 };
+	}
+}
+
 export async function getCampaigns(params: { activeOnly?: boolean, search?: string } = {}) {
 	try {
 		const queryParams = new URLSearchParams();
@@ -883,12 +980,13 @@ export async function getCampaigns(params: { activeOnly?: boolean, search?: stri
 	}
 }
 
-export async function getDonations(params: { campaignID?: number, status?: string, search?: string } = {}) {
+export async function getDonations(params: { campaignID?: number, status?: string, search?: string, type?: string } = {}) {
 	try {
 		const queryParams = new URLSearchParams();
 		if (params.campaignID) queryParams.append('campaign_id', params.campaignID.toString());
 		if (params.status) queryParams.append('status', params.status);
 		if (params.search) queryParams.append('search', params.search);
+		if (params.type) queryParams.append('type', params.type);
 
 		const res = await fetch(`${API_BASE_URL}/donations/list?${queryParams.toString()}`, { cache: 'no-store' });
 		if (!res.ok) return [];
@@ -898,6 +996,82 @@ export async function getDonations(params: { campaignID?: number, status?: strin
 		console.error(`[API] Fetch donations error:`, e);
 		return [];
 	}
+}
+
+export interface Donor {
+	id: number;
+	name: string;
+	address: string;
+	phone: string;
+	notes: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export async function getDonors(search: string = '') {
+	try {
+		const queryParams = new URLSearchParams();
+		if (search) queryParams.append('search', search);
+		const res = await fetch(`${API_BASE_URL}/donations/donors?${queryParams.toString()}`, { cache: 'no-store' });
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		return (result.data || []) as Donor[];
+	} catch (e) {
+		console.error(`[API] Fetch donors error:`, e);
+		return [];
+	}
+}
+
+export async function createDonor(data: Omit<Donor, 'id' | 'created_at' | 'updated_at'>) {
+	const res = await fetch(`${API_BASE_URL}/donations/donors`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateDonor(id: number, data: Omit<Donor, 'id' | 'created_at' | 'updated_at'>) {
+	const res = await fetch(`${API_BASE_URL}/donations/donors/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteDonor(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/donors/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function createDonation(data: { campaign_id: number; donor_id?: number; donor_name: string; donor_phone?: string; amount: number; type?: string; method?: string; proof_url?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/donations/list`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateDonation(id: number, data: { campaign_id: number; donor_id?: number; donor_name: string; donor_phone?: string; amount: number; type?: string; method?: string; proof_url?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/donations/list/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteDonation(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/list/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
 }
 
 export async function getVideos(params: { search?: string, limit?: number, offset?: number } = {}) {
@@ -931,7 +1105,7 @@ export async function getMessages(params: { isRead?: boolean, search?: string } 
 		if (params.isRead !== undefined) queryParams.append('is_read', params.isRead ? '1' : '0');
 		if (params.search) queryParams.append('search', params.search);
 		
-		const res = await fetch(`${API_BASE_URL}/messages?${queryParams.toString()}`, { 
+		const res = await fetch(`${API_BASE_URL}/contact?${queryParams.toString()}`, { 
 			headers: getAuthHeaders(),
 			cache: 'no-store' 
 		});
@@ -986,6 +1160,434 @@ export async function getPaymentUsers() {
 	}
 }
 
+export interface SppBill {
+	id: number;
+	santri_id: number;
+	santri_name?: string;
+	santri_nis?: string;
+	santri_class?: string;
+	period: string;
+	amount: number;
+	paid_amount: number;
+	status: string;
+	due_date: string;
+	paid_method: string;
+	paid_at?: string;
+	notes: string;
+	payment_proof?: string;
+	pending_amount?: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface IuranBill {
+	id: number;
+	santri_id: number;
+	santri_name?: string;
+	santri_nis?: string;
+	santri_class?: string;
+	name: string;
+	period: string;
+	amount: number;
+	paid_amount: number;
+	status: string;
+	due_date: string;
+	paid_method: string;
+	paid_at?: string;
+	notes: string;
+	payment_proof?: string;
+	pending_amount?: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface SppSummary {
+	period: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_total: number;
+	count_paid: number;
+	count_partial: number;
+	count_unpaid: number;
+}
+
+export interface IuranSummary {
+	period: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_total: number;
+	count_paid: number;
+	count_partial: number;
+	count_unpaid: number;
+}
+
+export interface SppSantri {
+	id: number;
+	nis: string;
+	name: string;
+	class: string;
+}
+
+export interface IuranSantri {
+	id: number;
+	nis: string;
+	name: string;
+	class: string;
+}
+
+export async function getSppBills(params: { period?: string; status?: string; santri_id?: number } = {}) {
+	try {
+		const query = new URLSearchParams();
+		if (params.period) query.set('period', params.period);
+		if (params.status) query.set('status', params.status);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/spp/bills?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as SppBill[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP bills error:`, e);
+		return [];
+	}
+}
+
+export async function getIuranBills(params: { period?: string; status?: string; santri_id?: number; name?: string } = {}) {
+	try {
+		const query = new URLSearchParams();
+		if (params.period) query.set('period', params.period);
+		if (params.status) query.set('status', params.status);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		if (params.name) query.set('name', params.name);
+		const res = await fetch(`${API_BASE_URL}/iuran/bills?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as IuranBill[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP bills error:`, e);
+		return [];
+	}
+}
+
+export async function getSppSummary(period: string): Promise<SppSummary | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/spp/bills/summary?period=${encodeURIComponent(period)}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || null) as SppSummary | null;
+	} catch (e) {
+		console.error(`[API] Fetch SPP summary error:`, e);
+		return null;
+	}
+}
+
+export async function getIuranSummary(period: string, name = ""): Promise<IuranSummary | null> {
+	try {
+		const q = `period=${encodeURIComponent(period)}${name ? `&name=${encodeURIComponent(name)}` : ""}`;
+		const res = await fetch(`${API_BASE_URL}/iuran/bills/summary?${q}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || null) as IuranSummary | null;
+	} catch (e) {
+		console.error(`[API] Fetch SPP summary error:`, e);
+		return null;
+	}
+}
+
+export async function getSppSantri() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/spp/santri`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as SppSantri[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP santri error:`, e);
+		return [];
+	}
+}
+
+export async function getIuranSantri() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/iuran/santri`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as IuranSantri[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP santri error:`, e);
+		return [];
+	}
+}
+
+export async function generateSppBills(data: { period: string; period_end?: string; amount: number; due_date?: string; class?: string; santri_ids?: number[] }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/generate`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export interface SppAutoConfig {
+	enabled: boolean;
+	amount: number;
+	due_day: number;
+	wa_enabled: boolean;
+}
+
+export async function getSppAutoConfig(): Promise<{ success: boolean; message: string; data: SppAutoConfig }> {
+	const res = await fetch(`${API_BASE_URL}/spp/auto-config`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function updateSppAutoConfig(data: SppAutoConfig) {
+	const res = await fetch(`${API_BASE_URL}/spp/auto-config`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function generateIuranBills(data: { name: string; period: string; amount: number; due_date?: string; class?: string; santri_ids?: number[] }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/generate`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function createSppBill(data: { santri_id: number; period: string; amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function createIuranBill(data: { santri_id: number; name: string; period: string; amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateSppBill(id: number, data: { amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateIuranBill(id: number, data: { amount: number; due_date?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function paySppBill(id: number, data: { amount: number; method?: string; paid_at?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}/pay`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function payIuranBill(id: number, data: { amount: number; method?: string; paid_at?: string; notes?: string }) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}/pay`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function cancelSppBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}/cancel`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function cancelIuranBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}/cancel`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteSppBySantri(santri_id: number, period = "") {
+	const q = `santri_id=${santri_id}${period ? `&period=${encodeURIComponent(period)}` : ""}`;
+	const res = await fetch(`${API_BASE_URL}/spp/bills/by-santri?${q}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteSppByPeriod(period: string) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/by-period?period=${encodeURIComponent(period)}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export interface CombinedRow {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+	spp_billed: number;
+	iuran_billed: number;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	status: string;
+}
+
+export async function getCombinedReport(params: { period_start: string; period_end: string; class?: string; santri_id?: number }) {
+	try {
+		const query = new URLSearchParams();
+		query.set('period_start', params.period_start);
+		query.set('period_end', params.period_end);
+		if (params.class) query.set('class', params.class);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/spp/combined-report?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as CombinedRow[];
+	} catch (e) {
+		console.error(`[API] Fetch combined report error:`, e);
+		return [];
+	}
+}
+
+export async function deleteSppBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteIuranBySantri(santri_id: number, name = "", period = "") {
+	const q = new URLSearchParams({ santri_id: String(santri_id) });
+	if (name) q.set("name", name);
+	if (period) q.set("period", period);
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/by-santri?${q.toString()}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteIuranByPeriod(name: string, period: string) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/by-period?name=${encodeURIComponent(name)}&period=${encodeURIComponent(period)}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function deleteIuranBill(id: number) {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export interface SppReportRow {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_bills: number;
+	status: string;
+}
+
+export interface IuranReportRow {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+	billed: number;
+	collected: number;
+	outstanding: number;
+	count_bills: number;
+	status: string;
+}
+
+export async function getSppReport(params: { period_start: string; period_end: string; class?: string; santri_id?: number }) {
+	try {
+		const query = new URLSearchParams();
+		query.set('period_start', params.period_start);
+		query.set('period_end', params.period_end);
+		if (params.class) query.set('class', params.class);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/spp/report?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as SppReportRow[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP report error:`, e);
+		return [];
+	}
+}
+
+export async function getIuranReport(params: { period_start: string; period_end: string; class?: string; santri_id?: number }) {
+	try {
+		const query = new URLSearchParams();
+		query.set('period_start', params.period_start);
+		query.set('period_end', params.period_end);
+		if (params.class) query.set('class', params.class);
+		if (params.santri_id) query.set('santri_id', String(params.santri_id));
+		const res = await fetch(`${API_BASE_URL}/iuran/report?${query.toString()}`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as IuranReportRow[];
+	} catch (e) {
+		console.error(`[API] Fetch SPP report error:`, e);
+		return [];
+	}
+}
+
 // Mutations
 export async function createProgram(program: Omit<Program, 'id' | 'created_at' | 'updated_at'>) {
 	const res = await fetch(`${API_BASE_URL}/programs`, {
@@ -1006,7 +1608,7 @@ export async function updateProgram(id: number | string, program: Partial<Progra
 }
 
 export async function deleteProgram(id: number | string) {
-	const res = await fetch(`${API_BASE_URL}/programs/${id}`, { 
+	const res = await fetch(`${API_BASE_URL}/programs/${id}`, {
 		method: 'DELETE',
 		headers: getAuthHeaders()
 	});
@@ -1033,10 +1635,7 @@ export async function addNews(news: NewsPayload) {
 
 export async function getNewsById(id: number | string) {
 	try {
-		// /news/manage/{id} is the authenticated read that still returns drafts and
-		// trashed items. The public /news/{id} endpoint is now published-only, so
-		// using it here made the admin edit form 404 on every draft.
-		const res = await fetch(`${API_BASE_URL}/news/manage/${id}`, { headers: getAuthHeaders(), cache: 'no-store' });
+		const res = await fetch(`${API_BASE_URL}/news/${id}`, { cache: 'no-store' });
 		if (!res.ok) return null;
 		const result = await parseResponse(res);
 		return result?.data ? normalizeNewsPayload(result.data) : null;
@@ -1075,6 +1674,15 @@ export async function deleteNews(id: number) {
 	return parseResponse(res);
 }
 
+export async function togglePinNews(id: number, pinned: boolean) {
+	const res = await fetch(`${API_BASE_URL}/news/${id}/pin`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ pinned })
+	});
+	return parseResponse(res);
+}
+
 export async function getNewsPaginated(params: { status?: string, category?: string, search?: string, limit?: number, offset?: number }) {
   try {
     const queryParams = new URLSearchParams();
@@ -1084,7 +1692,7 @@ export async function getNewsPaginated(params: { status?: string, category?: str
     if (params.limit) queryParams.append('limit', params.limit.toString());
     if (params.offset) queryParams.append('offset', params.offset.toString());
 
-    const res = await fetch(`${API_BASE_URL}/news/manage/all?${queryParams.toString()}`, { headers: getAuthHeaders(), cache: 'no-store' });
+    const res = await fetch(`${API_BASE_URL}/news?${queryParams.toString()}`, { headers: getAuthHeaders(), cache: 'no-store' });
     if (!res.ok) return { data: [], pagination: { total: 0 } };
     const result = await parseResponse(res);
     return {
@@ -1219,6 +1827,24 @@ export async function deleteCampaign(id: number) {
 	return parseResponse(res);
 }
 
+export async function getCampaign(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/campaigns/${id}`, {
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	const result = await parseResponse(res);
+	return result.data as Campaign;
+}
+
+export async function updateCampaign(id: number, campaign: Partial<Campaign>) {
+	const res = await fetch(`${API_BASE_URL}/donations/campaigns/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(campaign)
+	});
+	return parseResponse(res);
+}
+
 export async function addFaq(faq: Omit<Faq, 'id' | 'order_num'>) {
 	const res = await fetch(`${API_BASE_URL}/faqs`, {
 		method: 'POST',
@@ -1289,6 +1915,15 @@ export async function login(credentials: { email: string; password: string }) {
 	return parseResponse(res);
 }
 
+export async function registerUser(credentials: { name: string; email: string; password: string }) {
+	const res = await fetch(`${API_BASE_URL}/register`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(credentials)
+	});
+	return parseResponse(res);
+}
+
 export async function googleLogin(credential: string) {
 	const res = await fetch(`${API_BASE_URL}/auth/google`, {
 		method: 'POST',
@@ -1307,6 +1942,191 @@ export async function getMe() {
 		return await parseResponse(res);
 	} catch {
 		return { success: false };
+	}
+}
+
+export interface SantriPortalUser {
+	id: number;
+	name: string;
+	email: string;
+	role: string;
+}
+
+export async function getSantriPortalUsers(search: string = ''): Promise<SantriPortalUser[]> {
+	try {
+		const query = search ? `?search=${encodeURIComponent(search)}` : '';
+		const result = await lmsFetch<SantriPortalUser[]>(`/santri/portal-users${query}`);
+		return result.data || [];
+	} catch (e) {
+		console.error('[API] Fetch Santri portal users error:', e);
+		return [];
+	}
+}
+
+// Akun santri yang belum dipakai santri lain (+ akun yang sedang tertaut).
+export async function getAvailableSantriAccounts(search: string = '', includeId: number = 0): Promise<SantriPortalUser[]> {
+	try {
+		const q = new URLSearchParams();
+		if (search) q.set('search', search);
+		if (includeId) q.set('include_id', String(includeId));
+		const qs = q.toString() ? `?${q.toString()}` : '';
+		const result = await lmsFetch<SantriPortalUser[]>(`/santri/portal-users-available${qs}`);
+		return result.data || [];
+	} catch (e) {
+		console.error('[API] Fetch available santri accounts error:', e);
+		return [];
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Akun Wali Santri (Jilid 76)
+// Satu akun wali bisa punya BEBAS SANTRI (saudara satu keluarga berbagi 1
+// login), jadi daftar di bawah selalu berupa array anak per akun.
+// ---------------------------------------------------------------------------
+export interface WaliSantri {
+	santri_id: number;
+	nis: string;
+	name: string;
+	class: string;
+}
+
+export interface WaliAccount {
+	user_id: number;
+	name: string;
+	email: string;
+	whatsapp: string;
+	role: string;
+	is_placeholder: boolean;
+	name_placeholder: boolean;
+	needs_note?: string;
+	last_login_at?: string;
+	santri: WaliSantri[];
+}
+
+export interface WaliOrphan {
+	user_id: number;
+	name: string;
+	email: string;
+	whatsapp?: string;
+	is_placeholder?: boolean;
+	name_placeholder?: boolean;
+	last_login_at?: string;
+}
+
+export interface WaliStats {
+	total_accounts: number;
+	total_santri: number;
+	placeholder: number;
+	orphan: number;
+	multi_santri: number;
+}
+
+export interface WaliList {
+	accounts: WaliAccount[];
+	orphans: WaliOrphan[];
+	stats: WaliStats;
+}
+
+export async function getWaliSantriAccounts(): Promise<WaliList | null> {
+	try {
+		const r = await lmsFetch<WaliList>('/wali-santri');
+		return r.success ? r.data : null;
+	} catch (e) {
+		console.error('[API] Fetch wali santa accounts error:', e);
+		return null;
+	}
+}
+
+export async function updateWaliSantriAccount(
+	userId: number,
+	payload: { name: string; email: string; whatsapp?: string }
+): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wali-santri/${userId}`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		});
+		return { ok: r.success, message: r.message };
+	} catch (e) {
+		return {
+			ok: false,
+			message: e instanceof Error ? e.message : 'Gagal memperbarui akun wali'
+		};
+	}
+}
+
+export interface WaliCreatePayload {
+	name: string;
+	email: string;
+	whatsapp?: string;
+	password: string;
+	santri_ids: number[];
+}
+
+export async function createWaliSantriAccount(
+	payload: WaliCreatePayload
+): Promise<{ ok: boolean; message: string; user_id?: number }> {
+	try {
+		const r = await lmsFetch<{ user_id: number }>('/wali-santri', {
+			method: 'POST',
+			body: JSON.stringify(payload)
+		});
+		return { ok: r.success, message: r.message, user_id: r.data?.user_id };
+	} catch (e) {
+		return {
+			ok: false,
+			message: e instanceof Error ? e.message : 'Gagal membuat akun wali'
+		};
+	}
+}
+
+export async function resetWaliSantriPassword(
+	userId: number,
+	password: string
+): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wali-santri/${userId}/reset-password`, {
+			method: 'POST',
+			body: JSON.stringify({ password })
+		});
+		return { ok: r.success, message: r.message };
+	} catch (e) {
+		return {
+			ok: false,
+			message: e instanceof Error ? e.message : 'Gagal mereset password'
+		};
+	}
+}
+
+export async function linkSantriAccount(id: number, user_id: number): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}/link-user-exclusive`, { method: 'PUT', body: JSON.stringify({ user_id }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menautkan akun santri' }; }
+}
+
+export async function resetSantriPassword(id: number, password: string): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ password }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal mereset password' }; }
+}
+
+// updateSantriAccount — ubah email login akun portal santri dan/atau password
+// baru dalam satu permintaan. Password dikirim kosong = password tidak diubah.
+// shared = jumlah santri yang berbagi akun yang sama (saudara satu keluarga).
+export async function updateSantriAccount(
+	id: number,
+	payload: { email: string; password?: string }
+): Promise<{ ok: boolean; message: string; shared?: number }> {
+	try {
+		const r = await lmsFetch<{ user_id: number; shared_santri: number }>(`/santri/${id}/account`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		});
+		return { ok: r.success, message: r.message, shared: r.data?.shared_santri };
+	} catch (e) {
+		return { ok: false, message: e instanceof Error ? e.message : 'Gagal memperbarui akun santri' };
 	}
 }
 
@@ -1343,6 +2163,61 @@ export async function resetUserPassword(id: number, password: string) {
 	return parseResponse(res);
 }
 
+// updateUserProfile — ubah nama + email login akun staf (role selain 'user').
+// Email duplikat dibalas backend 409 dan dilempar sebagai Error berisi pesannya.
+export async function updateUserProfile(id: number, payload: { name: string; email: string }) {
+	const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
+// changeMyPassword — user mengganti password-nya sendiri (butuh password lama).
+// Backend menaikkan token_version sehingga SEMUA sesi jadi tidak valid, jadi
+// pemanggil wajib mengarahkan user ke /login setelah sukses.
+export async function changeMyPassword(payload: {
+	old_password: string;
+	new_password: string;
+	confirm_password: string;
+}) {
+	const res = await fetch(`${API_BASE_URL}/me/password`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(payload)
+	});
+	return parseResponse(res);
+}
+
+// uploadMyPhoto — user yang sedang login mengunggah avatar miliknya sendiri
+// (field multipart: image). Backend menyimpan ke /uploads/avatars/ dan menulis
+// path-nya ke users.photo_url; file lama dihapus backend setelah yang baru
+// terpasang, jadi tidak perlu cleanup di frontend.
+//
+// Pakai rawFetch (tanpa timeout 30 detik apiFetch) seperti uploadImage: foto HP
+// besar lewat koneksi lambat sering terputus di tengah jalan.
+export async function uploadMyPhoto(file: File) {
+	const formData = new FormData();
+	formData.append('image', file);
+
+	const res = await rawFetch(`${API_BASE_URL}/me/photo`, {
+		method: 'PUT',
+		body: formData,
+		credentials: 'include'
+	});
+	return parseResponse(res);
+}
+
+// deleteMyPhoto — lepas avatar; UserAvatar otomatis fallback ke inisial.
+export async function deleteMyPhoto() {
+	const res = await fetch(`${API_BASE_URL}/me/photo`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function deleteUser(id: number) {
 	const res = await fetch(`${API_BASE_URL}/users/${id}`, {
 		method: 'DELETE',
@@ -1360,11 +2235,80 @@ export async function updateUserRole(id: number, role: string) {
 	return parseResponse(res);
 }
 
-export async function updatePSBStatus(id: number, status: string) {
+export interface PSBStatusUpdatePayload {
+	status: string;
+	note?: string;
+	test_date?: string;
+	test_location?: string;
+	test_score?: number;
+	test_note?: string;
+	re_registration_deadline?: string;
+}
+
+export async function updatePSBStatus(id: number, payload: PSBStatusUpdatePayload) {
 	const res = await fetch(`${API_BASE_URL}/psb/${id}/status`, {
 		method: 'PUT',
 		headers: getAuthHeaders(),
-		body: JSON.stringify({ status })
+		body: JSON.stringify({ note: '', ...payload })
+	});
+	return parseResponse(res);
+}
+
+export interface WAOutboxItem {
+	id: number;
+	registration_id: number | null;
+	kind: string;
+	phone: string;
+	message: string;
+	status: string;
+	error?: string;
+	attempts: number;
+	max_attempts: number;
+	next_retry_at?: string;
+	sent_at?: string;
+	last_attempt_at?: string;
+	created_at: string;
+}
+
+export interface PSBWAOutboxResponse {
+	success?: boolean;
+	message?: string;
+	data?: { items?: WAOutboxItem[] };
+}
+
+export interface PSBActionResponse {
+	success?: boolean;
+	message?: string;
+}
+
+export async function getPSBWAOutbox(registrationId: number): Promise<PSBWAOutboxResponse> {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa-log?registration_id=${registrationId}`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function retryPSBWAMessage(id: number): Promise<PSBActionResponse> {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa-retry`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ id })
+	});
+	return parseResponse(res);
+}
+
+export async function sendPSBAnnouncement(id: number): Promise<PSBActionResponse> {
+	const res = await fetch(`${API_BASE_URL}/psb/${id}/announce`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function acceptPSBToSantri(id: number) {
+	const res = await fetch(`${API_BASE_URL}/psb/${id}/accept-santri`, {
+		method: 'PUT',
+		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
 }
@@ -1384,6 +2328,23 @@ export async function deletePSBRegistration(id: number) {
 		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
+}
+
+export interface PSBPengumuman {
+	id: number;
+	no: string;
+	full_name: string;
+	status: string;
+	status_label: string;
+	program_choice: string;
+	jenjang: string;
+	test_date?: string;
+	rejection_note?: string;
+}
+
+export async function getPSBPengumuman(no: number | string) {
+	const res = await fetch(`${API_BASE_URL}/psb/pengumuman?no=${encodeURIComponent(no)}`);
+	return parseResponse(res) as Promise<{ success: boolean; message: string; data: PSBPengumuman | null }>;
 }
 
 export async function getMyPSBRegistration() {
@@ -1413,6 +2374,12 @@ export async function saveMyPSBDocuments(payload: {
 	kk_url?: string;
 	ijazah_url?: string;
 	pasfoto_url?: string;
+	yatim_doc_url?: string;
+	sktm_doc_url?: string;
+	akta_url?: string;
+	ktp_ortu_url?: string;
+	surat_kelulusan_url?: string;
+	foto_pendaftaran_url?: string;
 }) {
 	const res = await fetch(`${API_BASE_URL}/psb/me/documents`, {
 		method: 'PUT',
@@ -1435,6 +2402,28 @@ export async function saveMyPSBPayment(payload: {
 	return parseResponse(res);
 }
 
+export interface PSBReceipt {
+	code: string;
+	amount: number;
+	paid_at: string;
+	method: string;
+	santri_name?: string;
+}
+
+export async function getMyPSBReceipt(): Promise<PSBReceipt | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/psb/me/receipt`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result?.data || null) as PSBReceipt | null;
+	} catch (e) {
+		console.error('[API] Fetch my PSB receipt error:', e);
+		return null;
+	}
+}
+
 export async function generateArticleAI(topic: string, withImage: boolean = true) {
 	const res = await fetch(`${API_BASE_URL}/news/generate`, {
 		method: 'POST',
@@ -1444,38 +2433,19 @@ export async function generateArticleAI(topic: string, withImage: boolean = true
 	return parseResponse(res);
 }
 
-export async function uploadImage(file: File) {
+export async function uploadImage(file: File, kind?: string) {
 	const formData = new FormData();
 	formData.append('image', file);
-
-	const res = await fetch(`${API_BASE_URL}/upload`, {
-		method: 'POST',
-		body: formData
-	});
-	const result = await parseResponse(res);
-	if (result?.data?.url && !result.url) {
-		return { ...result, url: result.data.url };
+	if (kind) {
+		formData.append('kind', kind);
 	}
-	return result;
-}
 
-/**
- * Upload dokumen pribadi siswa (KK, akta, ijazah, pasfoto, bukti bayar).
- *
- * Sengaja memakai endpoint terpisah dari `uploadImage`. Endpoint `/upload` kini
- * staf-only dan menaruh file di direktori publik yang dilayani tanpa autentikasi,
- * sedangkan dokumen siswa berisi data pribadi anak yang belum dewasa dan tidak
- * boleh bisa diakses siapa pun yang tahu URL-nya. Backend menyimpan dokumen ini
- * di storage privat per-user dan hanya melayikannya ke pemilik atau staf.
- */
-export async function uploadPrivateDocument(file: File) {
-	const formData = new FormData();
-	formData.append('image', file);
-
-	const res = await fetch(`${API_BASE_URL}/upload/document`, {
+	// Pakai rawFetch (tanpa timeout 30 detik apiFetch): upload foto HP
+	// yang besar lewat koneksi lambat sering terputus di tengah jalan.
+	const res = await rawFetch(`${API_BASE_URL}/upload`, {
 		method: 'POST',
-		headers: getAuthHeaders(),
-		body: formData
+		body: formData,
+		credentials: 'include'
 	});
 	const result = await parseResponse(res);
 	if (result?.data?.url && !result.url) {
@@ -1491,8 +2461,16 @@ export async function verifyDonation(id: number) {
 	return parseResponse(res);
 }
 
+export async function unverifyDonation(id: number) {
+	const res = await fetch(`${API_BASE_URL}/donations/unverify/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
 export async function markMessageAsRead(id: number) {
-	const res = await fetch(`${API_BASE_URL}/messages/${id}/read`, {
+	const res = await fetch(`${API_BASE_URL}/contact/${id}/read`, {
 		method: 'PATCH',
 		headers: getAuthHeaders()
 	});
@@ -1500,7 +2478,7 @@ export async function markMessageAsRead(id: number) {
 }
 
 export async function deleteMessage(id: number) {
-	const res = await fetch(`${API_BASE_URL}/messages/${id}`, {
+	const res = await fetch(`${API_BASE_URL}/contact/${id}`, {
 		method: 'DELETE',
 		headers: getAuthHeaders()
 	});
@@ -1512,64 +2490,6 @@ export async function createContactMessage(data: { name: string, email?: string,
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(data)
-	});
-	return parseResponse(res);
-}
-
-// Notifikasi Sistem (lonceng admin)
-export interface SysNotificationItem {
-	id: number;
-	type: string;
-	title: string;
-	message: string;
-	link: string;
-	created_at: string;
-	read: boolean;
-}
-
-export interface SysNotificationsData {
-	items: SysNotificationItem[];
-	unread_count: number;
-}
-
-export interface SysNotificationsResponse {
-	success?: boolean;
-	message?: string;
-	data?: SysNotificationsData;
-}
-
-export interface SysNotificationUnreadResponse {
-	success?: boolean;
-	message?: string;
-	data?: { count: number };
-}
-
-export async function getSysNotifications(): Promise<SysNotificationsResponse> {
-	const res = await fetch(`${API_BASE_URL}/snotif`, {
-		headers: getAuthHeaders()
-	});
-	return parseResponse(res);
-}
-
-export async function getSysNotificationUnread(): Promise<SysNotificationUnreadResponse> {
-	const res = await fetch(`${API_BASE_URL}/snotif/unread`, {
-		headers: getAuthHeaders()
-	});
-	return parseResponse(res);
-}
-
-export async function markSysNotificationRead(id: number): Promise<{ success?: boolean; message?: string }> {
-	const res = await fetch(`${API_BASE_URL}/snotif/read/${id}`, {
-		method: 'POST',
-		headers: getAuthHeaders()
-	});
-	return parseResponse(res);
-}
-
-export async function markAllSysNotificationsRead(): Promise<{ success?: boolean; message?: string }> {
-	const res = await fetch(`${API_BASE_URL}/snotif/read-all`, {
-		method: 'POST',
-		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
 }
@@ -1591,7 +2511,66 @@ export async function deletePayment(id: number) {
 	return parseResponse(res);
 }
 
+export async function updatePayment(id: number, data: Omit<Payment, 'id' | 'created_at' | 'user_name' | 'user_email'>) {
+	const res = await fetch(`${API_BASE_URL}/payments/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
 // Academics
+export async function getAcademicKKM() {
+	const res = await fetch(`${API_BASE_URL}/academics/kkm`, {
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	if (!res.ok) throw new Error('Gagal memuat KKM');
+	const data = await res.json();
+	return data.data?.kkm ?? 75;
+}
+
+export async function updateAcademicKKM(kkm: number) {
+	const res = await fetch(`${API_BASE_URL}/academics/kkm`, {
+		method: 'PUT',
+		headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+		body: JSON.stringify({ kkm })
+	});
+	const data = await res.json();
+	if (!res.ok) throw new Error(data.message || 'Gagal menyimpan KKM');
+	return data.data?.kkm ?? kkm;
+}
+
+export interface GradeWeight {
+	subject_id: number;
+	subject_name?: string;
+	uts_weight: number;
+	uas_weight: number;
+	task_weight: number;
+	uh_weight: number;
+}
+
+export async function getGradeWeights() {
+	const res = await fetch(`${API_BASE_URL}/academics/grade-weights`, {
+		headers: getAuthHeaders(),
+		cache: 'no-store'
+	});
+	const result = await parseResponse(res);
+	return (result.data || []) as GradeWeight[];
+}
+
+export async function updateGradeWeights(items: GradeWeight[]) {
+	const res = await fetch(`${API_BASE_URL}/academics/grade-weights`, {
+		method: 'PUT',
+		headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+		body: JSON.stringify({ items })
+	});
+	const data = await res.json();
+	if (!res.ok) throw new Error(data.message || 'Gagal menyimpan bobot nilai');
+	return data;
+}
+
 export async function getSubjects() {
 	try {
 		const res = await fetch(`${API_BASE_URL}/academics/subjects`, {
@@ -1810,6 +2789,87 @@ export async function deleteTahfidz(id: number) {
 	return parseResponse(res);
 }
 
+// Hadis Arbain: rujukan 42 hadis (read-only) + catatan setoran per Buffer Santri.
+export async function getArbainReference() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/academics/arbain/reference`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as HadisArbain[];
+	} catch (e) {
+		console.error(`[API] Fetch arbain reference error:`, e);
+		return [];
+	}
+}
+
+export async function getArbain() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/academics/arbain`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as ArbainProgress[];
+	} catch (e) {
+		console.error(`[API] Fetch arbain progress error:`, e);
+		return [];
+	}
+}
+
+export async function getMyArbain() {
+	return fetchJsonWithFallback<MyArbainResponse>(
+		'/portal/academics/arbain/me',
+		['/academics/arbain/me'],
+		{
+			defaultValue: { progress: [], summary: { total: 0, status: {} } },
+			silentStatuses: [401, 403],
+			logLabel: 'Fetch my arbain progress',
+		}
+	);
+}
+
+export async function createArbain(data: Omit<ArbainProgress, 'id' | 'student_name'>) {
+	const res = await fetch(`${API_BASE_URL}/academics/arbain`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function updateArbain(id: number, data: Partial<ArbainProgress>) {
+	const res = await fetch(`${API_BASE_URL}/academics/arbain/${id}`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function deleteArbain(id: number) {
+	const res = await fetch(`${API_BASE_URL}/academics/arbain/${id}`, {
+		method: 'DELETE',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function getAttendanceStudents() {
+	try {
+		const res = await fetch(`${API_BASE_URL}/academics/attendance/students`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as AttendanceStudent[];
+	} catch (e) {
+		console.error(`[API] Fetch attendance students error:`, e);
+		return [];
+	}
+}
+
 export async function getAcademicStudents() {
 	try {
 		const res = await fetch(`${API_BASE_URL}/academics/students`, {
@@ -1831,10 +2891,16 @@ export async function getNotificationStatus() {
 			headers: getAuthHeaders(),
 			cache: 'no-store'
 		});
-		return await parseResponse(res);
+		const result = await parseResponse(res);
+		return (result?.data || {}) as {
+			configured: boolean;
+			whatsapp_configured: boolean;
+			whatsapp_phone?: string;
+			telegram_configured?: boolean;
+		};
 	} catch (e) {
 		console.error(`[API] Fetch notification status error:`, e);
-		return { success: false, configured: false };
+		return { configured: false, whatsapp_configured: false, telegram_configured: false, whatsapp_phone: undefined };
 	}
 }
 
@@ -1843,6 +2909,136 @@ export async function sendWhatsApp(target: string, message: string) {
 		method: 'POST',
 		headers: getAuthHeaders(),
 		body: JSON.stringify({ target, message })
+	});
+	return parseResponse(res);
+}
+
+export interface WARecipient {
+	santri_id: number;
+	name: string;
+	nickname?: string;
+	class?: string;
+	status?: string;
+	parent_name?: string;
+	parent_phone?: string;
+	father_name?: string;
+	father_phone?: string;
+	mother_name?: string;
+	mother_phone?: string;
+	tagihan_period?: string;
+	tagihan_amount?: number;
+	tagihan_paid?: number;
+	tagihan_status?: string;
+	tagihan_due?: string;
+	tagihan_kind?: string;
+	lunas_receipt_no?: string;
+	lunas_period?: string;
+	lunas_total?: number;
+	lunas_method?: string;
+}
+
+export interface WAKwitansiPayload {
+	receipt_no: string;
+	period: string;
+	total: number;
+	method?: string;
+}
+
+export interface WAComposePayload {
+	nama: string;
+	wali?: string;
+	phone?: string;
+	tujuan?: string;
+	kwitansi?: WAKwitansiPayload | null;
+}
+
+export async function getWARecipients(): Promise<WARecipient[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa-recipients`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return Array.isArray(result?.data) ? (result.data as WARecipient[]) : [];
+	} catch (e) {
+		console.error(`[API] Fetch WA recipients error:`, e);
+		return [];
+	}
+}
+
+export async function generateWAMessage(payload: WAComposePayload): Promise<string> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa-ai-message`, {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload)
+		});
+		const result = await parseResponse(res);
+		return (result?.data?.message as string) || '';
+	} catch (e) {
+		console.error(`[API] Generate WA message error:`, e);
+		throw e;
+	}
+}
+
+export interface WAGatewayStatus {
+	connected: boolean;
+	phone?: string;
+	pushname?: string;
+}
+
+export async function getWAGatewayStatus(): Promise<WAGatewayStatus> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa/status`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || { connected: false }) as WAGatewayStatus;
+	} catch (e) {
+		console.error('[API] Fetch WA status error:', e);
+		return { connected: false };
+	}
+}
+
+export async function getWAQRBlob(): Promise<{ ok: boolean; url?: string; message?: string; ttl?: number }> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notifications/wa/qr`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		if (!res.ok) {
+			let message = 'Gagal memuat QR.';
+			try {
+				const j = await res.json();
+				message = j.message || message;
+			} catch {
+				// abaikan
+			}
+			return { ok: false, message };
+		}
+		const blob = await res.blob();
+		const ttl = Number(res.headers.get('X-QR-TTL')) || 0;
+		return { ok: true, url: URL.createObjectURL(blob), ttl };
+	} catch (e) {
+		console.error('[API] Fetch WA QR error:', e);
+		return { ok: false, message: 'Gagal memuat QR.' };
+	}
+}
+
+export async function requestWAPairCode(phone: string) {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa/pair-code`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ phone })
+	});
+	return parseResponse(res);
+}
+
+export async function disconnectWAGateway() {
+	const res = await fetch(`${API_BASE_URL}/notifications/wa/disconnect`, {
+		method: 'POST',
+		headers: getAuthHeaders()
 	});
 	return parseResponse(res);
 }
@@ -1922,6 +3118,23 @@ export async function getPublicSettingsMap() {
 	}, {});
 }
 
+export async function getRoleMenuPermissions(): Promise<Record<string, string[]>> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/settings/role-permissions`, {
+			credentials: 'include',
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		const raw = result?.data?.value || '{}';
+		const parsed = JSON.parse(raw);
+		if (parsed && typeof parsed === 'object') return parsed as Record<string, string[]>;
+		return {};
+	} catch (e) {
+		console.error(`[API] Fetch role permissions error:`, e);
+		return {};
+	}
+}
+
 export async function updateSetting(key: string, value: string) {
 	const res = await fetch(`${API_BASE_URL}/settings/${key}`, {
 		method: 'PUT',
@@ -1994,6 +3207,15 @@ export async function getDisciplinePoints(params: { limit?: number; offset?: num
 		console.error('[API] Fetch discipline points error:', e);
 		return { data: [] as StudentDisciplinePoint[], pagination: { total: 0 } };
 	}
+}
+
+export async function sendDisciplineWA(data: { student_id: number; phone: string; message: string; kind: string }) {
+	const res = await fetch(`${API_BASE_URL}/disciplines/wa-send`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
 }
 
 export async function getStudentDisciplinePoint(studentId: number) {
@@ -2200,6 +3422,1219 @@ export async function topUpWalletAdmin(userID: number, amount: number, descripti
 	}
 }
 
+// ===== E-Money (Dompet) Admin — Jilid 93 =====
+
+export async function getAdminWalletList(params: { search?: string; limit?: number; offset?: number } = {}): Promise<{ items: AdminWalletRow[]; total: number }> {
+	try {
+		const qs = new URLSearchParams();
+		if (params.search) qs.append('search', params.search);
+		if (params.limit !== undefined) qs.append('limit', String(params.limit));
+		if (params.offset !== undefined) qs.append('offset', String(params.offset));
+		const r = await lmsFetch<{ items: AdminWalletRow[]; total: number }>(`/wallet/admin/list?${qs.toString()}`);
+		return r.data || { items: [], total: 0 };
+	} catch (e) { console.error('[E-Money] list:', e); return { items: [], total: 0 }; }
+}
+
+export async function getAdminWalletHistory(userID: number, limit: number = 50): Promise<WalletTransaction[]> {
+	try {
+		const r = await lmsFetch<WalletTransaction[]>(`/wallet/admin/${userID}/history?limit=${limit}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Money] history:', e); return []; }
+}
+
+export async function adjustWalletBalance(userID: number, kind: 'deposit' | 'withdrawal', amount: number, description: string): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch('/wallet/admin/adjust', { method: 'POST', body: JSON.stringify({ user_id: userID, kind, amount, description }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal memproses mutasi' }; }
+}
+
+export async function setAdminWalletActive(userID: number, isActive: boolean): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wallet/admin/${userID}/active`, { method: 'PUT', body: JSON.stringify({ is_active: isActive }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal memperbarui status' }; }
+}
+
+export async function resetAdminWalletPIN(userID: number, pin: string): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wallet/admin/${userID}/reset-pin`, { method: 'POST', body: JSON.stringify({ pin }) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal reset PIN' }; }
+}
+
+export async function deleteAdminWallet(userID: number): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/wallet/admin/${userID}`, { method: 'DELETE' });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus dompet' }; }
+}
+
+// ========== LMS DARUSSUNNAH: Project & E-Raport ==========
+
+export interface SubProject {
+	id: number;
+	name: string;
+	code: string;
+	description: string;
+	weight: number;
+	order_index: number;
+	is_active: boolean;
+	is_demo: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface ProjectActivity {
+	id: number;
+	sub_project_id: number;
+	name: string;
+	code: string;
+	description: string;
+	tujuan: string;
+	indikator: string;
+	weight: number;
+	order_index: number;
+	is_active: boolean;
+	periode: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface ProjectIndicator {
+	id: number;
+	activity_id: number;
+	name: string;
+	weight: number;
+	created_at: string;
+}
+
+export interface SubjectScoreDetail {
+	subject_id: number;
+	subject_name: string;
+	score: number;
+	weight: number;
+}
+
+export interface ProjectDetailScore {
+	sub_project_id: number;
+	sub_project: string;
+	score: number;
+	weight: number;
+	contribution: number;
+}
+
+// Progres tahfidz pada periode rapor — informatif, TIDAK memengaruhi
+// final_score (keputusan produk Jilid 90).
+export interface RaportTahfidzEntry {
+	surah_name: string;
+	juz: number;
+	start_ayat: number;
+	end_ayat: number;
+	status: string;
+	evaluation_date: string;
+}
+
+export interface RaportTahfidz {
+	entries: RaportTahfidzEntry[];
+	total: number;
+	lulus: number;
+	proses: number;
+	setor: number;
+	score: number;
+	has_data: boolean;
+}
+
+export interface ComputedRaport {
+	student_id: number;
+	student_name: string;
+	semester: string;
+	academic_year: string;
+	mapel_score: number;
+	project_score: number;
+	kesantrian_score: number;
+	final_score: number;
+	predikat: string;
+	is_complete: boolean;
+	missing?: string[];
+	mapel_details?: SubjectScoreDetail[];
+	project_details?: ProjectDetailScore[];
+	kesantrian_detail?: Record<string, number>;
+	tahfidz?: RaportTahfidz | null;
+	status?: string;
+}
+
+export interface KesantrianAspect {
+	id: number;
+	student_id: number;
+	student_name: string;
+	aspek: string;
+	semester: string;
+	academic_year: string;
+	score: number;
+	updated_at: string;
+}
+
+export interface ExtendedSubject {
+	id: number;
+	name: string;
+	category: string;
+	teacher_id: number | null;
+	weight: number;
+	kkm: number;
+	sort_order: number;
+	is_active: boolean;
+}
+
+export interface StoredRaport {
+	id: number;
+	student_id: number;
+	student_name: string;
+	semester: string;
+	academic_year: string;
+	mapel_score: number;
+	project_score: number;
+	kesantrian_score: number;
+	final_score: number;
+	predikat: string;
+	status: string;
+	notes: string;
+	updated_at: string;
+	tahfidz?: RaportTahfidz | null;
+}
+
+async function lmsFetch<T>(path: string, init?: RequestInit): Promise<{ success: boolean; message: string; data: T }> {
+	const res = await fetch(`${API_BASE_URL}${path}`, {
+		...withCredentials(init),
+		headers: { 'Content-Type': 'application/json' }
+	});
+	const result = await parseResponse(res);
+	return result as { success: boolean; message: string; data: T };
+}
+
+export async function getSubProjects(): Promise<SubProject[]> {
+	try {
+		const r = await lmsFetch<SubProject[]>('/project/subprojects');
+		return r.data || [];
+	} catch (e) { console.error('[Project] list subprojects:', e); return []; }
+}
+
+export async function createSubProject(payload: Partial<SubProject>): Promise<SubProject | null> {
+	try {
+		const r = await lmsFetch<SubProject>('/project/subprojects', { method: 'POST', body: JSON.stringify(payload) });
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Project] create subproject:', e); return null; }
+}
+
+export async function updateSubProject(id: number, payload: Partial<SubProject>): Promise<boolean> {
+	try {
+		const r = await lmsFetch(`/project/subprojects/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+		return r.success;
+	} catch (e) { console.error('[Project] update subproject:', e); return false; }
+}
+
+export async function deleteSubProject(id: number): Promise<boolean> {
+	try {
+		const r = await lmsFetch(`/project/subprojects/${id}`, { method: 'DELETE' });
+		return r.success;
+	} catch (e) { console.error('[Project] delete subproject:', e); return false; }
+}
+
+export async function getActivities(subProjectId?: number): Promise<ProjectActivity[]> {
+	try {
+		const q = subProjectId ? `?sub_project_id=${subProjectId}` : '';
+		const r = await lmsFetch<ProjectActivity[]>(`/project/activities${q}`);
+		return r.data || [];
+	} catch (e) { console.error('[Project] list activities:', e); return []; }
+}
+
+export async function createActivity(payload: Partial<ProjectActivity>): Promise<ProjectActivity | null> {
+	try {
+		const r = await lmsFetch<ProjectActivity>('/project/activities', { method: 'POST', body: JSON.stringify(payload) });
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Project] create activity:', e); return null; }
+}
+
+export async function updateActivity(id: number, payload: Partial<ProjectActivity>): Promise<boolean> {
+	try {
+		const r = await lmsFetch(`/project/activities/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+		return r.success;
+	} catch (e) { console.error('[Project] update activity:', e); return false; }
+}
+
+export async function deleteActivity(id: number): Promise<boolean> {
+	try {
+		const r = await lmsFetch(`/project/activities/${id}`, { method: 'DELETE' });
+		return r.success;
+	} catch (e) { console.error('[Project] delete activity:', e); return false; }
+}
+
+export async function getIndicators(activityId: number): Promise<ProjectIndicator[]> {
+	try {
+		const r = await lmsFetch<ProjectIndicator[]>(`/project/indicators?activity_id=${activityId}`);
+		return r.data || [];
+	} catch (e) { console.error('[Project] list indicators:', e); return []; }
+}
+
+export async function createIndicator(payload: Partial<ProjectIndicator>): Promise<ProjectIndicator | null> {
+	try {
+		const r = await lmsFetch<ProjectIndicator>('/project/indicators', { method: 'POST', body: JSON.stringify(payload) });
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Project] create indicator:', e); return null; }
+}
+
+export async function deleteIndicator(id: number): Promise<boolean> {
+	try {
+		const r = await lmsFetch(`/project/indicators/${id}`, { method: 'DELETE' });
+		return r.success;
+	} catch (e) { console.error('[Project] delete indicator:', e); return false; }
+}
+
+export async function validateWeights(): Promise<{ ok: boolean; weights?: Record<string, number>; message?: string }> {
+	try {
+		const r = await lmsFetch<Record<string, number>>('/project/weights/validate');
+		return { ok: r.success, weights: r.data, message: r.message };
+	} catch (e) { return { ok: false, message: 'Gagal memvalidasi bobot' }; }
+}
+
+export async function calculateRaport(params: { student_id: number; semester: string; academic_year: string }): Promise<ComputedRaport | null> {
+	try {
+		const qs = new URLSearchParams({
+			student_id: String(params.student_id),
+			semester: params.semester,
+			academic_year: params.academic_year
+		});
+		const r = await lmsFetch<ComputedRaport>(`/raport/calculate?${qs.toString()}`);
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Raport] calculate:', e); return null; }
+}
+
+// ---- Tahun ajaran aktif (satu sumber kebenaran di frontend) ----
+let _activeYearCache: string | null = null;
+
+// getActiveAcademicYear mengembalikan nama tahun ajaran aktif dari master
+// (academic_years.is_active). Jatuh tempo: hitung tahun berjalan (Juli-Juni).
+export async function getActiveAcademicYear(): Promise<string> {
+	if (_activeYearCache) return _activeYearCache;
+	const list = await getAcademicYears();
+	const active = list.find((y) => y.is_active === 1) || list[0];
+	if (active?.name) {
+		_activeYearCache = active.name;
+		return active.name;
+	}
+	const now = new Date();
+	let y = now.getFullYear();
+	if (now.getMonth() + 1 < 7) y--;
+	_activeYearCache = `${y}/${y + 1}`;
+	return _activeYearCache;
+}
+
+export function currentSemester(): string {
+	return new Date().getMonth() + 1 >= 7 ? '1' : '2';
+}
+
+export async function getRaportScores(stuId: number): Promise<ComputedRaport | null> {
+	try {
+		const [year, semester] = await Promise.all([getActiveAcademicYear(), Promise.resolve(currentSemester())]);
+		const q = new URLSearchParams({ semester, academic_year: year });
+		const r = await lmsFetch<ComputedRaport>(`/raport/santri/${stuId}?${q.toString()}`);
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Raport] get:', e); return null; }
+}
+
+export async function listStoredRaports(academicYear: string, semester: string): Promise<StoredRaport[]> {
+	try {
+		const q = new URLSearchParams({ academic_year: academicYear, semester });
+		const r = await lmsFetch<StoredRaport[]>(`/raport/list?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[Raport] list:', e); return []; }
+}
+
+export async function saveRaport(payload: Partial<StoredRaport>): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch('/raport/save', { method: 'POST', body: JSON.stringify(payload) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal mengunci rapor' }; }
+}
+
+export interface ProjectAssessmentMap { [activityId: number]: number }
+
+export async function listProjectAssessments(studentId: number, semester: string, academicYear: string): Promise<ProjectAssessmentMap> {
+	try {
+		const q = new URLSearchParams({ student_id: String(studentId), semester, academic_year: academicYear });
+		const r = await lmsFetch<ProjectAssessmentMap>(`/project/assessments?${q.toString()}`);
+		return r.data || {};
+	} catch (e) { console.error('[Raport] project assessments get:', e); return {}; }
+}
+
+export async function setProjectAssessment(payload: { student_id: number; activity_id: number; semester: string; academic_year: string; score: number }): Promise<boolean> {
+	try {
+		const r = await lmsFetch('/project/assessments', { method: 'POST', body: JSON.stringify(payload) });
+		return r.success;
+	} catch (e) { console.error('[Raport] project assessment set:', e); return false; }
+}
+
+export async function getKesantrianAspects(studentId: number, semester: string, academicYear: string): Promise<KesantrianAspect[]> {
+	try {
+		const q = new URLSearchParams({ student_id: String(studentId), semester, academic_year: academicYear });
+		const r = await lmsFetch<KesantrianAspect[]>(`/raport/kesantrian?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[Raport] kesantrian get:', e); return []; }
+}
+
+export async function setKesantrianAspect(payload: { student_id: number; aspek: string; semester: string; academic_year: string; score: number }): Promise<boolean> {
+	try {
+		const r = await lmsFetch('/raport/kesantrian', { method: 'POST', body: JSON.stringify(payload) });
+		return r.success;
+	} catch (e) { console.error('[Raport] kesantrian set:', e); return false; }
+}
+
+export async function getExtendedSubjects(): Promise<ExtendedSubject[]> {
+	try {
+		const r = await lmsFetch<ExtendedSubject[]>('/raport/subjects');
+		return r.data || [];
+	} catch (e) { console.error('[Raport] subjects:', e); return []; }
+}
+
+export async function updateSubjectWeights(items: { subject_id: number; weight: number }[]): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch('/raport/subjects/weights', { method: 'PUT', body: JSON.stringify(items) });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal update bobot mapel' }; }
+}
+
+export async function getMyRaport(semester?: string, academicYear?: string): Promise<ComputedRaport | null> {
+	try {
+		const year = academicYear || (await getActiveAcademicYear());
+		const sem = semester || currentSemester();
+		const q = new URLSearchParams({ semester: sem, academic_year: year });
+		const r = await lmsFetch<ComputedRaport>(`/portal/raport/me?${q.toString()}`);
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Raport] get my:', e); return null; }
+}
+
+
+// ===== Kesantrian: Data Santri CRUD =====
+
+export interface Santri {
+	id: number;
+	nis: string;
+	name: string;
+	nickname: string;
+	gender: string;
+	birth_place: string;
+	birth_date: string;
+	address: string;
+	class: string;
+	jenjang?: string;
+	angkatan: string;
+	status: string;
+	category?: string;
+	parent_name: string;
+	parent_phone: string;
+	nik: string;
+	nisn?: string;
+	father_name: string;
+	father_phone: string;
+	mother_name: string;
+	mother_phone: string;
+	father_occupation?: string;
+	mother_occupation?: string;
+	registration_id: number;
+	photo_url: string;
+	kk_url?: string;
+	akta_url?: string;
+	ktp_ortu_url?: string;
+	ijazah_url?: string;
+	surat_kelulusan_url?: string;
+	pasfoto_url?: string;
+	foto_pendaftaran_url?: string;
+	yatim_doc_url?: string;
+	sktm_doc_url?: string;
+	user_id?: number | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface SantriListResult {
+	items: Santri[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+export async function getSantriList(params: {
+	search?: string;
+	class?: string;
+	status?: string;
+	limit?: number;
+	offset?: number;
+} = {}): Promise<SantriListResult> {
+	try {
+		const qs = new URLSearchParams();
+		if (params.search) qs.append('search', params.search);
+		if (params.class) qs.append('class', params.class);
+		if (params.status) qs.append('status', params.status);
+		if (params.limit !== undefined) qs.append('limit', String(params.limit));
+		if (params.offset !== undefined) qs.append('offset', String(params.offset));
+		const r = await lmsFetch<SantriListResult>(`/santri?${qs.toString()}`);
+		return r.data || { items: [], total: 0, limit: 20, offset: 0 };
+	} catch (e) { console.error('[Kesantrian] list:', e); return { items: [], total: 0, limit: 20, offset: 0 }; }
+}
+
+export interface SantriClassCount {
+	value: string;
+	count: number;
+}
+
+export async function getSantriClasses(): Promise<SantriClassCount[]> {
+	try {
+		const r = await lmsFetch<SantriClassCount[]>('/santri/classes');
+		return r.data || [];
+	} catch (e) { console.error('[Kesantrian] classes:', e); return []; }
+}
+
+/**
+ * Baris export "Data Santri": seluruh kolom `santri` PLUS data akun portal
+ * yang tertaut lewat `santri.user_id`. `password_hash` tidak pernah ikut.
+ */
+export interface SantriExportRow extends Santri {
+	has_account: boolean;
+	user_id: number;
+	account_name: string;
+	account_email: string;
+	account_role: string;
+	account_whatsapp: string;
+	last_login_at: string;
+}
+
+/**
+ * Ambil SEMUA data santri tanpa paginasi untuk keperluan export Excel/PDF.
+ * Berbeda dengan `getSantriList` yang hanya satu halaman (20 baris).
+ * Query param sengaja kosong: endpoint ini mengabaikan search/status karena
+ * yang dibutuhkan adalah data lengkap.
+ */
+export async function getSantriExport(): Promise<SantriExportRow[]> {
+	try {
+		const r = await lmsFetch<{ items: SantriExportRow[] }>('/santri/export');
+		return r.data?.items || [];
+	} catch (e) { console.error('[Kesantrian] export:', e); return []; }
+}
+
+export async function setSantriClass(items: { id: number; class: string }[]): Promise<{ ok: boolean; message: string; updated?: number }> {
+	try {
+		const r = await lmsFetch<{ updated?: number }>('/santri/set-class', { method: 'POST', body: JSON.stringify({ items }) });
+		return { ok: r.success, message: r.message, updated: r.data?.updated };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menyimpan kelas' }; }
+}
+
+export async function linkSantriUser(id: number, user_id: number) {
+	const res = await fetch(`${API_BASE_URL}/santri/${id}/link-user`, {
+		method: 'PUT',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ user_id })
+	});
+	return parseResponse(res);
+}
+
+export interface ReceiptItem {
+	id: number; code: string; date: string; santri_id: number;
+	santri_nis?: string; santri_name?: string; bill_type: string; bill_id: number;
+	description: string; amount: number; method: string; petugas?: string;
+}
+
+export interface ReceiptData {
+	receipt: {
+		id: number; receipt_no: string; santri_id: number;
+		santri_nis?: string; santri_name?: string; santri_class?: string; parent_name?: string;
+		period: string; description: string; total: number; method: string;
+		petugas?: string; created_by?: number; created_at?: string;
+	};
+	items: ReceiptItem[];
+}
+
+async function fetchReceipt(url: string): Promise<ReceiptData | null> {
+	try {
+		const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
+		const result = await parseResponse(res);
+		if (!result.success) return null;
+		return result.data as ReceiptData;
+	} catch (e) {
+		console.error('[Receipt]:', e);
+		return null;
+	}
+}
+
+export async function getReceipt(santri_id: number, period: string): Promise<ReceiptData | null> {
+	return fetchReceipt(`${API_BASE_URL}/payments/receipt?santri_id=${santri_id}&period=${encodeURIComponent(period)}`);
+}
+
+export async function getMyReceipt(santri_id: number, period: string): Promise<ReceiptData | null> {
+	return fetchReceipt(`${API_BASE_URL}/my-receipt?santri_id=${santri_id}&period=${encodeURIComponent(period)}`);
+}
+
+export interface MyBill {
+	bill_type: string; bill_id: number; santri_id: number; santri_name: string;
+	period: string; name: string; amount: number; paid: number; remain: number;
+	status: string; due_date: string; payment_proof?: string;
+}
+
+export async function getMyBills(): Promise<MyBill[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/my-bills`, { headers: getAuthHeaders(), cache: 'no-store' });
+		const result = await parseResponse(res);
+		return (result.data || []) as MyBill[];
+	} catch (e) {
+		console.error('[Bills] my-bills:', e);
+		return [];
+	}
+}
+
+export async function getMyLedger(): Promise<PayTx[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/my-ledger`, { headers: getAuthHeaders(), cache: 'no-store' });
+		const result = await parseResponse(res);
+		return (result.data || []) as PayTx[];
+	} catch (e) {
+		console.error('[Bills] my-ledger:', e);
+		return [];
+	}
+}
+
+export async function submitSppProof(id: number, data: { amount: number; method?: string; paid_at?: string; proof_url: string }) {
+	const res = await fetch(`${API_BASE_URL}/my-bills/spp/${id}/proof`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function submitIuranProof(id: number, data: { amount: number; method?: string; paid_at?: string; proof_url: string }) {
+	const res = await fetch(`${API_BASE_URL}/my-bills/iuran/${id}/proof`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify(data)
+	});
+	return parseResponse(res);
+}
+
+export async function verifySppBill(id: number, approve: boolean, note = '') {
+	const res = await fetch(`${API_BASE_URL}/spp/bills/${id}/verify`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ approve, note })
+	});
+	return parseResponse(res);
+}
+
+export async function verifyIuranBill(id: number, approve: boolean, note = '') {
+	const res = await fetch(`${API_BASE_URL}/iuran/bills/${id}/verify`, {
+		method: 'POST',
+		headers: getAuthHeaders(),
+		body: JSON.stringify({ approve, note })
+	});
+	return parseResponse(res);
+}
+
+export async function getMySantri(): Promise<Santri[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/my-santri`, {
+			headers: getAuthHeaders(),
+			cache: 'no-store'
+		});
+		const result = await parseResponse(res);
+		return (result.data || []) as Santri[];
+	} catch (e) {
+		console.error('[Santri] my-santri:', e);
+		return [];
+	}
+}
+
+export async function getSantri(id: number): Promise<Santri | null> {
+	try {
+		const r = await lmsFetch<Santri>(`/santri/${id}`);
+		return r.success ? r.data : null;
+	} catch (e) { console.error('[Kesantrian] get:', e); return null; }
+}
+
+export async function createSantri(data: Partial<Santri>): Promise<{ ok: boolean; message: string; errors?: Record<string, string> }> {
+	try {
+		const r = await lmsFetch('/santri', { method: 'POST', body: JSON.stringify(data) });
+		return { ok: r.success, message: r.message, errors: (r as { errors?: Record<string, string> }).errors };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menambah santri' }; }
+}
+
+export async function updateSantri(id: number, data: Partial<Santri>): Promise<{ ok: boolean; message: string; errors?: Record<string, string> }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+		return { ok: r.success, message: r.message, errors: (r as { errors?: Record<string, string> }).errors };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal memperbarui santri' }; }
+}
+
+export async function deleteSantri(id: number): Promise<boolean> {
+	try {
+		const r = await lmsFetch(`/santri/${id}`, { method: 'DELETE' });
+		return r.success;
+	} catch (e) { console.error('[Kesantrian] delete:', e); return false; }
+}
+
+// purgeSantri = HAPUS TOTAL: santri + seluruh tagihan (termasuk lunas),
+// kwitansi, nilai, rapor, presensi, tahfidz, wallet, akun portal. Superadmin only.
+export async function purgeSantri(id: number): Promise<{ ok: boolean; message: string }> {
+	try {
+		const r = await lmsFetch(`/santri/${id}/purge`, { method: 'DELETE' });
+		return { ok: r.success, message: r.message };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus total santri' }; }
+}
+
+export async function bulkCreateSantri(items: Partial<Santri>[]): Promise<{ ok: boolean; message: string; inserted?: number }> {
+	try {
+		const r = await lmsFetch('/santri/bulk', { method: 'POST', body: JSON.stringify({ items }) });
+		return { ok: r.success, message: r.message, inserted: (r.data as { inserted?: number } | undefined)?.inserted };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal import santri' }; }
+}
+
+export async function bulkDeleteSantri(ids: number[]): Promise<{ ok: boolean; message: string; deleted?: number }> {
+	try {
+		const r = await lmsFetch('/santri/bulk', { method: 'DELETE', body: JSON.stringify({ ids }) });
+		return { ok: r.success, message: r.message, deleted: (r.data as { deleted?: number } | undefined)?.deleted };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal menghapus santri' }; }
+}
+
+export interface SchoolClass { id: number; code: string; name: string; jenjang: string; wali_name: string; wali_user_id: number; academic_year: string; is_active: number; created_at: string; updated_at: string; }
+export interface AcademicYear { id: number; name: string; start_date: string; end_date: string; is_active: number; created_at: string; updated_at: string; }
+
+export async function getClasses(activeOnly = false) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/school/classes${activeOnly ? "?active_only=true" : ""}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as SchoolClass[];
+  } catch (e) { console.error("[API] Fetch classes error:", e); return []; }
+}
+export async function createClass(data: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string }) {
+  const res = await fetch(`${API_BASE_URL}/school/classes`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function updateClass(id: number, data: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string; is_active: number }) {
+  const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteClass(id: number) {
+  const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function getAcademicYears() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/school/years`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as AcademicYear[];
+  } catch (e) { console.error("[API] Fetch years error:", e); return []; }
+}
+export async function createAcademicYear(data: { name: string; start_date?: string; end_date?: string }) {
+  const res = await fetch(`${API_BASE_URL}/school/years`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function activateAcademicYear(id: number) {
+  const res = await fetch(`${API_BASE_URL}/school/years/${id}/activate`, { method: "POST", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function deleteAcademicYear(id: number) {
+  const res = await fetch(`${API_BASE_URL}/school/years/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+
+export interface KasCategory { id: number; code: string; name: string; kind: string; creator?: string; updater?: string; created_at: string; is_auto_source?: number; }
+export async function updateKasCategory(id: number, data: { name: string; kind: string }) {
+  const res = await fetch(`${API_BASE_URL}/kas/categories/${id}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export interface KasTransaction { id: number; code: string; date: string; kind: string; category_id: number; category?: string; amount: number; method: string; notes: string; created_by: number; creator?: string; created_at: string; }
+export interface KasSummary { income: number; expense: number; balance: number; count_in: number; count_out: number; spp_income: number; iuran_income: number; donasi_income: number; kas_income: number; }
+
+export async function getKasCategories(kind = "") {
+  try {
+    const res = await fetch(`${API_BASE_URL}/kas/categories${kind ? `?kind=${kind}` : ""}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as KasCategory[];
+  } catch (e) { console.error("[API] Fetch kas categories error:", e); return []; }
+}
+export async function createKasCategory(data: { name: string; kind: string }) {
+  const res = await fetch(`${API_BASE_URL}/kas/categories`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function getKasTransactions(params: { date_from?: string; date_to?: string; kind?: string; category_id?: number; limit?: number } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.date_from) q.set("date_from", params.date_from);
+    if (params.date_to) q.set("date_to", params.date_to);
+    if (params.kind) q.set("kind", params.kind);
+    if (params.category_id) q.set("category_id", String(params.category_id));
+    if (params.limit) q.set("limit", String(params.limit));
+    const res = await fetch(`${API_BASE_URL}/kas/transactions?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as KasTransaction[];
+  } catch (e) { console.error("[API] Fetch kas transactions error:", e); return []; }
+}
+export async function createKasTransaction(data: { date: string; kind: string; category_id?: number; amount: number; method?: string; notes?: string }) {
+  const res = await fetch(`${API_BASE_URL}/kas/transactions`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteKasTransaction(id: number) {
+  const res = await fetch(`${API_BASE_URL}/kas/transactions/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function getKasSummary(date_from = "", date_to = ""): Promise<KasSummary | null> {
+  try {
+    const q = new URLSearchParams();
+    if (date_from) q.set("date_from", date_from);
+    if (date_to) q.set("date_to", date_to);
+    const res = await fetch(`${API_BASE_URL}/kas/summary?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || null) as KasSummary | null;
+  } catch (e) { console.error("[API] Fetch kas summary error:", e); return null; }
+}
+
+export interface KasAuditSource { key: string; label: string; amount: number; count: number; origin: string; table: string; }
+export interface KasAuditRow { id: number; date: string; label: string; detail: string; amount: number; }
+export interface KasAuditAnomaly { severity: string; title: string; detail: string; amount?: number; count?: number; scope: string; }
+export interface KasAuditExpenseGroup { category_id: number; label: string; amount: number; count: number; }
+export interface KasAudit {
+  date_from?: string;
+  date_to?: string;
+  sources: KasAuditSource[];
+  total_income: number;
+  expense: number;
+  balance: number;
+  count_in: number;
+  count_out: number;
+  excluded_amount: number;
+  excluded_count: number;
+  excluded_rows: KasAuditRow[];
+  rows: Record<string, KasAuditRow[]>;
+  anomalies: KasAuditAnomaly[];
+  expense_groups: KasAuditExpenseGroup[];
+}
+
+export async function getKasAudit(date_from = "", date_to = ""): Promise<KasAudit | null> {
+  try {
+    const q = new URLSearchParams();
+    if (date_from) q.set("date_from", date_from);
+    if (date_to) q.set("date_to", date_to);
+    const res = await fetch(`${API_BASE_URL}/kas/audit?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || null) as KasAudit | null;
+  } catch (e) { console.error("[API] Fetch kas audit error:", e); return null; }
+}
+
+export interface PerGuruRow { teacher_id: number; teacher_name: string; subject_count: number; subjects: string; student_count: number; grade_count: number; avg_final: number; }
+export async function getReportPerGuru(params: { semester?: string; year?: string } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.semester) q.set("semester", params.semester);
+    if (params.year) q.set("year", params.year);
+    const res = await fetch(`${API_BASE_URL}/academics/report-per-guru?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as PerGuruRow[];
+  } catch (e) { console.error("[API] Fetch per-guru error:", e); return []; }
+}
+
+export interface Employee { code: string; name: string; gender: string; birth_place: string; birth_date: string; phone: string; email: string; kind: string; photo_url: string; is_active: number; created_at: string; updated_at: string; }
+export interface TeacherAttendance { id: number; employee_code: string; employee_name?: string; date: string; status: string; notes: string; time_in: string; time_out: string; minutes: number; }
+export interface PerGuruSummary { without_info: number; present: number; sick: number; permit: number; total_minutes: number; count: number; }
+export interface RekapAbsensi { code: string; name: string; days: number; present: number; sick: number; permit: number; alpha: number; percent: number; }
+
+export async function getEmployees(search = "") {
+  try {
+    const q = new URLSearchParams();
+    if (search) q.set("search", search);
+    const res = await fetch(`${API_BASE_URL}/hr/employees?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as Employee[];
+  } catch (e) { console.error("[API] Fetch employees error:", e); return []; }
+}
+export async function createEmployee(data: { code: string; name: string; gender?: string; photo_url?: string; birth_place?: string; birth_date?: string; phone?: string; email?: string; kind: string }) {
+  const res = await fetch(`${API_BASE_URL}/hr/employees`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteEmployee(code: string) {
+  const res = await fetch(`${API_BASE_URL}/hr/employees/${encodeURIComponent(code)}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function updateEmployee(code: string, data: { code?: string; name?: string; gender?: string; photo_url?: string; birth_place?: string; birth_date?: string; phone?: string; email?: string; kind?: string }) {
+  const res = await fetch(`${API_BASE_URL}/hr/employees/${encodeURIComponent(code)}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function getTeacherAttendance(params: { code?: string; from?: string; to?: string } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.code) q.set("code", params.code);
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    const res = await fetch(`${API_BASE_URL}/hr/attendance?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as TeacherAttendance[];
+  } catch (e) { console.error("[API] Fetch attendance error:", e); return []; }
+}
+export async function createTeacherAttendance(data: { employee_code: string; date: string; status: string; notes?: string; time_in?: string; time_out?: string }) {
+  const res = await fetch(`${API_BASE_URL}/hr/attendance`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) });
+  return parseResponse(res);
+}
+export async function deleteTeacherAttendance(id: number) {
+  const res = await fetch(`${API_BASE_URL}/hr/attendance/${id}`, { method: "DELETE", headers: getAuthHeaders() });
+  return parseResponse(res);
+}
+export async function getPerGuru(code: string, from: string, to: string): Promise<{ summary: PerGuruSummary; rows: TeacherAttendance[] } | null> {
+  try {
+    const q = new URLSearchParams({ code, from, to });
+    const res = await fetch(`${API_BASE_URL}/hr/per-guru?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || null) as { summary: PerGuruSummary; rows: TeacherAttendance[] } | null;
+  } catch (e) { console.error("[API] Fetch per-guru error:", e); return null; }
+}
+export async function getRekapAbsensi(from: string, to: string) {
+  try {
+    const q = new URLSearchParams({ from, to });
+    const res = await fetch(`${API_BASE_URL}/hr/rekap?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as RekapAbsensi[];
+  } catch (e) { console.error("[API] Fetch rekap error:", e); return []; }
+}
+
+export interface PayTx { id: number; code: string; date: string; santri_id: number; santri_nis?: string; santri_name?: string; bill_type: string; bill_id: number; description: string; amount: number; method: string; petugas?: string; }
+export interface UnpaidBill { bill_type: string; bill_id: number; period: string; name: string; amount: number; paid: number; remain: number; due_date: string; }
+
+export async function getPayTransactions(params: { from?: string; to?: string; search?: string } = {}) {
+  try {
+    const q = new URLSearchParams();
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    if (params.search) q.set("search", params.search);
+    const res = await fetch(`${API_BASE_URL}/payments/transactions?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as PayTx[];
+  } catch (e) { console.error("[API] Fetch pay tx error:", e); return []; }
+}
+export async function getUnpaidBills(santri_id: number) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/payments/unpaid?santri_id=${santri_id}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as UnpaidBill[];
+  } catch (e) { console.error("[API] Fetch unpaid error:", e); return []; }
+}
+
+export interface RawLog { id: number; fp_id: string; date: string; time: string; verify: string; machine: string; }
+export async function getRawLogs(from = "", to = "") {
+  try {
+    const q = new URLSearchParams();
+    if (from) q.set("from", from);
+    if (to) q.set("to", to);
+    const res = await fetch(`${API_BASE_URL}/hr/raw-logs?${q.toString()}`, { headers: getAuthHeaders(), cache: "no-store" });
+    const result = await parseResponse(res);
+    return (result.data || []) as RawLog[];
+  } catch (e) { console.error("[API] Fetch rawlog error:", e); return []; }
+}
+export async function importRawLogs(rows: { fp_id: string; date: string; time?: string; verify?: string; machine?: string }[]) {
+  const res = await fetch(`${API_BASE_URL}/hr/raw-logs/import`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ rows }) });
+  return parseResponse(res);
+}
+export async function syncAbsen(from: string, to: string) {
+  const res = await fetch(`${API_BASE_URL}/hr/sync`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ from, to }) });
+  return parseResponse(res);
+}
+
+// ========== Notes (pastebin tanpa login) ==========
+
+export interface Note {
+	url_id: string;
+	title: string;
+	content: string;
+	created_at: string;
+	expires_at?: string | null;
+}
+
+export interface MineNote extends Note {
+	delete_token: string;
+}
+
+export interface CreateNoteResult {
+	url_id: string;
+	title: string;
+	content: string;
+	created_at: string;
+	expires_at?: string | null;
+	delete_token: string;
+	owner_key?: string;
+}
+
+export async function createNote(payload: {
+	title?: string;
+	content: string;
+	expires_in_days?: number;
+	owner_key?: string;
+	custom_url?: string;
+}): Promise<CreateNoteResult | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes`, {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload)
+		});
+		const result = await parseResponse(res);
+		if (!result.success || !result.data) return null;
+		return result.data as CreateNoteResult;
+	} catch (e) {
+		console.error('[API] Create note error:', e);
+		// Bila betulan 409 (nama link dipakai) atau error lain, lempar agar UI tampilkan pesan server.
+		throw e;
+	}
+}
+
+export async function getNote(url_id: string): Promise<Note | null> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes/${encodeURIComponent(url_id)}`, {
+			cache: 'no-store'
+		});
+		if (!res.ok) return null;
+		const result = await parseResponse(res);
+		return (result.data || null) as Note | null;
+	} catch (e) {
+		console.error('[API] Get note error:', e);
+		return null;
+	}
+}
+	export async function getMyNotes(ownerKey: string): Promise<MineNote[]> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes/mine?key=${encodeURIComponent(ownerKey)}`, {
+			cache: 'no-store'
+		});
+		if (!res.ok) return [];
+		const result = await parseResponse(res);
+		return (result.data || []) as MineNote[];
+	} catch (e) {
+		console.error('[API] Get my notes error:', e);
+		return [];
+	}
+}
+
+export async function deleteNote(url_id: string, delete_token: string): Promise<{ success: boolean; message: string }> {
+	try {
+		const res = await fetch(`${API_BASE_URL}/notes/${encodeURIComponent(url_id)}`, {
+			method: 'DELETE',
+			headers: { ...getAuthHeaders(), 'X-Delete-Token': delete_token }
+		});
+		const result = await parseResponse(res);
+		return { success: result.success === true, message: result.message || '' };
+	} catch (e) {
+		console.error('[API] Delete note error:', e);
+		return { success: false, message: e instanceof Error ? e.message : 'Gagal menghapus catatan' };
+	}
+}
+
+// ── Notifikasi Sistem (lonceng admin, Jilid 82) ─────────────────────────────
+export interface SysNotificationItem {
+	id: number;
+	type: string;
+	title: string;
+	message: string;
+	link: string;
+	created_at: string;
+	read: boolean;
+}
+
+export interface SysNotificationsData {
+	items: SysNotificationItem[];
+	unread_count: number;
+}
+
+export interface SysNotificationsResponse {
+	success?: boolean;
+	message?: string;
+	data?: SysNotificationsData;
+}
+
+export interface SysNotificationUnreadResponse {
+	success?: boolean;
+	message?: string;
+	data?: { count: number };
+}
+
+export async function getSysNotifications(): Promise<SysNotificationsResponse> {
+	const res = await fetch(`${API_BASE_URL}/snotif`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function getSysNotificationUnread(): Promise<SysNotificationUnreadResponse> {
+	const res = await fetch(`${API_BASE_URL}/snotif/unread`, {
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function markSysNotificationRead(id: number): Promise<{ success?: boolean; message?: string }> {
+	const res = await fetch(`${API_BASE_URL}/snotif/read/${id}`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+export async function markAllSysNotificationsRead(): Promise<{ success?: boolean; message?: string }> {
+	const res = await fetch(`${API_BASE_URL}/snotif/read-all`, {
+		method: 'POST',
+		headers: getAuthHeaders()
+	});
+	return parseResponse(res);
+}
+
+// ── E-Rapor sync (RDM/EMIS) — Jilid 84-86 ─────────────────
+export interface EraporKelengkapanRow {
+	id: number;
+	nis: string;
+	nisn: string;
+	nik: string;
+	name: string;
+	gender: string;
+	birth_place: string;
+	birth_date: string;
+	class: string;
+	jenjang: string;
+	angkatan: string;
+	status: string;
+	category: string;
+	has_nisn: boolean;
+	has_nik: boolean;
+	has_birth: boolean;
+	has_class: boolean;
+	emis_ready: boolean;
+	missing: string[];
+}
+
+export interface EraporPokokRow {
+	id: number;
+	nis: string;
+	nisn: string;
+	nik: string;
+	name: string;
+	gender: string;
+	birth_place: string;
+	birth_date: string;
+	class: string;
+	jenjang: string;
+	angkatan: string;
+	status: string;
+	category: string;
+	father_name: string;
+	mother_name: string;
+}
+
+export interface EraporNilaiRow {
+	id: number;
+	student_id: number;
+	nis: string;
+	nisn: string;
+	name: string;
+	class: string;
+	jenjang: string;
+	status: string;
+	semester: string;
+	academic_year: string;
+	mapel_score: number;
+	project_score: number;
+	kesantrian_score: number;
+	final_score: number;
+	predikat: string;
+	raport_status: string;
+}
+
+export interface EraporSyncRow {
+	id: number;
+	student_id: number;
+	name: string;
+	nis: string;
+	nisn: string;
+	class: string;
+	sync_type: string;
+	status: string;
+	semester: string;
+	academic_year: string;
+	error: string;
+	exported_at: string;
+	imported_at: string;
+}
+
+export async function getEraporKelengkapan(params: { class?: string; q?: string } = {}): Promise<EraporKelengkapanRow[]> {
+	try {
+		const q = new URLSearchParams();
+		if (params.class) q.set('class', params.class);
+		if (params.q) q.set('q', params.q);
+		const r = await lmsFetch<EraporKelengkapanRow[]>(`/erapor/kelengkapan?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] kelengkapan:', e); return []; }
+}
+
+export async function getEraporPokok(params: { class?: string } = {}): Promise<EraporPokokRow[]> {
+	try {
+		const q = new URLSearchParams();
+		if (params.class) q.set('class', params.class);
+		const r = await lmsFetch<EraporPokokRow[]>(`/erapor/pokok?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] pokok:', e); return []; }
+}
+
+export async function getEraporNilai(params: { semester: string; academic_year?: string }): Promise<EraporNilaiRow[]> {
+	try {
+		const year = params.academic_year || (await getActiveAcademicYear());
+		const q = new URLSearchParams({ semester: params.semester, academic_year: year });
+		const r = await lmsFetch<EraporNilaiRow[]>(`/erapor/nilai?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] nilai:', e); return []; }
+}
+
+export async function exportErapor(params: { type: 'pokok' | 'nilai'; semester: string; academic_year?: string }): Promise<{ ok: boolean; message: string; data?: { count: number } }> {
+	try {
+		const year = params.academic_year || (await getActiveAcademicYear());
+		const q = new URLSearchParams({ type: params.type, semester: params.semester, academic_year: year });
+		const r = await lmsFetch<{ count: number }>(`/erapor/export?${q.toString()}`, { method: 'POST' });
+		return { ok: r.success, message: r.message, data: r.data };
+	} catch (e) { return { ok: false, message: e instanceof Error ? e.message : 'Gagal mencatat export' }; }
+}
+
+export async function getEraporSyncStatus(params: { type?: string; semester: string; academic_year?: string }): Promise<EraporSyncRow[]> {
+	try {
+		const year = params.academic_year || (await getActiveAcademicYear());
+		const q = new URLSearchParams({ semester: params.semester, academic_year: year });
+		if (params.type) q.set('type', params.type);
+		const r = await lmsFetch<EraporSyncRow[]>(`/erapor/sync-status?${q.toString()}`);
+		return r.data || [];
+	} catch (e) { console.error('[E-Rapor] sync-status:', e); return []; }
+}
+// ── License (Darussunnah) ────────────────
+export interface LicenseStatus {
+  is_valid: boolean;
+  is_warning: boolean;
+  days_left: number;
+  message: string;
+}
+
+export async function getLicenseStatus() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/premium-check`, withCredentials({ cache: 'no-store' }));
+    if (res.status === 402) {
+      const errorBody = await res.json();
+      return { is_valid: false, message: errorBody.message } as LicenseStatus;
+    }
+    if (!res.ok) return { is_valid: false, message: 'SERVER_OFFLINE' } as LicenseStatus;
+    
+    return await res.json() as LicenseStatus;
+  } catch {
+    return { is_valid: false, message: 'SERVER_OFFLINE' } as LicenseStatus;
+  }
+}
+
+
 // ── Multi Google Drive Storage (Gallery Sync) ────────────────
 
 export interface StorageAccountLite {
@@ -2383,388 +4818,4 @@ export function getStorageStats() {
 	return storageRequest<StorageTotals>('/admin/storage/stats');
 }
 
-// ── Master Sekolah (Kelas + Tahun Ajaran) ──────────────────
 
-export interface SchoolClass {
-	id: number;
-	code: string;
-	name: string;
-	jenjang: string;
-	wali_name: string;
-	wali_user_id: number;
-	academic_year: string;
-	is_active: number;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface AcademicYear {
-	id: number;
-	name: string;
-	start_date: string;
-	end_date: string;
-	is_active: number;
-	created_at: string;
-	updated_at: string;
-}
-
-export async function getSchoolClasses(params: { active_only?: boolean } = {}) {
-	const q = params.active_only ? '?active_only=true' : '';
-	try {
-		const res = await fetch(`${API_BASE_URL}/school/classes${q}`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return [] as SchoolClass[];
-		const result = await parseResponse(res);
-		return (result.data || []) as SchoolClass[];
-	} catch (e) {
-		console.error('[API] Fetch school classes error:', e);
-		return [] as SchoolClass[];
-	}
-}
-
-export async function getSchoolYears() {
-	try {
-		const res = await fetch(`${API_BASE_URL}/school/years`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return [] as AcademicYear[];
-		const result = await parseResponse(res);
-		return (result.data || []) as AcademicYear[];
-	} catch (e) {
-		console.error('[API] Fetch school years error:', e);
-		return [] as AcademicYear[];
-	}
-}
-
-export async function createSchoolClass(payload: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string; is_active?: boolean }) {
-	const res = await fetch(`${API_BASE_URL}/school/classes`, {
-		method: 'POST',
-		headers: getAuthHeaders(),
-		body: JSON.stringify(payload)
-	});
-	return parseResponse(res);
-}
-
-export async function updateSchoolClass(id: number, payload: { name: string; jenjang?: string; wali_name?: string; wali_user_id?: number; academic_year?: string; is_active?: boolean }) {
-	const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, {
-		method: 'PUT',
-		headers: getAuthHeaders(),
-		body: JSON.stringify(payload)
-	});
-	return parseResponse(res);
-}
-
-export async function deleteSchoolClass(id: number) {
-	const res = await fetch(`${API_BASE_URL}/school/classes/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-export async function createSchoolYear(payload: { name: string; start_date?: string; end_date?: string; is_active?: boolean }) {
-	const res = await fetch(`${API_BASE_URL}/school/years`, {
-		method: 'POST',
-		headers: getAuthHeaders(),
-		body: JSON.stringify(payload)
-	});
-	return parseResponse(res);
-}
-
-export async function updateSchoolYear(id: number, payload: { name?: string; start_date?: string; end_date?: string; is_active?: boolean }) {
-	const res = await fetch(`${API_BASE_URL}/school/years/${id}`, {
-		method: 'PUT',
-		headers: getAuthHeaders(),
-		body: JSON.stringify(payload)
-	});
-	return parseResponse(res);
-}
-
-export async function activateSchoolYear(id: number) {
-	const res = await fetch(`${API_BASE_URL}/school/years/${id}/activate`, { method: 'POST', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-export async function deleteSchoolYear(id: number) {
-	const res = await fetch(`${API_BASE_URL}/school/years/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-// ── Kesantrian (Data Santri) ──────────────────
-
-export interface Santri {
-	id: number;
-	nis: string;
-	name: string;
-	nickname: string;
-	gender: string;
-	birth_place: string;
-	birth_date: string;
-	address: string;
-	class: string;
-	jenjang: string;
-	angkatan: string;
-	status: string;
-	category: string;
-	parent_name: string;
-	parent_phone: string;
-	nik: string;
-	father_name: string;
-	father_phone: string;
-	mother_name: string;
-	mother_phone: string;
-	father_occupation: string;
-	mother_occupation: string;
-	registration_id: number;
-	photo_url: string;
-	user_id: number | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface SantriInput {
-	nis: string;
-	name: string;
-	nickname?: string;
-	gender?: string;
-	birth_place?: string;
-	birth_date?: string;
-	address?: string;
-	class: string;
-	jenjang?: string;
-	angkatan?: string;
-	status?: string;
-	category?: string;
-	parent_name?: string;
-	parent_phone?: string;
-	nik?: string;
-	father_name?: string;
-	father_phone?: string;
-	mother_name?: string;
-	mother_phone?: string;
-	father_occupation?: string;
-	mother_occupation?: string;
-	registration_id?: number;
-	photo_url?: string;
-}
-
-export async function getSantriList(params: { search?: string; class?: string; status?: string; limit?: number; offset?: number } = {}) {
-	try {
-		const queryParams = new URLSearchParams();
-		if (params.search) queryParams.append('search', params.search);
-		if (params.class) queryParams.append('class', params.class);
-		if (params.status) queryParams.append('status', params.status);
-		if (params.limit) queryParams.append('limit', params.limit.toString());
-		if (params.offset) queryParams.append('offset', params.offset.toString());
-
-		const res = await fetch(`${API_BASE_URL}/santri?${queryParams.toString()}`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return { data: [] as Santri[], total: 0, limit: params.limit || 20, offset: params.offset || 0 };
-		const result = await parseResponse(res);
-		const list = result.data as { items?: Santri[]; total?: number; limit?: number; offset?: number };
-		return {
-			data: list.items || [],
-			total: list.total || 0,
-			limit: list.limit || params.limit || 20,
-			offset: list.offset || params.offset || 0
-		};
-	} catch (e) {
-		console.error('[API] Fetch santri list error:', e);
-		return { data: [] as Santri[], total: 0, limit: params.limit || 20, offset: params.offset || 0 };
-	}
-}
-
-export async function getSantriByID(id: number): Promise<Santri | null> {
-	try {
-		const res = await fetch(`${API_BASE_URL}/santri/${id}`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return null;
-		const result = await parseResponse(res);
-		return (result.data || null) as Santri | null;
-	} catch (e) {
-		console.error('[API] Fetch santri error:', e);
-		return null;
-	}
-}
-
-export async function createSantri(data: SantriInput) {
-	const res = await fetch(`${API_BASE_URL}/santri`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
-	return parseResponse(res);
-}
-
-export async function updateSantri(id: number, data: SantriInput) {
-	const res = await fetch(`${API_BASE_URL}/santri/${id}`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
-	return parseResponse(res);
-}
-
-export async function deleteSantri(id: number) {
-	const res = await fetch(`${API_BASE_URL}/santri/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-export async function purgeSantri(id: number) {
-	const res = await fetch(`${API_BASE_URL}/santri/${id}/purge`, { method: 'DELETE', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-export async function bulkDeleteSantri(ids: number[]) {
-	const res = await fetch(`${API_BASE_URL}/santri/bulk`, { method: 'DELETE', headers: getAuthHeaders(), body: JSON.stringify({ ids }) });
-	return parseResponse(res);
-}
-
-export async function setSantriClass(items: { id: number; class: string }[]) {
-	const res = await fetch(`${API_BASE_URL}/santri/set-class`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ items }) });
-	return parseResponse(res);
-}
-
-export async function linkSantriUser(id: number, userId: number) {
-	const res = await fetch(`${API_BASE_URL}/santri/${id}/link-user`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ user_id: userId }) });
-	return parseResponse(res);
-}
-
-export async function unlinkSantriUser(id: number) {
-	const res = await fetch(`${API_BASE_URL}/santri/${id}/unlink-user`, { method: 'PUT', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-export async function resetSantriPassword(id: number) {
-	const res = await fetch(`${API_BASE_URL}/santri/${id}/reset-password`, { method: 'POST', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-export async function getSantriClasses() {
-	try {
-		const res = await fetch(`${API_BASE_URL}/santri/classes`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return [] as string[];
-		const result = await parseResponse(res);
-		return (result.data || []) as string[];
-	} catch (e) {
-		console.error('[API] Fetch santri classes error:', e);
-		return [] as string[];
-	}
-}
-
-export async function exportSantri(): Promise<Santri[]> {
-	try {
-		const res = await fetch(`${API_BASE_URL}/santri/export`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return [];
-		const result = await parseResponse(res);
-		const list = result.data as { items?: Santri[]; total?: number };
-		return list.items || [];
-	} catch (e) {
-		console.error('[API] Fetch santri export error:', e);
-		return [];
-	}
-}
-
-// ── Akun Wali (wali-santri) ──────────────────
-
-export interface WaliSantri {
-	santri_id: number;
-	nis: string;
-	name: string;
-	class: string;
-}
-
-export interface WaliAccount {
-	user_id: number;
-	name: string;
-	email: string;
-	whatsapp: string;
-	role: string;
-	is_placeholder: boolean;
-	name_placeholder: boolean;
-	needs_note?: string;
-	last_login_at?: string;
-	santri: WaliSantri[];
-}
-
-export interface WaliList {
-	accounts: WaliAccount[];
-	orphans: { user_id: number; name: string; email: string }[];
-	stats: { total_accounts: number; total_santri: number; placeholder: number; orphan: number; multi_santri: number };
-}
-
-export async function getWaliAccounts(): Promise<WaliList> {
-	try {
-		const res = await fetch(`${API_BASE_URL}/wali-santri`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return { accounts: [], orphans: [], stats: { total_accounts: 0, total_santri: 0, placeholder: 0, orphan: 0, multi_santri: 0 } };
-		const result = await parseResponse(res);
-		const d = result.data as WaliList;
-		return d || { accounts: [], orphans: [], stats: { total_accounts: 0, total_santri: 0, placeholder: 0, orphan: 0, multi_santri: 0 } };
-	} catch (e) {
-		console.error('[API] Fetch wali accounts error:', e);
-		return { accounts: [], orphans: [], stats: { total_accounts: 0, total_santri: 0, placeholder: 0, orphan: 0, multi_santri: 0 } };
-	}
-}
-
-export async function updateWaliAccount(id: number, payload: { name: string; email: string }) {
-	const res = await fetch(`${API_BASE_URL}/wali-santri/${id}`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(payload) });
-	return parseResponse(res);
-}
-
-export async function getMySantri(): Promise<Santri[]> {
-	try {
-		const res = await fetch(`${API_BASE_URL}/my-santri`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return [];
-		const result = await parseResponse(res);
-		return extractListData<Santri>(result);
-	} catch (e) {
-		console.error('[API] Fetch my-santri error:', e);
-		return [];
-	}
-}
-
-// ── WA Gateway (wagate) ──────────────────
-
-export interface WAGatewayStatus {
-	connected: boolean;
-	phone: string;
-	pushname: string;
-}
-
-export async function getWAGatewayStatus(): Promise<WAGatewayStatus> {
-	try {
-		const res = await fetch(`${API_BASE_URL}/notifications/wa/status`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return { connected: false, phone: '', pushname: '' };
-		const result = await parseResponse(res);
-		return (result.data || { connected: false, phone: '', pushname: '' }) as WAGatewayStatus;
-	} catch (e) {
-		console.error('[API] Fetch WA gateway status error:', e);
-		return { connected: false, phone: '', pushname: '' };
-	}
-}
-
-export async function requestWAQR(): Promise<{ image: Blob; url: string; ttlSeconds: number }> {
-	const res = await fetch(`${API_BASE_URL}/notifications/wa/qr`, { headers: getAuthHeaders(), cache: 'no-store' });
-	if (res.ok) {
-		const blob = await res.blob();
-		const ttlRaw = res.headers.get('X-QR-TTL');
-		return { image: blob, url: URL.createObjectURL(blob), ttlSeconds: ttlRaw ? parseInt(ttlRaw, 10) : 0 };
-	}
-	return { image: new Blob(), url: '', ttlSeconds: 0 };
-}
-
-export async function requestWAPairCode(phone: string) {
-	const res = await fetch(`${API_BASE_URL}/notifications/wa/pair-code`, {
-		method: 'POST',
-		headers: getAuthHeaders(),
-		body: JSON.stringify({ phone })
-	});
-	return parseResponse(res);
-}
-
-export async function disconnectWA() {
-	const res = await fetch(`${API_BASE_URL}/notifications/wa/disconnect`, { method: 'POST', headers: getAuthHeaders() });
-	return parseResponse(res);
-}
-
-export async function getWALog(registrationId: number) {
-	try {
-		const res = await fetch(`${API_BASE_URL}/notifications/wa-log?registration_id=${registrationId}`, { headers: getAuthHeaders(), cache: 'no-store' });
-		if (!res.ok) return [] as unknown[];
-		const result = await parseResponse(res);
-		const d = result.data as { items?: unknown[] };
-		return d.items || [];
-	} catch (e) {
-		console.error('[API] Fetch WA log error:', e);
-		return [] as unknown[];
-	}
-}
-
-export async function retryWAMessage(id: number) {
-	const res = await fetch(`${API_BASE_URL}/notifications/wa-retry`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ id }) });
-	return parseResponse(res);
-}

@@ -7,6 +7,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// PHASE 2: helper autentikasi tunggal. SEMUA handler wajib memakai helper ini,
+// JANGAN membaca claim JWT manual per-handler.
+
 // AuthenticatedUser adalah identitas terverifikasi dari request.
 type AuthenticatedUser struct {
 	ID    int
@@ -37,7 +40,8 @@ func claimsFrom(ctx context.Context) (jwt.MapClaims, bool) {
 	return claims, true
 }
 
-// GetAuthenticatedUserID mengembalikan ID user dari context.
+// GetAuthenticatedUserID mengembalikan ID user dari context. TIDAK PERNAH 0
+// untuk request terautentikasi (middleware sudah memvalidasi ke DB).
 func GetAuthenticatedUserID(ctx context.Context) (int, bool) {
 	claims, ok := claimsFrom(ctx)
 	if !ok {

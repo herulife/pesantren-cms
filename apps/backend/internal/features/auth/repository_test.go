@@ -1,8 +1,16 @@
 package auth
 
 import (
+	"context"
 	"database/sql"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"testing"
+
+	"github.com/golang-jwt/jwt/v5"
+	_ "modernc.org/sqlite"
 )
 
 func setupAuthTestDB(t *testing.T) *sql.DB {
@@ -21,8 +29,10 @@ func setupAuthTestDB(t *testing.T) *sql.DB {
 		password_hash TEXT NOT NULL,
 		name TEXT NOT NULL,
 		role TEXT NOT NULL,
+		token_version INTEGER DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		last_login_at DATETIME
+		last_login_at DATETIME,
+		photo_url TEXT
 	);`
 	if _, err := db.Exec(schema); err != nil {
 		t.Fatalf("failed to create schema: %v", err)
@@ -93,6 +103,54 @@ func TestCheckPassword(t *testing.T) {
 	}
 }
 
+func TestGetAllUsersReturnsOnlyStaff(t *testing.T) {
+	db := setupAuthTestDB(t)
+	repo := NewRepository(db)
+
+	users := []User{
+		{Email: "superadmin@example.com", PasswordHash: "12345678", Name: "Super Admin", Role: "superadmin"},
+		{Email: "finance@example.com", PasswordHash: "12345678", Name: "Finance Staff", Role: "bendahara"},
+		{Email: "psb@example.com", PasswordHash: "12345678", Name: "PSB Staff", Role: "panitia_psb"},
+		{Email: "media@example.com", PasswordHash: "12345678", Name: "Media Staff", Role: "tim_media"},
+		{Email: "wali@example.com", PasswordHash: "12345678", Name: "Portal Wali", Role: "user"},
+		{Email: "legacy-admin@example.com", PasswordHash: "12345678", Name: "Legacy Admin", Role: "admin"},
+	}
+	for i := range users {
+		if err := repo.CreateUser(&users[i]); err != nil {
+			t.Fatalf("CreateUser failed for %s: %v", users[i].Role, err)
+		}
+	}
+
+	listed, err := repo.GetAllUsers("")
+	if err != nil {
+		t.Fatalf("GetAllUsers failed: %v", err)
+	}
+	if len(listed) != 4 {
+		t.Fatalf("expected 4 manageable users, got %d", len(listed))
+	}
+	for _, user := range listed {
+		if user.Role == "user" || user.Role == "admin" {
+			t.Fatalf("unmanageable role returned: %s", user.Role)
+		}
+	}
+
+	searched, err := repo.GetAllUsers("finance")
+	if err != nil {
+		t.Fatalf("GetAllUsers search failed: %v", err)
+	}
+	if len(searched) != 1 || searched[0].Role != "bendahara" {
+		t.Fatalf("unexpected staff search result: %+v", searched)
+	}
+
+	searched, err = repo.GetAllUsers("wali")
+	if err != nil {
+		t.Fatalf("GetAllUsers portal search failed: %v", err)
+	}
+	if len(searched) != 0 {
+		t.Fatalf("expected portal user to be excluded, got %d", len(searched))
+	}
+}
+
 func TestUpdateRoleValidation(t *testing.T) {
 	db := setupAuthTestDB(t)
 	repo := NewRepository(db)
@@ -112,6 +170,67 @@ func TestUpdateRoleValidation(t *testing.T) {
 	}
 	if err := repo.UpdateRole(u.ID, "invalid_role"); err == nil {
 		t.Fatal("expected invalid role update to fail")
+	}
+	if err := repo.UpdateRole(u.ID, "user"); err == nil {
+		t.Fatal("expected portal role update to fail")
+	}
+	if err := repo.UpdateRole(u.ID, "admin"); err == nil {
+		t.Fatal("expected legacy admin role update to fail")
+	}
+}
+
+func TestUpdateRoleProtectsLastSuperadmin(t *testing.T) {
+	db := setupAuthTestDB(t)
+	repo := NewRepository(db)
+	first := &User{Email: "first-role@example.com", PasswordHash: "12345678", Name: "First Admin", Role: "superadmin"}
+	if err := repo.CreateUser(first); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+	if err := repo.CreateUser(&User{Email: "staff-role@example.com", PasswordHash: "12345678", Name: "Staff", Role: "bendahara"}); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+
+	if err := repo.UpdateRole(first.ID, "bendahara"); !errors.Is(err, ErrLastSuperadmin) {
+		t.Fatalf("expected last-superadmin error, got %v", err)
+	}
+	current, err := repo.FindByID(first.ID)
+	if err != nil || current.Role != "superadmin" {
+		t.Fatalf("expected superadmin to remain, got user=%+v err=%v", current, err)
+	}
+
+	second := &User{Email: "second-role@example.com", PasswordHash: "12345678", Name: "Second Admin", Role: "superadmin"}
+	if err := repo.CreateUser(second); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+	if err := repo.UpdateRole(first.ID, "bendahara"); err != nil {
+		t.Fatalf("expected role update to succeed with another superadmin: %v", err)
+	}
+}
+
+func TestDeleteUserProtectsLastSuperadmin(t *testing.T) {
+	db := setupAuthTestDB(t)
+	repo := NewRepository(db)
+	first := &User{Email: "first-delete@example.com", PasswordHash: "12345678", Name: "First Admin", Role: "superadmin"}
+	if err := repo.CreateUser(first); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+	if err := repo.DeleteUser(first.ID); !errors.Is(err, ErrLastSuperadmin) {
+		t.Fatalf("expected last-superadmin error, got %v", err)
+	}
+	var count int
+	if err := db.QueryRow("SELECT COUNT(*) FROM users WHERE id = ?", first.ID).Scan(&count); err != nil {
+		t.Fatalf("failed to count user: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected protected user to remain, got count %d", count)
+	}
+
+	second := &User{Email: "second-delete@example.com", PasswordHash: "12345678", Name: "Second Admin", Role: "superadmin"}
+	if err := repo.CreateUser(second); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+	if err := repo.DeleteUser(first.ID); err != nil {
+		t.Fatalf("expected delete to succeed with another superadmin: %v", err)
 	}
 }
 
@@ -253,6 +372,55 @@ func TestDeleteUserCleansDependentPortalData(t *testing.T) {
 	assertCount(t, db, "student_points", 0)
 	assertCount(t, db, "violation_logs", 0)
 	assertNullCount(t, db, "news", "author_id", 1)
+}
+
+func TestRejectSelfUserAction(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPut, "/api/users/7/password", nil)
+	ctx := context.WithValue(req.Context(), UserContextKey, jwt.MapClaims{
+		"id":    7,
+		"role":  "superadmin",
+		"email": "admin@example.com",
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	if !rejectSelfUserAction(rr, req, 7) {
+		t.Fatal("expected self user action to be rejected")
+	}
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
+	}
+}
+
+func TestRejectLastSuperadmin(t *testing.T) {
+	db := setupAuthTestDB(t)
+	repo := NewRepository(db)
+	first := &User{Email: "first-admin@example.com", PasswordHash: "12345678", Name: "First Admin", Role: "superadmin"}
+	if err := repo.CreateUser(first); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+	if err := repo.CreateUser(&User{Email: "staff@example.com", PasswordHash: "12345678", Name: "Staff", Role: "bendahara"}); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+
+	h := NewHandler(repo)
+	req := httptest.NewRequest(http.MethodPut, "/api/users/"+strconv.Itoa(first.ID)+"/role", nil)
+	rr := httptest.NewRecorder()
+	if !h.rejectLastSuperadmin(rr, req, first.ID) {
+		t.Fatal("expected the only superadmin to be protected")
+	}
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
+	}
+
+	second := &User{Email: "second-admin@example.com", PasswordHash: "12345678", Name: "Second Admin", Role: "superadmin"}
+	if err := repo.CreateUser(second); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+	rr = httptest.NewRecorder()
+	if h.rejectLastSuperadmin(rr, req, first.ID) {
+		t.Fatal("expected demotion to remain allowed while another superadmin exists")
+	}
 }
 
 func assertCount(t *testing.T, db *sql.DB, table string, expected int) {

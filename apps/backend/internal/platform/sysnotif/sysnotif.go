@@ -18,9 +18,9 @@ type Item struct {
 }
 
 // Emit mencatat notifikasi sistem baru yang akan dilihat semua admin.
-// Dipanggil dari titik event (pendaftar PSB, pesan kontak, pembayaran,
-// user baru). Gagal logging tidak pernah menggagalkan request utama —
-// pemanggil cukup mencatat warning.
+// Dipanggil dari titik event (pendaftar PSB, donasi, pesan kontak,
+// pembayaran, user baru). Gagal logging tidak pernah menggagalkan
+// request utama — pemanggil cukup mencatat warning.
 func Emit(ctx context.Context, db *sql.DB, typ, title, message, link string) error {
 	if db == nil {
 		return sql.ErrConnDone

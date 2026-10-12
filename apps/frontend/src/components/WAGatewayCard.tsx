@@ -2,14 +2,13 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  getWAGatewayStatus,
-  requestWAQR,
-  requestWAPairCode,
-  disconnectWA,
-  WAGatewayStatus,
+  getWAGatewayStatus, getWAQRBlob, requestWAPairCode, disconnectWAGateway,
+  sendWhatsApp, WAGatewayStatus,
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
-import { QrCode, KeyRound, RefreshCw, Unplug, CheckCircle2, XCircle } from 'lucide-react';
+import { MessageCircle, QrCode, KeyRound, RefreshCw, Unplug, Send, CheckCircle2, XCircle } from 'lucide-react';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 function StatusBadge({ st }: { st: WAGatewayStatus | null }) {
   if (!st) {
@@ -39,16 +38,20 @@ export default function WAGatewayCard() {
   const [mode, setMode] = useState<'qr' | 'code'>('qr');
   const [qrUrl, setQrUrl] = useState('');
   const [qrLoading, setQrLoading] = useState(false);
+  const [qrExpAt, setQrExpAt] = useState(0);
+  const [qrNow, setQrNow] = useState(Date.now());
   const [pairPhone, setPairPhone] = useState('');
   const [pairCode, setPairCode] = useState('');
   const [pairLoading, setPairLoading] = useState(false);
+  const [testPhone, setTestPhone] = useState('');
+  const [testing, setTesting] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refreshStatus = useCallback(async () => {
     try {
       setStatus(await getWAGatewayStatus());
     } catch {
-      // ignore
+      // abaikan, badge tetap apa adanya
     }
   }, []);
 
@@ -70,137 +73,232 @@ export default function WAGatewayCard() {
 
   const loadQR = useCallback(async () => {
     setQrLoading(true);
-    try {
-      const r = await requestWAQR();
-      if (r.url) {
-        if (qrUrl) URL.revokeObjectURL(qrUrl);
-        setQrUrl(r.url);
-      } else {
-        showToast('error', 'Gagal memuat QR.');
-      }
-    } catch (e: any) {
-      if (e?.status === 409 || e?.response?.status === 409) {
-        showToast('info', 'WhatsApp sudah terhubung.');
-      } else {
-        const msg = e?.message || 'Gagal memuat QR.';
-        showToast('error', msg);
-      }
-    }
+    const r = await getWAQRBlob();
     setQrLoading(false);
+    if (r.ok && r.url) {
+      if (qrUrl) URL.revokeObjectURL(qrUrl);
+      setQrUrl(r.url);
+      const ttlMs = r.ttl && r.ttl > 0 ? Math.min(r.ttl, 90) * 1000 : 20000;
+      setQrExpAt(Date.now() + ttlMs);
+    } else if ((r.message || '').includes('berjalan')) {
+      // Pairing lain sedang mengambil QR baru: tunggu diam-diam lalu coba sekali lagi.
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const retry = await getWAQRBlob();
+      if (retry.ok && retry.url) {
+        if (qrUrl) URL.revokeObjectURL(qrUrl);
+        setQrUrl(retry.url);
+        const ttlMs = retry.ttl && retry.ttl > 0 ? Math.min(retry.ttl, 90) * 1000 : 20000;
+        setQrExpAt(Date.now() + ttlMs);
+      }
+    } else {
+      showToast('error', r.message || 'Gagal memuat QR.');
+    }
   }, [qrUrl, showToast]);
 
-  const requestPairCode = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Hitung mundur + muat ulang otomatis sesaat sebelum kedaluwarsa.
+  useEffect(() => {
+    if (!qrUrl) return;
+    const t = setInterval(() => setQrNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [qrUrl]);
+
+  const qrLeft = Math.max(0, Math.ceil((qrExpAt - qrNow) / 1000));
+
+  useEffect(() => {
+    if (status?.connected) {
+      if (qrUrl) {
+        URL.revokeObjectURL(qrUrl);
+        setQrUrl('');
+      }
+      return;
+    }
+    if (qrUrl && qrExpAt > 0 && qrNow >= qrExpAt) {
+      void loadQR();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrNow, qrUrl, qrExpAt, status?.connected]);
+
+  const askPairCode = async () => {
     if (!pairPhone.trim()) {
-      showToast('error', 'Nomor HP wajib diisi.');
+      showToast('error', 'Isi nomor HP dulu (cth: 62812xxxxxxx).');
       return;
     }
     setPairLoading(true);
     try {
-      const res = await requestWAPairCode(pairPhone.trim());
-      if (res.ok) {
-        setPairCode(res.data?.code || res.code || '');
-        showToast('success', 'Kode pairing berhasil diminta.');
-      } else {
-        showToast('error', res.message || 'Gagal meminta kode pairing.');
-      }
-    } catch (e: any) {
-      showToast('error', e?.message || 'Gagal meminta kode pairing.');
+      const r = await requestWAPairCode(pairPhone.trim());
+      if (r.success) setPairCode(String(r.data?.pair_code || ''));
+      else showToast('error', r.message || 'Gagal meminta kode.');
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Gagal meminta kode.');
+    } finally {
+      setPairLoading(false);
     }
-    setPairLoading(false);
   };
 
-  const disconnect = async () => {
-    if (!confirm('Putuskan koneksi WhatsApp Gateway?')) return;
+  const confirmDialog = useConfirm();
+
+  const doDisconnect = async () => {
+    if (!(await confirmDialog({ title: 'Putuskan koneksi WhatsApp', message: 'Putuskan koneksi WhatsApp? Perlu pairing ulang untuk menghubungkan lagi.', confirmText: 'Putuskan', type: 'warning' }))) return;
+    const r = await disconnectWAGateway();
+    if (r.success) {
+      showToast('success', 'Koneksi diputus.');
+      void refreshStatus();
+    } else {
+      showToast('error', r.message || 'Gagal memutuskan.');
+    }
+  };
+
+  const sendTest = async () => {
+    if (!testPhone.trim()) {
+      showToast('error', 'Isi nomor WA tujuan dulu.');
+      return;
+    }
+    setTesting(true);
     try {
-      const res = await disconnectWA();
-      if (res.ok) {
-        showToast('success', 'Koneksi WhatsApp diputuskan.');
-        setQrUrl('');
-        void refreshStatus();
-      } else {
-        showToast('error', res.message || 'Gagal memutus koneksi.');
-      }
-    } catch (e: any) {
-      showToast('error', e?.message || 'Gagal memutus koneksi.');
+      const r = await sendWhatsApp(testPhone.trim(), 'Tes gateway WA Darussunnah: koneksi mandiri aktif. Assalamu\u2019alaikum.');
+      if (r.success) showToast('success', 'Pesan uji terkirim.');
+      else showToast('error', r.message || 'Gagal mengirim.');
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Gagal mengirim.');
+    } finally {
+      setTesting(false);
     }
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-black text-slate-900">WhatsApp Gateway</h2>
-          <p className="mt-1 text-sm text-slate-500">Hubungkan nomor WhatsApp untuk mengirim notifikasi otomatis.</p>
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-8">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+            <MessageCircle size={24} />
+          </div>
+          <div>
+            <h2 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Gateway WhatsApp Sendiri</h2>
+            <p className="text-sm font-medium text-slate-500">Tanpa pihak ketiga — HP pondok ditautkan langsung sebagai perangkat.</p>
+          </div>
         </div>
         <StatusBadge st={status} />
       </div>
 
-      {!status?.connected && (
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <button onClick={() => setMode('qr')} className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold ${mode === 'qr' ? 'border-sky-600 text-sky-600 bg-sky-50' : 'border-slate-200 bg-white text-slate-700'}`}>
-            <QrCode size={16} /> Scan QR
-          </button>
-          <button onClick={() => setMode('code')} className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold ${mode === 'code' ? 'border-sky-600 text-sky-600 bg-sky-50' : 'border-slate-200 bg-white text-slate-700'}`}>
-            <KeyRound size={16} /> Pair Code
-          </button>
-        </div>
-      )}
-
-      {!status?.connected && mode === 'qr' && (
-        <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
-          {qrUrl ? (
-            <img src={qrUrl} alt="QR WhatsApp" className="h-64 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-sm" />
-          ) : (
-            <div className="flex h-64 w-64 items-center justify-center rounded-xl border border-slate-200 bg-white">
-              <p className="text-sm text-slate-500">Belum ada QR terunduh</p>
+      <div className="space-y-6 p-8">
+        {status?.connected ? (
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-6 text-sm leading-relaxed text-emerald-900">
+            <p className="font-bold">Terhubung{status.phone ? ` sebagai ${status.phone}` : ''}{status.pushname ? ` (${status.pushname})` : ''}.</p>
+            <p className="mt-1 text-emerald-800">Semua notifikasi (kwitansi, tagihan, donasi, absensi) dikirim lewat nomor ini.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button onClick={() => void refreshStatus()} className="rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50">
+                Perbarui Status
+              </button>
+              <button onClick={() => void doDisconnect()} className="rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50">
+                <span className="inline-flex items-center gap-1.5"><Unplug size={15} /> Putuskan</span>
+              </button>
             </div>
-          )}
-          <div className="mt-4 flex items-center gap-2">
-            <button onClick={loadQR} disabled={qrLoading} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
-              <RefreshCw size={16} className={qrLoading ? 'animate-spin' : ''} /> {qrUrl ? 'Muat Ulang QR' : 'Tampilkan QR'}
+          </div>
+        ) : (
+          <>
+            <div className="inline-flex rounded-full bg-slate-100 p-1 text-sm font-bold">
+              <button
+                onClick={() => setMode('qr')}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 transition ${mode === 'qr' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'}`}
+              >
+                <QrCode size={15} /> Scan QR
+              </button>
+              <button
+                onClick={() => setMode('code')}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 transition ${mode === 'code' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'}`}
+              >
+                <KeyRound size={15} /> Kode 8 Digit
+              </button>
+            </div>
+
+            {mode === 'qr' ? (
+              <div className="grid gap-6 md:grid-cols-[240px_1fr]">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex h-60 w-60 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {qrUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={qrUrl} alt="QR pairing WhatsApp" className="h-full w-full object-contain" />
+                    ) : (
+                      <p className="px-6 text-center text-xs text-slate-400">Belum ada QR.<br />Klik “Muat QR”.</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => void loadQR()}
+                    disabled={qrLoading || (qrUrl !== '' && qrLeft > 10)}
+                    title={qrUrl !== '' && qrLeft > 10 ? `Tunggu ${qrLeft}d, QR masih berlaku` : undefined}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <RefreshCw size={15} className={qrLoading ? 'animate-spin' : ''} />
+                    {qrLoading ? 'Memuat…' : qrUrl ? `QR Baru (${qrLeft}d)` : 'Muat QR'}
+                  </button>
+                </div>
+                <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-600">
+                  <li>Buka <b>WhatsApp</b> di HP nomor khusus pondok.</li>
+                  <li>Masuk ke <b>Pengaturan → Perangkat Tertaut → Tautkan Perangkat</b>.</li>
+                  <li>Scan QR di samping (berlaku ±1 menit, klik <b>QR Baru</b> bila kedaluwarsa).</li>
+                  <li>Status berubah <b>Terhubung</b> otomatis dalam beberapa detik.</li>
+                </ol>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="wa-pair-phone">
+                    Nomor HP pondok (format internasional)
+                  </label>
+                  <input
+                    id="wa-pair-phone"
+                    value={pairPhone}
+                    onChange={(e) => setPairPhone(e.target.value)}
+                    placeholder="cth: 62812xxxxxxx"
+                    inputMode="tel"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-emerald-500"
+                  />
+                  <button
+                    onClick={() => void askPairCode()}
+                    disabled={pairLoading}
+                    className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {pairLoading ? 'Meminta…' : 'Minta Kode'}
+                  </button>
+                  {pairCode && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                      <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Kode pairing</p>
+                      <p className="font-mono text-3xl font-black tracking-[0.3em] text-emerald-900">{pairCode}</p>
+                    </div>
+                  )}
+                </div>
+                <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-600">
+                  <li>Isi nomor HP pondok, klik <b>Minta Kode</b>.</li>
+                  <li>Di HP: <b>Pengaturan → Perangkat Tertaut → Tautkan dengan nomor telepon</b>.</li>
+                  <li>Masukkan kode 8 digit yang muncul.</li>
+                  <li>Status berubah <b>Terhubung</b> otomatis dalam beberapa detik.</li>
+                </ol>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Kirim Tes</p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+              placeholder="Nomor WA tujuan (cth: 0812xxxx)"
+              inputMode="tel"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-emerald-500"
+            />
+            <button
+              onClick={() => void sendTest()}
+              disabled={testing || !status?.connected}
+              title={!status?.connected ? 'Hubungkan dulu sebelum kirim tes' : undefined}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-700 disabled:opacity-50"
+            >
+              <Send size={15} /> {testing ? 'Mengirim…' : 'Kirim Tes'}
             </button>
           </div>
-          <p className="mt-3 text-xs text-slate-500">Buka WhatsApp → Pengaturan → Perangkat Tertaut → Tautkan Perangkat → Scan QR</p>
         </div>
-      )}
-
-      {!status?.connected && mode === 'code' && (
-        <form onSubmit={requestPairCode} className="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
-          <div>
-            <label className="text-sm font-bold text-slate-700">Nomor HP (62xxxxxxxxxxx)</label>
-            <input value={pairPhone} onChange={(e) => setPairPhone(e.target.value)} placeholder="62812xxxxxxx" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm" />
-          </div>
-          <button type="submit" disabled={pairLoading} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
-            <KeyRound size={16} /> {pairLoading ? 'Meminta...' : 'Minta Pair Code'}
-          </button>
-          {pairCode && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Pair Code Anda</p>
-              <p className="mt-2 text-3xl font-black tracking-widest text-emerald-900">{pairCode}</p>
-              <p className="mt-2 text-xs text-emerald-800">Buka WhatsApp → Pengaturan → Perangkat Tertaut → Hubungkan dengan Nomor Telepon → Masukkan kode ini.</p>
-            </div>
-          )}
-        </form>
-      )}
-
-      {status?.connected && (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="text-emerald-600" size={24} />
-            <div>
-              <p className="text-sm font-black text-emerald-900">WhatsApp Gateway Terhubung</p>
-              {status.phone && <p className="text-xs text-emerald-800">{status.phone}</p>}
-              {status.pushname && <p className="text-xs text-emerald-800">{status.pushname}</p>}
-            </div>
-          </div>
-          <div className="mt-4">
-            <button onClick={disconnect} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50">
-              <Unplug size={16} /> Putuskan Koneksi
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </section>
   );
 }

@@ -2,21 +2,18 @@
 
 import React, { createContext, useContext } from 'react';
 import { SettingsMap } from '@/lib/api';
-import {
-  BuilderPageKey,
-  WebsiteBuilderPages,
-  WebsiteBuilderState,
-} from '@/lib/website-builder';
+import { BuilderPageKey, WebsiteBuilderState } from '@/lib/website-builder';
 
 export type BuilderRenderMode = 'live' | 'published' | 'draft';
 
 type PublicSiteContextValue = {
   settings: SettingsMap;
-  builderState: WebsiteBuilderState;
   effectivePathname: string;
-  isBuilderPreview: boolean;
-  renderMode: BuilderRenderMode;
-  useBuilderContent: boolean;
+  isSettingsLoaded?: boolean;
+  builderState?: WebsiteBuilderState;
+  isBuilderPreview?: boolean;
+  renderMode?: BuilderRenderMode;
+  useBuilderContent?: boolean;
 };
 
 const PublicSiteContext = createContext<PublicSiteContextValue | null>(null);
@@ -35,17 +32,18 @@ export function usePublicSiteContext() {
   return useContext(PublicSiteContext);
 }
 
-export function useWebsiteBuilderPageContent<TPageKey extends BuilderPageKey>(
-  pageKey: TPageKey,
-  fallback: WebsiteBuilderPages[TPageKey]
-) {
+export function useWebsiteBuilderPageContent<T>(pageKey: BuilderPageKey, fallback: T): T {
   const context = usePublicSiteContext();
 
-  if (!context || !context.useBuilderContent) {
+  if (!context || !context.useBuilderContent || !context.builderState) {
     return fallback;
   }
 
-  return context.renderMode === 'draft'
-    ? context.builderState.pagesDraft[pageKey]
-    : context.builderState.pagesPublished[pageKey];
+  const pages =
+    context.renderMode === 'draft'
+      ? context.builderState.pagesDraft
+      : context.builderState.pagesPublished;
+  const content = (pages as Record<string, unknown>)[pageKey];
+
+  return (content as T) ?? fallback;
 }

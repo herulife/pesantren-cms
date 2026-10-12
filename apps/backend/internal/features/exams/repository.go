@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"math"
 	"time"
-)
 
-// ErrSessionNotOwned is returned when a caller references an exam session that
-// does not belong to them. Callers map this to 404 so ownership cannot be probed.
-var ErrSessionNotOwned = errors.New("exam session not found")
+	"darussunnah-api/internal/platform/weight"
+	"darussunnah-api/internal/validators"
+)
 
 type Exam struct {
 	ID              int       `json:"id"`
@@ -104,6 +104,15 @@ func (r *Repository) GetAvailableExams() ([]Exam, error) {
 	return exams, nil
 }
 
+// HasSession true bila student punya sesi untuk ujian ini.
+func (r *Repository) HasSession(studentID, examID int) bool {
+	var one int
+	if err := r.db.QueryRow(`SELECT 1 FROM exam_sessions WHERE student_id = ? AND exam_id = ? LIMIT 1`, studentID, examID).Scan(&one); err != nil {
+		return false
+	}
+	return true
+}
+
 func (r *Repository) GetExamQuestions(examID int, hideAnswers bool) ([]Question, error) {
 	query := `SELECT id, exam_id, question_text, options_json, correct_answer_key, points 
 	          FROM exam_questions WHERE exam_id = ?`
@@ -130,6 +139,15 @@ func (r *Repository) GetExamQuestions(examID int, hideAnswers bool) ([]Question,
 }
 
 // Student: Session Management
+func (r *Repository) IsSessionOwnedBy(sessionID, userID int) bool {
+	var owner int
+	err := r.db.QueryRow("SELECT student_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&owner)
+	if err != nil {
+		return false
+	}
+	return owner == userID
+}
+
 func (r *Repository) StartSession(studentID, examID int) (int, error) {
 	// Check if already has a session
 	var sessionID int
@@ -148,108 +166,137 @@ func (r *Repository) StartSession(studentID, examID int) (int, error) {
 	return int(id), nil
 }
 
-// ownsOngoingSession reports whether sessionID belongs to studentID and is
-// still open. Every mutation on a session funnels through this check.
-//
-// The handler previously took session_id straight from the request body and
-// passed it to SubmitAnswer/FinishSession unchecked. Since session IDs are small
-// sequential integers, any logged-in student could submit answers into another
-// student's session, close it early, and overwrite that student's grades row.
-func (r *Repository) ownsOngoingSession(studentID, sessionID int) (bool, error) {
-	var count int
-	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM exam_sessions WHERE id = ? AND student_id = ? AND status = 'ongoing'`,
-		sessionID, studentID,
-	).Scan(&count)
-	if err != nil {
-		return false, err
-	}
-	return count == 1, nil
-}
+var (
+	ErrAnswerForbidden = errors.New("soal tidak termasuk dalam sesi ujian ini")
+	ErrSessionFinished = errors.New("sesi ujian sudah selesai")
+)
 
-func (r *Repository) SubmitAnswer(studentID, sessionID, questionID, selectedAnswer int) error {
-	owned, err := r.ownsOngoingSession(studentID, sessionID)
-	if err != nil {
-		return err
+func (r *Repository) SubmitAnswer(sessionID, questionID, selectedAnswer int) error {
+	// 0. Ownership: soal harus milik ujian pada sesi ini (anti lintas-ujian).
+	var ok int
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM exam_questions q JOIN exam_sessions s ON s.exam_id = q.exam_id WHERE q.id = ? AND s.id = ? AND s.status != 'finished'`,
+		questionID, sessionID).Scan(&ok); err != nil || ok == 0 {
+		if err != nil {
+			return err
+		}
+		return ErrAnswerForbidden
 	}
-	if !owned {
-		return ErrSessionNotOwned
-	}
-
 	// 1. Get correct key
 	var correctKey int
-	err = r.db.QueryRow("SELECT correct_answer_key FROM exam_questions WHERE id = ?", questionID).Scan(&correctKey)
+	err := r.db.QueryRow("SELECT correct_answer_key FROM exam_questions WHERE id = ?", questionID).Scan(&correctKey)
 	if err != nil {
 		return err
 	}
 
 	isCorrect := (selectedAnswer == correctKey)
 
-	// SQLite specific: need unique index for ON CONFLICT
-	// For simplicity in this env, we use DELETE then INSERT
-	_, _ = r.db.Exec("DELETE FROM exam_answers WHERE session_id = ? AND question_id = ?", sessionID, questionID)
+	// Hapus jawaban lama (UNIQUE(session_id, question_id) mencegah ganda).
+	if _, err := r.db.Exec("DELETE FROM exam_answers WHERE session_id = ? AND question_id = ?", sessionID, questionID); err != nil {
+		return err
+	}
 
 	_, err = r.db.Exec("INSERT INTO exam_answers (session_id, question_id, selected_answer, is_correct) VALUES (?, ?, ?, ?)",
 		sessionID, questionID, selectedAnswer, isCorrect)
 	return err
 }
 
-func (r *Repository) FinishSession(studentID, sessionID int) (float64, error) {
-	owned, err := r.ownsOngoingSession(studentID, sessionID)
-	if err != nil {
-		return 0, err
-	}
-	if !owned {
-		return 0, ErrSessionNotOwned
-	}
+func gradeLetter(final float64) string {
+	return weight.GradeLetter100(final)
+}
 
-	var totalPoints, earnedPoints int
+func (r *Repository) FinishSession(sessionID int) (float64, error) {
+	var totalPoints, earnedPoints sql.NullInt64
 
-	// Sum points
+	// Sum points: total from all questions of the exam, earned from correct answers
+	var examID int
+	_ = r.db.QueryRow("SELECT exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&examID)
 	queryPoints := `
-		SELECT SUM(q.points), SUM(CASE WHEN a.is_correct = 1 THEN q.points ELSE 0 END)
+		SELECT 
+			(SELECT COALESCE(SUM(points),0) FROM exam_questions WHERE exam_id = ?),
+			COALESCE(SUM(CASE WHEN a.is_correct = 1 THEN q.points ELSE 0 END),0)
 		FROM exam_questions q
-		JOIN exam_answers a ON q.id = a.question_id
-		WHERE a.session_id = ?
+		LEFT JOIN exam_answers a ON q.id = a.question_id AND a.session_id = ?
+		WHERE q.exam_id = ?
 	`
-	err = r.db.QueryRow(queryPoints, sessionID).Scan(&totalPoints, &earnedPoints)
+	err := r.db.QueryRow(queryPoints, examID, sessionID, examID).Scan(&totalPoints, &earnedPoints)
 	if err != nil {
 		return 0, err
 	}
 
 	score := 0.0
-	if totalPoints > 0 {
-		score = (float64(earnedPoints) / float64(totalPoints)) * 100.0
+	tp := int64(0)
+	ep := int64(0)
+	if totalPoints.Valid {
+		tp = totalPoints.Int64
+	}
+	if earnedPoints.Valid {
+		ep = earnedPoints.Int64
+	}
+	if tp > 0 {
+		score = (float64(ep) / float64(tp)) * 100.0
 	}
 
-	// Update session
+	// Update session with transaction
 	finishTime := time.Now()
-	_, err = r.db.Exec("UPDATE exam_sessions SET status = 'finished', score = ?, finished_at = ? WHERE id = ?",
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec("UPDATE exam_sessions SET status = 'finished', score = ?, finished_at = ? WHERE id = ? AND status != 'finished'",
 		score, finishTime, sessionID)
 	if err != nil {
 		return 0, err
 	}
-
-	// SYNC TO GRADES
-	var ownerStudentID, examID int
-	r.db.QueryRow("SELECT student_id, exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&ownerStudentID, &examID)
-
-	// Defense in depth: never write a grade row for anyone but the session owner.
-	if ownerStudentID != studentID {
-		return 0, ErrSessionNotOwned
+	if n, _ := res.RowsAffected(); n == 0 {
+		return 0, ErrSessionFinished
 	}
+	// SYNC TO GRADES
+	var studentID int
+	tx.QueryRow("SELECT student_id, exam_id FROM exam_sessions WHERE id = ?", sessionID).Scan(&studentID, &examID)
 
 	var subjectID int
 	var semester, year string
-	r.db.QueryRow("SELECT subject_id, semester, academic_year FROM exams WHERE id = ?", examID).Scan(&subjectID, &semester, &year)
+	tx.QueryRow("SELECT subject_id, semester, academic_year FROM exams WHERE id = ?", examID).Scan(&subjectID, &semester, &year)
 
-	// Insert into grades (as UAS or UTS based on title or default to UAS)
-	// We'll check if entry exists
-	_, _ = r.db.Exec(`
-		INSERT INTO grades (student_id, subject_id, semester, academic_year, uas_score, final_score, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(student_id, subject_id) DO UPDATE SET uas_score = excluded.uas_score
-	`, ownerStudentID, subjectID, semester, year, score, score, "Generated from CBT")
+	// Samakan semester dengan kanonik sistem nilai ("1"/"2") agar nilai CBT
+	// tidak terpisah dari nilai manual saat rapor dihitung.
+	semester = validators.NormalizeSemester(semester)
 
+	// CBT menulis komponen UAS. Ambil komponen UTS/tugas/UH yang sudah ada (jika
+	// guru sudah mengisi manual) lalu hitung ulang final memakai bobot per mapel
+	// (SAMA seperti nilai manual): default UTS*25 + UAS*30 + Tugas*25 + UH*20.
+	var uts, task, uh, utsW, uasW, taskW, uhW float64
+	_ = tx.QueryRow(`SELECT COALESCE(uts_score,0), COALESCE(task_score,0), COALESCE(uh_score,0) FROM grades
+		WHERE student_id=? AND subject_id=? AND semester=? AND academic_year=?`,
+		studentID, subjectID, semester, year).Scan(&uts, &task, &uh)
+	_ = tx.QueryRow(`SELECT uts_weight, uas_weight, task_weight, uh_weight FROM subject_grade_weights
+		WHERE subject_id=?`, subjectID).Scan(&utsW, &uasW, &taskW, &uhW)
+	weights := weight.GradeWeights{UTS: utsW, UAS: uasW, Task: taskW, UH: uhW}
+	if utsW == 0 && uasW == 0 && taskW == 0 && uhW == 0 {
+		weights = weight.DefaultGradeWeights()
+	}
+	finalScore, calcErr := weight.CalculateGradeFinal(uts, score, task, uh, weights)
+	if calcErr != nil {
+		return 0, calcErr
+	}
+	finalScore = math.Round(finalScore*100) / 100
+	letter := gradeLetter(finalScore)
+
+	if _, err := tx.Exec(`
+		INSERT INTO grades (student_id, subject_id, semester, academic_year, uts_score, uas_score, task_score, uh_score, final_score, grade_letter, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(student_id, subject_id, semester, academic_year) DO UPDATE SET
+			uas_score = excluded.uas_score,
+			uh_score = excluded.uh_score,
+			final_score = excluded.final_score,
+			grade_letter = excluded.grade_letter,
+			notes = excluded.notes
+	`, studentID, subjectID, semester, year, uts, score, task, uh, finalScore, letter, "Generated from CBT"); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
 	return score, nil
 }

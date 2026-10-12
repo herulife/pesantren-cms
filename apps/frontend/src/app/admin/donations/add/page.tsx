@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { addCampaign, uploadImage } from '@/lib/api';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { addCampaign, updateCampaign, getCampaign, uploadImage, resolveDisplayImageUrl } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { DollarSign, Calendar, Image as ImageIcon, Loader2, ArrowLeft, Save, Send } from 'lucide-react';
 import GallerySelectionModal from '@/components/GallerySelectionModal';
 import Link from 'next/link';
 
-export default function AddDonationCampaignPage() {
+function AddDonationCampaignContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('id');
+  const isEdit = !!editId;
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -21,27 +24,57 @@ export default function AddDonationCampaignPage() {
     end_date: ''
   });
 
+  useEffect(() => {
+    if (editId) {
+      getCampaign(Number(editId)).then((c) => {
+        setFormData({
+          title: c.title || '',
+          description: c.description || '',
+          target_amount: c.target_amount || 0,
+          image_url: resolveDisplayImageUrl(c.image_url || ''),
+          is_active: c.is_active ?? 1,
+          end_date: c.end_date ? new Date(c.end_date).toISOString().split('T')[0] : ''
+        });
+      }).catch(() => showToast('error', 'Gagal memuat kampanye'));
+    }
+  }, [editId]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title) {
-       showToast('error', 'Judul kampanye tidak boleh kosong!');
+    if (!formData.title.trim() || formData.title.trim().length < 5) {
+       showToast('error', 'Judul minimal 5 karakter!');
        return;
     }
-    const res = await addCampaign({
+    if (!formData.description.trim() || formData.description.trim().length < 10) {
+       showToast('error', 'Deskripsi minimal 10 karakter!');
+       return;
+    }
+    if (!formData.target_amount || Number(formData.target_amount) <= 0) {
+       showToast('error', 'Target dana harus lebih dari 0!');
+       return;
+    }
+    const payload = {
       ...formData,
       target_amount: Number(formData.target_amount),
-      end_date: formData.end_date || null
-    });
-    
-    if (res.success) {
-      showToast('success', 'Kampanye donasi berhasil dibuat!');
-      router.push('/admin/donations');
-    } else {
-      showToast('error', 'Gagal membuat kampanye.');
+      end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null
+    };
+    try {
+      const res = isEdit ? await updateCampaign(Number(editId), payload) : await addCampaign(payload);
+      if (res.success) {
+        showToast('success', isEdit ? 'Kampanye berhasil diperbarui!' : 'Kampanye donasi berhasil dibuat!');
+        router.push('/admin/donations');
+      } else {
+        const errs = (res as { errors?: Record<string, string | string[]> }).errors ?? {};
+        const msg = Object.keys(errs).length ? Object.values(errs).flat().join(', ') : (res.message || (isEdit ? 'Gagal memperbarui kampanye.' : 'Gagal membuat kampanye.'));
+        showToast('error', msg);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan';
+      showToast('error', msg);
     }
   };
 
@@ -82,7 +115,8 @@ export default function AddDonationCampaignPage() {
            
            const upRes = await uploadImage(webpFile);
            if (upRes.success) {
-             setFormData(prev => ({ ...prev, image_url: upRes.url }));
+             const displayUrl = resolveDisplayImageUrl(upRes.url || upRes.data?.url);
+             setFormData(prev => ({ ...prev, image_url: displayUrl }));
              showToast('success', 'Gambar kampanye diunggah berformat WebP!');
            } else {
              showToast('error', 'Gagal mengunggah gambar kampanye.');
@@ -99,7 +133,7 @@ export default function AddDonationCampaignPage() {
   };
 
   const handleGallerySelect = (url: string) => {
-    setFormData(prev => ({ ...prev, image_url: url }));
+    setFormData(prev => ({ ...prev, image_url: resolveDisplayImageUrl(url) }));
     setIsGalleryOpen(false);
     showToast('success', 'Poster kampanye dipilih dari galeri!');
   };
@@ -107,13 +141,13 @@ export default function AddDonationCampaignPage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-         <Link href="/admin/donations" className="flex items-center gap-2 text-slate-500 hover:text-emerald-700 transition-colors font-bold uppercase tracking-widest text-xs">
+         <Link href="/admin/donations" className="flex items-center gap-2 text-slate-500 hover:text-sky-700 transition-colors font-bold uppercase tracking-widest text-xs">
             <ArrowLeft size={16} /> Kembali ke Sistem Donasi
          </Link>
       </div>
 
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">Buat Kampanye Baru</h1>
+        <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">{isEdit ? 'Edit Kampanye' : 'Buat Kampanye Baru'}</h1>
       </div>
 
       <form onSubmit={handleAddSubmit} className="relative">
@@ -123,7 +157,7 @@ export default function AddDonationCampaignPage() {
            <div className="lg:col-span-2 space-y-8">
               
               {/* Title Input WP Style */}
-              <div className="bg-white border text-transparent border-slate-200 rounded-2xl shadow-sm overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all">
+              <div className="bg-white border text-transparent border-slate-200 rounded-2xl shadow-sm overflow-hidden focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:border-sky-500 transition-all">
                 <input 
                   required
                   value={formData.title}
@@ -134,7 +168,7 @@ export default function AddDonationCampaignPage() {
               </div>
 
               {/* Content Textarea WP Style */}
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all min-h-[400px]">
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:border-sky-500 transition-all min-h-[400px]">
                 <div className="h-12 border-b border-slate-100 bg-slate-50 flex items-center px-4 gap-2">
                    <div className="text-xs font-bold text-slate-400 px-2 uppercase tracking-widest cursor-default">Deskripsi Detail Kampanye</div>
                 </div>
@@ -163,7 +197,7 @@ export default function AddDonationCampaignPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm text-slate-600">
                        <span className="flex items-center gap-2"><ImageIcon size={16} className="text-slate-400"/> Tipe:</span>
-                       <span className="font-bold text-emerald-600">Terbuka (Publik)</span>
+                       <span className="font-bold text-sky-600">Terbuka (Publik)</span>
                     </div>
                  </div>
                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
@@ -173,10 +207,10 @@ export default function AddDonationCampaignPage() {
                     <button 
                       type="submit"
                       disabled={isUploading}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-bold hover:bg-sky-700 transition-all shadow-md shadow-sky-500/20 disabled:opacity-50"
                     >
                       <Send size={16} />
-                      Sebarkan
+                      {isEdit ? 'Perbarui' : 'Sebarkan'}
                     </button>
                  </div>
               </div>
@@ -186,35 +220,46 @@ export default function AddDonationCampaignPage() {
                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
                     <h3 className="font-bold text-slate-800 text-sm">Target & Waktu</h3>
                  </div>
-                 <div className="p-5 space-y-5">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Target Dana (Rp)</label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input 
-                          required
-                          type="number"
-                          value={formData.target_amount || ''}
-                          onChange={(e) => setFormData({...formData, target_amount: Number(e.target.value)})}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Tenggat Waktu</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input 
-                          type="date"
-                          value={formData.end_date}
-                          onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                        />
-                      </div>
-                    </div>
-                 </div>
+                  <div className="p-5 space-y-5">
+                     <div className="space-y-2">
+                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Target Dana (Rp) *</label>
+                       <div className="relative">
+                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                         <input 
+                           required
+                           type="number"
+                           min="1000"
+                           value={formData.target_amount || ''}
+                           onChange={(e) => setFormData({...formData, target_amount: Number(e.target.value)})}
+                           className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                           placeholder="0"
+                         />
+                       </div>
+                     </div>
+                     
+                     <div className="space-y-2">
+                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Tenggat Waktu</label>
+                       <div className="relative">
+                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                         <input 
+                           type="date"
+                           value={formData.end_date}
+                           onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                           min={new Date().toISOString().split('T')[0]}
+                           className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                         />
+                       </div>
+                     </div>
+
+                     <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Status Aktif</label>
+                       <label className="relative inline-flex items-center cursor-pointer">
+                         <input type="checkbox" checked={formData.is_active === 1} onChange={(e) => setFormData({...formData, is_active: e.target.checked ? 1 : 0})} className="sr-only peer" />
+                         <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                         <span className="ml-3 text-sm font-bold text-slate-700">{formData.is_active === 1 ? 'Aktif' : 'Nonaktif'}</span>
+                       </label>
+                     </div>
+                  </div>
               </div>
 
               {/* META BOX 3: Poster Gambar */}
@@ -224,7 +269,7 @@ export default function AddDonationCampaignPage() {
                     <button 
                       type="button"
                       onClick={() => setIsGalleryOpen(true)}
-                      className="text-[10px] font-bold text-emerald-600 hover:underline flex items-center gap-1"
+                      className="text-[10px] font-bold text-sky-600 hover:underline flex items-center gap-1"
                     >
                       <ImageIcon size={12} /> Galeri
                     </button>
@@ -232,7 +277,7 @@ export default function AddDonationCampaignPage() {
                  <div className="p-5 flex-1 flex flex-col">
                     <div 
                       className={`w-full flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center relative overflow-hidden transition-all min-h-[14rem] bg-slate-50 hover:bg-slate-100 ${
-                        formData.image_url ? 'border-emerald-300' : 'border-slate-300'
+                        formData.image_url ? 'border-sky-300' : 'border-slate-300'
                       }`}
                       onClick={() => !isUploading && fileInputRef.current?.click()}
                       style={{ cursor: isUploading ? 'not-allowed' : 'pointer' }}
@@ -247,7 +292,7 @@ export default function AddDonationCampaignPage() {
                       ) : (
                         <div className="flex flex-col items-center gap-2 p-6 text-slate-400 text-center">
                           {isUploading ? (
-                             <Loader2 size={32} className="animate-spin text-emerald-500 mb-2" />
+                             <Loader2 size={32} className="animate-spin text-sky-500 mb-2" />
                           ) : (
                              <ImageIcon size={32} className="text-slate-300 mb-2" />
                           )}
@@ -278,5 +323,13 @@ export default function AddDonationCampaignPage() {
         onSelect={handleGallerySelect}
       />
     </>
+  );
+}
+
+export default function AddDonationCampaignPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
+      <AddDonationCampaignContent />
+    </Suspense>
   );
 }

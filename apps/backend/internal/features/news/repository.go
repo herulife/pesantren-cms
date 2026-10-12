@@ -19,6 +19,7 @@ type News struct {
 	CategoryName sql.NullString `json:"category_name"`
 	ImageURL     sql.NullString `json:"image_url"`
 	Status       string         `json:"status"`
+	IsPinned     int            `json:"is_pinned"`
 	AuthorID     int            `json:"author_id"`
 	CreatedAt    string         `json:"created_at"`
 	UpdatedAt    string         `json:"updated_at"`
@@ -77,7 +78,7 @@ func (r *Repository) EnsureUniqueSlug(baseSlug string, excludeID int) (string, e
 
 func (r *Repository) FindAll(status, category, search string, limit, offset int) ([]News, int, error) {
 	query := `
-		SELECT n.id, n.title, n.slug, n.content, n.excerpt, n.category_id, c.name, n.image_url, n.status, COALESCE(n.author_id, 0), n.created_at, n.updated_at
+		SELECT n.id, n.title, n.slug, n.content, n.excerpt, n.category_id, c.name, n.image_url, n.status, n.is_pinned, COALESCE(n.author_id, 0), n.created_at, n.updated_at
 		FROM news n
 		LEFT JOIN categories c ON n.category_id = c.id
 	`
@@ -110,7 +111,7 @@ func (r *Repository) FindAll(status, category, search string, limit, offset int)
 		query += " WHERE " + strings.Join(whereClauses, " AND ")
 	}
 
-	query += " ORDER BY n.created_at DESC LIMIT ? OFFSET ?"
+	query += " ORDER BY n.is_pinned DESC, n.created_at DESC LIMIT ? OFFSET ?"
 	params := append(append([]interface{}{}, args...), limit, offset)
 
 	rows, err := r.db.Query(query, params...)
@@ -124,7 +125,7 @@ func (r *Repository) FindAll(status, category, search string, limit, offset int)
 		var n News
 		err := rows.Scan(
 			&n.ID, &n.Title, &n.Slug, &n.Content, &n.Excerpt, &n.CategoryID, &n.CategoryName,
-			&n.ImageURL, &n.Status, &n.AuthorID, &n.CreatedAt, &n.UpdatedAt,
+			&n.ImageURL, &n.Status, &n.IsPinned, &n.AuthorID, &n.CreatedAt, &n.UpdatedAt,
 		)
 		if err != nil {
 			logger.Info(context.Background(), "news repo: error scanning row", logger.Field{"error": err.Error()})
@@ -153,11 +154,11 @@ func (r *Repository) FindAll(status, category, search string, limit, offset int)
 func (r *Repository) FindByID(id int) (*News, error) {
 	var n News
 	err := r.db.QueryRow(`
-		SELECT id, title, slug, content, excerpt, category_id, NULL as category_name, image_url, status, COALESCE(author_id, 0), created_at, updated_at
+		SELECT id, title, slug, content, excerpt, category_id, NULL as category_name, image_url, status, is_pinned, COALESCE(author_id, 0), created_at, updated_at
 		FROM news WHERE id = ?
 	`, id).Scan(
 		&n.ID, &n.Title, &n.Slug, &n.Content, &n.Excerpt, &n.CategoryID, &n.CategoryName,
-		&n.ImageURL, &n.Status, &n.AuthorID, &n.CreatedAt, &n.UpdatedAt,
+		&n.ImageURL, &n.Status, &n.IsPinned, &n.AuthorID, &n.CreatedAt, &n.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -194,11 +195,11 @@ func (r *Repository) FindAllPublished(category, search string, limit, offset int
 func (r *Repository) FindBySlug(slug string) (*News, error) {
 	var n News
 	err := r.db.QueryRow(`
-		SELECT id, title, slug, content, excerpt, category_id, NULL as category_name, image_url, status, COALESCE(author_id, 0), created_at, updated_at
+		SELECT id, title, slug, content, excerpt, category_id, NULL as category_name, image_url, status, is_pinned, COALESCE(author_id, 0), created_at, updated_at
 		FROM news WHERE slug = ? AND status = 'published'
 	`, slug).Scan(
 		&n.ID, &n.Title, &n.Slug, &n.Content, &n.Excerpt, &n.CategoryID, &n.CategoryName,
-		&n.ImageURL, &n.Status, &n.AuthorID, &n.CreatedAt, &n.UpdatedAt,
+		&n.ImageURL, &n.Status, &n.IsPinned, &n.AuthorID, &n.CreatedAt, &n.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -280,6 +281,15 @@ func (r *Repository) Update(id int, n *News) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (r *Repository) SetPinned(id int, pinned bool) error {
+	val := 0
+	if pinned {
+		val = 1
+	}
+	_, err := r.db.Exec("UPDATE news SET is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", val, id)
+	return err
 }
 
 func (r *Repository) SoftDelete(id int) error {

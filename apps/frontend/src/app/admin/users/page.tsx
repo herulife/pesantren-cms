@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword } from '@/lib/api';
+import { getUsers, updateUserRole, deleteUser, createUser, resetUserPassword, updateUserProfile, getSettings, updateSetting } from '@/lib/api';
+import { ROLE_MENU_DEFS, standardMenusForRole, standardRolePermissions } from '@/lib/roleMenus';
 import { useAuth } from '@/components/AuthProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
@@ -15,7 +16,6 @@ import {
   Wallet,
   GraduationCap,
   Camera,
-  User,
   AlertCircle,
   Clock,
   Trash2,
@@ -24,7 +24,8 @@ import {
   Plus,
   Mail,
   Lock,
-  KeyRound
+  KeyRound,
+  Pencil
 } from 'lucide-react';
 
 interface UserRow {
@@ -38,15 +39,13 @@ interface UserRow {
 
 const ROLE_OPTIONS = [
   { value: 'superadmin', label: 'Super Admin', icon: Crown, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-200' },
-  { value: 'bendahara', label: 'Bendahara', icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200' },
-  { value: 'panitia_psb', label: 'Panitia PSB', icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-200' },
+  { value: 'bendahara', label: 'Bendahara', icon: Wallet, color: 'text-sky-600', bg: 'bg-sky-50', ring: 'ring-sky-200' },
+  { value: 'panitia_psb', label: 'Panitia PSB', icon: GraduationCap, color: 'text-sky-600', bg: 'bg-sky-50', ring: 'ring-sky-200' },
   { value: 'tim_media', label: 'Tim Media', icon: Camera, color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200' },
-  { value: 'user', label: 'User Biasa', icon: User, color: 'text-slate-600', bg: 'bg-slate-50', ring: 'ring-slate-200' },
-  { value: 'pimpinan', label: 'Pimpinan', icon: UserCog, color: 'text-indigo-600', bg: 'bg-indigo-50', ring: 'ring-indigo-200' },
-  { value: 'wali_kelas', label: 'Wali Kelas', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50', ring: 'ring-cyan-200' },
-  { value: 'guru', label: 'Guru', icon: GraduationCap, color: 'text-teal-600', bg: 'bg-teal-50', ring: 'ring-teal-200' },
-  { value: 'ustadz', label: 'Ustadz', icon: User, color: 'text-green-600', bg: 'bg-green-50', ring: 'ring-green-200' },
-
+  { value: 'pimpinan', label: 'Pimpinan', icon: Shield, color: 'text-red-600', bg: 'bg-red-50', ring: 'ring-red-200' },
+  { value: 'wali_kelas', label: 'Wali Kelas', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200' },
+  { value: 'guru', label: 'Guru', icon: GraduationCap, color: 'text-indigo-600', bg: 'bg-indigo-50', ring: 'ring-indigo-200' },
+  { value: 'ustadz', label: 'Ustadz', icon: UserCog, color: 'text-teal-600', bg: 'bg-teal-50', ring: 'ring-teal-200' },
 ];
 
 function getRoleConfig(role: string) {
@@ -57,7 +56,7 @@ function getUsageStatus(user: UserRow, currentUserId?: number | null) {
   if (user.id === currentUserId) {
     return {
       label: 'Sedang Dipakai',
-      tone: 'text-emerald-700 bg-emerald-50',
+      tone: 'text-sky-700 bg-sky-50',
       detail: 'Akun yang sedang aktif digunakan sekarang.',
     };
   }
@@ -65,7 +64,7 @@ function getUsageStatus(user: UserRow, currentUserId?: number | null) {
   if (user.last_login_at) {
     return {
       label: 'Sudah Pernah Dipakai',
-      tone: 'text-emerald-600 bg-emerald-50',
+      tone: 'text-sky-600 bg-sky-50',
       detail: 'Akun ini pernah dipakai masuk ke sistem.',
     };
   }
@@ -80,6 +79,8 @@ function getUsageStatus(user: UserRow, currentUserId?: number | null) {
 export default function UsersPage() {
   const { showToast } = useToast();
   const { user: currentUser } = useAuth();
+  const isSuper = currentUser?.role === 'superadmin';
+  const manageableRoleOptions = isSuper ? ROLE_OPTIONS : ROLE_OPTIONS.filter((role) => role.value !== 'superadmin');
   
   const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,7 +95,7 @@ export default function UsersPage() {
     name: '',
     email: '',
     password: '',
-    role: 'user',
+    role: 'bendahara',
   });
   
   // Modal states
@@ -106,6 +107,32 @@ export default function UsersPage() {
     password: '',
     confirmPassword: '',
   });
+  // Edit nama + email login (PUT /api/users/{id}) — sebelumnya hanya role dan
+  // password yang bisa diubah dari panel ini.
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '' });
+  // customMenus dihapus — hanya Hak Akses Menu per role
+  const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
+  const [permsLoading, setPermsLoading] = useState(true);
+
+  const fetchRolePerms = useCallback(async () => {
+    setPermsLoading(true);
+    try {
+      const s = await getSettings();
+      const raw = s.find(x => x.key === 'role_menu_permissions')?.value || '{}';
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') setRolePerms(parsed);
+      } catch {}
+    } finally {
+      setPermsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isSuper) void fetchRolePerms();
+  }, [isSuper, fetchRolePerms]);
 
   const fetchUsers = useCallback(async (search = searchQuery) => {
     setIsLoading(true);
@@ -137,7 +164,7 @@ export default function UsersPage() {
           name: '',
           email: '',
           password: '',
-          role: 'user',
+          role: 'bendahara',
         });
         setShowCreateForm(false);
         await fetchUsers('');
@@ -216,6 +243,43 @@ export default function UsersPage() {
     }
   };
 
+  const openEditDialog = (userRow: UserRow) => {
+    setSelectedUser(userRow);
+    setEditForm({ name: userRow.name, email: userRow.email });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!selectedUser) return;
+    const name = editForm.name.trim();
+    const email = editForm.email.trim();
+    if (name.length < 3) {
+      showToast('error', 'Nama minimal 3 karakter.');
+      return;
+    }
+    if (!email) {
+      showToast('error', 'Email login wajib diisi.');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const res = await updateUserProfile(selectedUser.id, { name, email });
+      if (res.success) {
+        showToast('success', `Akun ${selectedUser.name} diperbarui.`);
+        setIsEditOpen(false);
+        setSelectedUser(null);
+        fetchUsers();
+      }
+    } catch (error) {
+      // Termasuk 409 "Email sudah terdaftar" dari backend.
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem.';
+      showToast('error', message);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const handleRoleChange = async (userId: number, newRole: string) => {
     if (userId === currentUser?.id) {
       showToast('error', 'Keamanan Sistem: Tidak diizinkan merubah otoritas diri sendiri.');
@@ -254,7 +318,7 @@ export default function UsersPage() {
           <p className="text-slate-500 text-sm font-medium">Kelola akun, role, dan akses user yang digunakan dalam sistem pondok.</p>
         </div>
         <div className="hidden md:flex gap-2 bg-white px-6 py-4 rounded-lg border border-slate-200 shadow-sm shadow-slate-100">
-           <UserCheck size={20} className="text-emerald-500" />
+           <UserCheck size={20} className="text-sky-500" />
            <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Sistem RBAC Terintegrasi</span>
         </div>
       </div>
@@ -262,16 +326,16 @@ export default function UsersPage() {
       <div className="mb-10 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Bootstrap Akun</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Bootstrap Akun</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Tambah User Dari Dashboard</h2>
             <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-              Superadmin bisa membuat akun baru langsung dari panel tanpa menunggu pendaftaran publik. Cocok untuk staf internal seperti bendahara, panitia PSB, dan tim media.
+              Superadmin atau bendahara bisa membuat akun staf baru langsung dari panel tanpa menunggu pendaftaran publik. Akun wali (role user) tidak ditampilkan di sini.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setShowCreateForm((prev) => !prev)}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-sky-700"
           >
             {showCreateForm ? <X size={16} /> : <Plus size={16} />}
             {showCreateForm ? 'Tutup Form' : 'Tambah User'}
@@ -279,7 +343,7 @@ export default function UsersPage() {
         </div>
 
         {showCreateForm ? (
-          <form onSubmit={handleCreateUser} className="mt-6 grid gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5 md:grid-cols-2 xl:grid-cols-4">
+          <form onSubmit={handleCreateUser} className="mt-6 grid gap-4 rounded-2xl border border-sky-100 bg-sky-50/40 p-5 md:grid-cols-2 xl:grid-cols-4">
             <label className="block">
               <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
                 <UserCheck size={14} /> Nama
@@ -288,7 +352,7 @@ export default function UsersPage() {
                 required
                 value={createForm.name}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Nama pengguna"
               />
             </label>
@@ -302,8 +366,8 @@ export default function UsersPage() {
                 required
                 value={createForm.email}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                placeholder="nama@darussunnah.com"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                placeholder="nama@darussunnahparung.com"
               />
             </label>
 
@@ -317,7 +381,7 @@ export default function UsersPage() {
                 minLength={8}
                 value={createForm.password}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
                 placeholder="Minimal 8 karakter"
               />
             </label>
@@ -329,9 +393,9 @@ export default function UsersPage() {
               <select
                 value={createForm.role}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               >
-                {ROLE_OPTIONS.map((role) => (
+                {manageableRoleOptions.map((role) => (
                   <option key={role.value} value={role.value}>
                     {role.label}
                   </option>
@@ -339,7 +403,7 @@ export default function UsersPage() {
               </select>
             </label>
 
-            <div className="md:col-span-2 xl:col-span-4 flex flex-col gap-3 border-t border-emerald-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="md:col-span-2 xl:col-span-4 flex flex-col gap-3 border-t border-sky-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs font-medium leading-6 text-slate-500">
                 Akun baru akan langsung masuk ke tabel user dan bisa dipakai login sesuai role yang dipilih.
               </p>
@@ -357,7 +421,7 @@ export default function UsersPage() {
       </div>
 
       {/* Role Distribution Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5 mb-10">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 mb-10">
         {ROLE_OPTIONS.map(role => {
           const RoleIcon = role.icon;
           const count = roleCounts[role.value] || 0;
@@ -381,16 +445,119 @@ export default function UsersPage() {
         })}
       </div>
 
+      {isSuper ? (
+        <>
+          {/* Hak Akses Menu per Role */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 border border-sky-100"><Shield size={18} /></div>
+            <div>
+              <h3 className="font-black text-slate-900 text-sm uppercase tracking-wide">Hak Akses Menu</h3>
+              <p className="text-xs text-slate-500 mt-1">Atur menu apa yang bisa diakses per role — mis. bendahara uncheck Berita jadi tidak tampil.</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                const perms = standardRolePermissions();
+                await updateSetting('role_menu_permissions', JSON.stringify(perms));
+                setRolePerms(perms);
+                showToast('success','Hak akses direset ke standar role');
+              } catch (error) {
+                const message = error instanceof Error ? error.message : 'Gagal menyimpan hak akses.';
+                showToast('error', message);
+              }
+            }}
+            className="text-xs font-bold text-slate-500 hover:text-slate-700 underline"
+          >
+            Reset Default
+          </button>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+           {ROLE_OPTIONS.filter(r=>r.value!=='superadmin').map(role => {
+            const RoleIcon = role.icon;
+            const saved = rolePerms[role.value];
+            // Daftar yang tampil = standar role ini (tersimpan di DB, atau bawaan bila belum ada).
+            const current = permsLoading ? standardMenusForRole(role.value) : (saved ?? standardMenusForRole(role.value));
+            const toggleMenu = async (href: string, label: string, nextChecked: boolean) => {
+              const next = nextChecked ? [...new Set([...current, href])] : current.filter(x=>x!==href);
+              const perms = { ...rolePerms, [role.value]: next };
+              setRolePerms(perms);
+              try {
+                await updateSetting('role_menu_permissions', JSON.stringify(perms));
+                showToast('success', `${role.label} ${nextChecked ? 'diberi' : 'dicabut'} akses ${label}`);
+              } catch {
+                await fetchRolePerms();
+                showToast('error', 'Gagal menyimpan, data dimuat ulang');
+              }
+            };
+            const inList = ROLE_MENU_DEFS.filter(m => current.includes(m.href));
+            const notInList = ROLE_MENU_DEFS.filter(m => !current.includes(m.href));
+            const groups: Record<string, typeof ROLE_MENU_DEFS> = {};
+            inList.forEach(m => { (groups[m.category] = groups[m.category] || []).push(m); });
+            const renderRow = (item: typeof ROLE_MENU_DEFS[number], checked: boolean) => {
+              const locked = !item.roles;
+              return (
+                <label key={item.href} className={`flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs ${locked ? 'opacity-70' : 'hover:bg-slate-50 cursor-pointer'}`}>
+                  <input type="checkbox" disabled={permsLoading || locked} className="rounded"
+                    checked={checked}
+                    onChange={(e)=>{ void toggleMenu(item.href, item.label, e.target.checked); }} />
+                  <span className="font-medium text-slate-700">{item.label}</span>
+                  {locked
+                    ? <span className="ml-auto text-[10px] text-slate-400">selalu tampil</span>
+                    : <span className="ml-auto text-[10px] text-slate-400">{item.href}</span>}
+                </label>
+              );
+            };
+            return (
+              <div key={role.value} className="rounded-xl border border-slate-200 p-4 bg-slate-50/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`p-2 rounded-lg ${role.bg} ${role.color} border ${role.ring}`}><RoleIcon size={14} /></span>
+                  <span className="font-black text-xs uppercase tracking-wide text-slate-800">{role.label}</span>
+                  <span className="ml-auto rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-500">{current.length} menu</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3">Daftar di bawah ini <b>sama dengan standar</b> {role.label}. Uncheck untuk mencabut, menu <i>selalu tampil</i> terkunci.</p>
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {Object.entries(groups).map(([cat, items]) => (
+                    <div key={cat}>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{cat}</p>
+                      <div className="space-y-2">
+                        {items.map(item => renderRow(item, true))}
+                      </div>
+                    </div>
+                  ))}
+                  {notInList.length > 0 && (
+                    <details className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2">
+                      <summary className="cursor-pointer text-xs font-bold text-sky-700 hover:underline">
+                        Tambah menu lain ({notInList.length}) — di luar standar {role.label}
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        {notInList.map(item => renderRow(item, false))}
+                      </div>
+                      <p className="mt-2 text-[10px] leading-5 text-slate-400">Menu di luar standar hanya memunculkan menunya; akses datanya tetap mengikuti aturan role di server.</p>
+                    </details>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-4 text-xs text-slate-500">Standar tersimpan di database (<span className="font-mono">role_menu_permissions</span>) dan tetap sama setelah logout. Contoh: Bendahara uncheck <b>Notifikasi WA</b> → user bendahara tidak lihat menu itu di Sidebar.</p>
+          </div>
+        </>
+      ) : null}
+
       {/* Search & Filter Bar */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-10 flex flex-col md:flex-row items-stretch md:items-center gap-6">
           <div className="flex-1 relative group w-full">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-700 transition-colors" size={20} />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-700 transition-colors" size={20} />
             <input 
               type="text"
               placeholder="Cari user berdasarkan identitas nama atau email terdaftar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-16 pr-8 py-4 bg-slate-50 border border-slate-100 focus:bg-white focus:border-emerald-500 rounded-xl text-sm font-bold transition-all outline-none shadow-inner"
+              className="w-full pl-16 pr-8 py-4 bg-slate-50 border border-slate-100 focus:bg-white focus:border-sky-500 rounded-xl text-sm font-bold transition-all outline-none shadow-inner"
             />
           </div>
           
@@ -420,7 +587,7 @@ export default function UsersPage() {
             <p className="text-slate-300 font-black uppercase tracking-[0.3em] text-xs">Sinkronisasi Database Otoritas...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto min-h-[400px]">
+          <div className="ap-table-wrap overflow-x-auto min-h-[400px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100">
@@ -439,9 +606,9 @@ export default function UsersPage() {
                   const usageStatus = getUsageStatus(u, currentUser?.id);
 
                   return (
-                    <tr key={u.id} className={`group hover:bg-emerald-50/40 transition-colors duration-500 ${isSelf ? 'bg-emerald-50/40' : ''}`}>
+                    <tr key={u.id} className={`group hover:bg-sky-50/40 transition-colors duration-500 ${isSelf ? 'bg-sky-50/40' : ''}`}>
                       <td className="pl-10 pr-6 py-8">
-                        <span className="text-[10px] font-black font-mono text-slate-300 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 shadow-inner group-hover:bg-white group-hover:text-emerald-500 transition-all">#{u.id}</span>
+                        <span className="text-[10px] font-black font-mono text-slate-300 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 shadow-inner group-hover:bg-white group-hover:text-sky-500 transition-all">#{u.id}</span>
                       </td>
                       <td className="px-6 py-8">
                         <div className="flex items-center gap-4">
@@ -476,7 +643,7 @@ export default function UsersPage() {
                       </td>
                       <td className="pr-10 pl-6 py-8 text-right">
                         <div className="flex justify-end items-center gap-3">
-                          {!isSelf && (
+                          {!isSelf && (isSuper || u.role !== 'superadmin') && (
                             <div className="relative group/select">
                               <select
                                 value={u.role}
@@ -485,22 +652,32 @@ export default function UsersPage() {
                                 className={`appearance-none pl-6 pr-12 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest border-2 outline-none cursor-pointer transition-all shadow-sm ${
                                   updating === u.id 
                                     ? 'bg-slate-50 border-slate-100 text-slate-300'
-                                    : 'bg-white border-slate-100 text-slate-600 hover:border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+                                    : 'bg-white border-slate-100 text-slate-600 hover:border-sky-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10'
                                 }`}
                               >
-                                {ROLE_OPTIONS.map(r => (
-                                  <option key={r.value} value={r.value}>{r.label}</option>
-                                ))}
+                                 {manageableRoleOptions.map(r => (
+                                   <option key={r.value} value={r.value}>{r.label}</option>
+                                 ))}
                               </select>
-                              <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover/select:text-emerald-600 transition-colors" />
+                              <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover/select:text-sky-600 transition-colors" />
                             </div>
                           )}
                           
                           {updating === u.id && (
-                             <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                             <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin"></div>
                           )}
 
-                          {!isSelf && (
+                          {!isSelf && (isSuper || u.role !== 'superadmin') && (
+                            <button
+                              onClick={() => openEditDialog(u)}
+                              className="p-3 text-slate-300 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all"
+                              title="Ubah nama & email login"
+                            >
+                              <Pencil size={20} />
+                            </button>
+                          )}
+
+                          {!isSelf && (isSuper || u.role !== 'superadmin') && (
                             <button
                               onClick={() => openResetPasswordDialog(u)}
                               className="p-3 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
@@ -510,7 +687,7 @@ export default function UsersPage() {
                             </button>
                           )}
 
-                          {!isSelf && (
+                          {isSuper && !isSelf && (
                             <button 
                               onClick={() => { setSelectedId(u.id); setIsDeleteOpen(true); }}
                               className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
@@ -540,12 +717,12 @@ export default function UsersPage() {
       </div>
 
       {/* Access Permission Legend */}
-      <div className="bg-gradient-to-br from-emerald-950 via-slate-950 to-slate-950 p-12 rounded-xl text-white relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full -mr-32 -mt-32 blur-3xl transition-colors group-hover:bg-emerald-500/20"></div>
+      <div className="bg-gradient-to-br from-sky-950 via-slate-950 to-slate-950 p-12 rounded-xl text-white relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/10 rounded-full -mr-32 -mt-32 blur-3xl transition-colors group-hover:bg-sky-500/20"></div>
         <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
            <div className="max-w-md">
-              <div className="bg-emerald-500/15 p-4 rounded-xl w-fit mb-6 border border-emerald-500/20">
-                <UserCog size={32} className="text-emerald-300" />
+              <div className="bg-sky-500/15 p-4 rounded-xl w-fit mb-6 border border-sky-500/20">
+                <UserCog size={32} className="text-sky-300" />
               </div>
               <h4 className="text-4xl font-black uppercase tracking-tight mb-4 font-outfit">Siklus Otoritas</h4>
               <p className="text-slate-400 text-sm font-medium leading-relaxed">
@@ -556,8 +733,8 @@ export default function UsersPage() {
            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">
               {[
                 { role: 'Super Admin', access: 'Kontrol Penuh', icon: Crown, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-                { role: 'Bendahara', access: 'Keuangan & Akad', icon: Wallet, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-                { role: 'Panitia PSB', access: 'Adm. Santri Baru', icon: GraduationCap, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+                { role: 'Bendahara', access: 'Keuangan & Akad', icon: Wallet, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+                { role: 'Panitia PSB', access: 'Adm. Santri Baru', icon: GraduationCap, color: 'text-sky-400', bg: 'bg-sky-400/10' },
                 { role: 'Tim Media', access: 'Berita & Edukasi', icon: Camera, color: 'text-purple-400', bg: 'bg-purple-400/10' },
               ].map(item => {
                 const Icon = item.icon;
@@ -587,6 +764,90 @@ export default function UsersPage() {
         message="Data personel ini akan dihapus permanen dari sistem otentikasi Darussunnah. Akses mereka akan segera terblokir."
         confirmText="YA, HAPUS PERMANEN"
       />
+
+      {isEditOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => {
+              setIsEditOpen(false);
+              setSelectedUser(null);
+            }}
+          />
+          <div className="relative w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">Ubah Akun</p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+                  {selectedUser?.name || 'User'}
+                </h3>
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+                  Email di bawah adalah yang dipakai user untuk login. Role dan password diatur lewat
+                  tombol masing-masing di tabel.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  <UserCheck size={14} /> Nama
+                </span>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  placeholder="Nama pengguna"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  <Mail size={14} /> Email Login
+                </span>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  placeholder="nama@darussunnahparung.com"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditOpen(false);
+                  setSelectedUser(null);
+                }}
+                className="rounded-2xl bg-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition hover:bg-slate-200"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isSavingEdit}
+                onClick={handleUpdateProfile}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingEdit ? <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Pencil size={16} />}
+                {isSavingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isResetPasswordOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">

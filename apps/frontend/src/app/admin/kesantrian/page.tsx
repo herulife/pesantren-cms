@@ -5,24 +5,21 @@ import { useRouter } from 'next/navigation';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import SelectField from '@/components/SelectField';
 import { useToast } from '@/components/Toast';
+import { opsiKelasFilter, type KelasData } from '@/lib/kelas';
 import {
   getSantriList,
   getSantriClasses,
   deleteSantri,
   bulkDeleteSantri,
   purgeSantri,
-  exportSantri,
-  setSantriClass,
-  getSchoolClasses,
-  createSchoolClass,
-  updateSchoolClass,
-  deleteSchoolClass,
-  getSchoolYears,
-  createSchoolYear,
-  updateSchoolYear,
-  activateSchoolYear,
-  deleteSchoolYear,
+  getSantriExport,
+  getSantriPortalUsers,
+  linkSantriUser,
+  getAvailableSantriAccounts,
+  linkSantriAccount,
+  updateSantriAccount,
   Santri,
+  normalizeApiAssetUrl,
 } from '@/lib/api';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import {
@@ -36,12 +33,11 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  User,
+  UserPlus,
   Users,
   X,
-  BookOpen,
-  Calendar,
 } from 'lucide-react';
-import { useAuth } from '@/components/AuthProvider';
 
 const statusOptions = [
   { value: '', label: 'Semua Status' },
@@ -56,28 +52,14 @@ const PAGE_SIZE = 20;
 const filterCls =
   'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10';
 
-function genderLabel(g: string) {
-  if (g === 'l') return 'Laki-laki';
-  if (g === 'p') return 'Perempuan';
-  return g || '-';
-}
-
-type TabKey = 'santri' | 'classes' | 'years';
-
 export default function KesantrianPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { hasRole } = useAuth();
 
-  // Check if user has access
-  const canAccess = hasRole('superadmin', 'panitia_psb', 'wali_kelas', 'pimpinan');
-  const canManageMaster = hasRole('superadmin');
-
-  const [activeTab, setActiveTab] = useState<TabKey>('santri');
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [classOptionsFromApi, setClassOptionsFromApi] = useState<string[]>([]);
+  const [kelasData, setKelasData] = useState<KelasData[]>([]);
   const [items, setItems] = useState<Santri[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -87,33 +69,34 @@ export default function KesantrianPage() {
   const [confirmDelete, setConfirmDelete] = useState<null | { mode: 'single' | 'bulk'; id?: number }>(null);
   const [confirmPurge, setConfirmPurge] = useState<Santri | null>(null);
   const [purging, setPurging] = useState(false);
+  const [linkTarget, setLinkTarget] = useState<Santri | null>(null);
+  const [userOptions, setUserOptions] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
+  const [linkUserId, setLinkUserId] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [accountEmail, setAccountEmail] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Master classes
-  const [schoolClasses, setSchoolClasses] = useState<any[]>([]);
-  const [className, setClassName] = useState('');
-  const [classJenjang, setClassJenjang] = useState('');
-  const [editingClass, setEditingClass] = useState<any | null>(null);
-  const [savingClass, setSavingClass] = useState(false);
-  const [deletingClass, setDeletingClass] = useState(false);
+  // Opsi kelas diambil dari backend (distinct `santri.class` + jumlahnya), bukan
+  // dari baris yang sedang termuat: dulu daftar ini dibangun dari 20 baris
+  // per halaman, jadi kelas yang Santrinya tidak ada di halaman 1 tidak muncul
+  // di filter. Fallback: kalau endpoint gagal, kelas dari baris yang termuat
+  // tetap dipakai supaya dropdown tidak pernah kosong.
+  const classOptions = opsiKelasFilter(kelasData);
 
-  // Master years
-  const [schoolYears, setSchoolYears] = useState<any[]>([]);
-  const [yearName, setYearName] = useState('');
-  const [yearStart, setYearStart] = useState('');
-  const [yearEnd, setYearEnd] = useState('');
-  const [editingYear, setEditingYear] = useState<any | null>(null);
-  const [savingYear, setSavingYear] = useState(false);
-
-  const classOptions: any[] = [{ value: "", label: "Semua Kelas" }, ...classOptionsFromApi.map((c: string) => ({ value: c, label: c }))];
-
-  const loadClasses = useCallback(async () => {
-    try {
-      const classes = await getSantriClasses();
-      setClassOptionsFromApi(classes as string[]);
-    } catch (e) {
-      // ignore
-    }
+  // Fallback: kalau endpoint kelas gagal, kelas yang terlihat di baris yang
+  // termuat tetap ikut jadi opsi, supaya dropdown tidak hanya berisi kelas
+  // kanonik. Dipakai hanya kalau kelasData masih kosong.
+  const gabungKelasDariBaris = useCallback((rows: Santri[]) => {
+    const vals = rows.map((r) => (r.class || '').trim()).filter(Boolean);
+    if (vals.length === 0) return;
+    setKelasData((prev) => {
+      if (prev.length > 0) return prev;
+      const m = new Map<string, number>();
+      for (const v of vals) m.set(v, (m.get(v) ?? 0) + 1);
+      return Array.from(m, ([value, count]) => ({ value, count }));
+    });
   }, []);
 
   const load = useCallback(async (opts?: { search?: string; class?: string; status?: string; offset?: number }) => {
@@ -125,45 +108,195 @@ export default function KesantrianPage() {
       limit: PAGE_SIZE,
       offset: opts?.offset !== undefined ? opts.offset : offset,
     });
-    setItems(res.data);
+    setItems(res.items);
     setTotal(res.total);
     setOffset(opts?.offset ?? offset);
     setSelected(new Set());
+    gabungKelasDariBaris(res.items);
     setLoading(false);
-  }, [search, classFilter, statusFilter, offset]);
+  }, [search, classFilter, statusFilter, offset, gabungKelasDariBaris]);
 
   const applyQuery = useCallback(() => {
     const searchText = search.trim();
-    load({ search: searchText, offset: 0 });
-  }, [load, search]);
+    getSantriList({
+      search: searchText,
+      class: classFilter,
+      status: statusFilter,
+      limit: PAGE_SIZE,
+      offset: 0,
+    }).then((res) => {
+      setItems(res.items);
+      setTotal(res.total);
+      setOffset(0);
+      setSelected(new Set());
+      gabungKelasDariBaris(res.items);
+      setLoading(false);
+    });
+  }, [search, classFilter, statusFilter, gabungKelasDariBaris]);
+
+  const applySearch = useCallback(() => {
+    setLoading(true);
+    applyQuery();
+  }, [applyQuery]);
 
   useEffect(() => {
-    if (!canAccess) return;
-    loadClasses();
-  }, [loadClasses, canAccess]);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // Daftar kelas untuk filter diambil sekali dari backend (distinct di DB),
+  // bukan dari baris yang kebetulan termuat di halaman.
   useEffect(() => {
-    if (!canAccess) return;
-    load({ offset });
-  }, [offset, load, canAccess]);
+    getSantriClasses().then(setKelasData).catch(() => {});
+  }, []);
 
-  useEffect(() => {
-    if (!canAccess) return;
-    const t = setTimeout(() => {
-      applyQuery();
-    }, 300);
-    return () => clearTimeout(t);
-  }, [search, applyQuery, canAccess]);
+  const page = Math.floor(offset / PAGE_SIZE) + 1;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  useEffect(() => {
-    if (!canAccess) return;
-    load({ class: classFilter, status: statusFilter, offset: 0 });
-  }, [classFilter, statusFilter, load, canAccess]);
+  const genderLabel = (g: string) => {
+    if (g === 'l' || g === 'laki-laki') return 'L';
+    if (g === 'p' || g === 'perempuan') return 'P';
+    return g;
+  };
 
-  const handleExport = async (format: 'pdf' | 'excel', mode: 'all' | 'selected') => {
+  const getInitials = (name: string) => {
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const statusColor = (s: string) => {
+    switch (s) {
+      case 'aktif': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'lulus': return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'pindah': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'cuti': return 'bg-slate-100 text-slate-600 border-slate-200';
+      default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      const allSelected = items.length > 0 && items.every((i) => prev.has(i.id));
+      if (allSelected) return new Set();
+      return new Set(items.map((i) => i.id));
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    if (confirmDelete.mode === 'single' && confirmDelete.id) {
+      const ok = await deleteSantri(confirmDelete.id);
+      if (ok) showToast('success', 'Santri berhasil dihapus');
+      else showToast('error', 'Gagal menghapus santri');
+    } else {
+      const ids = Array.from(selected);
+      const res = await bulkDeleteSantri(ids);
+      if (res.ok) showToast('success', res.message || 'Santri terpilih berhasil dihapus');
+      else showToast('error', res.message || 'Gagal menghapus santri terpilih');
+    }
+    setDeleting(false);
+    setConfirmDelete(null);
+    setSelected(new Set());
+    load();
+  };
+
+  const openLinkModal = async (s: Santri) => {
+    setLinkTarget(s);
+    setLinkUserId(s.user_id ? String(s.user_id) : '');
+    setNewPassword('');
+    setAccountEmail('');
+    try {
+      const users = await getAvailableSantriAccounts('', s.user_id || 0);
+      setUserOptions(users);
+      // Email login akun yang sedang tertaut (bukan akun lain yang mungkin
+      // sedang dipilih di dropdown) — ini yang bisa diedit admin.
+      const linked = users.find((u) => u.id === (s.user_id || 0));
+      setAccountEmail(linked?.email || '');
+    } catch {
+      showToast('error', 'Gagal memuat daftar akun.');
+    }
+  };
+
+  // Simpan email login akun portal santri dan/atau password barunya dalam satu
+  // permintaan. Password dikosongkan = tidak diubah (beda dengan reset).
+  const savePortalAccount = async () => {
+    if (!linkTarget) return;
+    const email = accountEmail.trim();
+    if (!email) {
+      showToast('error', 'Email login wajib diisi.');
+      return;
+    }
+    if (newPassword && newPassword.length < 6) {
+      showToast('error', 'Password minimal 6 karakter.');
+      return;
+    }
+    setSavingAccount(true);
+    try {
+      const res = await updateSantriAccount(linkTarget.id, {
+        email,
+        password: newPassword || undefined,
+      });
+      if (!res.ok) {
+        showToast('error', res.message);
+        return;
+      }
+      const sharedNote =
+        res.shared && res.shared > 1
+          ? ` Akun ini dipakai bersama ${res.shared} santri, jadi wali saudaranya ikut memakai email baru itu.`
+          : '';
+      showToast('info', res.message + sharedNote);
+      setNewPassword('');
+      setUserOptions((prev) =>
+        prev.map((u) => (u.id === (linkTarget.user_id || 0) ? { ...u, email } : u))
+      );
+    } finally {
+      setSavingAccount(false);
+    }
+  };
+
+  const submitLink = async () => {
+    if (!linkTarget || !linkUserId) return;
+    setLinking(true);
+    try {
+      const res = await linkSantriAccount(linkTarget.id, Number(linkUserId));
+      if (res.ok) {
+        showToast('success', res.message || 'Akun santri berhasil ditautkan.');
+        setLinkTarget(null);
+        load({ offset });
+      } else {
+        showToast('error', res.message || 'Gagal menghubungkan akun.');
+      }
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'Terjadi kesalahan.');
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const exportData = async (format: 'pdf' | 'excel', mode: 'all' | 'selected' = 'all') => {
+    const columns = ['NIS', 'Nama', 'Panggilan', 'Kelamin', 'Kelas', 'Angkatan', 'Status', 'Nama Wali', 'No. HP Wali'];
     setExporting(true);
     try {
-      const all = await exportSantri();
+      // Export harus memakai data LENGKAP, bukan `items` yang cuma 1 halaman
+      // (20 baris). Endpoint /santri/export tidak dipaginasi.
+      const all = await getSantriExport();
+      // Mode 'selected' dipakai tombol di toolbar "N santri dipilih";
+      // tombol di header selalu mengexport semua data.
       const sumber = mode === 'selected' ? all.filter((s) => selected.has(s.id)) : all;
       if (sumber.length === 0) {
         showToast('error', 'Tidak ada data untuk diexport.');
@@ -180,12 +313,11 @@ export default function KesantrianPage() {
         s.parent_name || '-',
         s.parent_phone || '-',
       ]);
-      const columns = ['NIS', 'Nama', 'Panggilan', 'Kelamin', 'Kelas', 'Angkatan', 'Status', 'Nama Wali', 'No. HP Wali'];
       const scope = mode === 'selected' ? ` (${sumber.length} dipilih)` : '';
       if (format === 'pdf') {
-        await exportToPDF(`Data Santri${scope}`, columns, rows, `Data-Santri-${Date.now()}`);
+        await exportToPDF(`Data Santri${scope}`, columns, rows, `Data-Santri-Darussunnah-${Date.now()}`);
       } else {
-        await exportToExcel(`Data Santri${scope}`, columns, rows, `Data-Santri-${Date.now()}`);
+        await exportToExcel(`Data Santri${scope}`, columns, rows, `Data-Santri-Darussunnah-${Date.now()}`);
       }
       showToast('success', `${sumber.length} data santri berhasil diexport ke ${format.toUpperCase()}`);
     } catch (e) {
@@ -195,298 +327,398 @@ export default function KesantrianPage() {
     }
   };
 
-  const toggleSelect = (id: number) => {
-    setSelected((prev) => {
-      const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === items.length && items.length > 0) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(items.map((i) => i.id)));
-    }
-  };
-
-  const deleteSingle = async (id: number) => {
-    setDeleting(true);
-    try {
-      const res = await deleteSantri(id);
-      if (res.ok) {
-        showToast('success', 'Santri berhasil dihapus.');
-        load();
-      } else {
-        showToast('error', res.message || 'Gagal menghapus santri.');
-      }
-    } catch (e) {
-      showToast('error', e instanceof Error ? e.message : 'Gagal menghapus santri.');
-    } finally {
-      setDeleting(false);
-      setConfirmDelete(null);
-    }
-  };
-
-  const deleteBulk = async () => {
-    if (selected.size === 0) return;
-    const ids = Array.from(selected);
-    setDeleting(true);
-    try {
-      const res = await bulkDeleteSantri(ids);
-      if (res.ok) {
-        showToast('success', `${ids.length} santri berhasil dihapus.`);
-        setSelected(new Set());
-        load();
-      } else {
-        showToast('error', res.message || 'Gagal menghapus santri.');
-      }
-    } catch (e) {
-      showToast('error', e instanceof Error ? e.message : 'Gagal menghapus santri.');
-    } finally {
-      setDeleting(false);
-      setConfirmDelete(null);
-    }
-  };
-
-  const purgeSingle = async () => {
-    if (!confirmPurge) return;
-    setPurging(true);
-    try {
-      const res = await purgeSantri(confirmPurge.id);
-      if (res.ok) {
-        showToast('success', 'Santri berhasil dihapus permanen.');
-        setConfirmPurge(null);
-        load();
-      } else {
-        showToast('error', res.message || 'Gagal menghapus permanen.');
-      }
-    } catch (e) {
-      showToast('error', e instanceof Error ? e.message : 'Gagal menghapus permanen.');
-    } finally {
-      setPurging(false);
-    }
-  };
-
-  const loadMasterClasses = async () => {
-    const data = await getSchoolClasses();
-    setSchoolClasses(data);
-  };
-
-  const loadMasterYears = async () => {
-    const data = await getSchoolYears();
-    setSchoolYears(data);
-  };
-
-  useEffect(() => {
-    if (activeTab === 'classes' && canManageMaster) loadMasterClasses();
-    if (activeTab === 'years' && canManageMaster) loadMasterYears();
-  }, [activeTab]);
-
-  if (!canAccess) {
-    return (
-      <div className="p-6">
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-10 text-center">
-          <p className="text-base font-black text-rose-900">Akses ditolak</p>
-        </div>
-      </div>
-    );
-  }
-
-  const pageCount = Math.ceil(total / PAGE_SIZE) || 1;
-  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Data Santri</h1>
-          <p className="mt-1 text-sm text-slate-500">Kelola data santri, kelas dan tahun ajaran.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Kelola data santri Pondok Pesantren Darussunnah Parung
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => router.push('/admin/kesantrian/import')} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-            <Import size={16} /> Import Excel
+          <button
+            onClick={() => exportData('excel')}
+            disabled={exporting}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+          >
+            <FileSpreadsheet size={16} /> {exporting ? 'Menyiapkan...' : 'Export Excel'}
           </button>
-          <button onClick={() => handleExport('excel', 'all')} disabled={exporting} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
-            <FileSpreadsheet size={16} /> Export Excel
+          <button
+            onClick={() => router.push('/admin/kesantrian/import')}
+            className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-700 transition hover:bg-sky-100"
+          >
+            <Import size={16} /> Import Massal
           </button>
-          <button onClick={() => handleExport('pdf', 'all')} disabled={exporting} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
-            <FileText size={16} /> Export PDF
-          </button>
-          <button onClick={() => router.push('/admin/kesantrian/form')} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700">
+          <button
+            onClick={() => router.push('/admin/kesantrian/form')}
+            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700"
+          >
             <Plus size={16} /> Tambah Santri
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-slate-200">
-        <button onClick={() => setActiveTab('santri')} className={`px-5 py-2 text-xs font-black uppercase ${activeTab === 'santri' ? 'border-b-2 border-sky-600 text-sky-600' : 'text-slate-500'}`}>
-          <Users size={14} className="inline mr-1" /> Data Santri
-        </button>
-        {canManageMaster && (
-          <button onClick={() => setActiveTab('classes')} className={`px-5 py-2 text-xs font-black uppercase ${activeTab === 'classes' ? 'border-b-2 border-sky-600 text-sky-600' : 'text-slate-500'}`}>
-            <BookOpen size={14} className="inline mr-1" /> Kelas
+      {/* Filter bar */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && applySearch()}
+              placeholder="Cari NIS, nama, atau panggilan..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10"
+            />
+          </div>
+          <div className="lg:w-44">
+            <SelectField
+              id="filter-kelas"
+              label="Kelas"
+              className={filterCls}
+              value={classFilter}
+              placeholder="Semua Kelas"
+              options={[{ value: '', label: 'Semua Kelas' }, ...classOptions]}
+              onChange={(v) => { setClassFilter(v); setLoading(true); }}
+            />
+          </div>
+          <div className="lg:w-40">
+            <SelectField
+              id="filter-status"
+              label="Status"
+              className={filterCls}
+              value={statusFilter}
+              placeholder="Semua Status"
+              options={statusOptions}
+              onChange={(v) => { setStatusFilter(v); setLoading(true); }}
+            />
+          </div>
+          <button
+            onClick={applySearch}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-700"
+          >
+            <RefreshCw size={15} /> Terapkan Filter
           </button>
-        )}
-        {canManageMaster && (
-          <button onClick={() => setActiveTab('years')} className={`px-5 py-2 text-xs font-black uppercase ${activeTab === 'years' ? 'border-b-2 border-sky-600 text-sky-600' : 'text-slate-500'}`}>
-            <Calendar size={14} className="inline mr-1" /> Tahun Ajaran
-          </button>
-        )}
+        </div>
       </div>
 
-      {activeTab === 'santri' && (
-        <>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama, NIS, wali atau panggilan..." className={filterCls + ' pl-9'} />
-            </div>
-            <div className="w-full md:w-56">
-              <SelectField id="class-filter" label="" className="" value={classFilter} onChange={(v: any) => setClassFilter(v)} options={classOptions} placeholder="Semua Kelas" />
-            </div>
-            <div className="w-full md:w-56">
-              <SelectField id="status-filter" label="" className="" value={statusFilter} onChange={(v: any) => setStatusFilter(v)} options={statusOptions as any} placeholder="Semua Status" />
-            </div>
-            <button onClick={() => load({ offset: 0 })} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">
-              <RefreshCw size={16} /> Muat Ulang
+      {/* Bulk actions toolbar */}
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
+          <span className="text-sm font-bold text-sky-800">
+            {selected.size} santri dipilih
+          </span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => exportData('pdf', 'selected')}
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+            >
+              <FileText size={14} /> {exporting ? 'Menyiapkan...' : 'Export PDF'}
+            </button>
+            <button
+              onClick={() => exportData('excel', 'selected')}
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+            >
+              <FileSpreadsheet size={14} /> {exporting ? 'Menyiapkan...' : 'Export Excel'}
+            </button>
+            <button
+              onClick={() => setConfirmDelete({ mode: 'bulk' })}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
+            >
+              <Trash2 size={14} /> Hapus Terpilih
+            </button>
+            <button
+              onClick={() => setSelected(new Set())}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
+            >
+              Kosongkan
             </button>
           </div>
+        </div>
+      )}
 
-          {selected.size > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
-              <p className="text-sm font-bold text-sky-900">{selected.size} santri dipilih</p>
-              <div className="flex items-center gap-2">
-                <button onClick={() => handleExport('excel', 'selected')} disabled={exporting} className="rounded-xl border border-sky-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-wider text-sky-700 hover:bg-sky-100">Export Excel</button>
-                <button onClick={() => handleExport('pdf', 'selected')} disabled={exporting} className="rounded-xl border border-sky-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-wider text-sky-700 hover:bg-sky-100">Export PDF</button>
-                <button onClick={() => setConfirmDelete({ mode: 'bulk' })} className="rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white hover:bg-rose-700">Hapus Terpilih</button>
-              </div>
-            </div>
-          )}
-
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      {/* Table */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="ap-table-wrap overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                <th className="w-12 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={items.length > 0 && items.every((i) => selected.has(i.id))}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                </th>
+                <th className="px-4 py-3 font-bold">Foto</th>
+                <th className="px-4 py-3 font-bold">NIS</th>
+                <th className="px-4 py-3 font-bold">Nama</th>
+                <th className="px-4 py-3 font-bold">Kelamin</th>
+                <th className="px-4 py-3 font-bold">Kelas</th>
+                <th className="px-4 py-3 font-bold">Angkatan</th>
+                <th className="px-4 py-3 font-bold">Status</th>
+                <th className="px-4 py-3 font-bold">Nama Wali</th>
+                <th className="px-4 py-3 text-right font-bold">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th className="px-4 py-3">
-                    <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={toggleAll} className="h-4 w-4 rounded border-slate-300 text-sky-600" />
-                  </th>
-                  <th className="px-4 py-3 font-bold">NIS</th>
-                  <th className="px-4 py-3 font-bold">Nama</th>
-                  <th className="px-4 py-3 font-bold">Kelas</th>
-                  <th className="px-4 py-3 font-bold">Status</th>
-                  <th className="px-4 py-3 font-bold">Wali</th>
-                  <th className="px-4 py-3" />
+                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-slate-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <RefreshCw size={22} className="animate-spin text-sky-500" />
+                      Memuat data santri...
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                  <tr><td colSpan={7} className="p-10 text-center text-slate-500">Memuat...</td></tr>
-                ) : items.length === 0 ? (
-                  <tr><td colSpan={7} className="p-10 text-center text-slate-500">Tidak ada data santri.</td></tr>
-                ) : (
-                  items.map((s) => (
-                    <tr key={s.id}>
-                      <td className="px-4 py-3"><input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id)} className="h-4 w-4 rounded border-slate-300 text-sky-600" /></td>
-                      <td className="px-4 py-3 font-semibold">{s.nis}</td>
-                      <td className="px-4 py-3">
-                        <div className="font-bold text-slate-900">{s.name}</div>
-                        <div className="text-xs text-slate-500">{s.nickname || '-'}</div>
-                      </td>
-                      <td className="px-4 py-3">{s.class || '-'}</td>
-                      <td className="px-4 py-3">{s.status}</td>
-                      <td className="px-4 py-3">
-                        <div>{s.parent_name || '-'}</div>
-                        <div className="text-xs text-slate-500">{s.parent_phone || '-'}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => router.push(`/admin/kesantrian/form?id=${s.id}`)} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-sky-600"><Pencil size={16} /></button>
-                          <button onClick={() => setConfirmDelete({ mode: 'single', id: s.id })} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-rose-600"><Trash2 size={16} /></button>
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="px-4 py-14 text-center">
+                    <Users className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+                    <p className="text-sm font-bold text-slate-500">Belum ada data santri</p>
+                    <p className="text-xs text-slate-400">Tambahkan santri baru atau lakukan import massal.</p>
+                  </td>
+                </tr>
+              ) : (
+                items.map((s) => (
+                  <tr key={s.id} className="border-b border-slate-100 transition hover:bg-sky-50/40">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(s.id)}
+                        onChange={() => toggleSelect(s.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      {s.photo_url ? (
+                        <img
+                          src={normalizeApiAssetUrl(s.photo_url)}
+                          alt={`Foto ${s.name}`}
+                          loading="lazy"
+                          className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-xs font-black text-sky-600 ring-1 ring-sky-100">
+                          {getInitials(s.name) || <User size={16} />}
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">{s.nis}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-bold text-slate-900">{s.name}</p>
+                      {s.nickname && (
+                        <p className="text-xs text-slate-400">({s.nickname})</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{genderLabel(s.gender)}</td>
+                    <td className="px-4 py-3 text-slate-700">{s.class}</td>
+                    <td className="px-4 py-3 text-slate-600">{s.angkatan || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold capitalize ${statusColor(s.status)}`}>
+                        {s.status || 'aktif'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{s.parent_name || '-'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => router.push(`/admin/kesantrian/form?id=${s.id}`)}
+                          className="rounded-lg p-2 text-sky-600 transition hover:bg-sky-100"
+                          title="Edit"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete({ mode: 'single', id: s.id })}
+                          className="rounded-lg p-2 text-red-500 transition hover:bg-red-50"
+                          title="Hapus"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => setConfirmPurge(s)}
+                          className="rounded-lg p-2 font-black text-red-700 transition hover:bg-red-100"
+                          title="Hapus TOTAL: santri + seluruh tagihan (termasuk lunas), nilai, rapor, akun portal"
+                        >
+                          <Trash2 size={16} strokeWidth={2.5} />
+                        </button>
+                        <button
+                          onClick={() => openLinkModal(s)}
+                          className="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-50"
+                          title={s.user_id ? 'Akun santri tertaut — klik untuk kelola' : 'Tautkan akun santri (untuk login wali)'}
+                        >
+                          <UserPlus size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">Menampilkan {items.length} dari {total} santri</p>
-            <div className="flex items-center gap-2">
-              <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-50 hover:bg-slate-50">
-                <ChevronLeft size={16} /> Sebelumnya
-              </button>
-              <span className="text-sm font-bold text-slate-700">Halaman {currentPage} / {pageCount}</span>
-              <button disabled={offset + PAGE_SIZE >= total} onClick={() => setOffset(offset + PAGE_SIZE)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-50 hover:bg-slate-50">
-                Berikutnya <ChevronRight size={16} />
-              </button>
+        {linkTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setLinkTarget(null)}>
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-900">Akun Santri</h3>
+                <button onClick={() => setLinkTarget(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Tutup">
+                  <X size={18} />
+                </button>
+              </div>
+              <p className="mb-1 text-sm text-slate-600">
+                Santri: <span className="font-bold text-slate-900">{linkTarget.name}</span> <span className="font-mono text-xs text-slate-400">({linkTarget.nis})</span>
+              </p>
+              {linkTarget.user_id ? (
+                <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                  Santri ini login memakai akun di bawah. Wali memakai akun yang sama untuk masuk portal.
+                  Memilih akun lain akan menggantikannya. Satu akun hanya untuk satu santri.
+                </p>
+              ) : (
+                <p className="mb-3 text-xs text-slate-500">Pilih satu akun login untuk santri ini. Akun inilah yang dipakai wali untuk masuk portal.</p>
+              )}
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="link-user-select">
+                Akun santri
+              </label>
+              <select
+                id="link-user-select"
+                value={linkUserId}
+                onChange={(e) => setLinkUserId(e.target.value)}
+                className="mb-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500"
+              >
+                <option value="">-- Pilih akun --</option>
+                {userOptions.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setLinkTarget(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                  Batal
+                </button>
+                <button onClick={submitLink} disabled={!linkUserId || linking} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
+                  {linking ? 'Menyimpan…' : 'Tautkan'}
+                </button>
+              </div>
+              {linkTarget.user_id ? (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Kelola akun login</p>
+                  <p className="mb-2 text-xs text-slate-500">
+                    Email di bawah dipakai wali untuk masuk portal. Password baru bersifat opsional —
+                    dikosongkan berarti password tidak diubah.
+                  </p>
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400" htmlFor="portal-email">
+                    Email login
+                  </label>
+                  <input
+                    id="portal-email"
+                    type="email"
+                    value={accountEmail}
+                    onChange={(e) => setAccountEmail(e.target.value)}
+                    placeholder="nama@email.com"
+                    className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  />
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400" htmlFor="portal-password">
+                    Password baru (opsional)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="portal-password"
+                      type="text"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    />
+                    <button
+                      onClick={() => void savePortalAccount()}
+                      disabled={savingAccount || !accountEmail.trim() || (newPassword.length > 0 && newPassword.length < 6)}
+                      className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-700 disabled:opacity-50"
+                    >
+                      {savingAccount ? '…' : 'Simpan'}
+                    </button>
+                  </div>
+                  {newPassword.length > 0 && newPassword.length < 6 && (
+                    <p className="mt-1 text-xs font-semibold text-rose-600">Password minimal 6 karakter</p>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
-        </>
-      )}
+        )}
 
-      {activeTab === 'classes' && canManageMaster && (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <form onSubmit={async (e) => { e.preventDefault(); setSavingClass(true); try { await createSchoolClass({ name: className, jenjang: classJenjang }); showToast('success','Kelas ditambahkan'); setClassName(''); setClassJenjang(''); loadMasterClasses(); } catch (e: any) { showToast('error',e.message||'Gagal'); } finally { setSavingClass(false); }}} className="flex gap-2">
-              <input value={className} onChange={(e)=>setClassName(e.target.value)} placeholder="Nama kelas (cth: VII-A)" className="border rounded-xl px-3 py-2 text-sm" />
-              <input value={classJenjang} onChange={(e)=>setClassJenjang(e.target.value)} placeholder="Jenjang" className="border rounded-xl px-3 py-2 text-sm" />
-              <button disabled={savingClass} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold"><Plus size={16} className="inline mr-1" /> Tambah</button>
-            </form>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50"><tr><th className="p-3 text-left">Nama</th><th className="p-3 text-left">Jenjang</th><th className="p-3 text-left">Aksi</th></tr></thead>
-              <tbody>
-                {schoolClasses.map((c: any) => (
-                  <tr key={c.id} className="border-t">
-                    <td className="p-3">{c.name}</td>
-                    <td className="p-3">{c.jenjang || '-'}</td>
-                    <td className="p-3">
-                      <button onClick={async () => { if(!confirm('Hapus kelas ini?')) return; await deleteSchoolClass(c.id); loadMasterClasses(); }} className="text-rose-600"><Trash2 size={16} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Pagination */}
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row">
+          <p className="text-xs font-medium text-slate-500">
+            Menampilkan <span className="font-bold text-slate-700">{items.length}</span> dari{' '}
+            <span className="font-bold text-slate-700">{total}</span> santri
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={offset === 0}
+              onClick={() => { setLoading(true); load({ offset: Math.max(0, offset - PAGE_SIZE) }); }}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-40"
+            >
+              <ChevronLeft size={14} /> Sebelumnya
+            </button>
+            <span className="px-3 text-xs font-bold text-slate-700">
+              Hal {page} / {pageCount}
+            </span>
+            <button
+              disabled={offset + PAGE_SIZE >= total}
+              onClick={() => { setLoading(true); load({ offset: offset + PAGE_SIZE }); }}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-40"
+            >
+              Berikutnya <ChevronRight size={14} />
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
-      {activeTab === 'years' && canManageMaster && (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <form onSubmit={async (e) => { e.preventDefault(); setSavingYear(true); try { await createSchoolYear({ name: yearName, start_date: yearStart, end_date: yearEnd }); showToast('success','Tahun ajaran ditambahkan'); setYearName(''); setYearStart(''); setYearEnd(''); loadMasterYears(); } catch (e: any) { showToast('error',e.message||'Gagal'); } finally { setSavingYear(false); }}} className="flex gap-2 flex-wrap">
-              <input value={yearName} onChange={(e)=>setYearName(e.target.value)} placeholder="cth: 2025/2026" className="border rounded-xl px-3 py-2 text-sm" />
-              <input type="date" value={yearStart} onChange={(e)=>setYearStart(e.target.value)} className="border rounded-xl px-3 py-2 text-sm" />
-              <input type="date" value={yearEnd} onChange={(e)=>setYearEnd(e.target.value)} className="border rounded-xl px-3 py-2 text-sm" />
-              <button disabled={savingYear} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold"><Plus size={16} className="inline mr-1" /> Tambah</button>
-            </form>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50"><tr><th className="p-3 text-left">Tahun</th><th className="p-3 text-left">Status</th><th className="p-3 text-left">Aksi</th></tr></thead>
-              <tbody>
-                {schoolYears.map((y: any) => (
-                  <tr key={y.id} className="border-t">
-                    <td className="p-3">{y.name}</td>
-                    <td className="p-3">{y.is_active ? <span className="text-emerald-600 font-bold">Aktif</span> : 'Tidak aktif'}</td>
-                    <td className="p-3 flex gap-2">
-                      {!y.is_active && <button onClick={async () => { await activateSchoolYear(y.id); loadMasterYears(); showToast('success','Diaktifkan'); }} className="text-sky-600 text-xs font-bold">Aktifkan</button>}
-                      <button onClick={async () => { if(!confirm('Hapus tahun ajaran?')) return; await deleteSchoolYear(y.id); loadMasterYears(); }} className="text-rose-600"><Trash2 size={16} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      <ConfirmDialog isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => confirmDelete?.mode === 'single' && confirmDelete.id ? deleteSingle(confirmDelete.id) : deleteBulk()} title={confirmDelete?.mode === 'bulk' ? 'Hapus Santri Terpilih' : 'Hapus Santri'} message={confirmDelete?.mode === 'bulk' ? `Hapus ${selected.size} santri terpilih? Tindakan ini bisa dibatalkan dengan restore jika tersedia.` : 'Hapus santri ini?'} confirmText="Hapus" type="danger" isLoading={deleting} />
+      <ConfirmDialog
+        isOpen={!!confirmPurge}
+        onClose={() => setConfirmPurge(null)}
+        onConfirm={async () => {
+          if (!confirmPurge) return;
+          setPurging(true);
+          const res = await purgeSantri(confirmPurge.id);
+          setPurging(false);
+          if (res.ok) showToast('success', res.message || 'Santri dihapus total');
+          else showToast('error', res.message || 'Gagal menghapus total santri');
+          setConfirmPurge(null);
+          load({ offset: 0 });
+          setOffset(0);
+        }}
+        title="Hapus TOTAL Santri"
+        message={
+          `HAPUS TOTAL ${confirmPurge?.name || ''} (NIS ${confirmPurge?.nis || '-'})? ` +
+          'Seluruh data ikut terhapus permanen: tagihan SPP/iuran (TERMASUK yang sudah dibayar/lunas), ' +
+          'kwitansi, nilai, rapor, presensi, tahfidz, wallet, dan akun portal. Tindakan ini TIDAK dapat dibatalkan.'
+        }
+        confirmText="Ya, Hapus Total"
+        isLoading={purging}
+      />
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        title={confirmDelete?.mode === 'bulk' ? 'Hapus Santri Terpilih' : 'Hapus Santri'}
+        message={
+          confirmDelete?.mode === 'bulk'
+            ? `Yakin ingin menghapus ${selected.size} santri terpilih? Tindakan ini tidak dapat dibatalkan.`
+            : 'Yakin ingin menghapus santri ini? Tindakan ini tidak dapat dibatalkan.'
+        }
+        confirmText="Hapus"
+        isLoading={deleting}
+      />
     </div>
   );
 }

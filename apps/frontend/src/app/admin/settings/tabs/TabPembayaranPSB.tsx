@@ -155,7 +155,7 @@ export default function TabPembayaranPSB() {
         <button
           onClick={handleSaveAll}
           disabled={isSaving}
-          className="flex items-center gap-3 rounded-lg bg-emerald-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
+          className="flex items-center gap-3 rounded-lg bg-sky-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:opacity-50"
         >
           {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
           Simpan Pembayaran PSB
@@ -164,3 +164,4 @@ export default function TabPembayaranPSB() {
     </div>
   );
 }
+

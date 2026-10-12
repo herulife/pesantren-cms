@@ -54,3 +54,7 @@ apps/backend/darussunnah-api
 
 # Credential/host
 ssh_logs.py
+
+# pola backup Alma
+*.pre-*
+data/uploads/

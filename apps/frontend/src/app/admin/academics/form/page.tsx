@@ -4,32 +4,42 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import {
+  ArbainProgress,
+  AttendanceStudent,
   CompactUser,
+  HadisArbain,
   Subject,
+  createArbain,
   createAttendance,
   createGrade,
   createTahfidz,
   getAcademicStudents,
+  getArbain,
+  getArbainReference,
   getAttendance,
+  getAttendanceStudents,
   getGrades,
   getSubjects,
   getTahfidz,
+  updateArbain,
   updateAttendance,
   updateGrade,
   updateTahfidz,
 } from '@/lib/api';
-import { ArrowLeft, BookOpen, Calendar, ClipboardList, Loader2, Pencil, Save, Users } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, ClipboardList, Loader2, Pencil, Save, ScrollText, Users } from 'lucide-react';
 
-type FormType = 'grade' | 'attendance' | 'tahfidz' | 'bulk-grade' | 'bulk-edit';
+type FormType = 'grade' | 'attendance' | 'tahfidz' | 'arbain' | 'bulk-grade' | 'bulk-edit';
 
-const gradeInit = { id: 0, student_id: '', subject_id: '', semester: 'Ganjil', academic_year: '2024/2025', uts_score: '', uas_score: '', task_score: '', notes: '' };
+const gradeInit = { id: 0, student_id: '', subject_id: '', semester: '1', academic_year: '2025/2026', uts_score: '', uas_score: '', task_score: '', uh_score: '', notes: '' };
 const attendanceInit = { id: 0, student_id: '', date: new Date().toISOString().split('T')[0], status: 'hadir', notes: '' };
 const tahfidzInit = { id: 0, student_id: '', surah_name: '', juz: '', start_ayat: '', end_ayat: '', status: 'proses', musyrif_notes: '', evaluation_date: new Date().toISOString().split('T')[0] };
+const arbainInit = { id: 0, student_id: '', hadith_number: '1', status: 'proses', nilai: '0', notes: '', evaluation_date: new Date().toISOString().split('T')[0] };
 
 function titleByType(type: FormType, hasId: boolean) {
   if (type === 'grade') return hasId ? 'Edit Nilai Santri' : 'Tambah Nilai Santri';
   if (type === 'attendance') return hasId ? 'Edit Presensi Santri' : 'Tambah Presensi Santri';
   if (type === 'tahfidz') return hasId ? 'Edit Progres Tahfidz' : 'Tambah Progres Tahfidz';
+  if (type === 'arbain') return hasId ? 'Edit Setoran Hadis Arbain' : 'Tambah Setoran Hadis Arbain';
   if (type === 'bulk-grade') return 'Input Nilai Massal';
   return 'Edit Nilai Massal';
 }
@@ -38,13 +48,14 @@ function descriptionByType(type: FormType) {
   if (type === 'grade') return 'Isi nilai UTS, UAS, tugas, dan catatan santri dalam halaman penuh yang lebih lega.';
   if (type === 'attendance') return 'Kelola presensi santri tanpa popup agar input tanggal dan status lebih nyaman.';
   if (type === 'tahfidz') return 'Catat progres hafalan, juz, ayat, dan evaluasi tahfidz dalam form penuh.';
+  if (type === 'arbain') return 'Catat setoran Hadis Arbain (42 hadis Imam Nawawi) untuk setiap Buffer Santri.';
   if (type === 'bulk-grade') return 'Masukkan nilai banyak santri sekaligus seperti workflow eRapor, tanpa modal.';
   return 'Perbarui nilai banyak santri untuk satu mata pelajaran aktif dalam satu halaman.';
 }
 
 export default function AcademicsFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
       <AcademicsFormContent />
     </Suspense>
   );
@@ -57,30 +68,40 @@ function AcademicsFormContent() {
 
   const type = (searchParams.get('type') || 'grade') as FormType;
   const id = searchParams.get('id');
-  const selectedSemester = searchParams.get('semester') || 'Ganjil';
-  const selectedYear = searchParams.get('year') || '2024/2025';
+  const selectedSemester = searchParams.get('semester') || '1';
+  const selectedYear = searchParams.get('year') || '2025/2026';
   const selectedDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [students, setStudents] = useState<CompactUser[]>([]);
+  // Modul presensi memakai Santri.id (bukan akun portal) supaya dua saudara
+  // dari satu akun wali tetap bisa dipilih terpisah.
+  const [attendanceStudents, setAttendanceStudents] = useState<AttendanceStudent[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [gradeForm, setGradeForm] = useState({ ...gradeInit, semester: selectedSemester, academic_year: selectedYear });
   const [attendanceForm, setAttendanceForm] = useState({ ...attendanceInit, date: selectedDate });
   const [tahfidzForm, setTahfidzForm] = useState(tahfidzInit);
+  const [arbainForm, setArbainForm] = useState(arbainInit);
+  const [arbainRef, setArbainRef] = useState<HadisArbain[]>([]);
   const [bulkGradeMeta, setBulkGradeMeta] = useState({ subject_id: '', semester: selectedSemester, academic_year: selectedYear });
-  const [bulkGradeRows, setBulkGradeRows] = useState<Array<{ student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; notes: string }>>([]);
+  const [bulkGradeRows, setBulkGradeRows] = useState<Array<{ student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; uh_score: string; notes: string }>>([]);
   const [bulkEditSubjectId, setBulkEditSubjectId] = useState(searchParams.get('subject_id') || '');
-  const [bulkEditRows, setBulkEditRows] = useState<Array<{ id: number; student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; notes: string }>>([]);
+  const [bulkEditRows, setBulkEditRows] = useState<Array<{ id: number; student_id: string; student_name: string; uts_score: string; uas_score: string; task_score: string; uh_score: string; notes: string }>>([]);
 
-  const academicPeriodLabel = `${selectedSemester === 'Genap' ? 'Semester 2' : 'Semester 1'} - Tahun Ajaran ${selectedYear}`;
+  const academicPeriodLabel = `${selectedSemester === '2' ? 'Semester 2' : 'Semester 1'} - Tahun Ajaran ${selectedYear}`;
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [subjectData, studentData] = await Promise.all([getSubjects(), getAcademicStudents()]);
+        const [subjectData, studentData, refData] = await Promise.all([getSubjects(), getAcademicStudents(), getArbainReference()]);
         setSubjects(subjectData);
         setStudents(studentData);
+        setArbainRef(refData);
+
+        if (type === 'attendance') {
+          setAttendanceStudents(await getAttendanceStudents());
+        }
 
         if (type === 'grade' && id) {
           const allGrades = await getGrades(selectedSemester, selectedYear);
@@ -95,6 +116,7 @@ function AcademicsFormContent() {
             uts_score: String(current.uts_score),
             uas_score: String(current.uas_score),
             task_score: String(current.task_score),
+            uh_score: String(current.uh_score),
             notes: current.notes || '',
           });
         }
@@ -129,6 +151,21 @@ function AcademicsFormContent() {
           });
         }
 
+        if (type === 'arbain' && id) {
+          const allArbain = await getArbain();
+          const current = allArbain.find((item) => String(item.id) === id);
+          if (!current) throw new Error('Data setoran Arbain tidak ditemukan.');
+          setArbainForm({
+            id: current.id,
+            student_id: String(current.student_id),
+            hadith_number: String(current.hadith_number),
+            status: current.status,
+            nilai: String(current.nilai ?? 0),
+            notes: current.notes || '',
+            evaluation_date: current.evaluation_date,
+          });
+        }
+
         if (type === 'bulk-grade') {
           setBulkGradeRows(studentData.map((student) => ({
             student_id: String(student.id),
@@ -136,6 +173,7 @@ function AcademicsFormContent() {
             uts_score: '',
             uas_score: '',
             task_score: '',
+            uh_score: '',
             notes: '',
           })));
         }
@@ -154,6 +192,7 @@ function AcademicsFormContent() {
                 uts_score: String(item.uts_score),
                 uas_score: String(item.uas_score),
                 task_score: String(item.task_score),
+                uh_score: String(item.uh_score),
                 notes: item.notes || '',
               }))
               .sort((a, b) => a.student_name.localeCompare(b.student_name)),
@@ -198,14 +237,14 @@ function AcademicsFormContent() {
       { label: 'Tahun', value: selectedYear },
     ];
   }, [bulkEditRows.length, bulkGradeRows.length, id, selectedSemester, selectedSubjectName, selectedYear, students.length, type]);
-  const controlClass = 'block w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-all duration-200 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100';
+  const controlClass = 'block w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100';
   const textAreaClass = `${controlClass} min-h-[160px] resize-y leading-6 font-medium`;
 
-  const updateBulkGradeRow = (studentId: string, field: 'uts_score' | 'uas_score' | 'task_score' | 'notes', value: string) => {
+  const updateBulkGradeRow = (studentId: string, field: 'uts_score' | 'uas_score' | 'task_score' | 'uh_score' | 'notes', value: string) => {
     setBulkGradeRows((prev) => prev.map((row) => row.student_id === studentId ? { ...row, [field]: value } : row));
   };
 
-  const updateBulkEditRow = (gradeId: number, field: 'uts_score' | 'uas_score' | 'task_score' | 'notes', value: string) => {
+  const updateBulkEditRow = (gradeId: number, field: 'uts_score' | 'uas_score' | 'task_score' | 'uh_score' | 'notes', value: string) => {
     setBulkEditRows((prev) => prev.map((row) => row.id === gradeId ? { ...row, [field]: value } : row));
   };
 
@@ -222,6 +261,7 @@ function AcademicsFormContent() {
           uts_score: String(item.uts_score),
           uas_score: String(item.uas_score),
           task_score: String(item.task_score),
+          uh_score: String(item.uh_score),
           notes: item.notes || '',
         }))
         .sort((a, b) => a.student_name.localeCompare(b.student_name)),
@@ -242,6 +282,7 @@ function AcademicsFormContent() {
           uts_score: Number(gradeForm.uts_score),
           uas_score: Number(gradeForm.uas_score),
           task_score: Number(gradeForm.task_score),
+          uh_score: Number(gradeForm.uh_score),
           notes: gradeForm.notes,
         };
         if (gradeForm.id) await updateGrade(gradeForm.id, payload);
@@ -277,9 +318,23 @@ function AcademicsFormContent() {
         showToast('success', tahfidzForm.id ? 'Tahfidz berhasil diperbarui.' : 'Tahfidz berhasil ditambahkan.');
       }
 
+      if (type === 'arbain') {
+        const payload: Omit<ArbainProgress, 'id' | 'student_name'> = {
+          student_id: Number(arbainForm.student_id),
+          hadith_number: Number(arbainForm.hadith_number),
+          status: arbainForm.status,
+          nilai: Number(arbainForm.nilai || 0),
+          notes: arbainForm.notes,
+          evaluation_date: arbainForm.evaluation_date,
+        };
+        if (arbainForm.id) await updateArbain(arbainForm.id, payload);
+        else await createArbain(payload);
+        showToast('success', arbainForm.id ? 'Setoran Arbain berhasil diperbarui.' : 'Setoran Arbain berhasil ditambahkan.');
+      }
+
       if (type === 'bulk-grade') {
         if (!bulkGradeMeta.subject_id) throw new Error('Pilih mata pelajaran terlebih dahulu.');
-        const rowsToSave = bulkGradeRows.filter((row) => row.uts_score || row.uas_score || row.task_score);
+        const rowsToSave = bulkGradeRows.filter((row) => row.uts_score || row.uas_score || row.task_score || row.uh_score);
         if (!rowsToSave.length) throw new Error('Isi minimal satu nilai untuk diproses.');
         await Promise.all(rowsToSave.map((row) => createGrade({
           student_id: Number(row.student_id),
@@ -289,6 +344,7 @@ function AcademicsFormContent() {
           uts_score: Number(row.uts_score || 0),
           uas_score: Number(row.uas_score || 0),
           task_score: Number(row.task_score || 0),
+          uh_score: Number(row.uh_score || 0),
           notes: row.notes,
         })));
         showToast('success', `${rowsToSave.length} nilai berhasil ditambahkan.`);
@@ -300,6 +356,7 @@ function AcademicsFormContent() {
           uts_score: Number(row.uts_score || 0),
           uas_score: Number(row.uas_score || 0),
           task_score: Number(row.task_score || 0),
+          uh_score: Number(row.uh_score || 0),
           notes: row.notes,
         })));
         showToast('success', `${bulkEditRows.length} nilai berhasil diperbarui.`);
@@ -315,24 +372,24 @@ function AcademicsFormContent() {
   };
 
   if (isLoading) {
-    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>;
+    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>;
   }
 
   return (
     <div className="mx-auto max-w-6xl pb-16">
       <div className="mb-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_42%),linear-gradient(135deg,_#ffffff,_#f8fafc)] p-6">
+        <div className="bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_42%),linear-gradient(135deg,_#ffffff,_#f8fafc)] p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
             <button
               type="button"
               onClick={() => router.push('/admin/academics')}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-emerald-200 hover:text-emerald-600"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-sky-200 hover:text-sky-600"
             >
               <ArrowLeft size={20} />
             </button>
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Form eRapor</p>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-sky-700">Form eRapor</p>
               <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 font-outfit">{titleByType(type, Boolean(id))}</h1>
               <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-slate-500">{descriptionByType(type)}</p>
               <p className="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{academicPeriodLabel}</p>
@@ -352,12 +409,12 @@ function AcademicsFormContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {(type === 'grade' || type === 'attendance' || type === 'tahfidz') && (
+        {(type === 'grade' || type === 'attendance' || type === 'tahfidz' || type === 'arbain') && (
           <div className="space-y-5">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
               <div className="mb-8 flex items-center gap-3">
-                <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
-                  {type === 'grade' ? <BookOpen size={20} /> : type === 'attendance' ? <Calendar size={20} /> : <ClipboardList size={20} />}
+                <div className="rounded-xl bg-sky-50 p-3 text-sky-600">
+                  {type === 'grade' ? <BookOpen size={20} /> : type === 'attendance' ? <Calendar size={20} /> : type === 'arbain' ? <ScrollText size={20} /> : <ClipboardList size={20} />}
                 </div>
                 <div>
                   <p className="text-sm font-black text-slate-900">{titleByType(type, Boolean(id))}</p>
@@ -381,8 +438,8 @@ function AcademicsFormContent() {
                   </Field>
                   <Field label="Semester">
                     <select value={gradeForm.semester} onChange={(event) => setGradeForm((prev) => ({ ...prev, semester: event.target.value }))} className={controlClass}>
-                      <option value="Ganjil">Ganjil</option>
-                      <option value="Genap">Genap</option>
+                      <option value="1">Semester 1</option>
+                      <option value="2">Semester 2</option>
                     </select>
                   </Field>
                   <Field label="Tahun Ajaran">
@@ -394,8 +451,11 @@ function AcademicsFormContent() {
                   <Field label="Nilai UAS">
                     <input required type="number" min="0" max="100" value={gradeForm.uas_score} onChange={(event) => setGradeForm((prev) => ({ ...prev, uas_score: event.target.value }))} className={controlClass} />
                   </Field>
-                  <Field label="Nilai Tugas" className="md:col-span-2">
+                  <Field label="Nilai Tugas">
                     <input required type="number" min="0" max="100" value={gradeForm.task_score} onChange={(event) => setGradeForm((prev) => ({ ...prev, task_score: event.target.value }))} className={controlClass} />
+                  </Field>
+                  <Field label="Nilai Ulangan Harian">
+                    <input required type="number" min="0" max="100" value={gradeForm.uh_score} onChange={(event) => setGradeForm((prev) => ({ ...prev, uh_score: event.target.value }))} className={controlClass} />
                   </Field>
                   <Field label="Catatan" className="md:col-span-2">
                     <textarea rows={5} value={gradeForm.notes} onChange={(event) => setGradeForm((prev) => ({ ...prev, notes: event.target.value }))} className={textAreaClass} placeholder="Catatan guru, deskripsi capaian, atau arahan tindak lanjut..." />
@@ -408,7 +468,7 @@ function AcademicsFormContent() {
                   <Field label="Santri">
                     <select required value={attendanceForm.student_id} onChange={(event) => setAttendanceForm((prev) => ({ ...prev, student_id: event.target.value }))} className={controlClass}>
                       <option value="">Pilih santri</option>
-                      {students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+                      {attendanceStudents.map((student) => <option key={student.id} value={student.id}>{student.name} ({student.class})</option>)}
                     </select>
                   </Field>
                   <Field label="Tanggal">
@@ -425,6 +485,49 @@ function AcademicsFormContent() {
                   <Field label="Catatan" className="md:col-span-2">
                     <textarea rows={5} value={attendanceForm.notes} onChange={(event) => setAttendanceForm((prev) => ({ ...prev, notes: event.target.value }))} className={textAreaClass} placeholder="Catatan tambahan, alasan izin, atau keterangan musyrif..." />
                   </Field>
+                </div>
+              )}
+
+              {type === 'arbain' && (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <Field label="Santri">
+                    <select required value={arbainForm.student_id} onChange={(event) => setArbainForm((prev) => ({ ...prev, student_id: event.target.value }))} className={controlClass}>
+                      <option value="">Pilih santri</option>
+                      {students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Nomor Hadis (1-42)">
+                    <select required value={arbainForm.hadith_number} onChange={(event) => setArbainForm((prev) => ({ ...prev, hadith_number: event.target.value }))} className={controlClass}>
+                      {arbainRef.map((h) => <option key={h.number} value={h.number}>{h.number}. {h.title}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Tanggal Evaluasi">
+                    <input required type="date" value={arbainForm.evaluation_date} onChange={(event) => setArbainForm((prev) => ({ ...prev, evaluation_date: event.target.value }))} className={controlClass} />
+                  </Field>
+                  <Field label="Nilai (0-100)">
+                    <input required type="number" min="0" max="100" value={arbainForm.nilai} onChange={(event) => setArbainForm((prev) => ({ ...prev, nilai: event.target.value }))} className={controlClass} />
+                  </Field>
+                  <Field label="Status" className="md:col-span-2">
+                    <select value={arbainForm.status} onChange={(event) => setArbainForm((prev) => ({ ...prev, status: event.target.value }))} className={controlClass}>
+                      <option value="proses">Proses</option>
+                      <option value="setor">Setor</option>
+                      <option value="lulus">Lulus</option>
+                    </select>
+                  </Field>
+                  <Field label="Catatan Ustadz" className="md:col-span-2">
+                    <textarea rows={5} value={arbainForm.notes} onChange={(event) => setArbainForm((prev) => ({ ...prev, notes: event.target.value }))} className={textAreaClass} placeholder="Catatan hafalan, cacatan saat menyimak, atau arahan untuk setoran berikutnya..." />
+                  </Field>
+                  {arbainRef.length > 0 && (() => {
+                    const ref = arbainRef.find((h) => String(h.number) === String(arbainForm.hadith_number));
+                    if (!ref) return null;
+                    return (
+                      <div className="md:col-span-2 rounded-xl border border-sky-100 bg-sky-50/60 p-5">
+                        <p className="text-sm font-black text-slate-800">{ref.number}. {ref.title} <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{ref.category}</span></p>
+                        <p className="mt-2 text-sm text-slate-600">{ref.translation}</p>
+                        <p className="mt-2 text-[11px] font-semibold text-slate-400">{ref.source}</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -475,12 +578,12 @@ function AcademicsFormContent() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700/80">Ringkasan Form</p>
+              <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-5 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700/80">Ringkasan Form</p>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {formStats.map((item) => (
-                    <div key={item.label} className="rounded-xl border border-emerald-100 bg-white/70 px-4 py-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700/70">{item.label}</p>
+                    <div key={item.label} className="rounded-xl border border-sky-100 bg-white/70 px-4 py-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700/70">{item.label}</p>
                       <p className="mt-2 text-sm font-black text-slate-900">{item.value}</p>
                     </div>
                   ))}
@@ -511,8 +614,8 @@ function AcademicsFormContent() {
                 </Field>
                 <Field label="Semester">
                   <select value={bulkGradeMeta.semester} onChange={(event) => setBulkGradeMeta((prev) => ({ ...prev, semester: event.target.value }))} className={controlClass}>
-                    <option value="Ganjil">Ganjil</option>
-                    <option value="Genap">Genap</option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
                   </select>
                 </Field>
                 <Field label="Tahun Ajaran">
@@ -526,14 +629,15 @@ function AcademicsFormContent() {
                 <p className="text-sm font-black text-slate-900">Daftar Nilai Santri</p>
                 <p className="text-xs font-medium text-slate-500">Kosongkan baris yang belum ingin diproses.</p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-[860px] w-full text-sm">
+              <div className="ap-table-wrap overflow-x-auto">
+                <table className="min-w-[1000px] w-full text-sm">
                   <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                     <tr>
                       <th className="px-4 py-3 text-left">Santri</th>
                       <th className="px-4 py-3 text-center">UTS</th>
                       <th className="px-4 py-3 text-center">UAS</th>
                       <th className="px-4 py-3 text-center">Tugas</th>
+                      <th className="px-4 py-3 text-center">UH</th>
                       <th className="px-4 py-3 text-left">Catatan</th>
                     </tr>
                   </thead>
@@ -544,6 +648,7 @@ function AcademicsFormContent() {
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uts_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'uts_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uas_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'uas_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.task_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'task_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
+                        <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uh_score} onChange={(event) => updateBulkGradeRow(row.student_id, 'uh_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input value={row.notes} onChange={(event) => updateBulkGradeRow(row.student_id, 'notes', event.target.value)} className={`${controlClass} min-w-[220px]`} placeholder="Catatan singkat..." /></td>
                       </tr>
                     ))}
@@ -586,14 +691,15 @@ function AcademicsFormContent() {
                 <p className="text-sm font-black text-slate-900">Daftar Nilai Mapel Aktif</p>
                 <p className="text-xs font-medium text-slate-500">Perubahan akan disimpan serentak saat kamu klik tombol simpan.</p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-[860px] w-full text-sm">
+              <div className="ap-table-wrap overflow-x-auto">
+                <table className="min-w-[1000px] w-full text-sm">
                   <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                     <tr>
                       <th className="px-4 py-3 text-left">Santri</th>
                       <th className="px-4 py-3 text-center">UTS</th>
                       <th className="px-4 py-3 text-center">UAS</th>
                       <th className="px-4 py-3 text-center">Tugas</th>
+                      <th className="px-4 py-3 text-center">UH</th>
                       <th className="px-4 py-3 text-left">Catatan</th>
                     </tr>
                   </thead>
@@ -604,12 +710,13 @@ function AcademicsFormContent() {
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uts_score} onChange={(event) => updateBulkEditRow(row.id, 'uts_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uas_score} onChange={(event) => updateBulkEditRow(row.id, 'uas_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.task_score} onChange={(event) => updateBulkEditRow(row.id, 'task_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
+                        <td className="px-4 py-4"><input type="number" min="0" max="100" value={row.uh_score} onChange={(event) => updateBulkEditRow(row.id, 'uh_score', event.target.value)} className={`${controlClass} min-w-[110px]`} /></td>
                         <td className="px-4 py-4"><input value={row.notes} onChange={(event) => updateBulkEditRow(row.id, 'notes', event.target.value)} className={`${controlClass} min-w-[220px]`} placeholder="Catatan singkat..." /></td>
                       </tr>
                     ))}
                     {bulkEditRows.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-500">
+                        <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
                           Belum ada data nilai untuk mata pelajaran ini pada periode aktif.
                         </td>
                       </tr>
@@ -633,7 +740,7 @@ function AcademicsFormContent() {
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-600 disabled:opacity-50"
+            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-sky-600 disabled:opacity-50"
           >
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             {type === 'bulk-grade' ? 'Simpan Nilai Massal' : type === 'bulk-edit' ? 'Simpan Edit Massal' : 'Simpan Form'}

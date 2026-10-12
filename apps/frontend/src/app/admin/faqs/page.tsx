@@ -7,6 +7,10 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { Plus, Trash2, ArrowUp, ArrowDown, HelpCircle, Search, X, Save, Pencil, Eye, EyeOff } from 'lucide-react';
 
+function stripHtml(raw: string): string {
+  return (raw || '').replace(/<[^>]*>/g, '').trim();
+}
+
 function FaqsAdminPageContent() {
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,7 +154,7 @@ function FaqsAdminPageContent() {
         </div>
         <button 
           onClick={() => router.push('/admin/faqs/form')}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 active:scale-95"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95"
         >
           <Plus size={20} />
           <span>Tambah Jawaban</span>
@@ -160,13 +164,13 @@ function FaqsAdminPageContent() {
       {/* Filter & Search Bar */}
       <div className="bg-white p-5 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-5 mb-10">
          <div className="flex-1 relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Cari kata kunci pertanyaan atau jawaban..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm"
+              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-sm"
             />
          </div>
       </div>
@@ -184,7 +188,7 @@ function FaqsAdminPageContent() {
                   <button 
                     disabled={index === 0}
                     onClick={() => handleOrder(faq.id, 'up')}
-                    className="p-1.5 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 hover:border-emerald-100 shadow-sm disabled:opacity-30 disabled:hover:text-slate-400"
+                    className="p-1.5 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-sky-600 hover:border-sky-100 shadow-sm disabled:opacity-30 disabled:hover:text-slate-400"
                   >
                     <ArrowUp size={16} />
                   </button>
@@ -194,7 +198,7 @@ function FaqsAdminPageContent() {
                   <button 
                     disabled={index === faqs.length - 1}
                     onClick={() => handleOrder(faq.id, 'down')}
-                    className="p-1.5 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 hover:border-emerald-100 shadow-sm disabled:opacity-30 disabled:hover:text-slate-400"
+                    className="p-1.5 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-sky-600 hover:border-sky-100 shadow-sm disabled:opacity-30 disabled:hover:text-slate-400"
                   >
                     <ArrowDown size={16} />
                   </button>
@@ -204,12 +208,12 @@ function FaqsAdminPageContent() {
                   <div className="flex justify-between items-start gap-4">
                     <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight leading-relaxed">{faq.question}</h3>
                     <div className="flex items-center gap-2 shrink-0">
-                       <span className={`text-[9px] font-black uppercase px-4 py-1.5 rounded-full border ${faq.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+                       <span className={`text-[9px] font-black uppercase px-4 py-1.5 rounded-full border ${faq.is_active ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
                          {faq.is_active ? 'Publik' : 'Draft'}
                        </span>
                        <button 
                          onClick={() => router.push(`/admin/faqs/form?id=${faq.id}`)}
-                         className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                         className="p-2.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all"
                        >
                          <Pencil size={18} />
                        </button>
@@ -221,7 +225,7 @@ function FaqsAdminPageContent() {
                        </button>
                     </div>
                   </div>
-                  <div className="mt-4 text-slate-500 text-sm leading-relaxed font-medium bg-slate-50/50 p-6 rounded-2xl border border-slate-100/50" dangerouslySetInnerHTML={{ __html: faq.answer }} />
+                  <div className="mt-4 text-slate-500 text-sm leading-relaxed font-medium bg-slate-50/50 p-6 rounded-2xl border border-slate-100/50 whitespace-pre-line">{stripHtml(faq.answer)}</div>
                 </div>
               </div>
             ))}
@@ -244,7 +248,7 @@ function FaqsAdminPageContent() {
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300 max-h-[90vh]">
              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                  <div className="w-12 h-12 bg-sky-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-sky-200">
                     <HelpCircle size={24} />
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight font-outfit">
@@ -264,7 +268,7 @@ function FaqsAdminPageContent() {
                       placeholder="Apa saja syarat pendaftaran santri baru?"
                       value={form.question}
                       onChange={(e) => setForm({ ...form, question: e.target.value })}
-                      className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-lg"
                     />
                   </div>
 
@@ -276,13 +280,13 @@ function FaqsAdminPageContent() {
                       placeholder="Jelaskan secara detail di sini..."
                       value={form.answer}
                       onChange={(e) => setForm({ ...form, answer: e.target.value })}
-                      className="w-full px-8 py-6 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-700 leading-relaxed"
+                      className="w-full px-8 py-6 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-medium text-slate-700 leading-relaxed"
                     />
                   </div>
 
                   <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100">
                       <div className="flex items-center gap-3">
-                         <div className={`p-2 rounded-xl ${form.is_active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+                         <div className={`p-2 rounded-xl ${form.is_active ? 'bg-sky-100 text-sky-600' : 'bg-slate-200 text-slate-400'}`}>
                             {form.is_active ? <Eye size={18}/> : <EyeOff size={18}/>}
                          </div>
                          <div>
@@ -293,7 +297,7 @@ function FaqsAdminPageContent() {
                       <button 
                         type="button"
                         onClick={() => setForm({ ...form, is_active: !form.is_active })}
-                        className={`w-14 h-8 rounded-full transition-all relative flex items-center px-1 ${form.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                        className={`w-14 h-8 rounded-full transition-all relative flex items-center px-1 ${form.is_active ? 'bg-sky-500' : 'bg-slate-300'}`}
                       >
                          <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-all transform ${form.is_active ? 'translate-x-6' : 'translate-x-0'}`} />
                       </button>
@@ -310,7 +314,7 @@ function FaqsAdminPageContent() {
                     <button 
                       disabled={isSubmitting}
                       type="submit"
-                      className="flex-[2] py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+                      className="flex-[2] py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
                     >
                        {isSubmitting ? 'Sedang Memproses...' : (
                           <>

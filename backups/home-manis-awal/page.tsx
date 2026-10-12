@@ -105,7 +105,7 @@ const learningPillars = [
 const focusAreas = [
   {
     title: 'Profil dan Visi',
-    desc: 'Kenali sejarah pondok, visi-misi, identitas lembaga, dan arah pembinaan Darussunnah.',
+    desc: 'Kenali sejarah pondok, visi-misi, identitas lembaga, dan arah pembinaan Alma Parung.',
     href: '/profil',
     icon: <School size={24} />,
   },
@@ -175,7 +175,7 @@ const buildHeroSlideId = (overrides: Partial<HeroSlide> = {}, fallbackKey = 'sli
 const createHeroSlide = (overrides: Partial<HeroSlide> = {}, fallbackKey?: string): HeroSlide => ({
   id: buildHeroSlideId(overrides, fallbackKey),
   title: 'Pondok Tahfidz yang menumbuhkan ilmu, adab, dan kemandirian santri.',
-  subtitle: 'Darussunnah Parung membina generasi muslim berkualitas dengan pendekatan Al-Quran dan manajemen terpadu.',
+  subtitle: 'Alma Parung membina generasi muslim berkualitas dengan pendekatan Al-Quran dan manajemen terpadu.',
   image_url: '/assets/img/gedung.webp',
   button_text: 'Lihat Info PSB',
   button_url: '/psb',
@@ -187,7 +187,7 @@ const defaultHeroSlides = [
     {
       title: 'Membentuk generasi Qurani yang berilmu, berakhlak, dan siap berkarya.',
       subtitle:
-        'Darussunnah Parung menghadirkan pembinaan Al-Quran, adab, akademik, dan kemandirian dalam satu lingkungan pesantren yang terarah.',
+        'Alma Parung menghadirkan pembinaan Al-Quran, adab, akademik, dan kemandirian dalam satu lingkungan pesantren yang terarah.',
       image_url: '/assets/img/gedung.webp',
       button_text: 'Daftar Santri Baru',
       button_url: '/psb',
@@ -382,7 +382,7 @@ export default function LandingPage() {
                       >
                         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-emerald-100 backdrop-blur-md">
                           <Sparkles size={14} />
-                          Pondok Pesantren Darussunnah Parung
+                          Pondok Pesantren Alma Parung
                         </span>
                         <h1 className="mt-6 max-w-2xl text-4xl font-black leading-[1.02] tracking-tight text-white md:text-6xl lg:text-[4.25rem]">
                           {slide.title}
@@ -462,9 +462,9 @@ export default function LandingPage() {
             className="mb-10 border-b border-slate-200/80 pb-8 md:flex md:items-end md:justify-between md:gap-6"
           >
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-600">Jelajahi Darussunnah</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-600">Jelajahi Alma Parung</p>
               <h2 className="mt-3 max-w-3xl text-3xl font-black leading-[1.02] tracking-[-0.03em] text-slate-900 md:text-[3.35rem]">
-                Mulai dari sisi Darussunnah yang paling ingin Anda kenali lebih dulu.
+                Mulai dari sisi Alma Parung yang paling ingin Anda kenali lebih dulu.
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 md:text-base">
                 Profil, program, fasilitas, dan pendaftaran kami susun lebih ringkas agar perjalanan
@@ -517,7 +517,7 @@ export default function LandingPage() {
           >
             <div className="grid gap-8 lg:grid-cols-[1.1fr_1.9fr] lg:items-center">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-200">Darussunnah dalam Angka</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-200">Alma Parung dalam Angka</p>
                 <h2 className="mt-3 text-2xl font-black tracking-tight md:text-4xl">
                   Komitmen pembinaan yang tumbuh konsisten dan terarah.
                 </h2>
@@ -554,10 +554,10 @@ export default function LandingPage() {
                 Profil Singkat
               </span>
               <h2 className="mt-6 text-3xl font-black leading-[1.02] tracking-[-0.03em] text-slate-900 md:text-[3.1rem]">
-                Darussunnah hadir sebagai ruang pembinaan Qurani yang serius, hangat, dan terarah.
+                Alma Parung hadir sebagai ruang pembinaan Qurani yang serius, hangat, dan terarah.
               </h2>
               <p className="mt-6 text-base leading-8 text-slate-600 md:text-lg">
-                Pondok Pesantren Tahfidz Al Quran Darussunnah didirikan pada tahun 2009 di Kp. Lengkong
+                Pondok Pesantren Tahfidz Al Quran Alma Parung didirikan pada tahun 2009 di Kp. Lengkong
                 Barang RT.01/02, Ds. Iwul, Kec. Parung, Bogor. Saat ini pondok juga tengah membangun
                 fasilitas belajar santri putra beserta masjid di Kp. Muara Jaya RT.01/05, Ciaureuten Ilir,
                 Bogor sebagai penguatan pusat pembinaan generasi muslim masa depan.
@@ -621,7 +621,7 @@ export default function LandingPage() {
               <PublicSectionIntro
                 eyebrow="Program Inti"
                 title="Program unggulan yang menjadi fondasi pembinaan santri"
-                description="Pembinaan utama Darussunnah menguatkan hafalan, adab, wawasan Islam, dan kesiapan hidup santri secara seimbang."
+                description="Pembinaan utama Alma Parung menguatkan hafalan, adab, wawasan Islam, dan kesiapan hidup santri secara seimbang."
               />
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 {featuredPrograms.slice(0, 4).map((program) => (
@@ -680,7 +680,7 @@ export default function LandingPage() {
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant} className="relative z-10">
             <PublicSectionIntro
               eyebrow="Potret Kegiatan"
-              title="Sekilas kehidupan belajar dan pembinaan di Darussunnah"
+              title="Sekilas kehidupan belajar dan pembinaan di Alma Parung"
               description="Lihat suasana belajar, ibadah, kebersamaan, dan ritme keseharian santri melalui dokumentasi kegiatan pondok."
               actionHref="/galeri"
               actionLabel="Lihat galeri lengkap"
@@ -769,7 +769,7 @@ export default function LandingPage() {
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <PublicSectionIntro
               eyebrow="Berita Pondok"
-              title="Kabar terbaru dari lingkungan Darussunnah"
+              title="Kabar terbaru dari lingkungan Alma Parung"
               description="Informasi kegiatan, pengumuman, dan perkembangan terbaru pondok yang layak Anda ikuti."
               actionHref="/news"
               actionLabel="Semua berita"
@@ -811,7 +811,7 @@ export default function LandingPage() {
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <PublicSectionIntro
               eyebrow="Agenda Mendatang"
-              title="Agenda terdekat di lingkungan Darussunnah"
+              title="Agenda terdekat di lingkungan Alma Parung"
               description="Pantau kegiatan pondok, jadwal penting, dan informasi acara yang akan datang."
               actionHref="/agendas"
               actionLabel="Lihat semua agenda"
@@ -875,7 +875,7 @@ export default function LandingPage() {
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariant}>
             <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-200">Langkah Berikutnya</p>
             <h2 className="mt-4 text-4xl font-black tracking-tight text-white md:text-6xl">
-              Siap mengenal Darussunnah lebih jauh?
+              Siap mengenal Alma Parung lebih jauh?
             </h2>
             <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-emerald-50/90 md:text-xl">
               Mulai dari profil pondok, program, dan fasilitas, lalu lanjutkan ke halaman pendaftaran

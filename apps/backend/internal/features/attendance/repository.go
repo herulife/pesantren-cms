@@ -1,10 +1,13 @@
 package attendance
 
 import (
+	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -25,25 +28,31 @@ func NewRepository(db *sql.DB) *Repository {
 
 // GenerateToken creates a new random token for a student that expires in 5 minutes
 func (r *Repository) GenerateToken(userID int) (string, error) {
-	// 1. Generate 32 bytes of random data for the token
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
 	token := hex.EncodeToString(b)
-
-	// 2. Set expiry to 5 minutes from now
 	expiresAt := time.Now().Add(5 * time.Minute)
 
-	// Refined strategy: Delete expired tokens for this user first
-	_, _ = r.db.Exec("DELETE FROM user_qr_tokens WHERE user_id = ? OR expires_at < ?", userID, time.Now())
-
-	_, err := r.db.Exec("INSERT INTO user_qr_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
-		userID, token, expiresAt)
+	// Use transaction to avoid race with concurrent generates
+	tx, err := r.db.Begin()
 	if err != nil {
 		return "", err
 	}
-
+	defer tx.Rollback()
+	_, _ = tx.Exec("DELETE FROM user_qr_tokens WHERE user_id = ? OR expires_at < ?", userID, time.Now())
+	// Store hash for security (compare hash on validate)
+	h := sha256.Sum256([]byte(token))
+	hashStr := hex.EncodeToString(h[:])
+	_, err = tx.Exec("INSERT INTO user_qr_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
+		userID, hashStr, expiresAt)
+	if err != nil {
+		return "", err
+	}
+	if err := tx.Commit(); err != nil {
+		return "", err
+	}
 	return token, nil
 }
 
@@ -53,13 +62,18 @@ func (r *Repository) ValidateAndRecordAttendance(token string) (int, string, err
 	var studentName, studentPhone string
 	var expiresAtStr string
 
+	// Hash incoming token for comparison (supports both legacy plaintext and new hash)
+	h := sha256.Sum256([]byte(token))
+	hashStr := hex.EncodeToString(h[:])
+
 	query := `
 		SELECT q.user_id, u.name, COALESCE(u.whatsapp, ''), q.expires_at
 		FROM user_qr_tokens q
 		JOIN users u ON q.user_id = u.id
-		WHERE q.token_hash = ?
+		WHERE q.token_hash = ? OR q.token_hash = ?
 	`
-	err := r.db.QueryRow(query, token).Scan(&userID, &studentName, &studentPhone, &expiresAtStr)
+	err := r.db.QueryRow(query, hashStr, token).Scan(&userID, &studentName, &studentPhone, &expiresAtStr)
+	_ = context.Background()
 	if err == sql.ErrNoRows {
 		return 0, "", errors.New("token tidak valid atau tidak ditemukan")
 	}
@@ -80,29 +94,145 @@ func (r *Repository) ValidateAndRecordAttendance(token string) (int, string, err
 		return 0, "", errors.New("token sudah kedaluwarsa, silakan refresh QR code")
 	}
 
-	// Token is valid! Now record attendance.
-	today := time.Now().Format("2006-01-02")
-
-	// Check if already present today
-	var existingID int
-	err = r.db.QueryRow("SELECT id FROM attendance WHERE student_id = ? AND date = ?", userID, today).Scan(&existingID)
-	if err == nil {
-		return userID, studentName, errors.New("santri sudah terabsen hari ini")
-	}
-
-	_, err = r.db.Exec("INSERT INTO attendance (student_id, date, status, notes) VALUES (?, ?, 'hadir', 'Absen via QR Scan')", userID, today)
+	// Token valid. Presensi disimpan per Santri, jadi akun yang dipindai
+	// harus diterjemahkan ke Santri-nya terlebih dahulu.
+	students, err := r.resolveStudents(userID)
 	if err != nil {
 		return 0, "", err
 	}
 
-	// Clean up the token used
-	_, _ = r.db.Exec("DELETE FROM user_qr_tokens WHERE token_hash = ?", token)
+	today := time.Now().Format("2006-01-02")
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, "", err
+	}
+	defer tx.Rollback()
 
+	var names []string
+	recorded := 0
+	for _, stu := range students {
+		names = append(names, stu.name)
+		var existingID int
+		if err := tx.QueryRow("SELECT id FROM attendance WHERE student_id = ? AND date = ?", stu.id, today).Scan(&existingID); err == nil {
+			continue
+		}
+		if _, err := tx.Exec(
+			"INSERT INTO attendance (student_id, date, status, notes) VALUES (?, ?, 'hadir', 'Absen via QR Scan')",
+			stu.id, today,
+		); err != nil {
+			if strings.Contains(err.Error(), "UNIQUE constraint failed: attendance") {
+				continue
+			}
+			return 0, "", err
+		}
+		recorded++
+	}
+	if recorded == 0 {
+		return 0, "", errors.New("santri sudah terabsen hari ini")
+	}
+	_, _ = tx.Exec("DELETE FROM user_qr_tokens WHERE token_hash = ? OR token_hash = ?", hashStr, token)
+	if err := tx.Commit(); err != nil {
+		return 0, "", err
+	}
+	studentName = strings.Join(names, ", ")
 	return userID, studentName, nil
 }
 
+type qrStudent struct {
+	id   int
+	name string
+}
+
+// resolveStudents memetakan akun portal ke Santri yang dimiliki akun itu.
+// Akun wali dengan beberapa anak akan menampilkan seluruh anaknya, sebab satu
+// pindai QR mewakili kehadiran keluarga tersebut.
+//
+// Sebagian akun lama tidak punya baris santri.user_id yang mengarah ke
+// mereka, padahal riwayat presensinya memakai akun tersebut. Untuk akun
+// seperti ini kita jatuh ke pencocokan nama, sama seperti aturan migrasi data,
+// dan hanya diterima bila namanya unik.
+func (r *Repository) resolveStudents(userID int) ([]qrStudent, error) {
+	out, err := r.studentsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(out) > 0 {
+		return out, nil
+	}
+	out, err = r.studentByUniqueName(userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(out) == 0 {
+		return nil, errors.New("akun ini belum terhubung ke data Santri")
+	}
+	return out, nil
+}
+
+func (r *Repository) studentsByUserID(userID int) ([]qrStudent, error) {
+	rows, err := r.db.Query(
+		"SELECT id, name FROM santri WHERE user_id = ? ORDER BY id",
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []qrStudent{}
+	for rows.Next() {
+		var s qrStudent
+		if err := rows.Scan(&s.id, &s.name); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+// studentByUniqueName mencocokkan akun portal dengan Santri yang namanya
+// sama persis. Fallback ini diperlukan untuk akun portal lama yang masih
+// punya riwayat presensi, tetapi Santri-nya sudah ditautkan ke akun wali.
+//
+// Nama yang cocok lebih dari satu ditolak dengan pesan jelas supaya
+// pemindai tidak pernah salah absen.
+func (r *Repository) studentByUniqueName(userID int) ([]qrStudent, error) {
+	rows, err := r.db.Query(
+		"SELECT s.id, s.name FROM santri s "+
+			"JOIN users u ON u.name = s.name "+
+			"WHERE u.id = ? "+
+			"ORDER BY s.id",
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []qrStudent{}
+	for rows.Next() {
+		var s qrStudent
+		if err := rows.Scan(&s.id, &s.name); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(out) > 1 {
+		return nil, errors.New("nama akun ini cocok dengan beberapa Santri, hubungi admin")
+	}
+	return out, nil
+}
+
+// GetStudentInfo mengembalikan nama + nomor wali dari tabel Santri agar
+// notifikasi WhatsApp tetap terkirim walaupun akun portal tidak punya nomor.
 func (r *Repository) GetStudentInfo(userID int) (string, string, error) {
 	var name, phone string
-	err := r.db.QueryRow("SELECT name, COALESCE(whatsapp, '') FROM users WHERE id = ?", userID).Scan(&name, &phone)
+	err := r.db.QueryRow(
+		`SELECT u.name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), u.whatsapp, '')
+		 FROM users u LEFT JOIN santri s ON s.user_id = u.id
+		 WHERE u.id = ? ORDER BY s.id LIMIT 1`,
+		userID,
+	).Scan(&name, &phone)
 	return name, phone, err
 }

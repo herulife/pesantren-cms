@@ -1,5 +1,9 @@
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import type jsPDF from 'jspdf';
+
+type JsPDFWithAutoTable = jsPDF & { lastAutoTable: { finalY: number } };
 
 type ReportScoreRow = {
 	subject: string;
@@ -20,6 +24,9 @@ type ReportTahfidzRow = {
 type StudentReportPayload = {
 	studentName: string;
 	studentIdentity?: string;
+	homeroomTeacher?: string;
+	parentName?: string;
+	placeDate?: string;
 	printedAt?: string;
 	averageScore: string | number;
 	hadir: string | number;
@@ -42,21 +49,24 @@ type AutoTableDoc = jsPDF & {
 	};
 };
 
-// Lazy-load the heavy PDF/Excel libs only when an export is actually triggered,
-// keeping them out of the initial admin/portal bundles (PERF-01).
-async function loadPdfLibs(): Promise<{
-	jsPDF: typeof import('jspdf').default;
-	autoTable: typeof import('jspdf-autotable').default;
-}> {
-	const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-		import('jspdf'),
-		import('jspdf-autotable'),
-	]);
-	return { jsPDF, autoTable };
+/**
+ * Kop pondok (nama/alamat/kontak/logo) dari /api/settings/public, di-cache per sesi.
+ * Semua dokumen cetak WAJIB pakai helper ini supaya nama sekolah konsisten.
+ */
+async function kopInfo(): Promise<KopInfo> {
+	if (!_kopCache) _kopCache = await loadKopInfo();
+	return _kopCache;
+}
+
+async function logoDataUrl(path: string) {
+	if (_logoCache[path] === undefined) {
+		_logoCache[path] = await loadLogoDataUrl(path);
+	}
+	return _logoCache[path];
 }
 
 /**
- * Export data ke PDF dengan header Darussunnah
+ * Export data ke PDF dengan kop resmi pondok (dari settings, bukan hardcode).
  */
 export async function exportToPDF(
 	title: string,
@@ -64,22 +74,39 @@ export async function exportToPDF(
 	rows: (string | number)[][],
 	filename: string
 ) {
-	const { jsPDF, autoTable } = await loadPdfLibs();
 	const doc = new jsPDF();
+	const kop = await kopInfo();
+	const logo = await logoDataUrl(kop.logoPath);
+	const hasLogo = (() => {
+		if (!logo) return false;
+		try {
+			doc.addImage(logo.dataUrl, logo.format, 14, 7, 22, 22);
+			return true;
+		} catch {
+			return false;
+		}
+	})();
+	const headW = hasLogo ? 150 : 182;
 
 	// Header pondok
+	doc.setTextColor(30, 41, 59);
 	doc.setFontSize(16);
 	doc.setFont('helvetica', 'bold');
-	doc.text('PONDOK PESANTREN DARUSSUNNAH', 105, 20, { align: 'center' });
+	doc.text(kop.name, 105, 18, { align: 'center', maxWidth: headW });
 	doc.setFontSize(10);
 	doc.setFont('helvetica', 'normal');
-	doc.text('Jl. Raya Parung - Bogor, Jawa Barat', 105, 28, { align: 'center' });
+	doc.setTextColor(71, 85, 105);
+	doc.text(doc.splitTextToSize(kop.address, headW), 105, 25, { align: 'center' });
+	doc.setFontSize(8.5);
+	doc.setTextColor(100, 116, 139);
+	doc.text(doc.splitTextToSize(kop.contact, headW), 105, 30, { align: 'center' });
 
 	// Garis pemisah
 	doc.setLineWidth(0.5);
 	doc.line(14, 33, 196, 33);
 
 	// Judul laporan
+	doc.setTextColor(15, 118, 110);
 	doc.setFontSize(13);
 	doc.setFont('helvetica', 'bold');
 	doc.text(title, 105, 42, { align: 'center' });
@@ -87,6 +114,7 @@ export async function exportToPDF(
 	// Tanggal cetak
 	doc.setFontSize(8);
 	doc.setFont('helvetica', 'normal');
+	doc.setTextColor(100, 116, 139);
 	doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 14, 50);
 
 	// Tabel
@@ -103,7 +131,7 @@ export async function exportToPDF(
 	doc.save(`${filename}.pdf`);
 }
 
-function renderStudentReport(doc: jsPDF, autoTable: typeof import('jspdf-autotable').default, payload: StudentReportPayload) {
+async function renderStudentReport(doc: jsPDF, payload: StudentReportPayload): Promise<jsPDF> {
 	const tableDoc = doc as AutoTableDoc;
 	const printedAt =
 		payload.printedAt ||
@@ -113,20 +141,12 @@ function renderStudentReport(doc: jsPDF, autoTable: typeof import('jspdf-autotab
 			year: 'numeric',
 		});
 
-	doc.setFillColor(5, 150, 105);
-	doc.rect(14, 12, 182, 8, 'F');
-
-	doc.setFontSize(18);
-	doc.setFont('helvetica', 'bold');
-	doc.text('PONDOK PESANTREN DARUSSUNNAH', 105, 30, { align: 'center' });
+	await renderKop(doc, 210);
+	doc.setTextColor(255, 255, 255);
 	doc.setFontSize(11);
-	doc.setFont('helvetica', 'normal');
-	doc.text('e-Raport Akademik Santri', 105, 37, { align: 'center' });
-	doc.setFontSize(9);
-	doc.text(`Dicetak pada ${printedAt}`, 105, 43, { align: 'center' });
-
-	doc.setLineWidth(0.6);
-	doc.line(14, 48, 196, 48);
+	doc.setFont('helvetica', 'bold');
+	doc.text('e-Raport Akademik Santri', 105, 44, { align: 'center' });
+	doc.setTextColor(30, 41, 59);
 
 	doc.setFillColor(248, 250, 252);
 	doc.roundedRect(14, 54, 182, 24, 3, 3, 'F');
@@ -215,45 +235,50 @@ function renderStudentReport(doc: jsPDF, autoTable: typeof import('jspdf-autotab
 		'Gunakan sebagai bahan evaluasi dan pendampingan belajar di rumah.';
 	doc.text(noteText, 14, noteStartY + 6, { maxWidth: 182, align: 'left' });
 
-	return doc;
-}
-
-async function buildStudentReportDoc(payload: StudentReportPayload) {
-	const { jsPDF, autoTable } = await loadPdfLibs();
-	const doc = new jsPDF();
-	return renderStudentReport(doc, autoTable, payload);
-}
-
-export async function previewStudentReportPDF(payload: StudentReportPayload) {
-	const doc = await buildStudentReportDoc(payload);
-	window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
-}
-
-export async function downloadStudentReportPDF(payload: StudentReportPayload) {
-	const doc = await buildStudentReportDoc(payload);
-	doc.save(`${payload.filename}.pdf`);
-}
-
-async function buildBulkStudentReportDoc(payload: BulkStudentReportPayload) {
-	const { jsPDF, autoTable } = await loadPdfLibs();
-	const doc = new jsPDF();
-
-	payload.reports.forEach((report, index) => {
-		if (index > 0) {
-			doc.addPage();
-		}
-		renderStudentReport(doc, autoTable, report);
+	renderSignatures(doc, noteStartY + 16, {
+		homeroomTeacher: payload.homeroomTeacher,
+		parentName: payload.parentName,
+		placeDate: payload.placeDate,
 	});
 
 	return doc;
 }
 
-export async function previewBulkStudentReportPDF(payload: BulkStudentReportPayload) {
+async function buildStudentReportDoc(payload: StudentReportPayload): Promise<jsPDF> {
+	const doc = new jsPDF();
+	await renderStudentReport(doc, payload);
+	return doc;
+}
+
+export async function previewStudentReportPDF(payload: StudentReportPayload): Promise<void> {
+	const doc = await buildStudentReportDoc(payload);
+	window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
+}
+
+export async function downloadStudentReportPDF(payload: StudentReportPayload): Promise<void> {
+	const doc = await buildStudentReportDoc(payload);
+	doc.save(`${payload.filename}.pdf`);
+}
+
+async function buildBulkStudentReportDoc(payload: BulkStudentReportPayload): Promise<jsPDF> {
+	const doc = new jsPDF();
+
+	for (let index = 0; index < payload.reports.length; index++) {
+		if (index > 0) {
+			doc.addPage();
+		}
+		await renderStudentReport(doc, payload.reports[index]);
+	}
+
+	return doc;
+}
+
+export async function previewBulkStudentReportPDF(payload: BulkStudentReportPayload): Promise<void> {
 	const doc = await buildBulkStudentReportDoc(payload);
 	window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
 }
 
-export async function downloadBulkStudentReportPDF(payload: BulkStudentReportPayload) {
+export async function downloadBulkStudentReportPDF(payload: BulkStudentReportPayload): Promise<void> {
 	const doc = await buildBulkStudentReportDoc(payload);
 	doc.save(`${payload.filename}.pdf`);
 }
@@ -267,16 +292,18 @@ export async function exportToExcel(
 	rows: (string | number)[][],
 	filename: string
 ) {
-	const XLSX = await import('xlsx');
-
 	const safeSheetName = title
 		.replace(/[:\\/?*\[\]]/g, '-')
 		.replace(/\s+/g, ' ')
 		.trim()
 		.slice(0, 31) || 'Sheet1';
 
+	const kop = await kopInfo();
 	const wsData = [
-		['PONDOK PESANTREN DARUSSUNNAH'],
+		[kop.name],
+		[kop.address],
+		[kop.contact],
+		[],
 		[`Laporan: ${title}`],
 		[`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`],
 		[],
@@ -302,4 +329,304 @@ export async function exportToExcel(
 	const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 	const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
 	saveAs(blob, `${filename}.xlsx`);
+}
+
+
+/**
+ * E-Raport PDF (LMS DARUSSUNNAH) — prints the final raport with mapel, project, kesantrian scores.
+ */
+export type ERaportPDFPayload = {
+	studentName: string;
+	studentID: number;
+	semester: string;
+	academicYear: string;
+	mapelScore: number;
+	projectScore: number;
+	kesantrianScore: number;
+	finalScore: number;
+	predikat: string;
+	mapel: { subject: string; score: number; weight?: number }[];
+	project: { name: string; score: number; weight?: number }[];
+	kesantrian: { aspek: string; score: number }[];
+	// Progres tahfidz (informatif — tidak dihitung ke nilai akhir, Jilid 90).
+	tahfidz?: { surah: string; juz: number; ayat: string; status: string }[];
+	printedAt?: string;
+	homeroomTeacher?: string;
+	parentName?: string;
+	placeDate?: string;
+};
+
+export interface KopInfo {
+	name: string;
+	address: string;
+	contact: string;
+	logoPath: string;
+}
+
+async function loadKopInfo(): Promise<KopInfo> {
+	const fallback: KopInfo = {
+		name: 'PONDOK PESANTREN DARUSSUNNAH PARUNG BOGOR',
+		address: 'Jl Haji Mawi Gang Omega, Desa Waru, Parung, Bogor, Jawa Barat',
+		contact: '+6287784423282 · ponpesdarussunnahparung@gmail.com · darussunnahparung.com',
+		logoPath: '/assets/img/logo.jpg',
+	};
+	try {
+		const base = typeof window !== 'undefined' ? window.location.origin : '';
+		const res = await fetch(`${base}/api/settings/public`, { cache: 'no-store' });
+		const json = await res.json();
+		const list: Array<{ key: string; value: string }> = json?.data || [];
+		const get = (k: string) => (list.find(s => s.key === k)?.value || '').trim();
+		const addr = get('school_address') || fallback.address;
+		const contacts = [get('school_phone'), get('school_email'), get('school_website')].filter(Boolean).join(' · ');
+		return {
+			name: (get('school_name') || fallback.name).toUpperCase(),
+			address: addr,
+			contact: contacts || fallback.contact,
+			logoPath: get('web_logo_url') || fallback.logoPath,
+		};
+	} catch {
+		return fallback;
+	}
+}
+
+async function loadLogoDataUrl(path: string): Promise<{ dataUrl: string; format: 'JPEG' | 'PNG' } | null> {
+	try {
+		const base = typeof window !== 'undefined' ? window.location.origin : '';
+		const url = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? path : '/' + path}`;
+		const res = await fetch(url, { cache: 'force-cache' });
+		if (!res.ok) return null;
+		const blob = await res.blob();
+		const format = (blob.type || '').includes('png') ? 'PNG' : 'JPEG';
+		const dataUrl = await new Promise<string>((resolve, reject) => {
+			const fr = new FileReader();
+			fr.onload = () => resolve(String(fr.result || ''));
+			fr.onerror = () => reject(new Error('logo'));
+			fr.readAsDataURL(blob);
+		});
+		if (!dataUrl.startsWith('data:image/')) return null;
+		return { dataUrl, format };
+	} catch {
+		return null;
+	}
+}
+
+let _kopCache: KopInfo | null = null;
+const _logoCache: Record<string, { dataUrl: string; format: 'JPEG' | 'PNG' } | null | undefined> = {};
+
+// renderKop menggambar kop resmi (logo kiri + nama & alamat sekolah).
+// Dipakai semua PDF raport agar seragam.
+export interface SignatureInfo {
+	homeroomTeacher?: string;
+	parentName?: string;
+	placeDate?: string;
+}
+
+// renderSignatures menggambar blok tanda tangan: kiri Orang Tua/Wali,
+// kanan Wali Kelas, lengkap tempat-tanggal di atasnya. Otomatis pindah
+// halaman bila ruang tidak cukup. Mengembalikan posisi Y akhir.
+function renderSignatures(
+	doc: jsPDF,
+	startY: number,
+	info: SignatureInfo = {},
+): number {
+	const pageH = doc.internal.pageSize.getHeight();
+	const pageW = doc.internal.pageSize.getWidth();
+	let y = startY;
+	if (y + 58 > pageH - 14) {
+		doc.addPage();
+		y = 20;
+	}
+	const placeDate =
+		info.placeDate ||
+		`Parung, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+	doc.setTextColor(30, 41, 59);
+	doc.setFont('helvetica', 'normal');
+	doc.setFontSize(10);
+	doc.text(placeDate, pageW - 14, y, { align: 'right' });
+	y += 4;
+	const colW = (pageW - 28) / 2;
+	const leftX = 14;
+	const rightX = 14 + colW;
+	const drawCol = (x: number, title: string, name?: string) => {
+		doc.setFont('helvetica', 'bold');
+		doc.setFontSize(11);
+		doc.text(title, x + colW / 2, y, { align: 'center', maxWidth: colW });
+		doc.setFont('helvetica', 'normal');
+		doc.setFontSize(10);
+		const nameY = y + 26;
+		if (name) {
+			doc.setFont('helvetica', 'bold');
+			doc.text(name, x + colW / 2, nameY, { align: 'center', maxWidth: colW - 8 });
+			doc.setFont('helvetica', 'normal');
+		}
+		doc.setLineWidth(0.4);
+		doc.setDrawColor(30, 41, 59);
+		doc.line(x + 12, nameY + 2, x + colW - 12, nameY + 2);
+		doc.setFontSize(9);
+		doc.setTextColor(100, 116, 139);
+		doc.text(name ? 'Nama jelas & tanda tangan' : 'Tanda tangan & nama jelas', x + colW / 2, nameY + 7, { align: 'center' });
+		doc.setTextColor(30, 41, 59);
+	};
+	drawCol(leftX, 'Orang Tua / Wali', info.parentName);
+	drawCol(rightX, 'Wali Kelas', info.homeroomTeacher);
+	return y + 38;
+}
+
+async function renderKop(doc: jsPDF, pageW: number): Promise<void> {
+	const kop = await kopInfo();
+	const logo = await logoDataUrl(kop.logoPath);
+	doc.setFillColor(16, 105, 79);
+	doc.rect(0, 0, pageW, 48, 'F');
+	let tx = 14;
+	if (logo) {
+		try {
+			doc.addImage(logo.dataUrl, logo.format, 14, 9, 26, 26);
+			tx = 46;
+		} catch { /* tanpa logo bila gagal */ }
+	}
+	doc.setTextColor(255, 255, 255);
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(15);
+	doc.text(kop.name, tx, 16, { maxWidth: pageW - tx - 14 });
+	doc.setFont('helvetica', 'normal');
+	doc.setFontSize(9);
+	const addrLines = doc.splitTextToSize(kop.address, pageW - tx - 14);
+	doc.text(addrLines.slice(0, 2), tx, 22);
+	doc.setFontSize(8.5);
+	doc.text(kop.contact, tx, 22 + addrLines.slice(0, 2).length * 4 + 1, { maxWidth: pageW - tx - 14 });
+	doc.setDrawColor(255, 255, 255);
+	doc.setLineWidth(0.4);
+	doc.line(14, 39.4, pageW - 14, 39.4);
+	doc.setDrawColor(217, 179, 106);
+	doc.setLineWidth(0.7);
+	doc.line(14, 41, pageW - 14, 41);
+	// Kop selesai: kembalikan teks ke gelap supaya pemanggil tidak mewarisi putih
+	doc.setTextColor(30, 41, 59);
+}
+
+export async function exportERaportPDF(payload: ERaportPDFPayload) {
+	const doc = new jsPDF('p', 'mm', 'a4');
+	const pageW = doc.internal.pageSize.getWidth();
+
+	await renderKop(doc, pageW);
+	doc.setTextColor(255, 255, 255);
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.text(`Laporan Hasil Belajar Santri (E-Raport)  ·  ${payload.studentName}  ·  Semester ${payload.semester}  ·  TA ${payload.academicYear}`, pageW / 2, 45, { align: 'center', maxWidth: pageW - 28 });
+
+	// Identity + Final score
+	doc.setTextColor(30, 41, 59);
+	doc.setFillColor(240, 253, 244);
+	doc.roundedRect(14, 50, pageW - 28, 20, 3, 3, 'F');
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(12);
+	doc.text(`Nilai Akhir: ${payload.finalScore.toFixed(2)}`, 20, 58);
+	doc.setFontSize(11);
+	doc.text(`Predikat: ${payload.predikat}`, 20, 65);
+	doc.setFont('helvetica', 'normal');
+
+	// Components (rata-rata biasa, tanpa bobot)
+	doc.setFontSize(10);
+	doc.setTextColor(71, 85, 105);
+	doc.text('Nilai Akhir = rata-rata Nilai Mapel, Nilai Project, dan Nilai Kesantrian', 14, 78);
+
+	// Table: components summary
+	let y = 84;
+	autoTable(doc, {
+		startY: y,
+		head: [['Komponen', 'Nilai']],
+		body: [
+			['Mata Pelajaran', payload.mapelScore.toFixed(2)],
+			['Project', payload.projectScore.toFixed(2)],
+			['Kesantrian', payload.kesantrianScore.toFixed(2)],
+		],
+		styles: { fontSize: 10 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+	y = (doc as unknown as JsPDFWithAutoTable).lastAutoTable.finalY + 6;
+
+	// Mapel breakdown
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.setTextColor(15, 118, 110);
+	doc.text('Rincian Mata Pelajaran', 14, y);
+	doc.setFont('helvetica', 'normal');
+	y += 2;
+	autoTable(doc, {
+		startY: y,
+		head: [['Mata Pelajaran', 'Nilai']],
+		body: payload.mapel.map(m => [m.subject, m.score.toFixed(2)]),
+		styles: { fontSize: 9 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+	y = (doc as unknown as JsPDFWithAutoTable).lastAutoTable.finalY + 6;
+
+	// Project breakdown
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.text('Rincian Project', 14, y);
+	doc.setFont('helvetica', 'normal');
+	y += 2;
+	autoTable(doc, {
+		startY: y,
+		head: [['Sub Project', 'Skor (1-4)']],
+		body: payload.project.map(p => [p.name, p.score > 0 ? p.score.toFixed(1) : '-']),
+		styles: { fontSize: 9 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+	y = (doc as unknown as JsPDFWithAutoTable).lastAutoTable.finalY + 6;
+
+	// Kesantrian breakdown
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(11);
+	doc.text('Rincian Kesantrian', 14, y);
+	doc.setFont('helvetica', 'normal');
+	y += 2;
+	autoTable(doc, {
+		startY: y,
+		head: [['Aspek', 'Skor (1-4)']],
+		body: payload.kesantrian.map(k => [k.aspek, k.score.toFixed(1)]),
+		styles: { fontSize: 9 },
+		headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+	});
+
+	const lastY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || 120;
+
+	// Progres Tahfidz — informatif, TIDAK ikut nilai akhir (Jilid 90).
+	const tahfidzRows = payload.tahfidz || [];
+	if (tahfidzRows.length > 0) {
+		let ty = lastY + 8;
+		const pageH = doc.internal.pageSize.getHeight();
+		if (ty > pageH - 45) {
+			doc.addPage();
+			ty = 20;
+		}
+		doc.setFont('helvetica', 'bold');
+		doc.setFontSize(11);
+		doc.text('Progres Tahfidz (informatif — tidak memengaruhi nilai akhir)', 14, ty);
+		doc.setFont('helvetica', 'normal');
+		ty += 2;
+		autoTable(doc, {
+			startY: ty,
+			head: [['Surah', 'Juz', 'Ayat', 'Status']],
+			body: tahfidzRows.map(t => [t.surah, String(t.juz), t.ayat, t.status]),
+			styles: { fontSize: 9 },
+			headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+		});
+	}
+
+	const finalY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || lastY;
+	renderSignatures(doc, finalY + 12, {
+		homeroomTeacher: payload.homeroomTeacher,
+		parentName: payload.parentName,
+		placeDate: payload.placeDate,
+	});
+
+	// Footer
+	const fy = doc.internal.pageSize.getHeight() - 14;
+	doc.setFontSize(9);
+	doc.setTextColor(148, 163, 184);
+	doc.text(`Dicetak: ${payload.printedAt || new Date().toLocaleString('id-ID')} · Sistem LMS DARUSSUNNAH`, 14, fy);
+
+	doc.save(`E-Raport-${payload.studentName.replace(/\s+/g, '-')}-${payload.semester}-${payload.academicYear.replace(/\//g, '-')}.pdf`);
 }

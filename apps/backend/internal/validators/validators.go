@@ -40,47 +40,25 @@ func NormalizeEmail(value string) string {
 	return strings.ToLower(NormalizeText(value))
 }
 
-func ValidateEmail(value string) bool {
-	if value == "" {
-		return false
+// NormalizeSemester memetakan penulisan semester ke bentuk kanonik "1"/"2".
+// Sistem lain (grades, raports, kesantrian_aspek) memakai "1"/"2", sedangkan
+// input UI bisa "ganjil"/"genap". Tanpa normalisasi, nilai CBT/grades tersimpan
+// sebagai string berbeda sehingga tidak saling ditemukan saat hitung rapor.
+func NormalizeSemester(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "ganjil", "semester 1", "satu":
+		return "1"
+	case "2", "genap", "semester 2", "dua":
+		return "2"
+	default:
+		return strings.TrimSpace(value)
 	}
-	_, err := mail.ParseAddress(value)
-	return err == nil
-}
-
-func ValidateURL(raw string) bool {
-	if raw == "" {
-		return false
-	}
-	parsed, err := url.ParseRequestURI(raw)
-	return err == nil && parsed.Scheme != "" && parsed.Host != ""
-}
-
-func ValidateMediaURL(raw string) bool {
-	if raw == "" {
-		return false
-	}
-
-	trimmed := strings.TrimSpace(raw)
-	if strings.HasPrefix(trimmed, "/uploads/") || strings.HasPrefix(trimmed, "/assets/") || strings.HasPrefix(trimmed, "/api/uploads/") {
-		return true
-	}
-
-	return ValidateURL(trimmed)
-}
-
-func ValidateDate(raw string) bool {
-	if raw == "" {
-		return false
-	}
-	_, err := time.Parse("2006-01-02", raw)
-	return err == nil
 }
 
 // Kategori scheme bantuan (kategori pendaftar & kategori Santri).
 // Satu-satunya daftar nilai yang sah untuk KEDUA tabel, supaya
 // registrations.category dan santri.category tidak pernah berbeda ejaan:
-// "yatim" (anak yatim) dan "dhuafa" (dhuafa). Nilai kosong dianggap
+// "yatim" (anak yatim) dan "dhuafa" (domba miskin). Nilai kosong dianggap
 // "reguler". Ejaan "duafa" diterima sebagai alias lalu dinormalkan menjadi
 // "dhuafa" supaya data dari sheet/API lama tidak ditolak.
 const (
@@ -122,6 +100,58 @@ func IsValidCategory(value string) bool {
 	return NormalizeCategory(value) != ""
 }
 
+func ValidateEmail(value string) bool {
+	if value == "" {
+		return false
+	}
+	_, err := mail.ParseAddress(value)
+	return err == nil
+}
+
+func ValidateURL(raw string) bool {
+	if raw == "" {
+		return false
+	}
+	parsed, err := url.ParseRequestURI(raw)
+	return err == nil && parsed.Scheme != "" && parsed.Host != ""
+}
+
+func ValidateMediaURL(raw string) bool {
+	if raw == "" {
+		return false
+	}
+
+	trimmed := strings.TrimSpace(raw)
+	if strings.HasPrefix(trimmed, "/uploads/") || strings.HasPrefix(trimmed, "/assets/") || strings.HasPrefix(trimmed, "/api/uploads/") {
+		return true
+	}
+
+	return ValidateURL(trimmed)
+}
+
+func ValidateDate(raw string) bool {
+	if raw == "" {
+		return false
+	}
+	_, err := time.Parse("2006-01-02", raw)
+	return err == nil
+}
+
+// ValidateDateTimeOrDate menerima tanggal saja (2006-01-02) atau tanggal+jam
+// (2006-01-02T15:04 / 2006-01-02T15:04:05). Dipakai untuk field jadwal PSB yang
+// di frontend memakai input datetime-local (Jadwal Tes, Batas Daftar Ulang).
+func ValidateDateTimeOrDate(raw string) bool {
+	if raw == "" {
+		return false
+	}
+	for _, layout := range []string{"2006-01-02", "2006-01-02T15:04", "2006-01-02T15:04:05"} {
+		if _, err := time.Parse(layout, raw); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func ValidateNIK(raw string) bool {
 	nik := strings.TrimSpace(raw)
 	if len(nik) != 16 {
@@ -135,11 +165,32 @@ func ValidateNIK(raw string) bool {
 	return true
 }
 
+// ValidateNISN memvalidasi Nomor Induk Siswa Nasional (RDM/EMIS Kemenag).
+// NISN resmi selalu 10 digit angka, tapi data lama/lintas jenjang bisa 8-16
+// digit. Fungsi ini hanya untuk yang SUDAH DIISI; kosong dianggap valid
+// (NISN bersifat wajib pelengkap, bukan prasyarat create santri).
+func ValidateNISN(raw string) bool {
+	nisn := strings.TrimSpace(raw)
+	if nisn == "" {
+		return true
+	}
+	if len(nisn) < 8 || len(nisn) > 16 {
+		return false
+	}
+	for _, c := range nisn {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func ValidatePhone(raw string) bool {
 	phone := strings.TrimSpace(raw)
 	if phone == "" {
 		return false
 	}
+	// allow digits, +, -, space, 8-15 chars
 	clean := strings.ReplaceAll(phone, " ", "")
 	clean = strings.ReplaceAll(clean, "-", "")
 	clean = strings.TrimPrefix(clean, "+")

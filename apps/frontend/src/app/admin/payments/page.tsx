@@ -1,53 +1,46 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getPayments, createPayment, deletePayment, getPaymentUsers, Payment, CompactUser } from '@/lib/api';
+import { getPayments, deletePayment, Payment } from '@/lib/api';
+import SppBills from './SppBills';
+import SppReport from './SppReport';
+import IuranBills from './IuranBills';
+import IuranReport from './IuranReport';
+import PayTransactions from './PayTransactions';
+import Kasir from './Kasir';
 import { exportToPDF, exportToExcel } from '@/lib/export';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { Plus, Trash2, CreditCard, User, Calendar, Receipt, Search, X, FileDown, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, CreditCard, User, Calendar, Receipt, Search, FileDown, FileSpreadsheet } from 'lucide-react';
 
 export default function PaymentsAdminPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [users, setUsers] = useState<CompactUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [activeTab, setActiveTab] = useState<'bills' | 'manual' | 'report' | 'iuran' | 'iuran-report' | 'kasir' | 'transaksi'>('bills');
   const { showToast } = useToast();
 
   const fetchData = async () => {
     setIsLoading(true);
-    const [pData, uData] = await Promise.all([getPayments(), getPaymentUsers()]);
+    const pData = await getPayments();
     setPayments(pData);
-    setUsers(uData);
     setIsLoading(false);
   };
-
-  // Form State
-  const [formData, setFormData] = useState({
-    user_id: '',
-    amount: '',
-    description: '',
-    method: 'manual',
-    status: 'success',
-    payment_date: new Date().toISOString().split('T')[0]
-  });
 
   useEffect(() => {
     let cancelled = false;
 
     const loadData = async () => {
       setIsLoading(true);
-      const [pData, uData] = await Promise.all([getPayments(), getPaymentUsers()]);
+      const pData = await getPayments();
       if (cancelled) {
         return;
       }
       setPayments(pData);
-      setUsers(uData);
       setIsLoading(false);
     };
 
@@ -67,44 +60,6 @@ export default function PaymentsAdminPage() {
         fetchData();
       } else {
         showToast('error', res.message || 'Gagal menghapus data.');
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
-      showToast('error', message);
-    }
-  };
-
-  const handleAddPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.user_id || !formData.amount || !formData.description) {
-      showToast('error', 'Harap isi semua field wajib.');
-      return;
-    }
-
-    try {
-      const res = await createPayment({
-        user_id: parseInt(formData.user_id),
-        amount: parseInt(formData.amount),
-        description: formData.description,
-        method: formData.method,
-        status: formData.status,
-        payment_date: formData.payment_date + " 00:00:00"
-      });
-
-      if (res.success) {
-        showToast('success', 'Pembayaran berhasil dicatat.');
-        setIsAddModalOpen(false);
-        setFormData({
-            user_id: '',
-            amount: '',
-            description: '',
-            method: 'manual',
-            status: 'success',
-            payment_date: new Date().toISOString().split('T')[0]
-        });
-        fetchData();
-      } else {
-        showToast('error', res.message || 'Gagal menyimpan data.');
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
@@ -156,11 +111,12 @@ export default function PaymentsAdminPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight flex items-center gap-3">
-             <CreditCard className="text-emerald-600" size={32} />
+             <CreditCard className="text-sky-600" size={32} />
              Manajemen Pembayaran
           </h1>
           <p className="text-slate-500 text-sm">Catat dan kelola transaksi pembayaran SPP atau administrasi santri.</p>
         </div>
+        {activeTab === 'manual' && (
         <div className="flex items-center gap-2">
           <button 
             onClick={handleExportPDF}
@@ -171,26 +127,96 @@ export default function PaymentsAdminPage() {
           </button>
           <button 
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold hover:bg-emerald-100 transition-all shadow-sm"
+            className="flex items-center gap-2 px-6 py-3 bg-sky-50 text-sky-600 border border-sky-100 rounded-xl font-bold hover:bg-sky-100 transition-all shadow-sm"
           >
             <FileSpreadsheet size={18} />
             <span className="hidden sm:block">Excel</span>
           </button>
           <Link 
             href="/admin/payments/form"
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+            className="flex items-center gap-2 px-6 py-3 bg-sky-600 text-white rounded-xl font-bold hover:bg-sky-700 transition-all shadow-lg shadow-sky-600/20 active:scale-95"
           >
             <Plus size={20} />
             <span>Tambah Pembayaran</span>
           </Link>
         </div>
+        )}
       </div>
 
+      <div className="flex gap-2 mb-8">
+        <button
+          onClick={() => setActiveTab('bills')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'bills' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Tagihan SPP
+        </button>
+        <button
+          onClick={() => setActiveTab('manual')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'manual' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Pembayaran
+        </button>
+        <button
+          onClick={() => setActiveTab('report')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'report' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Laporan Tagihan
+        </button>
+        <button
+          onClick={() => setActiveTab('iuran')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Tagihan Iuran
+        </button>
+        <button
+          onClick={() => setActiveTab('iuran-report')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran-report' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Laporan Iuran
+        </button>
+        <button
+          onClick={() => setActiveTab('kasir')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'kasir' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Kasir
+        </button>
+        <button
+          onClick={() => setActiveTab('transaksi')}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'transaksi' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          Lap. Transaksi
+        </button>
+      </div>
+
+      <p className="-mt-6 mb-8 text-xs font-medium text-slate-400">
+        {activeTab === 'kasir'
+          ? 'Alur kasir: pilih santri, centang tagihan yang dibayar, lalu simpan — kwitansi tersedia.'
+          : activeTab === 'manual'
+            ? 'Catat dan kelola pembayaran manual di luar tagihan; ekspor PDF/Excel tersedia di kanan atas.'
+            : activeTab === 'transaksi'
+              ? 'Rincian transaksi per tanggal + cetak kwitansi.'
+              : 'Kelola tagihan dan pembayaran santri.'}
+      </p>
+
+      {activeTab === 'bills' && <SppBills />}
+
+      {activeTab === 'iuran' && <IuranBills />}
+
+      {activeTab === 'report' && <SppReport />}
+
+      {activeTab === 'iuran-report' && <IuranReport />}
+
+      {activeTab === 'kasir' && <Kasir />}
+
+      {activeTab === 'transaksi' && <PayTransactions />}
+
+      {activeTab === 'manual' && (
+      <>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center gap-6 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="w-16 h-16 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 shadow-inner">
+          <div className="absolute inset-0 bg-gradient-to-r from-sky-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="w-16 h-16 rounded-xl bg-sky-50 flex items-center justify-center text-sky-500 shrink-0 shadow-inner">
             <Receipt size={28} />
           </div>
           <div className="relative z-10">
@@ -221,14 +247,14 @@ export default function PaymentsAdminPage() {
             placeholder="Cari nama santri, keterangan, atau metode bayar..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
+            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-medium"
           />
         </div>
         <div className="shrink-0 w-full md:w-56 relative">
            <select 
              value={filterStatus}
              onChange={(e) => setFilterStatus(e.target.value)}
-             className="w-full pl-5 pr-10 py-4 appearance-none bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 cursor-pointer"
+             className="w-full pl-5 pr-10 py-4 appearance-none bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700 cursor-pointer"
            >
              <option value="all">Semua Status</option>
              <option value="success">Sukses / Lunas</option>
@@ -244,10 +270,10 @@ export default function PaymentsAdminPage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
         {isLoading ? (
           <div className="py-32 text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
+            <div className="animate-spin w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full mx-auto"></div>
           </div>
         ) : payments.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="ap-table-wrap overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -284,7 +310,7 @@ export default function PaymentsAdminPage() {
                     </td>
                     <td className="px-8 py-6">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        p.status === 'success' ? 'bg-emerald-100 text-emerald-700' : 
+                        p.status === 'success' ? 'bg-sky-100 text-sky-700' : 
                         p.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
                       }`}>
                         {p.status}
@@ -321,110 +347,7 @@ export default function PaymentsAdminPage() {
           </div>
         )}
       </div>
-
-      {/* MODAL TAMBAH */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:px-0">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}></div>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative shrink-0 overflow-hidden animate-in fade-in zoom-in duration-300">
-             <form onSubmit={handleAddPayment}>
-               <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center">
-                  <h3 className="text-2xl font-black text-slate-900 uppercase font-outfit tracking-tight">Catat Pembayaran</h3>
-                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
-               </div>
-               
-               <div className="p-10 space-y-6">
-                 <div>
-                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Pilih Santri / User</label>
-                   <select 
-                      value={formData.user_id} 
-                      onChange={(e) => setFormData({...formData, user_id: e.target.value})}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-800"
-                    >
-                      <option value="">-- Pilih User --</option>
-                      {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
-                   </select>
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-6">
-                   <div>
-                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Jumlah (Rp)</label>
-                     <input 
-                        type="number"
-                        placeholder="Contoh: 500000"
-                        value={formData.amount} 
-                        onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                     />
-                   </div>
-                   <div>
-                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Tanggal</label>
-                     <input 
-                        type="date"
-                        value={formData.payment_date} 
-                        onChange={(e) => setFormData({...formData, payment_date: e.target.value})}
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                     />
-                   </div>
-                 </div>
-
-                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Keterangan</label>
-                    <textarea 
-                        rows={3}
-                        placeholder="Contoh: Pembayaran SPP Bulan Januari 2025"
-                        value={formData.description} 
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                    ></textarea>
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-6">
-                   <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Metode</label>
-                      <select 
-                          value={formData.method} 
-                          onChange={(e) => setFormData({...formData, method: e.target.value})}
-                          className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                      >
-                        <option value="manual">Tunai / Manual</option>
-                        <option value="transfer">Transfer Bank</option>
-                        <option value="other">Lainnya</option>
-                      </select>
-                   </div>
-                   <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Status</label>
-                      <select 
-                          value={formData.status} 
-                          onChange={(e) => setFormData({...formData, status: e.target.value})}
-                          className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                      >
-                        <option value="success">Sukses (Lunas)</option>
-                        <option value="pending">Pending</option>
-                        <option value="failed">Gagal</option>
-                      </select>
-                   </div>
-                 </div>
-               </div>
-
-               <div className="px-10 py-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
-                  <button 
-                     type="button" 
-                     onClick={() => setIsAddModalOpen(false)}
-                     className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                     type="submit"
-                     className="flex-1 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20"
-                  >
-                    Simpan Transaksi
-                  </button>
-               </div>
-             </form>
-          </div>
-        </div>
+      </>
       )}
 
       <ConfirmDialog 

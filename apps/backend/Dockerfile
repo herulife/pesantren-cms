@@ -17,4 +17,5 @@ COPY apps/backend/ ./
 COPY --from=builder /tmp/darussunnah-api ./darussunnah-api
 RUN mkdir -p ./public/uploads ./private/uploads /data && chmod 750 ./private ./private/uploads
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1:8080/api/ready || exit 1
 CMD ["./darussunnah-api"]

@@ -51,7 +51,7 @@ export default function LogsAdminPage() {
     fetchLogs();
   }, [fetchLogs]);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     const columns = ['Waktu', 'User', 'Aksi', 'Detail', 'IP Address'];
     const rows = logs.map(l => [
       l.created_at,
@@ -60,10 +60,10 @@ export default function LogsAdminPage() {
       l.details,
       l.ip_address
     ]);
-    exportToPDF('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
+    await exportToPDF('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const columns = ['Waktu', 'User', 'Aksi', 'Detail', 'IP Address', 'User Agent'];
     const rows = logs.map(l => [
       l.created_at,
@@ -73,7 +73,7 @@ export default function LogsAdminPage() {
       l.ip_address,
       l.user_agent
     ]);
-    exportToExcel('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
+    await exportToExcel('Audit Log Aktivitas Sistem', columns, rows, 'audit_logs');
   };
 
   return (
@@ -97,7 +97,7 @@ export default function LogsAdminPage() {
             </button>
             <button 
               onClick={handleExportExcel}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-sky-50 text-sky-600 border border-sky-100 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-sky-100 transition-all shadow-sm"
             >
               <FileSpreadsheet size={16} /> Excel Sync
             </button>
@@ -133,7 +133,7 @@ export default function LogsAdminPage() {
             <p className="text-slate-300 font-black uppercase tracking-[0.3em] text-xs font-outfit">Membaca Memori Sistem...</p>
           </div>
         ) : logs.length > 0 ? (
-          <div className="overflow-x-auto min-h-[500px]">
+          <div className="ap-table-wrap overflow-x-auto min-h-[500px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100">

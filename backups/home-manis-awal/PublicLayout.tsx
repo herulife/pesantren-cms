@@ -63,7 +63,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const isPortalUser = user?.role === 'user';
   const dashboardHref = isPortalUser ? '/portal' : '/admin';
   const dashboardLabel = user ? (isPortalUser ? 'Portal Wali Santri' : 'Panel Admin') : 'Masuk Admin';
-  const schoolName = settings.school_name || 'Darussunnah Parung';
+  const schoolName = settings.school_name || 'Alma Parung';
   const welcomeText = settings.web_welcome_text || 'Pondok Pesantren Tahfidz';
   const logoUrl = resolveDisplayImageUrl(settings.web_logo_url || '/assets/img/logo.jpg');
   const schoolAddress = settings.school_address || 'Jl. KH. Ahmad Sugriwa, Kp. Lengkong Barang RT 01 RW 02, Desa Iwul, Kec. Parung, Kab. Bogor 16330';
@@ -72,9 +72,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const schoolWebsite = settings.school_website || '';
   const whatsappNumber = schoolPhone.replace(/\D/g, '') || '6281413241748';
   const socialLinks = [
-    { href: settings.social_instagram || 'https://instagram.com/darussunnahparung', label: 'IG' },
-    { href: settings.social_facebook || 'https://facebook.com/darussunnahparung', label: 'FB' },
-    { href: settings.social_youtube || 'https://youtube.com/@darussunnahparung', label: 'YT' },
+    { href: settings.social_instagram || 'https://instagram.com/almaparungparung', label: 'IG' },
+    { href: settings.social_facebook || 'https://facebook.com/almaparungparung', label: 'FB' },
+    { href: settings.social_youtube || 'https://youtube.com/@almaparungparung', label: 'YT' },
   ].filter((item) => item.href);
   const isProfileActive = pathname === '/profil' || pathname.startsWith('/teachers') || pathname.startsWith('/facilities');
   const isProgramActive = pathname.startsWith('/program');
@@ -401,7 +401,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div className="rounded-[1.6rem] border border-white/7 bg-white/[0.03] p-5">
               <h4 className="mb-4 text-sm font-black uppercase tracking-[0.2em] text-white">Ringkasan Pondok</h4>
               <p className="text-sm leading-relaxed text-emerald-200/80">
-                Berdiri sejak 2009, Darussunnah Parung menekankan pendidikan tahfidz, pembinaan akhlak, dan penumbuhan semangat dakwah dalam kehidupan santri.
+                Berdiri sejak 2009, Alma Parung menekankan pendidikan tahfidz, pembinaan akhlak, dan penumbuhan semangat dakwah dalam kehidupan santri.
               </p>
             </div>
             <div className="rounded-[1.6rem] border border-white/7 bg-white/[0.03] p-5">
@@ -414,7 +414,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 {/* Embed Google Maps */}
                 <div className="h-32 w-full overflow-hidden rounded-2xl border border-emerald-800/80 shadow-inner md:h-40">
                   <iframe 
-                    src="https://maps.google.com/maps?q=Pondok%20Pesantren%20Darussunnah%20Parung&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                    src="https://maps.google.com/maps?q=Pondok%20Pesantren%20Alma Parung%20Parung&t=&z=15&ie=UTF8&iwloc=&output=embed" 
                     width="100%" 
                     height="100%" 
                     style={{ border: 0 }} 

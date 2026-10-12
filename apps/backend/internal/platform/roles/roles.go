@@ -14,9 +14,9 @@ import "sort"
 // Assignable lists every role that may be stored on a user row.
 //
 // Roles pimpinan, wali_kelas, guru, dan ustadz ditambahkan menyusul port
-// struktur Alma Parung (fase fondasi): pimpinan = baca/export, wali_kelas =
+// struktur Darussunnah Parung (fase fondasi): pimpinan = baca/export, wali_kelas =
 // kelasnya sendiri, guru = mapel yang diampu, ustadz = tahfidz & kesantrian.
-// "admin" tetap TIDAK dipakai (riwayat eskalasi breach) — Alma parung juga
+// "admin" tetap TIDAK dipakai (riwayat eskalasi breach) — Darussunnah Parung juga
 // tidak menyediakan role "admin" yang bisa di-assign.
 var Assignable = []string{
 	"superadmin",

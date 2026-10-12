@@ -2,16 +2,20 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/Toast';
+import { useAuth } from '@/components/AuthProvider';
 import {
   CreateViolationPayload,
+  Santri,
   StudentDisciplinePoint,
   ViolationLog,
   createViolation,
   getDisciplinePoints,
+  getSantriList,
   getSettings,
   getViolationLogs,
+  sendDisciplineWA,
 } from '@/lib/api';
-import { AlertTriangle, ClipboardList, FileWarning, MessageCircle, MessageSquare, Plus, RefreshCw, Search, Shield, ShieldAlert, ShieldCheck, Users, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, ClipboardList, FileWarning, MessageCircle, MessageSquare, Plus, RefreshCw, Search, Send, Shield, ShieldAlert, ShieldCheck, Users, X } from 'lucide-react';
 
 const VIOLATION_CATEGORIES = [
   { value: 'Aqidah', label: 'Aqidah' },
@@ -41,7 +45,7 @@ function getSanctionLevel(points: number) {
   if (points <= 55) return { label: 'SP 1', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' };
   if (points <= 75) return { label: 'Pemanggilan Ortu', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
   if (points <= 85) return { label: 'Teguran & Pembinaan', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' };
-  return { label: 'Aman', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
+  return { label: 'Aman', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200' };
 }
 
 function getPointsColor(points: number) {
@@ -49,7 +53,7 @@ function getPointsColor(points: number) {
   if (points <= 55) return 'text-orange-600';
   if (points <= 75) return 'text-amber-600';
   if (points <= 85) return 'text-yellow-700';
-  return 'text-emerald-600';
+  return 'text-sky-600';
 }
 
 function getPointsBarColor(points: number) {
@@ -57,7 +61,7 @@ function getPointsBarColor(points: number) {
   if (points <= 55) return 'bg-gradient-to-r from-orange-500 to-orange-400';
   if (points <= 75) return 'bg-gradient-to-r from-amber-500 to-amber-400';
   if (points <= 85) return 'bg-gradient-to-r from-yellow-500 to-yellow-400';
-  return 'bg-gradient-to-r from-emerald-500 to-emerald-400';
+  return 'bg-gradient-to-r from-sky-500 to-sky-400';
 }
 
 function Modal({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
@@ -86,6 +90,8 @@ const formInit: CreateViolationPayload = {
 
 export default function DisciplinesPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const role = user?.role || '';
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -95,8 +101,36 @@ export default function DisciplinesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateViolationPayload>(formInit);
   const [templates, setTemplates] = useState<Record<string, string>>({});
+  const [waModal, setWAModal] = useState<{ studentId: number; name: string; phone: string; kind: string; message: string } | null>(null);
+  const [waMessage, setWAMessage] = useState('');
+  const [isSendingWA, setIsSendingWA] = useState(false);
+  const [waSendResult, setWASendResult] = useState<{ ok: boolean; text: string } | null>(null);
+  // Daftar Santri untuk dropdown. Dulu form minta "ID Santri" diketik manual,
+  // sehingga id akun admin (mis. 1) bisa terkirim dan muncul di tabel
+  // sebagai baris "Santri" bernama "Admin".
+  const [santriOptions, setSantriOptions] = useState<Santri[]>([]);
+  const [isLoadingSantri, setIsLoadingSantri] = useState(false);
+
+  const loadSantriOptions = useCallback(async () => {
+    setIsLoadingSantri(true);
+    try {
+      const res = await getSantriList({ status: 'aktif', limit: 500 });
+      // student_id merujuk users.id, jadi hanya Santri yang sudah punya
+      // akun portal (user_id) yang bisa jadi sasaran.
+      setSantriOptions(res.items.filter((s) => Boolean(s.user_id)));
+    } catch (e) {
+      console.error('Failed to load Santri options:', e);
+      setSantriOptions([]);
+    } finally {
+      setIsLoadingSantri(false);
+    }
+  }, []);
 
   const loadTemplates = useCallback(async () => {
+    if (role !== 'superadmin') {
+      setTemplates({});
+      return;
+    }
     try {
       const sData = await getSettings();
       const mapped: Record<string, string> = {};
@@ -105,7 +139,7 @@ export default function DisciplinesPage() {
     } catch (e) {
       console.error('Failed to load WA templates', e);
     }
-  }, []);
+  }, [role]);
 
   const loadPoints = useCallback(async () => {
     setIsLoading(true);
@@ -159,6 +193,11 @@ export default function DisciplinesPage() {
     return { total, safe, warning, danger };
   }, [points]);
 
+  // Muat daftar Santri begitu modal dibuka supaya dropdown tidak kosong.
+  useEffect(() => {
+    if (modalOpen) void loadSantriOptions();
+  }, [modalOpen, loadSantriOptions]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.student_id || !form.reporter_name || !form.violation_category || !form.points_deducted) {
@@ -180,9 +219,55 @@ export default function DisciplinesPage() {
     }
   };
 
+  const openWAModal = (opts: { studentId: number; name: string; phone: string; kind: string; message: string }) => {
+    if (!opts.phone) {
+      showToast('error', 'Nomor WhatsApp orang tua belum ada di data Santri.');
+      return;
+    }
+    setWAModal({ ...opts });
+    setWAMessage(opts.message);
+    setWASendResult(null);
+  };
+
+  const submitWA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waModal) return;
+    const message = waMessage.trim();
+    if (!message) {
+      setWASendResult({ ok: false, text: 'Pesan tidak boleh kosong.' });
+      return;
+    }
+    if (message.length > 4096) {
+      setWASendResult({ ok: false, text: `Pesan terlalu panjang (${message.length}/4096 karakter).` });
+      return;
+    }
+    setIsSendingWA(true);
+    setWASendResult(null);
+    try {
+      const res = await sendDisciplineWA({ student_id: waModal.studentId, phone: waModal.phone, message, kind: waModal.kind });
+      if (res.success) {
+        const status = (res.data as { status?: string } | undefined)?.status;
+        const failed = status === 'failed' || status === 'dead';
+        setWASendResult({
+          ok: !failed,
+          text: failed
+            ? 'Pesan gagal terkirim ke gateway. Buka Notifikasi WhatsApp untuk mengirim ulang.'
+            : 'Pesan berhasil dikirim melalui WhatsApp gateway.',
+        });
+        if (!failed) setTimeout(() => setWAModal(null), 1200);
+      } else {
+        setWASendResult({ ok: false, text: res.message || 'Gagal mengirim pesan WhatsApp.' });
+      }
+    } catch (err) {
+      setWASendResult({ ok: false, text: err instanceof Error ? err.message : 'Terjadi kesalahan sistem.' });
+    } finally {
+      setIsSendingWA(false);
+    }
+  };
+
   const handleSendWA = (log: ViolationLog) => {
     if (!log.parent_phone) {
-      showToast('error', 'Nomor HP orang tua tidak ditemukan di data pendaftaran.');
+      showToast('error', 'Nomor HP orang tua tidak ditemukan di data Santri.');
       return;
     }
 
@@ -207,14 +292,18 @@ Tindakan: ${log.action_taken || '-'}
 Mohon kerja samanya untuk pembinaan santri yang lebih baik. Syukran.`;
     }
 
-    const encodedMessage = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${log.parent_phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
-    window.open(waUrl, '_blank');
+    openWAModal({
+      studentId: log.student_id,
+      name: log.student_name,
+      phone: log.parent_phone,
+      kind: 'violation',
+      message,
+    });
   };
 
   const handleSendWARekap = (p: StudentDisciplinePoint) => {
     if (!p.parent_phone) {
-      showToast('error', 'Nomor HP orang tua tidak ditemukan di data pendaftaran.');
+      showToast('error', 'Nomor HP orang tua tidak ditemukan di data Santri.');
       return;
     }
 
@@ -235,10 +324,88 @@ Status: *${getSanctionLevel(p.current_points).label}*
 Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
     }
 
-    const encodedMessage = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${p.parent_phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
-    window.open(waUrl, '_blank');
+    openWAModal({
+      studentId: p.student_id,
+      name: p.student_name,
+      phone: p.parent_phone,
+      kind: 'summary',
+      message,
+    });
   };
+
+  const waModalJSX = waModal ? (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <form onSubmit={submitWA} className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h3 className="text-lg font-black tracking-tight text-slate-800">Kirim WhatsApp ke Orang Tua</h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Penerima: <span className="font-semibold text-slate-700">{waModal.name}</span> &middot; {waModal.phone}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => !isSendingWA && setWAModal(null)}
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Tutup"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5">
+          <label htmlFor="wa-message" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+            Pesan (bisa diedit)
+          </label>
+          <textarea
+            id="wa-message"
+            value={waMessage}
+            onChange={(e) => { setWAMessage(e.target.value); setWASendResult(null); }}
+            rows={11}
+            maxLength={4096}
+            className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm leading-relaxed text-slate-800 transition-colors focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-100"
+            placeholder="Tulis pesan untuk orang tua..."
+          />
+          <div className="mt-1.5 flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">Dikirim via WhatsApp gateway &mdash; tidak membuka WhatsApp Web.</span>
+            <span className={waMessage.length > 4096 ? 'font-bold text-rose-600' : 'text-slate-400'}>
+              {waMessage.length}/4096
+            </span>
+          </div>
+
+          {waSendResult && (
+            <div className={`mt-4 flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm ${
+              waSendResult.ok
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-rose-200 bg-rose-50 text-rose-800'
+            }`}>
+              {waSendResult.ok ? <CheckCircle2 size={17} className="mt-0.5 shrink-0" /> : <AlertCircle size={17} className="mt-0.5 shrink-0" />}
+              <span className="leading-snug">{waSendResult.text}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50 px-6 py-4">
+          <button
+            type="button"
+            onClick={() => setWAModal(null)}
+            disabled={isSendingWA}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={isSendingWA || !waMessage.trim()}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {isSendingWA ? <RefreshCw size={15} className="animate-spin" /> : <Send size={15} />}
+            {isSendingWA ? 'Mengirim...' : 'Kirim via Gateway'}
+          </button>
+        </div>
+      </form>
+    </div>
+  ) : null;
 
   return (
     <div className="pb-10 font-outfit">
@@ -296,7 +463,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
             { label: 'Total Santri Terpantau', value: stats.total, icon: Users, tone: 'border-slate-100 bg-slate-50 text-slate-700', iconTone: 'bg-slate-100 text-slate-600' },
-            { label: 'Aman (> 85 Poin)', value: stats.safe, icon: ShieldCheck, tone: 'border-emerald-100 bg-emerald-50 text-emerald-700', iconTone: 'bg-emerald-100 text-emerald-600' },
+            { label: 'Aman (> 85 Poin)', value: stats.safe, icon: ShieldCheck, tone: 'border-sky-100 bg-sky-50 text-sky-700', iconTone: 'bg-sky-100 text-sky-600' },
             { label: 'Perlu Perhatian (56-85)', value: stats.warning, icon: ShieldAlert, tone: 'border-amber-100 bg-amber-50 text-amber-700', iconTone: 'bg-amber-100 text-amber-600' },
             { label: 'Kritis (≤ 55 Poin)', value: stats.danger, icon: AlertTriangle, tone: 'border-rose-100 bg-rose-50 text-rose-700', iconTone: 'bg-rose-100 text-rose-600' },
           ].map((stat) => (
@@ -327,7 +494,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
               <p className="mt-1 text-xs text-slate-400">Data akan muncul setelah Anda mencatat pelanggaran pertama.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>
@@ -369,7 +536,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
                         <td className="px-4 py-4 text-center">
                           <button 
                             onClick={() => handleSendWARekap(p)}
-                            className={`p-2 rounded-lg transition-all ${p.parent_phone ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-300 cursor-not-allowed'}`}
+                            className={`p-2 rounded-lg transition-all ${p.parent_phone ? 'text-sky-600 hover:bg-sky-50' : 'text-slate-300 cursor-not-allowed'}`}
                             title={p.parent_phone ? 'Kirim Rekap WA ke Ortu' : 'Nomor WA Ortu Tidak Ada'}
                           >
                             <MessageCircle size={18} />
@@ -396,7 +563,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
               <p className="mt-4 text-sm font-bold">Belum ada riwayat pelanggaran.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>
@@ -429,7 +596,7 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
                       <td className="px-4 py-4 text-center">
                         <button 
                           onClick={() => handleSendWA(log)}
-                          className={`p-2 rounded-lg transition-all ${log.parent_phone ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-300 cursor-not-allowed'}`}
+                          className={`p-2 rounded-lg transition-all ${log.parent_phone ? 'text-sky-600 hover:bg-sky-50' : 'text-slate-300 cursor-not-allowed'}`}
                           title={log.parent_phone ? 'Kirim Notifikasi WA ke Ortu' : 'Nomor WA Ortu Tidak Ada'}
                         >
                           <MessageSquare size={18} />
@@ -448,16 +615,31 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
       <Modal open={modalOpen} title="Catat Pelanggaran Baru" onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-slate-500">ID Santri *</label>
-            <input
-              type="number"
+            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-slate-500">Santri *</label>
+            <select
               required
-              min={1}
+              disabled={isLoadingSantri}
               value={form.student_id || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, student_id: Number(e.target.value) }))}
-              placeholder="Masukkan ID santri"
-              className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200 transition-all"
-            />
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="">
+                {isLoadingSantri
+                  ? 'Memuat daftar Santri...'
+                  : santriOptions.length === 0
+                    ? 'Tidak ada Santri aktif yang punya akun'
+                    : 'Pilih Santri'}
+              </option>
+              {santriOptions.map((s) => (
+                <option key={s.id} value={s.user_id ?? ''}>
+                  {s.name} — Kelas {s.class || '-'}
+                  {s.nis ? ` (NIS ${s.nis})` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+              Hanya Santri aktif yang sudah punya akun portal bisa dipilih.
+            </p>
           </div>
 
           <div>
@@ -538,6 +720,8 @@ Mohon pantau terus perkembangan kedisiplinan santri. Syukran.`;
           </div>
         </form>
       </Modal>
+
+      {waModalJSX}
     </div>
   );
 }

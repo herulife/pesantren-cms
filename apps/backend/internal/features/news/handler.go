@@ -318,6 +318,33 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "Berita berhasil diperbarui", nil)
 }
 
+func (h *Handler) SetPinned(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var req struct {
+		Pinned bool `json:"pinned"`
+	}
+	if err := validators.DecodeJSON(w, r, &req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
+		return
+	}
+	if err := h.repo.SetPinned(id, req.Pinned); err != nil {
+		logger.Error(r.Context(), "Internal Server Error", logger.Field{"error": err.Error()})
+		sendJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
+		return
+	}
+
+	adminID := claimUserID(r.Context().Value(auth.UserContextKey))
+	action := "UNPIN_NEWS"
+	msg := "Berita tidak lagi disematkan"
+	if req.Pinned {
+		action = "PIN_NEWS"
+		msg = "Berita disematkan di paling atas"
+	}
+	logger.RecordActivity(&adminID, action, fmt.Sprintf("%s ID %d", msg, id), r.RemoteAddr, r.UserAgent())
+
+	sendJSONResponse(w, http.StatusOK, true, msg, nil)
+}
+
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	if err := h.repo.SoftDelete(id); err != nil {
@@ -407,6 +434,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Put("/", h.Update)
 		r.Delete("/", h.Delete)
 		r.Put("/restore", h.Restore)
+		r.Put("/pin", h.SetPinned)
 		r.Delete("/force", h.ForceDelete)
 	})
 
@@ -428,4 +456,5 @@ type IRepository interface {
 	SoftDelete(id int) error
 	Restore(id int) error
 	ForceDelete(id int) error
+	SetPinned(id int, pinned bool) error
 }

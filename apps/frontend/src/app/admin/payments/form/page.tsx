@@ -19,7 +19,7 @@ function createInitialForm() {
 
 export default function PaymentFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
       <PaymentFormContent />
     </Suspense>
   );
@@ -45,8 +45,8 @@ function PaymentFormContent() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!formData.user_id || !formData.amount || !formData.description) {
-      showToast('error', 'Harap isi semua field wajib.');
+    if (!formData.user_id || !formData.amount || Number(formData.amount) <= 0 || !formData.description.trim()) {
+      showToast('error', 'Harap isi semua field wajib (santri, jumlah >0, keterangan).');
       return;
     }
 
@@ -78,7 +78,7 @@ function PaymentFormContent() {
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="animate-spin text-emerald-500" size={40} />
+        <Loader2 className="animate-spin text-sky-500" size={40} />
       </div>
     );
   }
@@ -89,12 +89,12 @@ function PaymentFormContent() {
         <button
           type="button"
           onClick={() => router.push('/admin/payments')}
-          className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-emerald-200 hover:text-emerald-600"
+          className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-sky-200 hover:text-sky-600"
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Form Pembayaran</p>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-sky-700">Form Pembayaran</p>
           <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 font-outfit">Tambah Pembayaran</h1>
           <p className="text-sm font-medium text-slate-500">Catat transaksi dalam halaman penuh supaya input lebih nyaman ditinjau.</p>
         </div>
@@ -105,12 +105,12 @@ function PaymentFormContent() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div className="space-y-3 md:col-span-2">
               <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <User size={12} /> Pilih Santri / User
+                <User size={12} /> Pilih Santri / User <span className="text-rose-500">*</span>
               </label>
               <select
                 value={formData.user_id}
                 onChange={(event) => setFormData((prev) => ({ ...prev, user_id: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className={`w-full rounded-xl border bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 ${!formData.user_id ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`}
               >
                 <option value="">-- Pilih User --</option>
                 {users.map((user) => (
@@ -119,19 +119,21 @@ function PaymentFormContent() {
                   </option>
                 ))}
               </select>
+              {!formData.user_id ? <span className="text-[10px] font-bold text-rose-500">Wajib pilih santri</span> : null}
             </div>
 
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <Receipt size={12} /> Jumlah
+                <Receipt size={12} /> Jumlah <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 value={formData.amount}
                 onChange={(event) => setFormData((prev) => ({ ...prev, amount: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className={`w-full rounded-xl border bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 ${!formData.amount || Number(formData.amount) <= 0 ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`}
                 placeholder="500000"
               />
+              {!formData.amount || Number(formData.amount) <= 0 ? <span className="text-[10px] font-bold text-rose-500">Wajib isi jumlah &gt;0</span> : null}
             </div>
 
             <div className="space-y-3">
@@ -142,19 +144,20 @@ function PaymentFormContent() {
                 type="date"
                 value={formData.payment_date}
                 onChange={(event) => setFormData((prev) => ({ ...prev, payment_date: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               />
             </div>
 
             <div className="space-y-3 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Keterangan</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Keterangan <span className="text-rose-500">*</span></label>
               <textarea
                 rows={4}
                 value={formData.description}
                 onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-medium text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className={`w-full rounded-xl border bg-slate-50 px-6 py-4 font-medium text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 ${!formData.description.trim() ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`}
                 placeholder="Contoh: Pembayaran SPP Bulan April 2026"
               />
+              {!formData.description.trim() ? <span className="text-[10px] font-bold text-rose-500">Wajib diisi</span> : null}
             </div>
 
             <div className="space-y-3">
@@ -164,7 +167,7 @@ function PaymentFormContent() {
               <select
                 value={formData.method}
                 onChange={(event) => setFormData((prev) => ({ ...prev, method: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               >
                 <option value="manual">Tunai / Manual</option>
                 <option value="transfer">Transfer Bank</option>
@@ -177,7 +180,7 @@ function PaymentFormContent() {
               <select
                 value={formData.status}
                 onChange={(event) => setFormData((prev) => ({ ...prev, status: event.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               >
                 <option value="success">Sukses (Lunas)</option>
                 <option value="pending">Pending</option>
@@ -198,7 +201,7 @@ function PaymentFormContent() {
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-600 disabled:opacity-50"
+            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-sky-600 disabled:opacity-50"
           >
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             Simpan Transaksi

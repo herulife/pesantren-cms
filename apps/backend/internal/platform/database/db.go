@@ -1,13 +1,16 @@
 package database
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
 
@@ -29,6 +32,9 @@ func Connect(dbPath string) {
 		dbPath = absPath
 	}
 
+	if !strings.Contains(dbPath, "?") {
+		dbPath += "?_txlock=immediate"
+	}
 	DB, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
@@ -79,7 +85,7 @@ func createTables() {
 		role TEXT NOT NULL DEFAULT 'user',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		whatsapp TEXT DEFAULT '',
-		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'pimpinan', 'wali_kelas', 'guru', 'ustadz', 'user'))
+		CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'))
 	);
 
 	CREATE TABLE IF NOT EXISTS faqs (
@@ -122,6 +128,177 @@ func createTables() {
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	);
 
+	CREATE TABLE IF NOT EXISTS spp_bills (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		santri_id INTEGER NOT NULL,
+		period TEXT NOT NULL,
+		amount INTEGER NOT NULL,
+		paid_amount INTEGER NOT NULL DEFAULT 0,
+		status TEXT NOT NULL DEFAULT 'unpaid',
+		due_date TEXT DEFAULT '',
+		paid_method TEXT DEFAULT '',
+		paid_at DATETIME,
+		notes TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (santri_id) REFERENCES santri(id),
+		UNIQUE(santri_id, period)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_spp_bills_period ON spp_bills(period);
+
+	CREATE TABLE IF NOT EXISTS iuran_bills (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		santri_id INTEGER NOT NULL,
+		name TEXT NOT NULL DEFAULT '',
+		period TEXT NOT NULL,
+		amount INTEGER NOT NULL,
+		paid_amount INTEGER NOT NULL DEFAULT 0,
+		status TEXT NOT NULL DEFAULT 'unpaid',
+		due_date TEXT DEFAULT '',
+		paid_method TEXT DEFAULT '',
+		paid_at DATETIME,
+		notes TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (santri_id) REFERENCES santri(id),
+		UNIQUE(santri_id, name, period)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_iuran_bills_period ON iuran_bills(period);
+	CREATE INDEX IF NOT EXISTS idx_iuran_bills_name ON iuran_bills(name);
+
+	CREATE TABLE IF NOT EXISTS classes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
+		name TEXT NOT NULL UNIQUE,
+		jenjang TEXT DEFAULT '',
+		wali_name TEXT DEFAULT '',
+		academic_year TEXT DEFAULT '',
+		is_active INTEGER NOT NULL DEFAULT 1,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS kas_categories (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
+		name TEXT NOT NULL,
+		kind TEXT NOT NULL DEFAULT 'masuk',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		updated_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		is_auto_source INTEGER NOT NULL DEFAULT 0,
+		UNIQUE(name, kind)
+	);
+
+	CREATE TABLE IF NOT EXISTS receipts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		receipt_no TEXT NOT NULL DEFAULT '',
+		santri_id INTEGER NOT NULL,
+		period TEXT NOT NULL,
+		description TEXT NOT NULL DEFAULT '',
+		total INTEGER NOT NULL DEFAULT 0,
+		method TEXT NOT NULL DEFAULT '',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (santri_id) REFERENCES santri(id),
+		UNIQUE(santri_id, period)
+	);
+
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_no ON receipts(receipt_no);
+
+	CREATE TABLE IF NOT EXISTS payment_transactions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
+		date TEXT NOT NULL,
+		santri_id INTEGER NOT NULL,
+		bill_type TEXT NOT NULL DEFAULT 'SPP',
+		bill_id INTEGER NOT NULL DEFAULT 0,
+		bill_period TEXT NOT NULL DEFAULT '',
+		description TEXT NOT NULL DEFAULT '',
+		amount INTEGER NOT NULL,
+		method TEXT NOT NULL DEFAULT 'Tunai',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (santri_id) REFERENCES santri(id)
+	);
+
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_paytx_code ON payment_transactions(code);
+	CREATE INDEX IF NOT EXISTS idx_paytx_santri ON payment_transactions(santri_id);
+	CREATE INDEX IF NOT EXISTS idx_paytx_date ON payment_transactions(date DESC);
+
+	CREATE TABLE IF NOT EXISTS kas_transactions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		code TEXT NOT NULL DEFAULT '',
+		date TEXT NOT NULL,
+		kind TEXT NOT NULL DEFAULT 'masuk',
+		category_id INTEGER NOT NULL DEFAULT 0,
+		amount INTEGER NOT NULL,
+		method TEXT DEFAULT 'manual',
+		notes TEXT DEFAULT '',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_kas_tx_date ON kas_transactions(date DESC);
+	CREATE INDEX IF NOT EXISTS idx_kas_tx_kind ON kas_transactions(kind);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_kas_tx_code ON kas_transactions(code);
+
+	CREATE TABLE IF NOT EXISTS employees (
+		code TEXT PRIMARY KEY,
+		name TEXT NOT NULL,
+		gender TEXT DEFAULT '',
+		birth_place TEXT DEFAULT '',
+		birth_date TEXT DEFAULT '',
+		phone TEXT DEFAULT '',
+		email TEXT DEFAULT '',
+		kind TEXT NOT NULL DEFAULT 'Guru',
+		photo_url TEXT DEFAULT '',
+		is_active INTEGER NOT NULL DEFAULT 1,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS raw_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		fp_id TEXT NOT NULL,
+		date TEXT NOT NULL,
+		time TEXT NOT NULL DEFAULT '',
+		verify TEXT DEFAULT '',
+		machine TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(fp_id, date, time)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_rawlogs_date ON raw_logs(date DESC);
+
+	CREATE TABLE IF NOT EXISTS teacher_attendance (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		employee_code TEXT NOT NULL,
+		date TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT 'Masuk',
+		notes TEXT DEFAULT '',
+		time_in TEXT DEFAULT '',
+		time_out TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (employee_code) REFERENCES employees(code),
+		UNIQUE(employee_code, date)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_teacher_att_date ON teacher_attendance(date DESC);
+
+	CREATE TABLE IF NOT EXISTS academic_years (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL UNIQUE,
+		start_date TEXT DEFAULT '',
+		end_date TEXT DEFAULT '',
+		is_active INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
 	CREATE TABLE IF NOT EXISTS activity_logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER,
@@ -151,11 +328,22 @@ func createTables() {
 		uts_score REAL DEFAULT 0,
 		uas_score REAL DEFAULT 0,
 		task_score REAL DEFAULT 0,
+		uh_score REAL DEFAULT 0,
 		final_score REAL DEFAULT 0,
 		grade_letter TEXT DEFAULT '',
 		notes TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (student_id) REFERENCES users(id),
+		FOREIGN KEY (subject_id) REFERENCES subjects(id)
+	);
+
+	CREATE TABLE IF NOT EXISTS subject_grade_weights (
+		subject_id INTEGER PRIMARY KEY,
+		uts_weight REAL DEFAULT 25,
+		uas_weight REAL DEFAULT 30,
+		task_weight REAL DEFAULT 25,
+		uh_weight REAL DEFAULT 20,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (subject_id) REFERENCES subjects(id)
 	);
 
@@ -166,7 +354,7 @@ func createTables() {
 		status TEXT NOT NULL DEFAULT 'hadir',
 		notes TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (student_id) REFERENCES users(id)
+		FOREIGN KEY (student_id) REFERENCES santri(id)
 	);
 
 	CREATE TABLE IF NOT EXISTS tahfidz_progress (
@@ -179,9 +367,26 @@ func createTables() {
 		status TEXT DEFAULT 'proses',
 		musyrif_notes TEXT DEFAULT '',
 		evaluation_date TEXT NOT NULL,
+		semester TEXT DEFAULT '',
+		academic_year TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (student_id) REFERENCES users(id)
 	);
+
+	CREATE TABLE IF NOT EXISTS arbain_progress (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		student_id INTEGER NOT NULL,
+		hadith_number INTEGER NOT NULL,
+		status TEXT NOT NULL DEFAULT 'proses',
+		nilai INTEGER DEFAULT 0,
+		notes TEXT DEFAULT '',
+		evaluation_date TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (student_id) REFERENCES users(id)
+	);
+
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_arbain_student_hadith
+		ON arbain_progress(student_id, hadith_number);
 
 	CREATE TABLE IF NOT EXISTS gallery (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -277,6 +482,7 @@ func createTables() {
 		category_id INTEGER,
 		image_url TEXT,
 		status TEXT DEFAULT 'draft',
+		is_pinned INTEGER NOT NULL DEFAULT 0,
 		author_id INTEGER,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -345,19 +551,77 @@ func createTables() {
 		mother_phone TEXT,
 		school_origin TEXT,
 		program_choice TEXT,
+		jenjang TEXT DEFAULT '',
+		category TEXT DEFAULT 'reguler',
+		yatim_doc_url TEXT DEFAULT '',
+		sktm_doc_url TEXT DEFAULT '',
 		kk_url TEXT,
 		ijazah_url TEXT,
 		pasfoto_url TEXT,
+		akta_url TEXT DEFAULT '',
+		ktp_ortu_url TEXT DEFAULT '',
+		surat_kelulusan_url TEXT DEFAULT '',
+		foto_pendaftaran_url TEXT DEFAULT '',
 		payment_proof_url TEXT DEFAULT '',
 		payment_amount INTEGER DEFAULT 0,
 		payment_date TEXT DEFAULT '',
 		payment_status TEXT DEFAULT 'unpaid',
 		payment_note TEXT DEFAULT '',
 		status TEXT DEFAULT 'pending',
+		rejection_note TEXT DEFAULT '',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	);
+
+	CREATE TABLE IF NOT EXISTS psb_payments (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		registration_id INTEGER NOT NULL,
+		user_id INTEGER NOT NULL,
+		code TEXT NOT NULL UNIQUE,
+		amount INTEGER NOT NULL,
+		paid_at TEXT DEFAULT '',
+		method TEXT NOT NULL DEFAULT 'transfer',
+		proof_url TEXT DEFAULT '',
+		status TEXT NOT NULL DEFAULT 'paid',
+		notes TEXT DEFAULT '',
+		created_by INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (registration_id) REFERENCES registrations(id)
+	);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_payments_reg ON psb_payments(registration_id);
+	CREATE INDEX IF NOT EXISTS idx_psb_payments_user ON psb_payments(user_id);
+	CREATE INDEX IF NOT EXISTS idx_psb_payments_date ON psb_payments(paid_at);
+
+	CREATE TABLE IF NOT EXISTS otp_codes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		phone TEXT NOT NULL,
+		purpose TEXT NOT NULL DEFAULT 'psb',
+		code_hash TEXT NOT NULL,
+		attempts INTEGER NOT NULL DEFAULT 0,
+		max_attempts INTEGER NOT NULL DEFAULT 5,
+		expires_at DATETIME NOT NULL,
+		consumed_at DATETIME,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE INDEX IF NOT EXISTS idx_otp_codes_phone ON otp_codes(phone, purpose, created_at DESC);
+
+	CREATE TABLE IF NOT EXISTS invoices (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		registration_id INTEGER NOT NULL DEFAULT 0,
+		code TEXT NOT NULL UNIQUE,
+		amount INTEGER NOT NULL DEFAULT 0,
+		method TEXT NOT NULL DEFAULT 'transfer',
+		status TEXT NOT NULL DEFAULT 'pending',
+		gateway_tx_id TEXT NOT NULL DEFAULT '',
+		webhook_received_at TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_code ON invoices(code);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_gateway_tx ON invoices(gateway_tx_id) WHERE gateway_tx_id <> '';
+	CREATE INDEX IF NOT EXISTS idx_invoices_reg ON invoices(registration_id);
+
 
 	CREATE TABLE IF NOT EXISTS settings (
 		key TEXT PRIMARY KEY,
@@ -472,7 +736,6 @@ func createTables() {
 		birth_date TEXT,
 		address TEXT,
 		class TEXT NOT NULL,
-		jenjang TEXT DEFAULT '',
 		angkatan TEXT,
 		status TEXT DEFAULT 'aktif',
 		category TEXT DEFAULT 'reguler',
@@ -487,57 +750,145 @@ func createTables() {
 		mother_occupation TEXT DEFAULT '',
 		registration_id INTEGER DEFAULT 0,
 		photo_url TEXT,
+		kk_url TEXT DEFAULT '',
+		akta_url TEXT DEFAULT '',
+		ktp_ortu_url TEXT DEFAULT '',
+		ijazah_url TEXT DEFAULT '',
+		surat_kelulusan_url TEXT DEFAULT '',
+		pasfoto_url TEXT DEFAULT '',
+		foto_pendaftaran_url TEXT DEFAULT '',
+		yatim_doc_url TEXT DEFAULT '',
+		sktm_doc_url TEXT DEFAULT '',
 		user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
-	CREATE TABLE IF NOT EXISTS classes (
+	CREATE TABLE IF NOT EXISTS project_subprojects (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		code TEXT NOT NULL DEFAULT '',
-		name TEXT NOT NULL UNIQUE,
-		jenjang TEXT DEFAULT '',
-		wali_name TEXT DEFAULT '',
-		wali_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-		academic_year TEXT DEFAULT '',
-		is_active INTEGER NOT NULL DEFAULT 1,
+		name TEXT NOT NULL,
+		code TEXT UNIQUE,
+		description TEXT,
+		weight REAL NOT NULL,
+		order_index INTEGER DEFAULT 0,
+		is_active INTEGER DEFAULT 1,
+		is_demo INTEGER DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
-	CREATE TABLE IF NOT EXISTS academic_years (
+	CREATE TABLE IF NOT EXISTS project_activities (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL UNIQUE,
-		start_date TEXT DEFAULT '',
-		end_date TEXT DEFAULT '',
-		is_active INTEGER NOT NULL DEFAULT 0,
+		sub_project_id INTEGER NOT NULL REFERENCES project_subprojects(id) ON DELETE CASCADE,
+		name TEXT NOT NULL,
+		code TEXT,
+		description TEXT,
+		tujuan TEXT,
+		indikator TEXT,
+		weight REAL NOT NULL,
+		order_index INTEGER DEFAULT 0,
+		is_active INTEGER DEFAULT 1,
+		periode TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
-	CREATE TABLE IF NOT EXISTS audit_logs (
+	CREATE TABLE IF NOT EXISTS project_indicators (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		request_id TEXT,
-		actor_id INTEGER,
-		actor_role TEXT,
-		action TEXT NOT NULL,
-		entity_type TEXT,
-		entity_id TEXT,
-		before_json TEXT,
-		after_json TEXT,
-		ip_address TEXT,
-		user_agent TEXT,
-		result TEXT DEFAULT 'ok',
+		activity_id INTEGER NOT NULL REFERENCES project_activities(id) ON DELETE CASCADE,
+		name TEXT NOT NULL,
+		weight REAL NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
+
+	CREATE TABLE IF NOT EXISTS kesantrian_aspek (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		student_id INTEGER NOT NULL,
+		aspek TEXT NOT NULL,
+		semester TEXT NOT NULL,
+		academic_year TEXT NOT NULL,
+		score REAL NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (student_id) REFERENCES users(id),
+		UNIQUE(student_id, aspek, semester, academic_year)
+	);
+
+	CREATE TABLE IF NOT EXISTS raports (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		student_id INTEGER NOT NULL,
+		semester TEXT NOT NULL,
+		academic_year TEXT NOT NULL,
+		mapel_score REAL NOT NULL DEFAULT 0,
+		project_score REAL NOT NULL DEFAULT 0,
+		kesantrian_score REAL NOT NULL DEFAULT 0,
+		final_score REAL NOT NULL DEFAULT 0,
+		predikat TEXT DEFAULT '',
+		status TEXT DEFAULT 'draft',
+		notes TEXT DEFAULT '',
+		generated_by INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (student_id) REFERENCES users(id),
+		UNIQUE(student_id, semester, academic_year)
+	);
+
+	CREATE TABLE IF NOT EXISTS donation_campaigns (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		description TEXT DEFAULT '',
+		target_amount REAL DEFAULT 0,
+		collected_amount REAL DEFAULT 0,
+		image_url TEXT DEFAULT '',
+		is_active INTEGER DEFAULT 1,
+		end_date DATETIME,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS donations (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		campaign_id INTEGER,
+		donor_name TEXT NOT NULL,
+		donor_phone TEXT DEFAULT '',
+		amount REAL NOT NULL,
+		payment_method TEXT DEFAULT 'transfer',
+		proof_url TEXT DEFAULT '',
+		status TEXT DEFAULT 'pending',
+		verified_at DATETIME,
+		verified_by INTEGER,
+		wa_sent INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY(campaign_id) REFERENCES donation_campaigns(id) ON DELETE SET NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS donors (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		address TEXT DEFAULT '',
+		phone TEXT DEFAULT '',
+		notes TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_donors_name ON donors(name);
 
 	CREATE INDEX IF NOT EXISTS idx_santri_nis ON santri(nis);
 	CREATE INDEX IF NOT EXISTS idx_santri_class ON santri(class);
 	CREATE INDEX IF NOT EXISTS idx_santri_status ON santri(status);
 	CREATE INDEX IF NOT EXISTS idx_santri_name ON santri(name);
-	CREATE INDEX IF NOT EXISTS idx_santri_user ON santri(user_id);
-	CREATE INDEX IF NOT EXISTS idx_classes_wali_user ON classes(wali_user_id);
-	CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id, created_at DESC);
+
+	CREATE TABLE IF NOT EXISTS notes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		url_id TEXT NOT NULL,
+		title TEXT NOT NULL DEFAULT '',
+		content TEXT NOT NULL,
+		delete_token TEXT NOT NULL DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		expires_at DATETIME
+	);
+
 	`
 
 	_, err := DB.Exec(query)
@@ -546,8 +897,25 @@ func createTables() {
 	}
 
 	addColumnIfNotExists("users", "whatsapp", "TEXT DEFAULT ''")
+	addColumnIfNotExists("news", "is_pinned", "INTEGER DEFAULT 0")
 	addColumnIfNotExists("users", "last_login_at", "DATETIME")
-	addColumnIfNotExists("classes", "wali_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL")
+	addColumnIfNotExists("users", "token_version", "INTEGER NOT NULL DEFAULT 0")
+	addColumnIfNotExists("users", "photo_url", "TEXT")
+	addColumnIfNotExists("payment_transactions", "idempotency_key", "TEXT")
+	addColumnIfNotExists("receipts", "idempotency_key", "TEXT")
+	addColumnIfNotExists("kas_transactions", "idempotency_key", "TEXT")
+	addColumnIfNotExists("donations", "idempotency_key", "TEXT")
+	// Penanda "WA donasi sudah pernah dikirim" — TIDAK pernah di-reset saat
+	// verifikasi dibatalkan, supaya verify ulang tidak mengirim pesan dobel.
+	addColumnIfNotExists("donations", "wa_sent", "INTEGER NOT NULL DEFAULT 0")
+	// Backfill: donasi yang sudah verified saat kolom ini dibuat (semua data
+	// lama) sudah melewati momen verifikasi pertama, jadi ditandai "sudah
+	// diinformasikan". Tanpa ini, unverify -> verify ulang akan mengirim WA
+	// dobel ke donatur lama. Idempoten: VerifyDonation selalu menulis 1 untuk
+	// donasi verified, jadi baris yang tersentuh di sini hanya data pra-Jilid 81.
+	_, _ = DB.Exec(`UPDATE donations SET wa_sent = 1 WHERE status = 'verified' AND wa_sent = 0`)
+	addColumnIfNotExists("kas_transactions", "voided", "INTEGER NOT NULL DEFAULT 0")
+	addColumnIfNotExists("kas_transactions", "void_reason", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("gallery", "album_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("gallery", "album_slug", "TEXT DEFAULT ''")
@@ -559,6 +927,37 @@ func createTables() {
 	addColumnIfNotExists("videos", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 	addColumnIfNotExists("videos", "series_name", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "series_slug", "TEXT DEFAULT ''")
+	addColumnIfNotExists("iuran_bills", "name", "TEXT DEFAULT ''")
+	addColumnIfNotExists("kas_transactions", "code", "TEXT DEFAULT ''")
+	addColumnIfNotExists("kas_categories", "updated_by", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("kas_categories", "created_by", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("kas_categories", "code", "TEXT DEFAULT ''")
+	addColumnIfNotExists("kas_categories", "is_auto_source", "INTEGER NOT NULL DEFAULT 0")
+
+	// Jilid 75: kategori kas bernama SPP / Iuran / Donasi / Pendaftaran PSB
+	// adalah SUMBER OTOMATIS ringkasan kas (spp_bills / iuran_bills /
+	// donations / psb_payments). Kalau uang yang sama ikut dicatat manual
+	// lewat kategori itu, totalnya terhitung 2x karena Income = Spp + Iuran +
+	// Donasi + Pendaftaran PSB + Kas. Tandai supaya Summary bisa
+	// mengecualikannya. Transaksi yang dikecualikan tetap ditampilkan di Papan Kas
+	// sebagai "sudah termasuk hitungan sumber", bukan dianggap hilang.
+	if _, err := DB.Exec(`UPDATE kas_categories SET is_auto_source = 1
+		WHERE kind = 'masuk' AND is_auto_source = 0
+		  AND LOWER(TRIM(name)) IN ('spp', 'iuran', 'donasi', 'donation', 'pembayaran spp',
+		    'pendaftaran', 'pendaftaran psb', 'biaya pendaftaran', 'psb', 'daftar ulang')`); err != nil {
+		log.Printf("WARN: gagal menandai kategori kas auto-source: %v", err)
+	}
+	addColumnIfNotExists("spp_bills", "payment_proof", "TEXT DEFAULT ''")
+	addColumnIfNotExists("spp_bills", "pending_amount", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("iuran_bills", "payment_proof", "TEXT DEFAULT ''")
+	addColumnIfNotExists("iuran_bills", "pending_amount", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("receipts", "updated_at", "DATETIME")
+	addColumnIfNotExists("payment_transactions", "bill_period", "TEXT DEFAULT ''")
+	addColumnIfNotExists("classes", "code", "TEXT DEFAULT ''")
+	addColumnIfNotExists("classes", "wali_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL")
+	addColumnIfNotExists("teachers", "user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL")
+	addColumnIfNotExists("classes", "wali_name", "TEXT DEFAULT ''")
+	addColumnIfNotExists("classes", "academic_year", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "event_date", "TEXT DEFAULT ''")
 	addColumnIfNotExists("videos", "is_featured", "BOOLEAN DEFAULT 0")
 	addColumnIfNotExists("facilities", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
@@ -582,20 +981,93 @@ func createTables() {
 	addColumnIfNotExists("registrations", "payment_date", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "payment_status", "TEXT DEFAULT 'unpaid'")
 	addColumnIfNotExists("registrations", "payment_note", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "rejection_note", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "test_date", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "test_location", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "test_score", "INTEGER")
+	addColumnIfNotExists("registrations", "test_note", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "re_registration_deadline", "TEXT DEFAULT ''")
 	addColumnIfNotExists("registrations", "updated_at", "DATETIME")
 	addColumnIfNotExists("settings", "value", "TEXT")
 	addColumnIfNotExists("settings", "description", "TEXT")
 	addColumnIfNotExists("settings", "updated_at", "DATETIME")
 	addColumnIfNotExists("teachers", "email", "TEXT DEFAULT ''")
 	addColumnIfNotExists("teachers", "whatsapp", "TEXT DEFAULT ''")
+	addColumnIfNotExists("subjects", "weight", "REAL DEFAULT 100")
+	addColumnIfNotExists("subjects", "kkm", "REAL DEFAULT 75")
+	addColumnIfNotExists("subjects", "sort_order", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("subjects", "is_active", "INTEGER DEFAULT 1")
+	addColumnIfNotExists("donations", "donor_id", "INTEGER")
+	addColumnIfNotExists("donations", "type", "TEXT DEFAULT ''")
+	addColumnIfNotExists("donations", "notes", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "category", "TEXT DEFAULT 'reguler'")
+	addColumnIfNotExists("registrations", "jenjang", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "jenjang", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "yatim_doc_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("notes", "owner_key", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "sktm_doc_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "akta_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "ktp_ortu_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "surat_kelulusan_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "foto_pendaftaran_url", "TEXT DEFAULT ''")
+	_, _ = DB.Exec("UPDATE registrations SET program_choice='tahfidz' WHERE lower(program_choice)='tahfidz'")
+	addColumnIfNotExists("employees", "photo_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "registration_id", "INTEGER DEFAULT 0")
+	addColumnIfNotExists("santri", "mother_phone", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "mother_name", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "father_phone", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "father_name", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "nik", "TEXT DEFAULT ''")
+	// Jilid 84 (E-Rapor): NISN = Nomor Induk Siswa Nasional (RDM/EMIS Kemenag).
+	// Registrasi PSB menyimpannya lebih dulu supaya bisa ikut carry-over ke
+	// santri saat pendaftar diterima (AcceptToSantri).
+	addColumnIfNotExists("santri", "nisn", "TEXT DEFAULT ''")
+	addColumnIfNotExists("registrations", "nisn", "TEXT DEFAULT ''")
+	// Kategori Santri: reguler | yatim | dhuafa. Kolom ini disinkronkan dari
+	// registrations.category saat pendaftar PSB naik menjadi Santri
+	// (lihat psb.AcceptToSantri), jadi ejaan nilainya harus sama dengan PSB.
+	addColumnIfNotExists("santri", "category", "TEXT DEFAULT 'reguler'")
+	// Dua kolom ini sudah dipakai query di features/santri tapi belum pernah
+	// terdaftar di db.go (pernah ditambahkan manual ke DB prod saja), sehingga
+	// DB fresh akan gagal saat SELECT. Ditambahkan di sini agar parity.
+	addColumnIfNotExists("santri", "father_occupation", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "mother_occupation", "TEXT DEFAULT ''")
+	// Jilid 93: dokumen santri diunggah dari form admin (Tambah/Edit Santri),
+	// bukan lagi lewat wizard PSB. Portal memakai kolom ini untuk tampil
+	// read-only, sehingga akun santri/wali tidak perlu mengisi ulang dokumen.
+	addColumnIfNotExists("santri", "kk_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "akta_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "ktp_ortu_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "ijazah_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "surat_kelulusan_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "pasfoto_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "foto_pendaftaran_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "yatim_doc_url", "TEXT DEFAULT ''")
+	addColumnIfNotExists("santri", "sktm_doc_url", "TEXT DEFAULT ''")
+
+	// Jilid 90: progres tahfidz ikut komponen eRapor, jadi tiap baris wajib
+	// punya semester + tahun ajaran supaya bisa digabung dengan rapor.
+	// Aturan turunan (sama persis dengan handler Create/Update Tahfidz dan
+	// dengan backfill di bawah): bulan evaluasi >= Juli -> semester 1 (TA
+	// y/y+1), bulan < Juli -> semester 2 (TA y-1/y).
+	addColumnIfNotExists("tahfidz_progress", "semester", "TEXT DEFAULT ''")
+	addColumnIfNotExists("tahfidz_progress", "academic_year", "TEXT DEFAULT ''")
+	// Backfill data lama dari evaluation_date. Idempoten (WHERE kosong saja),
+	// jadi baris yang sudah punya periode tidak ditimpa.
+	_, _ = DB.Exec(`UPDATE tahfidz_progress
+		SET semester = CASE WHEN CAST(substr(evaluation_date, 6, 2) AS INTEGER) >= 7 THEN '1' ELSE '2' END,
+		    academic_year = CASE WHEN CAST(substr(evaluation_date, 6, 2) AS INTEGER) >= 7
+		                         THEN substr(evaluation_date, 1, 4) || '/' || (CAST(substr(evaluation_date, 1, 4) AS INTEGER) + 1)
+		                         ELSE (CAST(substr(evaluation_date, 1, 4) AS INTEGER) - 1) || '/' || substr(evaluation_date, 1, 4) END
+		WHERE academic_year IS NULL OR academic_year = ''`)
 	_, _ = DB.Exec("UPDATE registrations SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 	_, _ = DB.Exec("UPDATE settings SET updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL OR updated_at = ''")
 
-	// Role escalation is intentionally NOT automated.
-	// A previous build auto-promoted every "admin" user to "superadmin" on each boot,
-	// which turned any compromised "admin" login into a full superadmin takeover
-	// (see /audit-hacked incident report). Promotion must be an explicit, audited
-	// action performed through the superadmin-only user management endpoints.
+	// Auto-migrate: upgrade "admin" role to "superadmin" for RBAC
+	res, _ := DB.Exec("UPDATE users SET role = 'superadmin' WHERE role = 'admin'")
+	if affected, _ := res.RowsAffected(); affected > 0 {
+		log.Printf("[DB] RBAC Migration: %d 'admin' users upgraded to 'superadmin'", affected)
+	}
 }
 
 func runMigrations() {
@@ -608,6 +1080,13 @@ func runMigrations() {
 			sql: `CREATE TABLE IF NOT EXISTS schema_migrations (
 				name TEXT PRIMARY KEY,
 				applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);`,
+		},
+		{
+			name: "create_revoked_tokens_table",
+			sql: `CREATE TABLE IF NOT EXISTS revoked_tokens (
+				jti TEXT PRIMARY KEY,
+				expires_at INTEGER NOT NULL
 			);`,
 		},
 		{
@@ -680,7 +1159,7 @@ func runMigrations() {
 		},
 		{
 			name: "attendance_student_date_index",
-			sql:  `CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance(student_id, date DESC);`,
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance(student_id, date DESC);`,
 		},
 		{
 			name: "grades_student_subject_index",
@@ -691,54 +1170,238 @@ func runMigrations() {
 			sql:  `CREATE INDEX IF NOT EXISTS idx_tahfidz_student_eval_date ON tahfidz_progress(student_id, evaluation_date DESC);`,
 		},
 		{
-			name: "violation_logs_student_index",
-			sql:  `CREATE INDEX IF NOT EXISTS idx_violation_logs_student ON violation_logs(student_id);`,
+			name: "kas_default_categories",
+			sql:  `INSERT OR IGNORE INTO kas_categories (name, kind) VALUES ('SPP','masuk'),('Iuran','masuk'),('Donasi','masuk'),('Operasional','keluar'),('Gaji','keluar');`,
 		},
 		{
-			name: "wallet_transactions_wallet_index",
-			sql:  `CREATE INDEX IF NOT EXISTS idx_wallet_transactions_wallet ON wallet_transactions(wallet_id);`,
+			name: "school_classes_backfill",
+			sql:  `INSERT OR IGNORE INTO classes (name) SELECT DISTINCT TRIM(class) FROM santri WHERE TRIM(COALESCE(class,''))<>'';`,
 		},
 		{
-			name: "create_revoked_tokens_table",
-			sql: `CREATE TABLE IF NOT EXISTS revoked_tokens (
-				jti TEXT PRIMARY KEY,
-				expires_at INTEGER NOT NULL
-			);`,
+			name: "spp_bills_santri_status_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_spp_bills_santri_status ON spp_bills(santri_id, status);`,
 		},
 		{
-			name: "create_donation_campaigns_table",
-			sql: `CREATE TABLE IF NOT EXISTS donation_campaigns (
+			name: "spp_bills_paid_at_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_spp_bills_paid_at ON spp_bills(paid_at);`,
+		},
+		{
+			name: "iuran_bills_santri_status_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_iuran_bills_santri_status ON iuran_bills(santri_id, status);`,
+		},
+		{
+			name: "iuran_bills_paid_at_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_iuran_bills_paid_at ON iuran_bills(paid_at);`,
+		},
+		{
+			name: "paytx_bill_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_paytx_bill ON payment_transactions(bill_type, bill_id);`,
+		},
+		{
+			name: "paytx_bill_period_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_paytx_bill_period ON payment_transactions(bill_period);`,
+		},
+		{
+			name: "kas_tx_category_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_kas_tx_category ON kas_transactions(category_id);`,
+		},
+		{
+			name: "santri_user_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_santri_user ON santri(user_id);`,
+		},
+		{
+			name: "receipts_no_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_no_unique ON receipts(receipt_no);`,
+		},
+		{
+			name: "paytx_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_paytx_idem_unique ON payment_transactions(idempotency_key);`,
+		},
+		{
+			name: "receipts_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_idem_unique ON receipts(idempotency_key);`,
+		},
+		{
+			name: "kas_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_kas_idem_unique ON kas_transactions(idempotency_key);`,
+		},
+		{
+			name: "donations_idempotency_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_idem_unique ON donations(idempotency_key);`,
+		},
+		{
+			name: "audit_logs_table",
+			sql: `CREATE TABLE IF NOT EXISTS audit_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		request_id TEXT,
+		actor_id INTEGER,
+		actor_role TEXT,
+		action TEXT NOT NULL,
+		entity_type TEXT,
+		entity_id TEXT,
+		before_json TEXT,
+		after_json TEXT,
+		ip_address TEXT,
+		user_agent TEXT,
+		result TEXT DEFAULT 'ok',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`,
+		},
+		{
+			name: "audit_logs_actor_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id, created_at DESC);`,
+		},
+		{
+			name: "audit_logs_entity_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);`,
+		},
+		{
+			name: "grades_cbt_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_grades_unique ON grades(student_id, subject_id, semester, academic_year);`,
+		},
+		{
+			name: "exam_answers_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_answers_unique ON exam_answers(session_id, question_id);`,
+		},
+		{
+			name: "notes_url_id_index",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_url_id ON notes(url_id);`,
+		},
+		{
+			name: "notes_owner_key_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_notes_owner_key ON notes(owner_key);`,
+		},
+		{
+			name: "notes_expires_at_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_notes_expires_at ON notes(expires_at);`,
+		},
+		{
+			name: "wa_notifications_table",
+			sql: `CREATE TABLE IF NOT EXISTS wa_notifications (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			registration_id INTEGER,
+			kind TEXT NOT NULL DEFAULT 'psb',
+			phone TEXT NOT NULL,
+			message TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			error TEXT,
+			attempts INTEGER NOT NULL DEFAULT 0,
+			max_attempts INTEGER NOT NULL DEFAULT 3,
+			next_retry_at TEXT,
+			sent_at TEXT,
+			last_attempt_at TEXT,
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);`,
+		},
+		{
+			name: "wa_notifications_registration_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_reg ON wa_notifications(registration_id);`,
+		},
+		{
+			name: "wa_notifications_status_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_wa_notif_status ON wa_notifications(status);`,
+		},
+		{
+			// Jilid 76: satu akun wali boleh dipakai BEBAS SANTRI se-JAKARTA
+			// (sibling satu keluarga berbagi 1 login). Sebelumnya
+			// idx_santri_user_unique melarang itu. Query performance tetap
+			// aman karena idx_santri_user (non-unique) sudah ada di atas.
+			name: "santri_user_unique_drop",
+			sql:  `DROP INDEX IF EXISTS idx_santri_user_unique;`,
+		},
+		{
+			name: "normalize_semester_1",
+			sql:  `UPDATE grades SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_2",
+			sql:  `UPDATE grades SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
+		{
+			name: "normalize_semester_exams_1",
+			sql:  `UPDATE exams SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_exams_2",
+			sql:  `UPDATE exams SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
+		{
+			name: "normalize_semester_raports_1",
+			sql:  `UPDATE raports SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_raports_2",
+			sql:  `UPDATE raports SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
+		{
+			name: "normalize_semester_kesantrian_1",
+			sql:  `UPDATE kesantrian_aspek SET semester='1' WHERE LOWER(TRIM(semester)) IN ('ganjil','semester 1','satu');`,
+		},
+		{
+			name: "normalize_semester_kesantrian_2",
+			sql:  `UPDATE kesantrian_aspek SET semester='2' WHERE LOWER(TRIM(semester)) IN ('genap','semester 2','dua');`,
+		},
+		{
+			name: "project_assessments_table",
+			sql: `CREATE TABLE IF NOT EXISTS project_assessments (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				title TEXT NOT NULL,
-				description TEXT,
-				target_amount REAL DEFAULT 0,
-				collected_amount REAL DEFAULT 0,
-				image_url TEXT DEFAULT '',
-				is_active INTEGER DEFAULT 1,
-				end_date DATETIME,
+				student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				activity_id INTEGER NOT NULL REFERENCES project_activities(id) ON DELETE CASCADE,
+				semester TEXT NOT NULL,
+				academic_year TEXT NOT NULL,
+				score REAL NOT NULL,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				UNIQUE(student_id, activity_id, semester, academic_year)
 			);`,
 		},
 		{
-			name: "create_donations_table",
-			sql: `CREATE TABLE IF NOT EXISTS donations (
+			name: "project_assessments_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_proj_assess_student ON project_assessments(student_id, semester, academic_year);`,
+		},
+		{
+			name: "teachers_user_unique",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_user_unique ON teachers(user_id);`,
+		},
+		{
+			name: "classes_wali_user_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_classes_wali_user ON classes(wali_user_id);`,
+		},
+		{
+			name: "subject_grade_weights_table",
+			sql: `CREATE TABLE IF NOT EXISTS subject_grade_weights (
+				subject_id INTEGER PRIMARY KEY,
+				uts_weight REAL DEFAULT 25,
+				uas_weight REAL DEFAULT 30,
+				task_weight REAL DEFAULT 25,
+				uh_weight REAL DEFAULT 20,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (subject_id) REFERENCES subjects(id)
+			);`,
+		},
+		{
+			name: "arbain_progress_table",
+			sql: `CREATE TABLE IF NOT EXISTS arbain_progress (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				campaign_id INTEGER NOT NULL,
-				donor_name TEXT DEFAULT '',
-				donor_phone TEXT DEFAULT '',
-				amount REAL NOT NULL,
-				payment_method TEXT DEFAULT '',
-				proof_url TEXT DEFAULT '',
-				status TEXT DEFAULT 'pending',
-				verified_at DATETIME,
-				verified_by INTEGER,
+				student_id INTEGER NOT NULL,
+				hadith_number INTEGER NOT NULL,
+				status TEXT NOT NULL DEFAULT 'proses',
+				nilai INTEGER DEFAULT 0,
+				notes TEXT DEFAULT '',
+				evaluation_date TEXT NOT NULL,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-				FOREIGN KEY (campaign_id) REFERENCES donation_campaigns(id)
+				FOREIGN KEY (student_id) REFERENCES users(id)
 			);`,
 		},
 		{
-			name: "create_sys_notifications_table",
+			name: "arbain_progress_student_hadith_index",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_arbain_student_hadith ON arbain_progress(student_id, hadith_number);`,
+		},
+		{
+			// Jilid 82: notifikasi sistem (lonceng) untuk semua admin.
+			// Broadcast: setiap baris dibaca per-user lewat sys_notification_reads.
+			name: "sys_notifications_table",
 			sql: `CREATE TABLE IF NOT EXISTS sys_notifications (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				type TEXT NOT NULL,
@@ -746,17 +1409,43 @@ func runMigrations() {
 				message TEXT NOT NULL,
 				link TEXT NOT NULL DEFAULT '',
 				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-			);
-			CREATE INDEX IF NOT EXISTS idx_sys_notif_created ON sys_notifications(created_at DESC);`,
+			);`,
 		},
 		{
-			name: "create_sys_notification_reads_table",
+			name: "sys_notifications_created_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_sys_notif_created ON sys_notifications(created_at DESC);`,
+		},
+		{
+			name: "sys_notification_reads_table",
 			sql: `CREATE TABLE IF NOT EXISTS sys_notification_reads (
 				user_id INTEGER NOT NULL,
 				notification_id INTEGER NOT NULL,
 				read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY (user_id, notification_id)
 			);`,
+		},
+		{
+			// Jilid 86 (E-Rapor): log sinkron data pokok & nilai ke RDM/EMIS.
+			// Satu baris per (santri, semester, tahun) per jenis sinkron.
+			name: "erapor_sync_table",
+			sql: `CREATE TABLE IF NOT EXISTS erapor_sync (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				student_id INTEGER NOT NULL DEFAULT 0,
+				sync_type TEXT NOT NULL DEFAULT 'pokok',
+				status TEXT NOT NULL DEFAULT 'pending',
+				semester TEXT NOT NULL DEFAULT '',
+				academic_year TEXT NOT NULL DEFAULT '',
+				nisn TEXT NOT NULL DEFAULT '',
+				error TEXT NOT NULL DEFAULT '',
+				exported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				imported_at DATETIME,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);`,
+		},
+		{
+			name: "erapor_sync_index",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_erapor_sync_student ON erapor_sync(student_id, sync_type, semester, academic_year);`,
 		},
 	}
 
@@ -768,73 +1457,283 @@ func runMigrations() {
 		_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)", migration.name)
 	}
 
-	// Idempotent column additions for token revocation support.
-	addColumnIfNotExists("users", "token_version", "INTEGER NOT NULL DEFAULT 0")
-
-	// Fase fondasi (port struktur Alma): role baru pimpinan/wali_kelas/guru/
-	// ustadz ditambahkan. CHECK constraint lama harus ikut diperluas lewat
-	// rebuild tabel users (SQLite tidak bisa ALTER CONSTRAINT). Rebuild hanya
-	// terjadi bila CHECK lama masih terpasang, data tidak hilang.
+	migrateGradesUhScore()
+	migrateDropBgnArtifacts()
+	backfillSantriUserAccounts()
 	migrateUsersRoleCheck()
 }
 
-// legacyRoleCheck adalah CHECK role lama (5 role pra-fondasi). Bila masih
-// terpasang di users, seluruh tabel di-rebuild agar CHECK baru berlaku.
-const legacyRoleCheck = "CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'user'))"
-
-const expandedRoleCheck = "CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'pimpinan', 'wali_kelas', 'guru', 'ustadz', 'user'))"
-
-func migrateUsersRoleCheck() {
-	var sqlStr string
-	err := DB.QueryRow(`SELECT sql FROM sqlite_master WHERE type='table' AND name='users'`).Scan(&sqlStr)
+// migrateGradesUhScore menambahkan kolom uh_score pada tabel grades bila
+// belum ada (idempoten, dicatat di schema_migrations).
+func migrateGradesUhScore() {
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='grades_uh_score_column'`).Scan(&done); err != nil {
+		return
+	}
+	if done > 0 {
+		return
+	}
+	rows, err := DB.Query(`PRAGMA table_info(grades)`)
 	if err != nil {
-		log.Printf("[DB] users role check scan failed: %v", err)
 		return
 	}
-	normalized := strings.ReplaceAll(strings.ReplaceAll(sqlStr, "\n", " "), "\t", " ")
-	if strings.Contains(normalized, "CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'pimpinan'") {
-		return
+	var found bool
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt interface{}
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err == nil && name == "uh_score" {
+			found = true
+		}
 	}
-	if !strings.Contains(normalized, legacyRoleCheck) {
-		// CHECK sudah tidak berisi daftar lama (mis. sudah lolos rebuild).
-		return
+	rows.Close()
+	if !found {
+		if _, err := DB.Exec(`ALTER TABLE grades ADD COLUMN uh_score REAL DEFAULT 0`); err != nil {
+			return
+		}
 	}
-	if _, err := DB.Exec("PRAGMA foreign_keys=OFF"); err != nil {
-		log.Printf("[DB] users role check rebuild failed (fk off): %v", err)
-		return
-	}
-	defer DB.Exec("PRAGMA foreign_keys=ON")
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('grades_uh_score_column')")
+}
 
-	rebuild := `
-		BEGIN;
-		CREATE TABLE users_new (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			email TEXT NOT NULL,
-			password_hash TEXT NOT NULL,
-			name TEXT NOT NULL,
-			role TEXT NOT NULL DEFAULT 'user',
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			whatsapp TEXT DEFAULT '',
-			last_login_at DATETIME,
-			token_version INTEGER NOT NULL DEFAULT 0,
-			` + expandedRoleCheck + `
-		);
-		INSERT INTO users_new (id, email, password_hash, name, role, created_at, whatsapp, last_login_at, token_version)
-			SELECT id, email, password_hash, name, role, created_at, COALESCE(whatsapp,''), last_login_at,
-			       COALESCE(token_version,0)
-			FROM users;
-		DROP TABLE users;
-		ALTER TABLE users_new RENAME TO users;
-		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users(email);
-		CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
-		COMMIT;
-	`
-	if _, err := DB.Exec(rebuild); err != nil {
-		log.Printf("[DB] users role check rebuild failed: %v", err)
-		_, _ = DB.Exec("ROLLBACK")
+// migrateDropBgnArtifacts membersihkan sisa artefak BGN (Beras Bergizi
+// Nasional) yang sudah tidak dipakai: tabel bgn_recipients /
+// bgn_recipients_archive beserta indexnya, dan kolom penanda BGN pada tabel
+// Santri. Fitur BGN dihapus permanen per order user 30 Sep 2026; data BGN
+// sudah dipindahkan ke tabel Santri lalu diim ulang dari master Google Sheet.
+// Idempoten (dicatat di schema_migrations).
+func migrateDropBgnArtifacts() {
+	const name = "bgn_artifacts_dropped"
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name=?`, name).Scan(&done); err != nil {
 		return
 	}
-	log.Printf("[DB] users role CHECK diperluas (rebuild tabel users)")
+	if done > 0 {
+		return
+	}
+	for _, t := range []string{"bgn_recipients_archive", "bgn_recipients"} {
+		if _, err := DB.Exec(`DROP TABLE IF EXISTS ` + t); err != nil {
+			log.Printf("[DB] Migration %s: gagal drop tabel %s: %v", name, t, err)
+			return
+		}
+	}
+	rows, err := DB.Query(`PRAGMA table_info(santri)`)
+	if err != nil {
+		return
+	}
+	existing := map[string]bool{}
+	for rows.Next() {
+		var cid, notnull, pk int
+		var col, ctype string
+		var dflt interface{}
+		if err := rows.Scan(&cid, &col, &ctype, &notnull, &dflt, &pk); err == nil {
+			existing[col] = true
+		}
+	}
+	rows.Close()
+	for _, col := range []string{"bgn_identity", "bgn_recipient"} {
+		if !existing[col] {
+			continue
+		}
+		if _, err := DB.Exec(`ALTER TABLE santri DROP COLUMN ` + col); err != nil {
+			log.Printf("[DB] Migration %s: gagal drop kolom %s: %v", name, col, err)
+			return
+		}
+	}
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('" + name + "')")
+}
+
+// migrateUsersRoleCheck melebarkan CHECK role users agar menerima peran
+// akademik baru (pimpinan, wali_kelas, guru, ustadz) via rebuild tabel.
+// Idempoten (dicatat di schema_migrations).
+func migrateUsersRoleCheck() {
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='users_role_check_v2'`).Scan(&done); err != nil {
+		return
+	}
+	if done > 0 {
+		return
+	}
+	// Susun ulang definisi kolom dari tabel berjalan (tahan terhadap kolom
+	// tambahan di masa depan), kecuali CHECK role yang diganti.
+	rows, err := DB.Query(`PRAGMA table_info(users)`)
+	if err != nil {
+		return
+	}
+	type colDef struct {
+		name    string
+		ctype   string
+		notnull bool
+		dflt    sql.NullString
+		pk      bool
+	}
+	var cols []colDef
+	var names []string
+	for rows.Next() {
+		var cid int
+		var c colDef
+		if err := rows.Scan(&cid, &c.name, &c.ctype, &c.notnull, &c.dflt, &c.pk); err != nil {
+			rows.Close()
+			return
+		}
+		cols = append(cols, c)
+		names = append(names, `"`+c.name+`"`)
+	}
+	rows.Close()
+	if len(cols) == 0 {
+		return
+	}
+	var defs []string
+	for _, c := range cols {
+		if c.pk {
+			defs = append(defs, `"id" INTEGER PRIMARY KEY AUTOINCREMENT`)
+			continue
+		}
+		d := `"` + c.name + `" ` + c.ctype
+		if c.notnull {
+			d += " NOT NULL"
+		}
+		if c.dflt.Valid {
+			d += " DEFAULT " + c.dflt.String
+		}
+		defs = append(defs, d)
+	}
+	defs = append(defs, `CHECK (role IN ('superadmin', 'bendahara', 'panitia_psb', 'tim_media', 'admin', 'user', 'pimpinan', 'wali_kelas', 'guru', 'ustadz'))`)
+	colList := strings.Join(names, ", ")
+
+	// PRAGMA foreign_keys hanya bisa diubah di luar transaksi + sebelum serve.
+	_, _ = DB.Exec(`PRAGMA foreign_keys=OFF`)
+	tx, err := DB.Begin()
+	if err != nil {
+		_, _ = DB.Exec(`PRAGMA foreign_keys=ON`)
+		return
+	}
+	committed := false
+	rollback := func() {
+		if !committed {
+			_ = tx.Rollback()
+			_, _ = DB.Exec(`PRAGMA foreign_keys=ON`)
+		}
+	}
+	defer rollback()
+	if _, err := tx.Exec(`CREATE TABLE users_new (` + strings.Join(defs, ", ") + `)`); err != nil {
+		log.Printf("[DB] users_role_check_v2 create failed: %v", err)
+		return
+	}
+	if _, err := tx.Exec(`INSERT INTO users_new (` + colList + `) SELECT ` + colList + ` FROM users`); err != nil {
+		log.Printf("[DB] users_role_check_v2 copy failed: %v", err)
+		return
+	}
+	if _, err := tx.Exec(`DROP TABLE users`); err != nil {
+		return
+	}
+	if _, err := tx.Exec(`ALTER TABLE users_new RENAME TO users`); err != nil {
+		return
+	}
+	if _, err := tx.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users(email)`); err != nil {
+		return
+	}
+	if _, err := tx.Exec(`CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)`); err != nil {
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		return
+	}
+	committed = true
+	_, _ = DB.Exec(`PRAGMA foreign_keys=ON`)
+	if rows, err := DB.Query(`PRAGMA foreign_key_check`); err == nil {
+		bad := 0
+		for rows.Next() {
+			bad++
+		}
+		rows.Close()
+		if bad > 0 {
+			log.Printf("[DB] users_role_check_v2: %d pelanggaran FK terdeteksi", bad)
+		}
+	}
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('users_role_check_v2')")
+	log.Printf("[DB] users_role_check_v2 applied: peran akademik baru aktif")
+}
+
+// backfillSantriUserAccounts menghubungkan santri yang diinput manual (tanpa
+// akun users) ke akun portal sintetis role='user', supaya sinkron dengan
+// e-raport (raports/grades/kesantrian semua berkunci users.id). Idempoten.
+func backfillSantriUserAccounts() {
+	var done int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE name='santri_user_backfill'`).Scan(&done); err != nil {
+		return
+	}
+	if done > 0 {
+		return
+	}
+
+	// Kumpulkan semua santri yatim dulu ke memori lalu tutup rows, karena
+	// menulis (INSERT/UPDATE users/santri) saat rows masih terbuka akan
+	// deadlock pada koneksi SQLite tunggal.
+	type orphan struct {
+		id    int
+		nis   string
+		name  string
+		regID int
+	}
+	var orphans []orphan
+	rows, err := DB.Query(`SELECT id, nis, name, COALESCE(registration_id,0) FROM santri WHERE user_id IS NULL`)
+	if err == nil {
+		for rows.Next() {
+			var o orphan
+			_ = rows.Scan(&o.id, &o.nis, &o.name, &o.regID)
+			orphans = append(orphans, o)
+		}
+		rows.Close()
+	}
+
+	linked := 0
+	for _, o := range orphans {
+		uid, ok := backfillResolveUserID(o.id, o.nis, o.name, o.regID)
+		if !ok {
+			continue
+		}
+		if _, err := DB.Exec(`UPDATE santri SET user_id=? WHERE id=?`, uid, o.id); err == nil {
+			linked++
+		}
+	}
+	_, _ = DB.Exec("INSERT OR IGNORE INTO schema_migrations (name) VALUES ('santri_user_backfill')")
+	log.Printf("[DB] Backfill sambungan dashboard-dan-santri: %d santri manual ditautkan ke akun users", linked)
+}
+
+func backfillResolveUserID(santriID int, nis, name string, regID int) (int, bool) {
+	if regID > 0 {
+		var uid sql.NullInt64
+		if err := DB.QueryRow(`SELECT user_id FROM registrations WHERE id=?`, regID).Scan(&uid); err == nil && uid.Valid && uid.Int64 > 0 {
+			return int(uid.Int64), true
+		}
+	}
+	base := strings.TrimSpace(nis)
+	if base == "" {
+		base = fmt.Sprintf("santri-%d", santriID)
+	}
+	email := base + "@darussunnah.local"
+
+	var existing sql.NullInt64
+	err := DB.QueryRow(`SELECT id FROM users WHERE email=?`, email).Scan(&existing)
+	if err == nil && existing.Valid {
+		return int(existing.Int64), true
+	}
+
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return 0, false
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(hex.EncodeToString(raw)), bcrypt.DefaultCost)
+	if err != nil {
+		return 0, false
+	}
+	res, err := DB.Exec(`INSERT INTO users (email, password_hash, name, role) VALUES (?,?,?, 'user')`,
+		email, string(hash), name)
+	if err != nil {
+		return 0, false
+	}
+	uid, _ := res.LastInsertId()
+	return int(uid), true
 }
 
 func addColumnIfNotExists(table, column, colType string) {

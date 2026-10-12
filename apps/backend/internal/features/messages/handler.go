@@ -3,9 +3,10 @@ package messages
 import (
 	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
-	platsysnotif "darussunnah-api/internal/platform/sysnotif"
+	"darussunnah-api/internal/platform/sysnotif"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -49,7 +50,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	if err != nil || limit <= 0 {
 		limit = 100
 	}
-	if limit > 200 {
+	if limit > 100 {
 		limit = 200
 	}
 	offset, err := strconv.Atoi(offsetStr)
@@ -126,8 +127,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := platsysnotif.Emit(r.Context(), database.DB, "pesan_kontak", "Pesan Kontak Baru", "Pesan dari "+m.Name, "/admin/messages"); err != nil {
-		logger.Warn(r.Context(), "sysnotif emit pesan_kontak failed", logger.Field{"operation": "messages_create_public", "error": err.Error()})
+	// Jilid 82: munculkan lonceng admin untuk pesan kontak baru.
+	if err := sysnotif.Emit(r.Context(), database.DB, "pesan_kontak", "Pesan kontak baru",
+		fmt.Sprintf("Dari %s", m.Name), "/admin/messages"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_pesan_kontak", "error": err.Error()})
 	}
 
 	logger.Info(r.Context(), "message create completed", logger.Field{

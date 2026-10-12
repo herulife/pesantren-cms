@@ -30,8 +30,46 @@ type ViolationLog struct {
 	CreatedAt         time.Time `json:"created_at"`
 }
 
+// ErrNotSantri dikembalikan bila student_id tidak menunjuk Santri sungguhan.
+//
+// CATATAN ID: student_id pada student_points & violation_logs merujuk ke
+// users.id (akun portal), BUKAN ke santri.id. Diverifikasi 28 Sep 2026:
+// baris dengan student_id=1 menunjuk akun superadmin sehingga kolom
+// "Santri" di /admin/disciplines menampilkan "Admin".
+var ErrNotSantri = errors.New("student_id bukan Santri")
+
 type Repository struct {
 	db *sql.DB
+}
+
+// IsSantriUserMember melapor apakah userID adalah akun Santri: ada di tabel
+// users DAN punya baris di `santri` yang ter-link lewat user_id.
+func (r *Repository) IsSantriUserMember(ctx context.Context, userID int) (bool, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM users u
+		JOIN_santri s ON s.user_id = u.id
+		WHERE u.id = ?
+	`, userID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// isSantriTx varian in-transaksi supaya pengecekan + penulisan tidak lewat
+// koneksi terpisah (SQLite modernc prone lock bila dicampur).
+func isSantriTx(ctx context.Context, tx *sql.Tx, userID int) (bool, error) {
+	var count int
+	err := tx.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM users u
+		JOIN santri s ON s.user_id = u.id
+		WHERE u.id = ?
+	`, userID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func NewRepository(db *sql.DB) *Repository {
@@ -55,11 +93,11 @@ func (r *Repository) EnsureStudentPointExists(ctx context.Context, studentID int
 
 func (r *Repository) FindAllPoints(ctx context.Context, limit, offset int) ([]StudentPoint, int, error) {
 	query := `
-		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(reg.parent_phone, '') as parent_phone, 
+		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as parent_phone, 
 		       sp.current_points, sp.academic_year, sp.updated_at
 		FROM student_points sp
 		JOIN users u ON u.id = sp.student_id
-		LEFT JOIN registrations reg ON reg.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 		ORDER BY sp.updated_at DESC LIMIT ? OFFSET ?
 	`
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -80,20 +118,22 @@ func (r *Repository) FindAllPoints(ctx context.Context, limit, offset int) ([]St
 	}
 
 	var total int
-	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM student_points").Scan(&total); err != nil {
-		return nil, 0, err
-	}
+	r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM student_points sp
+		JOIN users u ON u.id = sp.student_id
+		JOIN santri s ON s.user_id = u.id
+	`).Scan(&total)
 
 	return list, total, nil
 }
 
 func (r *Repository) GetStudentPoint(ctx context.Context, studentID int) (*StudentPoint, error) {
 	query := `
-		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(reg.parent_phone, '') as parent_phone,
+		SELECT sp.id, sp.student_id, u.name as student_name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as parent_phone,
 		       sp.current_points, sp.academic_year, sp.updated_at
 		FROM student_points sp
 		JOIN users u ON u.id = sp.student_id
-		LEFT JOIN registrations reg ON reg.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 		WHERE sp.student_id = ?
 	`
 	row := r.db.QueryRowContext(ctx, query, studentID)
@@ -112,12 +152,12 @@ func (r *Repository) GetStudentPoint(ctx context.Context, studentID int) (*Stude
 
 func (r *Repository) FindAllLogs(ctx context.Context, studentID int, limit, offset int) ([]ViolationLog, int, error) {
 	baseQuery := `
-		SELECT vl.id, vl.student_id, u.name as student_name, COALESCE(reg.parent_phone, '') as parent_phone,
+		SELECT vl.id, vl.student_id, u.name as student_name, COALESCE(NULLIF(s.parent_phone, ''), NULLIF(s.father_phone, ''), NULLIF(s.mother_phone, ''), '') as parent_phone,
 		       vl.reporter_name, vl.violation_category, vl.violation_detail, vl.points_deducted, 
 		       vl.action_taken, vl.created_at
 		FROM violation_logs vl
 		JOIN users u ON u.id = vl.student_id
-		LEFT JOIN registrations reg ON reg.user_id = u.id
+		JOIN santri s ON s.user_id = u.id
 	`
 	args := []interface{}{}
 	if studentID > 0 {
@@ -148,7 +188,11 @@ func (r *Repository) FindAllLogs(ctx context.Context, studentID int, limit, offs
 	}
 
 	var total int
-	countQuery := "SELECT COUNT(*) FROM violation_logs"
+	countQuery := `
+		SELECT COUNT(*) FROM violation_logs vl
+		JOIN users u ON u.id = vl.student_id
+		JOIN santri s ON s.user_id = u.id
+	`
 	if studentID > 0 {
 		countQuery += " WHERE student_id = ?"
 		r.db.QueryRowContext(ctx, countQuery, studentID).Scan(&total)
@@ -165,11 +209,17 @@ func (r *Repository) RecordViolation(ctx context.Context, log ViolationLog) erro
 		return err
 	}
 
-	// Double check user exists
-	var count int
-	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM users WHERE id = ?", log.StudentID).Scan(&count); err != nil || count == 0 {
+	// Target WAJIB Santri sungguhan. Validasi lama hanya COUNT(*) di tabel
+	// users, sehingga akun admin/bendahara/tim_media bisa dijadikan sasaran
+	// dan muncul di tabel sebagai baris "Santri" (mis. "Admin").
+	isSantri, err := isSantriTx(ctx, tx, log.StudentID)
+	if err != nil {
 		tx.Rollback()
-		return errors.New("student not found in users table")
+		return err
+	}
+	if !isSantri {
+		tx.Rollback()
+		return ErrNotSantri
 	}
 
 	// 1. Insert the violation log

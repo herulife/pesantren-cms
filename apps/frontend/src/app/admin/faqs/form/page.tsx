@@ -16,7 +16,7 @@ const createInitialForm = (): FaqFormState => ({
 
 export default function FaqFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
       <FaqFormContent />
     </Suspense>
   );
@@ -88,7 +88,7 @@ function FaqFormContent() {
   };
 
   if (isLoading) {
-    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>;
+    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>;
   }
 
   return (
@@ -97,12 +97,12 @@ function FaqFormContent() {
         <button
           type="button"
           onClick={() => router.push('/admin/faqs')}
-          className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-emerald-200 hover:text-emerald-600"
+          className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-sky-200 hover:text-sky-600"
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Form FAQ</p>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-sky-700">Form FAQ</p>
           <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 font-outfit">{id ? 'Edit FAQ' : 'Tambah FAQ'}</h1>
           <p className="text-sm font-medium text-slate-500">Form FAQ sekarang tampil penuh agar isi pertanyaan dan jawaban lebih nyaman diedit.</p>
         </div>
@@ -119,7 +119,7 @@ function FaqFormContent() {
               required
               value={form.question}
               onChange={(event) => setForm((prev) => ({ ...prev, question: event.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-lg font-bold text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 text-lg font-bold text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               placeholder="Apa saja syarat pendaftaran santri baru?"
             />
           </div>
@@ -131,14 +131,14 @@ function FaqFormContent() {
               rows={10}
               value={form.answer}
               onChange={(event) => setForm((prev) => ({ ...prev, answer: event.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-5 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-5 text-sm font-medium leading-relaxed text-slate-800 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
               placeholder="Tuliskan jawaban FAQ di sini..."
             />
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-6">
             <div className="flex items-center gap-3">
-              <div className={`rounded-xl p-2 ${form.is_active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+              <div className={`rounded-xl p-2 ${form.is_active ? 'bg-sky-100 text-sky-600' : 'bg-slate-200 text-slate-400'}`}>
                 {form.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
               </div>
               <div>
@@ -149,7 +149,7 @@ function FaqFormContent() {
             <button
               type="button"
               onClick={() => setForm((prev) => ({ ...prev, is_active: !prev.is_active }))}
-              className={`relative flex h-8 w-14 items-center rounded-full px-1 transition-all ${form.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              className={`relative flex h-8 w-14 items-center rounded-full px-1 transition-all ${form.is_active ? 'bg-sky-500' : 'bg-slate-300'}`}
             >
               <div className={`h-6 w-6 rounded-full bg-white shadow-sm transition-all ${form.is_active ? 'translate-x-6' : 'translate-x-0'}`} />
             </button>
@@ -167,7 +167,7 @@ function FaqFormContent() {
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-600 disabled:opacity-50"
+            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-sky-600 disabled:opacity-50"
           >
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             Simpan FAQ

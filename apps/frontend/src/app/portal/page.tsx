@@ -6,7 +6,7 @@ import { Activity, AlertCircle, CheckCircle2, ChevronRight, CreditCard, FileText
 import { useAuth } from '@/components/AuthProvider';
 import StudentQRCard from '@/components/StudentQRCard';
 import WalletCard from '@/components/WalletCard';
-import { getMyPSBRegistration, type Registration } from '@/lib/api';
+import { getMyPSBRegistration, getMySantri, type Registration, normalizeApiAssetUrl } from '@/lib/api';
 
 type ChecklistItem = {
   href?: string;
@@ -20,28 +20,49 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
   pending: {
     title: 'Pendaftaran Sedang Disiapkan',
     description: 'Lengkapi biodata dan dokumen agar panitia bisa mulai memeriksa berkas pendaftaran kamu.',
-    accent: 'from-amber-500 to-orange-600',
+    accent: 'from-amber-600 to-orange-700',
     actionLabel: 'Lengkapi Sekarang',
     actionHref: '/portal/biodata',
   },
   review: {
     title: 'Berkas Sedang Direview',
     description: 'Panitia sedang memeriksa biodata dan dokumen yang sudah kamu kirim. Pantau portal secara berkala.',
-    accent: 'from-blue-600 to-cyan-600',
+    accent: 'from-sky-700 to-cyan-800',
     actionLabel: 'Lihat Dokumen',
     actionHref: '/portal/documents',
   },
+  tes: {
+    title: 'Diundang Tes Seleksi',
+    description: 'Alhamdulillah, berkas kamu lolos pemeriksaan. Perhatikan jadwal dan lokasi tes seleksi di bawah.',
+    accent: 'from-indigo-700 to-sky-800',
+    actionLabel: 'Hubungi Panitia',
+    actionHref: '#tes-info',
+  },
   accepted: {
-    title: 'Pendaftaran Diterima',
-    description: 'Selamat, berkas kamu sudah dinyatakan diterima. Ikuti arahan panitia untuk langkah berikutnya.',
-    accent: 'from-emerald-600 to-green-600',
+    title: 'Diterima',
+    description: 'Selamat! Kamu dinyatakan diterima. Lanjutkan ke masa daftar ulang sesuai arahan panitia.',
+    accent: 'from-sky-700 to-cyan-800',
     actionLabel: 'Buka Raport',
     actionHref: '/portal/raport',
+  },
+  santri: {
+    title: 'Santri Aktif',
+    description: 'Alhamdulillah, kamu sudah terdaftar sebagai santri aktif. Biodata tidak perlu diisi ulang.',
+    accent: 'from-emerald-700 to-teal-800',
+    actionLabel: 'Buka Raport',
+    actionHref: '/portal/raport',
+  },
+  re_registration: {
+    title: 'Masa Daftar Ulang',
+    description: 'Saatnya melakukan daftar ulang. Selesaikan sebelum batas waktu agar status santri kamu terekam.',
+    accent: 'from-sky-800 to-indigo-800',
+    actionLabel: 'Info Daftar Ulang',
+    actionHref: '#daftar-ulang-info',
   },
   rejected: {
     title: 'Perlu Perbaikan Berkas',
     description: 'Pendaftaran belum bisa dilanjutkan. Silakan periksa kembali data dan dokumen lalu hubungi panitia bila perlu.',
-    accent: 'from-rose-600 to-red-600',
+    accent: 'from-rose-700 to-red-800',
     actionLabel: 'Periksa Biodata',
     actionHref: '/portal/biodata',
   },
@@ -71,14 +92,19 @@ function formatDateLabel(value?: string | null) {
 export default function PortalDashboard() {
   const { user } = useAuth();
   const [registration, setRegistration] = useState<Registration | null>(null);
+  const [hasLinkedSantri, setHasLinkedSantri] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchRegistration = async () => {
       setIsLoading(true);
       try {
-        const data = await getMyPSBRegistration();
+        const [data, mySantri] = await Promise.all([
+          getMyPSBRegistration(),
+          getMySantri(),
+        ]);
         setRegistration(data);
+        setHasLinkedSantri(Array.isArray(mySantri) && mySantri.length > 0);
       } finally {
         setIsLoading(false);
       }
@@ -88,7 +114,7 @@ export default function PortalDashboard() {
   }, []);
 
   const registrationStatus = registration?.status || 'pending';
-  const hasStudentAccess = registrationStatus === 'accepted';
+  const hasStudentAccess = hasLinkedSantri || registrationStatus === 'accepted' || registrationStatus === 'santri';
 
   const portalState = useMemo(() => {
     const biodataFields = [
@@ -99,7 +125,6 @@ export default function PortalDashboard() {
       registration?.birth_date,
       registration?.address,
       registration?.school_origin,
-      registration?.program_choice,
       registration?.father_name,
       registration?.father_job,
       registration?.father_phone,
@@ -108,7 +133,13 @@ export default function PortalDashboard() {
       registration?.mother_phone,
     ];
 
-    const documentFields = [registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url];
+    const documentFields = [
+      registration?.kk_url, registration?.ijazah_url, registration?.pasfoto_url,
+      registration?.akta_url, registration?.ktp_ortu_url, registration?.surat_kelulusan_url,
+      registration?.foto_pendaftaran_url,
+      ...(registration?.category === 'yatim' ? [registration?.yatim_doc_url] : []),
+      ...(registration?.category === 'dhuafa' ? [registration?.sktm_doc_url] : []),
+    ];
 
     const biodataCompleted = biodataFields.every(isFilled);
     const documentsCompleted = documentFields.every(isFilled);
@@ -167,8 +198,8 @@ export default function PortalDashboard() {
         href: '/portal/documents',
         title: 'Unggah Dokumen',
         description: documentsCompleted
-          ? 'Dokumen KK, ijazah/raport, dan pas foto sudah tersimpan.'
-          : 'Unggah KK, ijazah atau raport terakhir, dan pas foto terbaru.',
+          ? 'Dokumen KK, akta, KTP orang tua, surat kelulusan, dan foto sudah tersimpan.'
+          : 'Unggah KK, akta kelahiran, KTP orang tua, surat kelulusan, dan foto pendaftaran.',
         completed: documentsCompleted,
         icon: <Upload size={24} />,
       },
@@ -189,7 +220,49 @@ export default function PortalDashboard() {
       },
     ];
 
-    if (status === 'accepted') {
+    if (status === 'tes') {
+      const tesInfo = [registration?.test_date && `Jadwal: ${registration.test_date}`, registration?.test_location && `Lokasi: ${registration.test_location}`]
+        .filter(Boolean)
+        .join(' • ');
+      checklist.push({
+        href: '/portal',
+        title: 'Tes Seleksi',
+        description: tesInfo || 'Perhatikan jadwal dan lokasi tes seleksi dari panitia.',
+        completed: false,
+        icon: <GraduationCap size={24} />,
+      });
+      checklist.push({
+        href: '/portal',
+        title: 'Tunggu Pengumuman',
+        description: 'Hasil tes diumumkan setelah seleksi selesai. Pantau pengumuman di halaman khusus.',
+        completed: false,
+        icon: <FileText size={24} />,
+      });
+    }
+
+    if (status === 'accepted' || status === 're_registration' || status === 'santri') {
+      const reRegDone = status === 're_registration';
+      checklist.push({
+        href: '/portal',
+        title: 'Pengumuman & Daftar Ulang',
+        description: reRegDone
+          ? 'Kamu sedang dalam masa daftar ulang. Selesaikan sebelum batas waktu.'
+          : 'Kamu dinyatakan diterima. Tunggu undangan daftar ulang dari panitia.',
+        completed: reRegDone,
+        icon: <FileText size={24} />,
+      });
+      if (reRegDone && registration?.re_registration_deadline) {
+        checklist.push({
+          href: '/portal',
+          title: 'Selesaikan Daftar Ulang',
+          description: `Batas waktu daftar ulang: ${registration.re_registration_deadline}. Hubungi panitia jika ada kendala.`,
+          completed: false,
+          icon: <BookOpen size={24} />,
+        });
+      }
+    }
+
+    if (status === 'accepted' || status === 'santri') {
       checklist.push({
         href: '/portal/exams',
         title: 'Ujian Daring (CBT)',
@@ -220,6 +293,7 @@ export default function PortalDashboard() {
   const biodataSummary = [
     { label: 'Nama Lengkap', value: registration?.full_name || user?.name || '-' },
     { label: 'NIK', value: registration?.nik || '-' },
+    { label: 'Jenjang', value: (registration?.jenjang || '-').toUpperCase() },
     { label: 'Program Pilihan', value: registration?.program_choice || '-' },
     { label: 'Asal Sekolah', value: registration?.school_origin || '-' },
     { label: 'Ayah', value: registration?.father_name || '-' },
@@ -228,8 +302,12 @@ export default function PortalDashboard() {
 
   const documentSummary = [
     { label: 'Kartu Keluarga', uploaded: isFilled(registration?.kk_url) },
+    { label: 'Akta Kelahiran', uploaded: isFilled(registration?.akta_url) },
+    { label: 'KTP Orang Tua', uploaded: isFilled(registration?.ktp_ortu_url) },
     { label: 'Ijazah / Raport', uploaded: isFilled(registration?.ijazah_url) },
+    { label: 'Surat Kelulusan', uploaded: isFilled(registration?.surat_kelulusan_url) },
     { label: 'Pas Foto', uploaded: isFilled(registration?.pasfoto_url) },
+    { label: 'Foto Pendaftaran', uploaded: isFilled(registration?.foto_pendaftaran_url) },
   ];
 
   const studentQuickMenus = [
@@ -255,6 +333,38 @@ export default function PortalDashboard() {
       accent: 'border-violet-100 bg-violet-50 text-violet-700',
     },
   ];
+
+  const statusDetail = (item: ChecklistItem): string => {
+    switch (item.title) {
+      case 'Pembuatan Akun Portal':
+        return 'Selesai';
+      case 'Kelengkapan Biodata':
+        return portalState.biodataCompleted ? 'Data diri + orang tua lengkap' : 'Masih ada data yang belum diisi';
+      case 'Unggah Dokumen':
+        return portalState.documentsCompleted ? 'KK • akta • KTP ortu • surat lulus • foto lengkap' : 'Ada berkas yang belum diunggah';
+      case 'Bayar Pendaftaran':
+        if (portalState.paymentCompleted) return 'Lunas dan terverifikasi panitia';
+        if (portalState.paymentSubmitted) return 'Bukti terkirim • menunggu verifikasi';
+        return 'Belum ada bukti transfer';
+      case 'Tes Seleksi': {
+        const info = [registration?.test_date, registration?.test_location].filter(Boolean).join(' • ');
+        return info || 'Jadwal menyusul dari panitia';
+      }
+      case 'Tunggu Pengumuman':
+        return 'Hasil keluar setelah tes selesai';
+      case 'Pengumuman & Daftar Ulang':
+        if (portalState.status === 're_registration' && registration?.re_registration_deadline)
+          return `Batas: ${registration.re_registration_deadline}`;
+        if (portalState.status === 're_registration') return 'Sedang masa daftar ulang';
+        return 'Menunggu undangan panitia';
+      case 'Selesaikan Daftar Ulang':
+        return registration?.re_registration_deadline ? `Batas: ${registration.re_registration_deadline}` : 'Hubungi panitia bila terkendala';
+      case 'Ujian Daring (CBT)':
+        return 'Kuis • ujian semester online';
+      default:
+        return item.completed ? 'Selesai' : 'Belum selesai';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -306,46 +416,82 @@ export default function PortalDashboard() {
 
   return (
     <>
-      <div className="lte-content-header">
-        <h3 className="lte-page-title">Ahlan Wa Sahlan, {user?.name || registration?.full_name || 'Calon Santri'}</h3>
-        <p className="lte-page-subtitle">
-          {hasStudentAccess
-            ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
-            : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
-        </p>
+      <div className="ap-fade-in mb-8 flex flex-col gap-5 sm:flex-row sm:items-center">
+        <div className="relative shrink-0">
+          {(() => {
+            const photo = normalizeApiAssetUrl(registration?.pasfoto_url || registration?.foto_pendaftaran_url);
+            const displayName = user?.name || registration?.full_name || 'Calon Santri';
+            const initials = displayName
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((p) => p[0])
+              .join('')
+              .toUpperCase();
+            if (photo) {
+              return (
+                <img
+                  src={photo}
+                  alt={`Foto ${displayName}`}
+                  className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-slate-200 ring-2 ring-sky-100"
+                />
+              );
+            }
+            return (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-lg font-black text-white shadow-lg shadow-sky-200 ring-2 ring-sky-100">
+                {initials || <User size={24} />}
+              </div>
+            );
+          })()}
+        </div>
+        <div>
+          <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
+            Ahlan Wa Sahlan, <br /> <span className="text-sky-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
+          </h3>
+          <p className="text-lg text-slate-500">
+            {hasStudentAccess
+              ? 'Akunmu sudah masuk tahap santri aktif. Gunakan portal ini untuk memantau layanan harian dan data akademik.'
+              : 'Pantau progres pendaftaran PSB dan pastikan semua data kamu sudah lengkap.'}
+          </p>
+        </div>
       </div>
 
       <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${portalState.meta.accent} p-8 text-white shadow-xl md:col-span-2`}>
-          <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-white/5 blur-3xl" />
 
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div>
-              <span className="lte-badge lte-badge-warning mb-4 inline-flex items-center gap-1.5">
+              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
                 <Activity size={12} /> Status Pendaftaran
               </span>
               <h4 className="mb-2 text-2xl font-black uppercase tracking-tight">{portalState.meta.title}</h4>
-              <p className="max-w-sm text-sm leading-relaxed text-white/80">{portalState.meta.description}</p>
+              <p className="max-w-sm text-sm leading-relaxed text-white/70">{portalState.meta.description}</p>
+              {status === 'rejected' && registration?.rejection_note?.trim() ? (
+                <p className="mt-3 max-w-sm rounded-2xl border border-white/25 bg-white/15 px-4 py-3 text-xs font-bold leading-5 text-white">
+                  Catatan panitia: {registration.rejection_note.trim()}
+                </p>
+              ) : null}
             </div>
 
             <div className="mt-6 grid gap-2 sm:grid-cols-2">
-              {portalState.checklist.slice(0, 4).map((item) => {
+              {portalState.checklist.slice(0, 6).map((item) => {
                 const isAttentionPaymentStep = item.title === 'Bayar Pendaftaran' && portalState.paymentNeedsAttention;
                 return (
                   <div
                     key={`status-progress-${item.title}`}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur ${
                       item.completed
-                        ? 'border-white/30 bg-white/20'
+                        ? 'border-white/25 bg-white/15'
                         : isAttentionPaymentStep
                           ? 'border-rose-200 bg-white text-rose-800 shadow-lg shadow-rose-950/20'
-                          : 'border-white/15 bg-slate-950/15'
+                          : 'border-white/10 bg-slate-950/25'
                     }`}
                   >
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                         item.completed
-                          ? 'bg-white text-emerald-600'
+                          ? 'bg-white/95 text-sky-700'
                           : isAttentionPaymentStep
                             ? 'bg-rose-600 text-white'
                             : 'bg-white/10 text-white/80'
@@ -354,9 +500,9 @@ export default function PortalDashboard() {
                       {item.completed ? <CheckCircle2 size={17} /> : <AlertCircle size={17} />}
                     </span>
                     <div className="min-w-0">
-                      <p className={`truncate text-sm font-black leading-tight ${isAttentionPaymentStep ? 'text-rose-950' : 'text-white'}`}>{item.title}</p>
-                      <p className={`mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] ${isAttentionPaymentStep ? 'text-rose-600' : 'text-white/70'}`}>
-                        {item.completed ? 'Selesai' : isAttentionPaymentStep ? 'Perlu diperbaiki' : 'Belum selesai'}
+                      <p className={`break-words text-sm font-black leading-snug ${isAttentionPaymentStep ? 'text-rose-950' : 'text-white'}`}>{item.title}</p>
+                      <p className={`mt-0.5 break-words text-[11px] font-medium leading-snug ${isAttentionPaymentStep ? 'text-rose-600' : item.completed ? 'text-emerald-300' : 'text-white/70'}`}>
+                        {statusDetail(item)}
                       </p>
                     </div>
                   </div>
@@ -376,44 +522,128 @@ export default function PortalDashboard() {
           </div>
         </div>
 
-        <div className="lte-card lte-card-body md:justify-center">
-          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-            <AlertCircle size={24} />
+        <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-8 shadow-sm">
+          <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+            <AlertCircle size={28} />
           </div>
-          <h4 className="lte-card-title mb-2">Tindakan Berikutnya</h4>
+          <h4 className="mb-2 font-outfit text-lg font-black uppercase tracking-tight text-slate-800">Tindakan Berikutnya</h4>
           <p className="mb-6 flex-1 text-sm text-slate-500">{portalState.actionCopy}</p>
           {portalState.paymentNeedsAttention && portalState.paymentNote ? (
-            <div className="lte-alert lte-alert-danger mb-5">
-              <p className="lte-alert-title flex items-center gap-2">
-                <AlertCircle size={16} /> Catatan Panitia
-              </p>
-              <p className="mt-1 text-sm">{portalState.paymentNote}</p>
-              <p className="mt-1 text-xs">Upload ulang bukti transfer agar panitia bisa memverifikasi pembayaran.</p>
+            <div className="mb-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-rose-800">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 shrink-0 text-rose-600" size={18} />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-600">Catatan Panitia</p>
+                  <p className="mt-1 text-sm font-black leading-6 text-rose-950">{portalState.paymentNote}</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-rose-700">
+                    Upload ulang bukti transfer agar panitia bisa memverifikasi pembayaran.
+                  </p>
+                </div>
+              </div>
             </div>
           ) : null}
 
           <Link
             href={portalState.actionHref}
-            className="lte-btn lte-btn-warning w-full"
+            className="ap-shimmer-wrap w-full rounded-xl border-2 border-amber-200 bg-white py-4 text-center text-xs font-bold uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50"
           >
             {portalState.actionLabel}
           </Link>
         </div>
 
+        {status === 'tes' ? (
+          <div id="tes-info" className="md:col-span-3 grid gap-6 md:grid-cols-2">
+            <div className="rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-6 shadow-sm">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+                <GraduationCap size={24} />
+              </div>
+              <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900">Tes Seleksi</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Berikut jadwal dan lokasi tes seleksi kamu. Datang tepat waktu dan bawa dokumen asli untuk verifikasi panitia.
+              </p>
+              <dl className="mt-5 space-y-3">
+                <div className="rounded-2xl bg-white px-4 py-3">
+                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Tanggal</dt>
+                  <dd className="mt-1 text-sm font-black text-slate-800">{registration?.test_date ? formatDateLabel(registration.test_date) : 'Menunggu jadwal'}</dd>
+                </div>
+                <div className="rounded-2xl bg-white px-4 py-3">
+                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Lokasi</dt>
+                  <dd className="mt-1 text-sm font-black text-slate-800">{registration?.test_location || 'Menunggu info lokasi'}</dd>
+                </div>
+              </dl>
+              {registration?.test_note?.trim() ? (
+                <p className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-xs font-semibold leading-5 text-indigo-800">
+                  {registration.test_note.trim()}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Yang perlu disiapkan</p>
+              <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                {['Kartu identitas / akta kelahiran', 'Peralatan tulis', 'Dokumen asli untuk verifikasi data', 'Datang 30 menit sebelum jadwal'].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-indigo-500" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+
+        {status === 're_registration' ? (
+          <div id="daftar-ulang-info" className="md:col-span-3 grid gap-6 md:grid-cols-2">
+            <div className="rounded-[2rem] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-6 shadow-sm">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
+                <BookOpen size={24} />
+              </div>
+              <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900">Masa Daftar Ulang</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Selamat! Kamu dinyatakan diterima sebagai santri baru. Selesaikan daftar ulang sebelum batas waktu berikut.
+              </p>
+              <dl className="mt-5 space-y-3">
+                <div className="rounded-2xl bg-white px-4 py-3">
+                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">Batas Waktu</dt>
+                  <dd className="mt-1 text-sm font-black text-slate-800">
+                    {registration?.re_registration_deadline ? formatDateLabel(registration.re_registration_deadline) : 'Menunggu info panitia'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Perlu diperhatikan</p>
+              <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                {['Daftar ulang adalah proses penetapan status santri aktif', 'Jika melewati batas waktu, status bisa dibatalkan oleh panitia', 'Hubungi panitia bila ada kendala atau pertanyaan'].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <AlertCircle size={17} className="mt-0.5 shrink-0 text-sky-500" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+
         {hasStudentAccess ? (
-          <div className="lte-card md:col-span-3">
-            <div className="lte-card-header">
+          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-sky-50/40 p-5 shadow-sm md:p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="lte-card-subtitle text-blue-700">Akses Santri</p>
-                <h4 className="lte-card-title">Presensi & Dompet</h4>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Akses Santri</p>
+                <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+                  Presensi & Dompet
+                </h4>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                   Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
                 </p>
               </div>
-              <span className="lte-badge lte-badge-soft-info">Live tools harian</span>
+              <div className="inline-flex w-fit rounded-full border border-sky-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+                Live tools untuk akses harian
+              </div>
             </div>
 
-            <div className="lte-card-body grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
+            <div className="grid gap-6 md:grid-cols-2 md:items-start xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-stretch">
               <StudentQRCard />
               <div className="md:h-full">
                 <WalletCard />
@@ -424,34 +654,37 @@ export default function PortalDashboard() {
       </div>
 
       {hasStudentAccess ? (
-        <div className="lte-card mb-10">
-          <div className="lte-card-header">
+        <div className="mb-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="lte-card-subtitle">Akses Santri</p>
-              <h4 className="lte-card-title">Raport, Dompet, dan Ujian</h4>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Akses Santri</p>
+              <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
+                Raport, Dompet, dan Ujian
+              </h4>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                 Pilih layanan yang ingin dibuka dari portal santri aktif.
               </p>
             </div>
-            <span className="lte-badge lte-badge-soft-success">Santri aktif</span>
+            <div className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              Santri aktif
+            </div>
           </div>
 
-          <div className="lte-card-body grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {studentQuickMenus.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-start gap-4 rounded-lg border border-slate-200 bg-white p-4 transition hover:border-blue-400 hover:shadow-sm"
+                className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
               >
-                <div className="inline-flex rounded-lg border px-3 py-3 text-blue-600">
+                <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
                   {item.icon}
                 </div>
-                <div>
-                  <h5 className="font-bold text-slate-900 group-hover:text-blue-700">{item.title}</h5>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">{item.description}</p>
-                  <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-blue-600">
-                    Buka Menu <ChevronRight size={13} />
-                  </div>
+                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-sky-700">{item.title}</h5>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
+                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-sky-600">
+                  Buka Menu
+                  <ChevronRight size={14} />
                 </div>
               </Link>
             ))}
@@ -460,41 +693,46 @@ export default function PortalDashboard() {
       ) : null}
 
       {!hasStudentAccess ? (
-      <div className="lte-card mb-10">
-        <div className="lte-card-header">
-          <div className="flex items-center gap-2">
-            <FileText className="text-slate-400" size={18} />
-            <h4 className="lte-card-title">Daftar Tugas</h4>
-          </div>
-        </div>
+      <div className="mb-10">
+        <h4 className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-800">
+          <FileText className="text-slate-400" size={18} />
+          Daftar Tugas
+        </h4>
 
-        <div className="lte-card-body space-y-3">
+        <div className="mb-10 space-y-4">
           {portalState.checklist.map((item, index) => {
             const cardClasses = item.completed
-              ? 'border-emerald-200 bg-white'
-              : 'border-slate-200 bg-white hover:border-blue-400';
+              ? 'border-sky-100 bg-white shadow-sm'
+              : 'border-slate-200 bg-white shadow-sm hover:border-sky-300';
+            const iconClasses = item.completed
+              ? 'bg-sky-50 text-sky-500'
+              : 'bg-slate-50 text-slate-400 group-hover:bg-sky-50 group-hover:text-sky-500';
 
             const content = (
               <>
                 <div className="flex items-center gap-5">
-                  <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-colors ${item.completed ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-400'}`}>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${iconClasses}`}>
                     {item.icon}
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900">{item.title}</h5>
+                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-sky-700'}`}>
+                      {item.title}
+                    </h5>
                     <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
                   </div>
                 </div>
 
                 {item.completed ? (
-                  <span className="lte-badge lte-badge-soft-success">Selesai</span>
+                  <span className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sky-600">
+                    Selesai
+                  </span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span className="hidden text-[10px] font-bold uppercase tracking-widest text-slate-400 md:inline">
+                    <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
                       Langkah {index + 1}
                     </span>
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-400">
-                      <ChevronRight size={18} />
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-sky-600 group-hover:text-white">
+                      <ChevronRight size={20} />
                     </span>
                   </div>
                 )}
@@ -506,7 +744,7 @@ export default function PortalDashboard() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className={`flex items-center justify-between gap-5 rounded-lg border px-5 py-4 transition-colors ${cardClasses}`}
+                  className={`group flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 transition-colors ${cardClasses}`}
                 >
                   {content}
                 </Link>
@@ -514,7 +752,7 @@ export default function PortalDashboard() {
             }
 
             return (
-              <div key={item.title} className={`flex items-center justify-between gap-5 rounded-lg border px-5 py-4 ${cardClasses}`}>
+              <div key={item.title} className={`flex items-center justify-between gap-5 rounded-[1.5rem] border p-6 ${cardClasses}`}>
                 {content}
               </div>
             );
@@ -525,63 +763,61 @@ export default function PortalDashboard() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6">
-        <div className="lte-card">
-          <div className="lte-card-header">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <h4 className="lte-card-title">Ringkasan Biodata</h4>
-              <p className="lte-card-subtitle">
+              <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Biodata</h4>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
                 Cek kembali data inti calon santri dan orang tua sebelum panitia menyelesaikan proses verifikasi.
               </p>
             </div>
             <Link
               href="/portal/biodata"
-              className="lte-btn lte-btn-outline-primary lte-btn-sm md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:bg-sky-100 md:w-auto md:shrink-0"
             >
               Edit Biodata
             </Link>
           </div>
 
-          <div className="lte-card-body">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {biodataSummary.map((item) => (
-                <div key={item.label} className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
-                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{item.label}</p>
-                  <p
-                    className={`break-words text-sm font-bold leading-relaxed ${
-                      item.value === '-' ? 'text-slate-400' : 'text-slate-800'
-                    }`}
-                  >
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {biodataSummary.map((item) => (
+              <div key={item.label} className="min-w-0 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                <p
+                  className={`min-h-[3rem] break-words text-sm font-bold leading-relaxed ${
+                    item.value === '-' ? 'text-slate-400' : 'text-slate-800'
+                  }`}
+                >
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
 
-            <p className="mt-4 text-xs font-medium text-slate-500">
-              Terakhir diperbarui: <span className="font-bold text-slate-700">{formatDateLabel(registration?.updated_at)}</span>
-            </p>
+          <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-xs font-medium text-slate-500">
+            Terakhir diperbarui: <span className="font-bold text-slate-700">{formatDateLabel(registration?.updated_at)}</span>
           </div>
         </div>
 
-        <div className="lte-card">
-          <div className="lte-card-header">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <h4 className="lte-card-title">Ringkasan Dokumen</h4>
-              <p className="lte-card-subtitle">
+              <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Ringkasan Dokumen</h4>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
                 Pastikan semua dokumen penting sudah terunggah agar proses review berjalan lancar.
               </p>
             </div>
             <Link
               href="/portal/documents"
-              className="lte-btn lte-btn-outline-success lte-btn-sm md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:bg-sky-100 md:w-auto md:shrink-0"
             >
               Kelola Dokumen
             </Link>
           </div>
 
-          <div className="lte-card-body space-y-3">
+          <div className="space-y-4">
             {documentSummary.map((item) => (
-              <div key={item.label} className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div key={item.label} className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-slate-800">{item.label}</p>
                   <p className="mt-1 text-xs text-slate-500">
@@ -589,8 +825,10 @@ export default function PortalDashboard() {
                   </p>
                 </div>
                 <span
-                  className={`lte-badge w-fit ${
-                    item.uploaded ? 'lte-badge-soft-success' : 'lte-badge-soft-warning'
+                  className={`inline-flex w-fit rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest ${
+                    item.uploaded
+                      ? 'border border-sky-100 bg-sky-50 text-sky-600'
+                      : 'border border-amber-100 bg-amber-50 text-amber-600'
                   }`}
                 >
                   {item.uploaded ? 'Sudah Ada' : 'Belum Ada'}
@@ -603,3 +841,4 @@ export default function PortalDashboard() {
     </>
   );
 }
+

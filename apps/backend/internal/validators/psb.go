@@ -3,7 +3,13 @@ package validators
 import "strings"
 
 type RegistrationStatusRequest struct {
-	Status string `json:"status"`
+	Status                 string `json:"status"`
+	Note                   string `json:"note"`
+	TestDate               string `json:"test_date"`
+	TestLocation           string `json:"test_location"`
+	TestScore              *int   `json:"test_score"`
+	TestNote               string `json:"test_note"`
+	ReRegistrationDeadline string `json:"re_registration_deadline"`
 }
 
 type RegistrationPaymentStatusRequest struct {
@@ -14,10 +20,30 @@ type RegistrationPaymentStatusRequest struct {
 func ValidateRegistrationStatusRequest(req *RegistrationStatusRequest) ValidationErrors {
 	errs := ValidationErrors{}
 	req.Status = strings.ToLower(NormalizeText(req.Status))
+	req.Note = strings.TrimSpace(req.Note)
+	req.TestDate = NormalizeText(req.TestDate)
+	req.TestLocation = NormalizeText(req.TestLocation)
+	req.TestNote = strings.TrimSpace(req.TestNote)
+	req.ReRegistrationDeadline = NormalizeText(req.ReRegistrationDeadline)
 	switch req.Status {
-	case "pending", "review", "accepted", "rejected":
+	case "pending", "review", "tes", "accepted", "re_registration", "rejected":
 	default:
-		errs.Add("status", "Status harus salah satu dari pending, review, accepted, rejected")
+		errs.Add("status", "Status harus salah satu dari pending, review, tes, accepted, re_registration, rejected")
+	}
+	if req.TestDate != "" && !ValidateDateTimeOrDate(req.TestDate) {
+		errs.Add("test_date", "Tanggal tes harus format YYYY-MM-DD atau YYYY-MM-DDTHH:MM (boleh kosong)")
+	}
+	if req.TestScore != nil && (*req.TestScore < 0 || *req.TestScore > 100) {
+		errs.Add("test_score", "Nilai tes harus 0-100")
+	}
+	if req.ReRegistrationDeadline != "" && !ValidateDateTimeOrDate(req.ReRegistrationDeadline) {
+		errs.Add("re_registration_deadline", "Batas daftar ulang harus format YYYY-MM-DD atau YYYY-MM-DDTHH:MM")
+	}
+	if len(req.Note) > 1000 {
+		errs.Add("note", "Catatan maksimal 1000 karakter")
+	}
+	if len(req.TestNote) > 1000 {
+		errs.Add("test_note", "Catatan tes maksimal 1000 karakter")
 	}
 	return errs
 }

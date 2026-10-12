@@ -2,9 +2,9 @@ Berikut **versi data lengkap** dari awal profil sampai bagian terakhir yang Anda
 
 ---
 
-**PROFIL PONDOK PESANTREN TAHFIDZ AL QUR'AN DARUSSUNNAH**
+**PROFIL PONDOK PESANTREN TAHFIDZ AL QUR'AN AL-MAA**
 
-Pondok Pesantren Tahfidz Al Qur'an Darussunnah didirikan oleh Yayasan Tunas Muda Qur'ani pada tahun 2009 di Kp. Lengkong Barang RT.01/02, Ds. Iwul, Kec. Parung, Bogor. Saat ini sedang membangun fasilitas belajar santri putra, termasuk masjid di Kp. Muara Jaya RT.01/05, Ciaureuten Ilir, Bogor sebagai lokasi Pondok Pesantren Putra.
+Pondok Pesantren Tahfidz Al Qur'an Al-Maa didirikan oleh Yayasan Tunas Muda Qur'ani pada tahun 2009 di Kp. Lengkong Barang RT.01/02, Ds. Iwul, Kec. Parung, Bogor. Saat ini sedang membangun fasilitas belajar santri putra, termasuk masjid di Kp. Muara Jaya RT.01/05, Ciaureuten Ilir, Bogor sebagai lokasi Pondok Pesantren Putra.
 
 **Nomor Statistik Pondok:** 510032011292
 
@@ -79,6 +79,6 @@ Menjadi lembaga yang menyiapkan generasi muslim yang berkualitas, melalui pendek
 **Rekening**
 **No. Rekening:** 7123664177
 **Bank:** BSI
-**Penerima:** PONPES DARUSSUNNAH
+**Penerima:** PONPES AL-MAA
 
 ---

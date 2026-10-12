@@ -28,6 +28,13 @@ func writeJSONResponse(w http.ResponseWriter, status int, success bool, message 
 	})
 }
 
+// heavySettings sengaja TIDAK ikut dikirim pada daftar settings umum.
+// website_builder_revisions memuat riwayat revisi penuh (~380 KB, 91% dari
+// seluruh payload settings) dan tidak ada consumer frontend maupun backend
+// yang membacanya lewat daftar ini. Nilainya tetap utuh di database dan
+// bisa diambil lewat endpoint khusus GET /settings/revisions.
+var heavySettings = []string{"website_builder_revisions"}
+
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	list, err := h.repo.FindAll()
 	if err != nil {
@@ -35,7 +42,30 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal memproses permintaan (Internal Server Error)", nil)
 		return
 	}
-	writeJSONResponse(w, http.StatusOK, true, "Pengaturan berhasil dimuat", list)
+
+	trimmed := make([]Setting, 0, len(list))
+	for _, setting := range list {
+		if slices.Contains(heavySettings, setting.Key) {
+			continue
+		}
+		trimmed = append(trimmed, setting)
+	}
+
+	writeJSONResponse(w, http.StatusOK, true, "Pengaturan berhasil dimuat", trimmed)
+}
+
+// GetRevisions mengembalikan riwayat revisi website builder secara eksplisit.
+// Dipisah dari GetAll supaya daftar settings tetap ringan tapi datanya tetap
+// bisa diakses superadmin.
+func (h *Handler) GetRevisions(w http.ResponseWriter, r *http.Request) {
+	value, err := h.repo.GetByKey("website_builder_revisions")
+	if err != nil || value == "" {
+		value = "{}"
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Riwayat revisi website builder berhasil dimuat", map[string]string{
+		"key":   "website_builder_revisions",
+		"value": value,
+	})
 }
 
 func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
@@ -50,14 +80,24 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 		"school_name",
 		"web_logo_url",
 		"web_welcome_text",
+		"berdiri",
+		"yayasan",
+		"nspp",
+		"legalitas",
 		"school_address",
 		"school_phone",
 		"school_email",
 		"school_website",
+		// Jilid 84 (E-Rapor): identitas madrasah untuk sync RDM/EMIS Kemenag.
+		"nama_madrasah",
+		"npsn",
+		"jenjang_madrasah",
 		"whatsapp_admin_numbers",
 		"social_instagram",
 		"social_facebook",
 		"social_youtube",
+		"social_tiktok",
+		"social_twitter",
 		"welcome_speech_name",
 		"welcome_speech_role",
 		"welcome_speech_image",
@@ -74,6 +114,25 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 		"psb_payment_amount",
 		"psb_payment_note",
 		"psb_payment_instructions",
+		"psb_page_hero_title",
+		"psb_page_hero_subtitle",
+		"psb_page_requirements",
+		"psb_page_quota_ikhwan",
+		"psb_page_quota_akhwat",
+		"psb_quota_smp",
+		"psb_quota_smk",
+		"psb_page_quota_smp",
+		"psb_page_quota_smk",
+		"psb_page_fee",
+		"psb_page_address",
+		"psb_page_wa",
+		"spp_bank_name",
+		"spp_account_number",
+		"spp_account_holder",
+		"donation_bank_name",
+		"donation_account_number",
+		"donation_account_holder",
+		"donation_whatsapp",
 		"website_builder_enabled",
 		"website_builder_theme_published",
 		"website_builder_shell_published",
@@ -89,6 +148,20 @@ func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSONResponse(w, http.StatusOK, true, "Pengaturan publik berhasil dimuat", publicList)
+}
+
+// GetRolePermissions mengembalikan peta hak akses menu per role.
+// Bisa dibaca semua user yang sudah login (bukan hanya superadmin)
+// agar Sidebar tiap role bisa memfilter menu sesuai pengaturan.
+func (h *Handler) GetRolePermissions(w http.ResponseWriter, r *http.Request) {
+	value, err := h.repo.GetByKey("role_menu_permissions")
+	if err != nil || value == "" {
+		value = "{}"
+	}
+	writeJSONResponse(w, http.StatusOK, true, "Hak akses menu berhasil dimuat", map[string]string{
+		"key":   "role_menu_permissions",
+		"value": value,
+	})
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -150,6 +223,7 @@ func (h *Handler) BatchUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.GetAll)
+	r.Get("/revisions", h.GetRevisions)
 	r.Put("/batch", h.BatchUpdate)
 	r.Put("/{key}", h.Update)
 	return r

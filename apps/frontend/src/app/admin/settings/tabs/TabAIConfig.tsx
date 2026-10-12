@@ -10,7 +10,7 @@ export default function TabAIConfig() {
   const [isSaving, setIsSaving] = useState(false);
   const { showToast } = useToast();
 
-  const KEYS = ['ai_openai_key', 'ai_model', 'ai_temperature'];
+  const KEYS = ['ai_openai_key', 'ai_model', 'ai_temperature', 'ai_api_url'];
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -43,13 +43,13 @@ export default function TabAIConfig() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-emerald-600" /></div>;
+  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-sky-600" /></div>;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center gap-4">
-             <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+             <div className="w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600">
                 <Bot size={24} />
              </div>
              <div>
@@ -60,32 +60,32 @@ export default function TabAIConfig() {
           
           <div className="p-8 space-y-8">
              <div className="space-y-4">
-                <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Key size={12} /> OpenAI API Key (sk-...)
+                <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Key size={12} /> AI API Key (Dahl dahl_... / OpenAI sk-...)
                 </label>
                 <input 
                    type="password"
                    value={formValues['ai_openai_key'] || ''}
                    onChange={(e) => handleChange('ai_openai_key', e.target.value)}
                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-widest text-slate-800"
-                   placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                   placeholder="dahl_... atau sk-..."
                 />
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                   <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em]">Model Preferensi</label>
+                   <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">Model Preferensi</label>
                    <select 
-                      value={formValues['ai_model'] || 'gpt-4o-mini'}
+                      value={formValues['ai_model'] || 'deepseek-ai/DeepSeek-V4-Flash-0731'}
                       onChange={(e) => handleChange('ai_model', e.target.value)}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-sm"
                    >
-                     <option value="gpt-4o-mini">GPT-4o Mini (Cepat & Hemat)</option>
-                     <option value="gpt-4o">GPT-4o (Akurat & Pintar)</option>
-                     <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Legacy)</option>
+                     <option value="deepseek-ai/DeepSeek-V4-Flash-0731">DeepSeek V4 Flash (Free)</option>
+                     <option value="MiniMaxAI/MiniMax-M2.7">MiniMax M2.7 (Free)</option>
+                     <option value="zai-org/GLM-5.3-Flash">GLM 5.3 Flash (Free)</option>
                    </select>
                 </div>
                 <div className="space-y-4">
-                   <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em]">Level Kreativitas (Temperature 0-1)</label>
+                   <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">Level Kreativitas (Temperature 0-1)</label>
                    <input 
                       type="number" step="0.1" min="0" max="1"
                       value={formValues['ai_temperature'] || '0.7'}
@@ -94,6 +94,16 @@ export default function TabAIConfig() {
                    />
                 </div>
              </div>
+              <div className="space-y-4">
+                 <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">API URL (OpenAI-compatible Dahl)</label>
+                 <input 
+                    type="text"
+                    value={formValues['ai_api_url'] || ''}
+                    onChange={(e) => handleChange('ai_api_url', e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm text-slate-800"
+                    placeholder="https://inference.dahl.global/v1"
+                 />
+              </div>
           </div>
        </section>
 
@@ -101,7 +111,7 @@ export default function TabAIConfig() {
           <button 
              onClick={handleSaveAll}
              disabled={isSaving}
-             className="px-8 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition flex items-center gap-3 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+             className="px-8 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition flex items-center gap-3 shadow-lg shadow-sky-600/20 disabled:opacity-50"
           >
              {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
              SIMPAN KONFIGURASI AI

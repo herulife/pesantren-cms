@@ -4,31 +4,43 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
+import { useAuth } from '@/components/AuthProvider';
 import {
+  ArbainProgress,
   Attendance,
   CompactUser,
+  HadisArbain,
   Grade,
+  GradeWeight,
   Subject,
   TahfidzProgress,
   createSubject,
+  deleteArbain,
   deleteAttendance,
   deleteGrade,
   deleteSubject,
   deleteTahfidz,
+  getAcademicKKM,
   getAcademicStudents,
+  getArbain,
+  getArbainReference,
   getAttendance,
   getAttendanceSummary,
+  getGradeWeights,
   getGrades,
   getGradesByStudent,
   getSubjects,
+  getUsers,
   getTahfidz,
   sendWhatsApp,
+  updateAcademicKKM,
+  updateGradeWeights,
 } from '@/lib/api';
 import { downloadBulkStudentReportPDF, downloadStudentReportPDF, exportToExcel, exportToPDF, previewBulkStudentReportPDF, previewStudentReportPDF } from '@/lib/export';
-import { AlertTriangle, BarChart3, BookOpen, Calendar, ClipboardList, Download, Eye, FileDown, FileSpreadsheet, LayoutDashboard, Layers3, MessageSquare, Pencil, Plus, Printer, RefreshCw, Search, Trash2, Trophy, Users, X } from 'lucide-react';
+import { AlertTriangle, BarChart3, BookOpen, Calendar, ClipboardList, Download, Eye, FileDown, FileSpreadsheet, LayoutDashboard, Layers3, MessageSquare, Pencil, Plus, Printer, RefreshCw, ScrollText, Search, Trash2, Trophy, Users, X } from 'lucide-react';
 
-type TabKey = 'dashboard' | 'grades' | 'attendance' | 'tahfidz' | 'recap' | 'reports' | 'subjects';
-type DeleteType = 'grade' | 'attendance' | 'tahfidz' | 'subject';
+type TabKey = 'dashboard' | 'grades' | 'attendance' | 'tahfidz' | 'arbain' | 'recap' | 'reports' | 'subjects';
+type DeleteType = 'grade' | 'attendance' | 'tahfidz' | 'arbain' | 'subject';
 
 const subjectInit = { name: '', category: 'Akademik', teacher_id: '0' };
 
@@ -74,17 +86,39 @@ export default function AcademicsPage() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('Ganjil');
-  const [selectedYear, setSelectedYear] = useState('2024/2025');
+  const [selectedSemester, setSelectedSemester] = useState('1');
+  const [selectedYear, setSelectedYear] = useState('2025/2026');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [tahfidz, setTahfidz] = useState<TahfidzProgress[]>([]);
+  const [arbain, setArbain] = useState<ArbainProgress[]>([]);
+  const [arbainRef, setArbainRef] = useState<HadisArbain[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<CompactUser[]>([]);
   const [subjectForm, setSubjectForm] = useState(subjectInit);
+  const { user: authUser } = useAuth();
+  const [kkm, setKkm] = useState(75);
+  const [kkmInput, setKkmInput] = useState('75');
+  const [gradeWeights, setGradeWeights] = useState<GradeWeight[]>([]);
+  const [isWeightsSaving, setIsWeightsSaving] = useState(false);
+  const [isKkmSaving, setIsKkmSaving] = useState(false);
+  const [guruUsers, setGuruUsers] = useState<{ id: number; name: string; email: string; role: string }[]>([]);
+  const tabVisible = (id: string) => {
+    const r = authUser?.role;
+    if (!r || r === 'superadmin' || r === 'admin') return true;
+    if (r === 'guru') return ['dashboard', 'grades'].includes(id);
+    if (r === 'ustadz') return ['dashboard', 'tahfidz', 'arbain'].includes(id);
+    // wali_kelas: tab Tahfidz hanya baca (scope kelasnya) — menulis tahfidz
+    // tetap ditolak backend (403: hanya superadmin/ustadz), jadi tombol
+    // Tambah/Edit/Hapus disembunyikan lewat canWriteTahfidz.
+    if (r === 'wali_kelas') return ['dashboard', 'grades', 'attendance', 'tahfidz', 'recap', 'reports'].includes(id);
+    if (r === 'pimpinan') return true;
+    return id === 'dashboard';
+  };
+  const canWriteTahfidz = ['superadmin', 'admin', 'ustadz'].includes(authUser?.role || '');
   const [reportOpen, setReportOpen] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const [bulkReportOpen, setBulkReportOpen] = useState(false);
@@ -98,9 +132,13 @@ export default function AcademicsPage() {
   const [deleteState, setDeleteState] = useState<{ type: DeleteType; id: number | null }>({ type: 'grade', id: null });
 
   const loadRefs = useCallback(async () => {
-    const [subjectData, studentData] = await Promise.all([getSubjects(), getAcademicStudents()]);
+    const [subjectData, studentData, allUsers, kkmData, weightData] = await Promise.all([getSubjects(), getAcademicStudents(), getUsers(), getAcademicKKM().catch(() => 75), getGradeWeights().catch(() => [])]);
     setSubjects(subjectData);
+    setGuruUsers((allUsers || []).filter(u => u.role === 'guru'));
     setStudents(studentData);
+    setKkm(kkmData || 75);
+    setKkmInput(String(kkmData || 75));
+    setGradeWeights(weightData || []);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -109,6 +147,10 @@ export default function AcademicsPage() {
       if (['dashboard', 'grades', 'recap', 'reports', 'subjects'].includes(activeTab)) setGrades(await getGrades(selectedSemester, selectedYear));
       if (activeTab === 'attendance') setAttendance(await getAttendance(selectedDate));
       if (activeTab === 'tahfidz') setTahfidz(await getTahfidz());
+      if (activeTab === 'arbain') {
+        setArbain(await getArbain());
+        setArbainRef(await getArbainReference());
+      }
     } catch {
       showToast('error', 'Gagal memuat data akademik.');
     } finally {
@@ -118,10 +160,45 @@ export default function AcademicsPage() {
 
   useEffect(() => { loadRefs(); }, [loadRefs]);
   useEffect(() => { loadData(); }, [loadData]);
+
+  const saveKKM = async () => {
+    const val = parseInt(kkmInput, 10);
+    if (!val || val < 1 || val > 99) { showToast('error', 'KKM harus 1-99.'); return; }
+    setIsKkmSaving(true);
+    try {
+      const saved = await updateAcademicKKM(val);
+      setKkm(saved);
+      showToast('success', `KKM tersimpan, pengaturan ketuntasan diperbarui.`);
+    } catch {
+      showToast('error', 'Gagal menyimpan KKM.');
+    } finally {
+      setIsKkmSaving(false);
+    }
+  };
+
+  const saveWeights = async () => {
+    const anyInvalid = gradeWeights.some((w) => {
+      const total = w.uts_weight + w.uas_weight + w.task_weight + w.uh_weight;
+      return [w.uts_weight, w.uas_weight, w.task_weight, w.uh_weight].some((v) => !v || v < 0 || v > 100) || Math.abs(total - 100) > 0.01;
+    });
+    if (anyInvalid) { showToast('error', 'Pastikan setiap bobot 1-100 dan total tiap mapel = 100%.'); return; }
+    setIsWeightsSaving(true);
+    try {
+      await updateGradeWeights(gradeWeights);
+      showToast('success', 'Bobot nilai per mapel tersimpan.');
+    } catch {
+      showToast('error', 'Gagal menyimpan bobot nilai.');
+    } finally {
+      setIsWeightsSaving(false);
+    }
+  };
+
   const filteredGrades = useMemo(() => grades.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.subject_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [grades, searchQuery]);
   const filteredAttendance = useMemo(() => attendance.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase())), [attendance, searchQuery]);
   const filteredTahfidz = useMemo(() => tahfidz.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || v.surah_name.toLowerCase().includes(searchQuery.toLowerCase())), [tahfidz, searchQuery]);
-  const semesterLabel = selectedSemester === 'Genap' ? 'Semester 2' : 'Semester 1';
+  const filteredArbain = useMemo(() => arbain.filter((v) => (v.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.hadith_title || '').toLowerCase().includes(searchQuery.toLowerCase()) || String(v.hadith_number) === searchQuery), [arbain, searchQuery]);
+  const arbainLulus = filteredArbain.filter((v) => v.status === 'lulus').length;
+  const semesterLabel = selectedSemester === '2' ? 'Semester 2' : 'Semester 1';
   const academicPeriodLabel = `${semesterLabel} — Tahun Ajaran ${selectedYear}`;
   const averageGrade = filteredGrades.length ? (filteredGrades.reduce((sum, item) => sum + item.final_score, 0) / filteredGrades.length).toFixed(1) : '0.0';
   const hadirPct = filteredAttendance.length ? `${Math.round((filteredAttendance.filter((v) => v.status === 'hadir').length / filteredAttendance.length) * 100)}%` : '0%';
@@ -166,7 +243,7 @@ export default function AcademicsPage() {
         return {
           ...item,
           average,
-          status: average >= 75 ? 'Tuntas' : 'Perlu Pendampingan',
+          status: average >= kkm ? 'Tuntas' : 'Perlu Pendampingan',
         };
       })
       .sort((a, b) => b.average - a.average)
@@ -174,7 +251,7 @@ export default function AcademicsPage() {
         ...item,
         rank: index + 1,
       }));
-  }, [filteredGrades]);
+  }, [filteredGrades, kkm]);
   const recapSubjectAverages = useMemo(() => recapSubjectColumns.map((subject) => {
     const scores = filteredGrades.filter((item) => item.subject_id === subject.id).map((item) => item.final_score);
     const average = scores.length ? scores.reduce((sum, value) => sum + value, 0) / scores.length : 0;
@@ -182,19 +259,19 @@ export default function AcademicsPage() {
   }), [filteredGrades, recapSubjectColumns]);
   const recapCompletionStats = useMemo(() => {
     const total = studentRecaps.length;
-    const completed = studentRecaps.filter((item) => item.average >= 75).length;
+    const completed = studentRecaps.filter((item) => item.average >= kkm).length;
     return {
       total,
       completed,
       pending: Math.max(total - completed, 0),
     };
-  }, [studentRecaps]);
+  }, [studentRecaps, kkm]);
   const topSubjects = useMemo(() => recapSubjectAverages
     .slice()
     .sort((a, b) => b.average - a.average)
     .slice(0, 6), [recapSubjectAverages]);
   const dashboardStats = useMemo(() => ([
-    { label: 'Total Santri', value: String(studentRecaps.length), icon: Users, tone: 'bg-emerald-50 text-emerald-700' },
+    { label: 'Total Santri', value: String(studentRecaps.length), icon: Users, tone: 'bg-sky-50 text-sky-700' },
     { label: 'Mata Pelajaran', value: String(recapSubjectColumns.length), icon: BookOpen, tone: 'bg-sky-50 text-sky-700' },
     { label: 'Rata-rata Kelas', value: averageGrade, icon: Trophy, tone: 'bg-amber-50 text-amber-700' },
     { label: 'Perlu Perhatian', value: String(recapCompletionStats.pending), icon: AlertTriangle, tone: 'bg-rose-50 text-rose-700' },
@@ -210,7 +287,7 @@ export default function AcademicsPage() {
   }, [studentRecaps]);
 
   const buildFormHref = (
-    type: 'grade' | 'attendance' | 'tahfidz' | 'bulk-grade' | 'bulk-edit',
+    type: 'grade' | 'attendance' | 'tahfidz' | 'arbain' | 'bulk-grade' | 'bulk-edit',
     extra: Record<string, string | number | undefined> = {},
   ) => {
     const params = new URLSearchParams({ type });
@@ -229,6 +306,7 @@ export default function AcademicsPage() {
     if (activeTab === 'grades') router.push(buildFormHref('grade'));
     if (activeTab === 'attendance') router.push(buildFormHref('attendance', { date: selectedDate }));
     if (activeTab === 'tahfidz') router.push(buildFormHref('tahfidz'));
+    if (activeTab === 'arbain') router.push(buildFormHref('arbain'));
   };
 
   const saveSubject = async (e: React.FormEvent) => {
@@ -247,6 +325,7 @@ export default function AcademicsPage() {
       if (deleteState.type === 'grade') await deleteGrade(deleteState.id);
       if (deleteState.type === 'attendance') await deleteAttendance(deleteState.id);
       if (deleteState.type === 'tahfidz') await deleteTahfidz(deleteState.id);
+      if (deleteState.type === 'arbain') await deleteArbain(deleteState.id);
       if (deleteState.type === 'subject') {
         await deleteSubject(deleteState.id);
         setSubjects(await getSubjects());
@@ -409,10 +488,10 @@ export default function AcademicsPage() {
   };
 
   const exportData = (type: 'pdf' | 'excel') => {
-    const title = activeTab === 'grades' ? 'Laporan Nilai Santri' : activeTab === 'attendance' ? 'Laporan Presensi Santri' : 'Laporan Tahfidz Santri';
-    const filename = activeTab === 'grades' ? 'laporan_nilai' : activeTab === 'attendance' ? 'laporan_presensi' : 'laporan_tahfidz';
-    const columns = activeTab === 'grades' ? ['Santri', 'Mapel', 'UTS', 'UAS', 'Tugas', 'Akhir', 'Grade'] : activeTab === 'attendance' ? ['Santri', 'Tanggal', 'Status', 'Catatan'] : ['Santri', 'Surah', 'Juz', 'Ayat', 'Status', 'Tanggal'];
-    const rows = activeTab === 'grades' ? filteredGrades.map((v) => [v.student_name || '-', v.subject_name || '-', v.uts_score, v.uas_score, v.task_score, v.final_score, v.grade_letter]) : activeTab === 'attendance' ? filteredAttendance.map((v) => [v.student_name || '-', v.date, v.status, v.notes || '-']) : filteredTahfidz.map((v) => [v.student_name || '-', v.surah_name, v.juz, `${v.start_ayat}-${v.end_ayat}`, v.status, v.evaluation_date]);
+    const title = activeTab === 'grades' ? 'Laporan Nilai Santri' : activeTab === 'attendance' ? 'Laporan Presensi Santri' : activeTab === 'arbain' ? 'Laporan Setoran Hadis Arbain' : 'Laporan Tahfidz Santri';
+    const filename = activeTab === 'grades' ? 'laporan_nilai' : activeTab === 'attendance' ? 'laporan_presensi' : activeTab === 'arbain' ? 'laporan_arbain' : 'laporan_tahfidz';
+    const columns = activeTab === 'grades' ? ['Santri', 'Mapel', 'UTS', 'UAS', 'Tugas', 'UH', 'Akhir', 'Grade'] : activeTab === 'attendance' ? ['Santri', 'Tanggal', 'Status', 'Catatan'] : activeTab === 'arbain' ? ['Santri', 'No', 'Hadis', 'Status', 'Nilai', 'Tanggal'] : ['Santri', 'Surah', 'Juz', 'Ayat', 'Status', 'Tanggal'];
+    const rows = activeTab === 'grades' ? filteredGrades.map((v) => [v.student_name || '-', v.subject_name || '-', v.uts_score, v.uas_score, v.task_score, v.uh_score, v.final_score, v.grade_letter]) : activeTab === 'attendance' ? filteredAttendance.map((v) => [v.student_name || '-', v.date, v.status, v.notes || '-']) : activeTab === 'arbain' ? filteredArbain.map((v) => [v.student_name || '-', v.hadith_number, v.hadith_title || '-', v.status, v.nilai, v.evaluation_date]) : filteredTahfidz.map((v) => [v.student_name || '-', v.surah_name, v.juz, `${v.start_ayat}-${v.end_ayat}`, v.status, v.evaluation_date]);
     if (type === 'pdf') return exportToPDF(title, columns, rows, filename);
     return exportToExcel(title, columns, rows, filename);
   };
@@ -421,13 +500,13 @@ export default function AcademicsPage() {
     <div className="pb-10 font-outfit">
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">Dashboard eRapor</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">Dashboard eRapor</p>
           <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-800">eRapor</h2>
           <p className="mt-1 text-sm text-slate-500">{academicPeriodLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => exportData('pdf')} className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100"><FileDown size={16} /> Export PDF</button>
-          <button onClick={() => exportData('excel')} className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"><FileSpreadsheet size={16} /> Export Excel</button>
+          <button onClick={() => exportData('excel')} className="flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100"><FileSpreadsheet size={16} /> Export Excel</button>
         </div>
       </div>
 
@@ -436,16 +515,17 @@ export default function AcademicsPage() {
         { id: 'grades', label: 'Nilai', icon: BookOpen },
         { id: 'attendance', label: 'Presensi', icon: Calendar },
         { id: 'tahfidz', label: 'Tahfidz', icon: ClipboardList },
+        { id: 'arbain', label: 'Hadis Arbain', icon: ScrollText },
         { id: 'recap', label: 'Rekap Nilai', icon: BarChart3 },
         { id: 'reports', label: 'Cetak Raport', icon: FileDown },
         { id: 'subjects', label: 'Mata Pelajaran', icon: Layers3 },
-      ].map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id as TabKey)} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}><tab.icon size={16} /> {tab.label}</button>)}</div>
+      ].filter((tab) => tabVisible(tab.id)).map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id as TabKey)} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-sky-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}><tab.icon size={16} /> {tab.label}</button>)}</div>
 
       <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[280px] flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari data akademik..." className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none focus:border-emerald-500" /></div>
+          <div className="relative min-w-[280px] flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari data akademik..." className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none focus:border-sky-500" /></div>
           {['grades', 'recap', 'reports'].includes(activeTab) && <>
-            <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option>Ganjil</option><option>Genap</option></select>
+            <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option value="1">Semester 1</option><option value="2">Semester 2</option></select>
             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm"><option>2023/2024</option><option>2024/2025</option><option>2025/2026</option></select>
           </>}
           {activeTab === 'grades' && <>
@@ -454,12 +534,32 @@ export default function AcademicsPage() {
             <button onClick={() => router.push(buildFormHref('bulk-edit'))} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"><Pencil size={16} /> Edit Massal</button>
           </>}
           {activeTab === 'attendance' && <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm" />}
-          {['grades', 'attendance', 'tahfidz'].includes(activeTab) && <button onClick={openAdd} className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"><Plus size={16} /> Tambah Data</button>}
+          {['grades', 'attendance', 'tahfidz', 'arbain'].includes(activeTab) && !(activeTab === 'tahfidz' && !canWriteTahfidz) && <button onClick={openAdd} className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"><Plus size={16} /> Tambah Data</button>}
         </div>
       </div>
 
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
+          <div className="rounded-xl border border-sky-200 bg-sky-50/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-sky-800">Ambang Ketuntasan (KKM)</h3>
+              <p className="mt-1 text-sm text-slate-600">Nilai di bawah KKM membutuhkan pendampingan. Huruf: A ≥ KKM+15, B ≥ KKM+5, C = KKM, D = KKM-15, E &lt; KKM-15.</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="inline-flex rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-sky-700 ring-1 ring-sky-200">KKM saat ini: {kkm}</span>
+                <span className="inline-flex rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">Tuntas: ≥ {kkm}</span>
+                <span className="inline-flex rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 ring-1 ring-rose-200">Pendampingan: &lt; {kkm}</span>
+              </div>
+            </div>
+            {['superadmin', 'admin'].includes(authUser?.role || '') && (
+              <div className="flex items-center gap-2">
+                <input type="number" min={1} max={99} value={kkmInput} onChange={(e) => setKkmInput(e.target.value)} className="w-28 rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" />
+                <button onClick={saveKKM} disabled={isKkmSaving} className="rounded-lg bg-sky-600 text-white px-4 py-2 text-sm font-semibold transition-colors hover:bg-sky-700 disabled:opacity-50">{isKkmSaving ? 'Menyimpan...' : 'Simpan KKM'}</button>
+              </div>
+            )}
+          </div>
+        </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {dashboardStats.map((stat) => (
               <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -482,7 +582,7 @@ export default function AcademicsPage() {
                 <h3 className="text-lg font-semibold text-slate-900">Rekap Nilai Siswa</h3>
                 <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-600">{academicPeriodLabel}</span>
               </div>
-              <div className="overflow-x-auto">
+              <div className="ap-table-wrap overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/80">
@@ -496,12 +596,12 @@ export default function AcademicsPage() {
                   <tbody>
                     {studentRecaps.slice(0, 8).map((item) => (
                       <tr key={item.studentId} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition-colors">
-                        <td className="px-6 py-3 font-bold text-emerald-700">{item.rank}</td>
+                        <td className="px-6 py-3 font-bold text-sky-700">{item.rank}</td>
                         <td className="px-6 py-3 font-medium text-slate-900">{item.studentName}</td>
                         {recapSubjectColumns.slice(0, 4).map((subject) => <td key={subject.id} className="px-6 py-3 text-center text-slate-600">{item.subjectScores[subject.id] ?? '-'}</td>)}
                         <td className="px-6 py-3 text-center font-semibold text-slate-900">{item.average.toFixed(1)}</td>
                         <td className="px-6 py-3 text-center">
-                          <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${item.average >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span>
+                          <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${item.average >= kkm ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -526,7 +626,7 @@ export default function AcademicsPage() {
                     </div>
                     <div className="h-3 rounded-full bg-slate-100">
                       <div
-                        className="h-3 rounded-full bg-emerald-600 transition-all"
+                        className="h-3 rounded-full bg-sky-600 transition-all"
                         style={{ width: `${Math.max(8, Math.min(subject.average, 100))}%` }}
                       />
                     </div>
@@ -543,9 +643,9 @@ export default function AcademicsPage() {
         {
           label: 'Rata-rata Nilai',
           value: averageGrade,
-          color: 'text-emerald-700',
-          tone: 'border-emerald-100 bg-emerald-50/80',
-          labelTone: 'text-emerald-600/80',
+          color: 'text-sky-700',
+          tone: 'border-sky-100 bg-sky-50/80',
+          labelTone: 'text-sky-600/80',
         },
         {
           label: 'Kehadiran',
@@ -576,24 +676,55 @@ export default function AcademicsPage() {
       ))}</div>}
 
       {['grades', 'attendance', 'tahfidz'].includes(activeTab) && <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        {isLoading ? <div className="py-24 text-center text-sm font-bold text-slate-400">Memuat data...</div> : <div className="overflow-x-auto">
+        {isLoading ? <div className="py-24 text-center text-sm font-bold text-slate-400">Memuat data...</div> : <div className="ap-table-wrap overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th>{activeTab === 'grades' && <><th className="px-4 py-4">Mapel</th><th className="px-4 py-4">UTS</th><th className="px-4 py-4">UAS</th><th className="px-4 py-4">Tugas</th><th className="px-4 py-4">Akhir</th><th className="px-4 py-4">Grade</th></>}{activeTab === 'attendance' && <><th className="px-4 py-4">Tanggal</th><th className="px-4 py-4">Status</th></>}{activeTab === 'tahfidz' && <><th className="px-4 py-4">Surah</th><th className="px-4 py-4">Juz</th><th className="px-4 py-4">Ayat</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Evaluasi</th></>}<th className="px-6 py-4 text-right">Aksi</th></tr></thead>
+            <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th>{activeTab === 'grades' && <><th className="px-4 py-4">Mapel</th><th className="px-4 py-4">UTS</th><th className="px-4 py-4">UAS</th><th className="px-4 py-4">Tugas</th><th className="px-4 py-4">UH</th><th className="px-4 py-4">Akhir</th><th className="px-4 py-4">Grade</th></>}{activeTab === 'attendance' && <><th className="px-4 py-4">Tanggal</th><th className="px-4 py-4">Status</th></>}{activeTab === 'tahfidz' && <><th className="px-4 py-4">Surah</th><th className="px-4 py-4">Juz</th><th className="px-4 py-4">Ayat</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Evaluasi</th><th className="px-4 py-4">Periode</th></>}<th className="px-6 py-4 text-right">Aksi</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {activeTab === 'grades' && filteredGrades.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.subject_name}</td><td className="px-4 py-4">{v.uts_score}</td><td className="px-4 py-4">{v.uas_score}</td><td className="px-4 py-4">{v.task_score}</td><td className="px-4 py-4 font-black text-emerald-600">{v.final_score}</td><td className="px-4 py-4">{v.grade_letter}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('grade', { id: v.id, semester: v.semester, year: v.academic_year }))} className="rounded-xl bg-emerald-50 p-2 text-emerald-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'grade', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
-              {activeTab === 'attendance' && filteredAttendance.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.date}</td><td className="px-4 py-4 font-bold uppercase">{v.status}</td><td className="px-6 py-4"><div className="flex justify-end gap-2">{v.status === 'alpha' && <button onClick={() => notifyAlpha(v)} className="rounded-xl bg-amber-50 p-2 text-amber-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-sm"><MessageSquare size={15} /></button>}<button onClick={() => router.push(buildFormHref('attendance', { id: v.id, date: v.date }))} className="rounded-xl bg-emerald-50 p-2 text-emerald-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'attendance', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
-              {activeTab === 'tahfidz' && filteredTahfidz.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.surah_name}</td><td className="px-4 py-4">{v.juz}</td><td className="px-4 py-4">{v.start_ayat}-{v.end_ayat}</td><td className="px-4 py-4 uppercase">{v.status}</td><td className="px-4 py-4">{v.evaluation_date}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('tahfidz', { id: v.id }))} className="rounded-xl bg-emerald-50 p-2 text-emerald-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'tahfidz', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {activeTab === 'grades' && filteredGrades.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.subject_name}</td><td className="px-4 py-4">{v.uts_score}</td><td className="px-4 py-4">{v.uas_score}</td><td className="px-4 py-4">{v.task_score}</td><td className="px-4 py-4">{v.uh_score}</td><td className="px-4 py-4 font-black text-sky-600">{v.final_score}</td><td className="px-4 py-4">{v.grade_letter}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('grade', { id: v.id, semester: v.semester, year: v.academic_year }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'grade', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {activeTab === 'attendance' && filteredAttendance.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.date}</td><td className="px-4 py-4 font-bold uppercase">{v.status}</td><td className="px-6 py-4"><div className="flex justify-end gap-2">{v.status === 'alpha' && <button onClick={() => notifyAlpha(v)} className="rounded-xl bg-amber-50 p-2 text-amber-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-sm"><MessageSquare size={15} /></button>}<button onClick={() => router.push(buildFormHref('attendance', { id: v.id, date: v.date }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'attendance', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {activeTab === 'tahfidz' && filteredTahfidz.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4">{v.surah_name}</td><td className="px-4 py-4">{v.juz}</td><td className="px-4 py-4">{v.start_ayat}-{v.end_ayat}</td><td className="px-4 py-4 uppercase">{v.status}</td><td className="px-4 py-4">{v.evaluation_date}</td><td className="px-4 py-4 text-slate-500">{v.academic_year ? `Sem ${v.semester || '-'} TA ${v.academic_year}` : '—'}</td><td className="px-6 py-4">{canWriteTahfidz ? <div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('tahfidz', { id: v.id }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'tahfidz', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div> : <p className="text-right text-[11px] font-semibold text-slate-400">Hanya baca</p>}</td></tr>)}
             </tbody>
           </table>
         </div>}
       </div>}
 
+      {activeTab === 'arbain' && <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">{[
+        { label: 'Total Setoran', value: String(filteredArbain.length), tone: 'border-sky-100 bg-sky-50/80', text: 'text-sky-700', labelTone: 'text-sky-600/80' },
+        { label: 'Lulus', value: String(arbainLulus), tone: 'border-emerald-100 bg-emerald-50/80', text: 'text-emerald-700', labelTone: 'text-emerald-600/80' },
+        { label: 'Setor', value: String(filteredArbain.filter((v) => v.status === 'setor').length), tone: 'border-amber-100 bg-amber-50/80', text: 'text-amber-700', labelTone: 'text-amber-600/80' },
+        { label: 'Proses', value: String(filteredArbain.filter((v) => v.status === 'proses').length), tone: 'border-slate-100 bg-slate-50/80', text: 'text-slate-700', labelTone: 'text-slate-500/80' },
+      ].map((card) => (
+        <div key={card.label} className={`rounded-xl border p-5 shadow-sm ${card.tone}`}>
+          <p className={`text-[10px] font-black uppercase tracking-widest ${card.labelTone}`}>{card.label}</p>
+          <p className={`mt-2 text-3xl font-black ${card.text}`}>{card.value}</p>
+        </div>
+      ))}</div>}
+
+      {activeTab === 'arbain' && <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        {isLoading ? <div className="py-24 text-center text-sm font-bold text-slate-400">Memuat data...</div> : <div className="ap-table-wrap overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-6 py-4">Santri</th><th className="px-4 py-4">No</th><th className="px-4 py-4">Hadis</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Nilai</th><th className="px-4 py-4">Evaluasi</th><th className="px-6 py-4 text-right">Aksi</th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredArbain.map((v) => <tr key={v.id}><td className="px-6 py-4 font-bold text-slate-800">{v.student_name}</td><td className="px-4 py-4 font-black text-sky-600">{v.hadith_number}</td><td className="px-4 py-4">{v.hadith_title || '-'}</td><td className="px-4 py-4 uppercase">{v.status}</td><td className="px-4 py-4 font-bold">{v.nilai}</td><td className="px-4 py-4">{v.evaluation_date}</td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => router.push(buildFormHref('arbain', { id: v.id }))} className="rounded-xl bg-sky-50 p-2 text-sky-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm"><Pencil size={15} /></button><button onClick={() => setDeleteState({ type: 'arbain', id: v.id })} className="rounded-xl bg-rose-50 p-2 text-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100 hover:shadow-sm"><Trash2 size={15} /></button></div></td></tr>)}
+              {!isLoading && !filteredArbain.length && <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">Belum ada setoran Hadis Arbain.</td></tr>}
+            </tbody>
+          </table>
+        </div>}
+      </div>}
+
+      {activeTab === 'arbain' && <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-6 py-4"><p className="text-sm font-black text-slate-800">Rujukan 42 Hadis Arbain Imam Nawawi</p><p className="text-xs text-slate-500">Matn (teks Arab) dapat diisi ustadz dari rujukan buku; deskripsi di bawah memakai terjemahan ringkas.</p></div>
+        <div className="grid grid-cols-1 gap-3 p-5 md:grid-cols-2">
+          {arbainRef.map((h) => <div key={h.number} className="rounded-lg border border-slate-100 bg-slate-50/60 p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold text-slate-800">{h.number}. {h.title}</p><span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{h.category}</span></div><p className="mt-2 text-sm text-slate-600">{h.translation}</p><p className="mt-2 text-[11px] font-semibold text-slate-400">{h.source}</p></div>)}
+        </div>
+      </div>}
+
       {activeTab === 'recap' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/80 p-5 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700/80">Santri Terekap</p>
-              <p className="mt-2 text-3xl font-black text-emerald-700">{recapCompletionStats.total}</p>
+            <div className="rounded-xl border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Santri Terekap</p>
+              <p className="mt-2 text-3xl font-black text-sky-700">{recapCompletionStats.total}</p>
             </div>
             <div className="rounded-xl border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Mapel Aktif</p>
@@ -630,7 +761,7 @@ export default function AcademicsPage() {
               {recapSubjectAverages.map((subject) => (
                 <div key={subject.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm font-black text-slate-800">{subject.name}</p>
-                  <p className="mt-2 text-2xl font-black text-emerald-600">{subject.average.toFixed(1)}</p>
+                  <p className="mt-2 text-2xl font-black text-sky-600">{subject.average.toFixed(1)}</p>
                   <p className="mt-1 text-xs font-semibold text-slate-500">{subject.totalStudents} santri masuk rekap</p>
                 </div>
               ))}
@@ -641,7 +772,7 @@ export default function AcademicsPage() {
             <div className="border-b border-slate-100 px-5 py-4">
               <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Peringkat Santri</h5>
             </div>
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>
@@ -655,11 +786,11 @@ export default function AcademicsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {studentRecaps.map((item) => (
                     <tr key={item.studentId}>
-                      <td className="px-4 py-4 text-center font-black text-emerald-700">{item.rank}</td>
+                      <td className="px-4 py-4 text-center font-black text-sky-700">{item.rank}</td>
                       <td className="px-4 py-4 font-bold text-slate-800">{item.studentName}</td>
                       {recapSubjectColumns.map((subject) => <td key={subject.id} className="px-4 py-4 text-center font-semibold text-slate-600">{item.subjectScores[subject.id] ?? '-'}</td>)}
                       <td className="px-4 py-4 text-center font-black text-slate-900">{item.average.toFixed(1)}</td>
-                      <td className="px-4 py-4 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span></td>
+                      <td className="px-4 py-4 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= kkm ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>{item.status}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -695,7 +826,7 @@ export default function AcademicsPage() {
                 </select>
                 <div className="flex flex-col gap-3">
                   <button type="button" onClick={printReport} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"><Printer size={16} /> CETAK</button>
-                  <button type="button" onClick={() => previewStudentReportPDF(buildReportPayload())} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-50"><Eye size={16} /> PREVIEW PDF</button>
+                  <button type="button" onClick={() => previewStudentReportPDF(buildReportPayload())} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100 disabled:opacity-50"><Eye size={16} /> PREVIEW PDF</button>
                   <button type="button" onClick={() => downloadStudentReportPDF(buildReportPayload())} disabled={!reportStudentId} className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"><Download size={16} /> DOWNLOAD PDF</button>
                 </div>
               </div>
@@ -707,8 +838,8 @@ export default function AcademicsPage() {
                 {studentRecaps.map((item) => {
                   const checked = selectedBulkStudentIds.includes(String(item.studentId));
                   return (
-                    <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${checked ? 'border-emerald-200 bg-emerald-50/80' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
-                      <input type="checkbox" checked={checked} onChange={() => toggleBulkStudent(String(item.studentId))} className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                    <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${checked ? 'border-sky-200 bg-sky-50/80' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
+                      <input type="checkbox" checked={checked} onChange={() => toggleBulkStudent(String(item.studentId))} className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
                       <div className="min-w-0">
                         <p className="font-black text-slate-800">{item.studentName}</p>
                         <p className="mt-1 text-xs font-medium text-slate-500">Rata-rata {item.average.toFixed(1)} · Rank {item.rank}</p>
@@ -718,7 +849,7 @@ export default function AcademicsPage() {
                 })}
               </div>
               <div className="mt-5 flex flex-col gap-3 md:flex-row">
-                <button type="button" onClick={handlePreviewBulkReports} disabled={!selectedBulkStudentIds.length || isBulkGenerating} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-50">{isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />} PREVIEW RAPORT MASSAL</button>
+                <button type="button" onClick={handlePreviewBulkReports} disabled={!selectedBulkStudentIds.length || isBulkGenerating} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100 disabled:opacity-50">{isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />} PREVIEW RAPORT MASSAL</button>
                 <button type="button" onClick={handleDownloadBulkReports} disabled={!selectedBulkStudentIds.length || isBulkGenerating} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50">{isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />} DOWNLOAD RAPORT MASSAL</button>
               </div>
             </div>
@@ -730,10 +861,14 @@ export default function AcademicsPage() {
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Kelola Mata Pelajaran</h5>
-            <form onSubmit={saveSubject} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_auto]">
+            <form onSubmit={saveSubject} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_1fr_auto]">
               <input required value={subjectForm.name} onChange={(e) => setSubjectForm((p) => ({ ...p, name: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5" placeholder="Nama mapel" />
               <input value={subjectForm.category} onChange={(e) => setSubjectForm((p) => ({ ...p, category: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5" placeholder="Kategori" />
-              <button disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50">{isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} />} Tambah</button>
+              <select value={subjectForm.teacher_id} onChange={(e) => setSubjectForm((p) => ({ ...p, teacher_id: e.target.value }))} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm" title="Guru pengampu">
+                <option value="0">-- Guru pengampu --</option>
+                {guruUsers.map(u => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
+              </select>
+              <button disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50">{isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} />} Tambah</button>
             </form>
           </div>
 
@@ -745,6 +880,39 @@ export default function AcademicsPage() {
               </tbody>
             </table>
           </div>
+
+          {['superadmin', 'admin'].includes(authUser?.role || '') && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Bobot Komponen Nilai per Mapel</h5>
+                  <p className="mt-1 text-sm text-slate-600">UTS + UAS + Tugas + Ulangan Harian harus berjumlah 100% untuk tiap mata pelajaran. Nilai akhir dihitung otomatis dari bobot ini.</p>
+                </div>
+                <button onClick={saveWeights} disabled={isWeightsSaving} className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50">{isWeightsSaving ? <RefreshCw size={16} className="animate-spin" /> : <FileDown size={16} />} Simpan Bobot</button>
+              </div>
+              <div className="ap-table-wrap mt-4 overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400"><tr><th className="px-4 py-3 text-left">Mapel</th><th className="px-4 py-3 text-center">UTS %</th><th className="px-4 py-3 text-center">UAS %</th><th className="px-4 py-3 text-center">Tugas %</th><th className="px-4 py-3 text-center">UH %</th><th className="px-4 py-3 text-center">Total</th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {gradeWeights.map((w) => {
+                      const total = w.uts_weight + w.uas_weight + w.task_weight + w.uh_weight;
+                      const ok = Math.abs(total - 100) <= 0.01 && [w.uts_weight, w.uas_weight, w.task_weight, w.uh_weight].every((v) => v > 0 && v <= 100);
+                      return (
+                        <tr key={w.subject_id}>
+                          <td className="px-4 py-3 font-bold text-slate-800">{w.subject_name}</td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.uts_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, uts_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.uas_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, uas_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.task_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, task_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className="px-4 py-3"><input type="number" min={1} max={100} value={w.uh_weight} onChange={(e) => setGradeWeights((prev) => prev.map((x) => x.subject_id === w.subject_id ? { ...x, uh_weight: Number(e.target.value) } : x))} className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-900 outline-none focus:border-sky-500" /></td>
+                          <td className={`px-4 py-3 text-center text-sm font-bold ${ok ? 'text-emerald-600' : 'text-rose-600'}`}>{total.toFixed(0)}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -779,7 +947,7 @@ export default function AcademicsPage() {
               type="button"
               onClick={() => previewStudentReportPDF(buildReportPayload())}
               disabled={!reportStudentId}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-black text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-emerald-50 disabled:hover:shadow-none"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black text-sky-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-sky-50 disabled:hover:shadow-none"
             >
               <Eye size={16} />
               PREVIEW PDF
@@ -806,13 +974,16 @@ export default function AcademicsPage() {
           ) : (
             <div id="report-print-area" className="space-y-6 print:space-y-4">
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white print:rounded-none print:border-slate-300">
-                <div className="border-b-4 border-emerald-600 px-8 py-7 print:px-0">
-                  <div className="text-center">
-                    <p className="text-[11px] font-black uppercase tracking-[0.35em] text-emerald-700">e-Raport Santri</p>
-                    <h4 className="mt-3 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">Pondok Pesantren Darussunnah</h4>
+                <div className="border-b-4 border-sky-600 px-8 pt-8 pb-5 text-center print:px-0">
+                    <img src="/assets/img/logo.jpg" alt="Logo Pesantren Darussunnah" className="mx-auto h-20 w-20 shrink-0 object-contain" />
+                    <h4 className="mt-3 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">PONDOK PESANTREN DARUSSUNNAH PARUNG BOGOR</h4>
+                    <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.3em] text-sky-700">Pendidikan Tahfidz, Talents dan AI</p>
+                    <div className="mx-auto mt-3 h-0.5 w-2/3 bg-sky-600" />
+                    <p className="mt-3 text-sm font-medium text-slate-600">Jl. Haji Mawi Gang Omega, Desa Waru, Kec. Parung, Kab. Bogor, Jawa Barat</p>
+                    <p className="mt-1 text-xs font-medium text-slate-500">Telp/WA: +62 877-8442-3282 &nbsp;•&nbsp; ponpesdarussunnahparung@gmail.com &nbsp;•&nbsp; darussunnahparung.com</p>
+                    <p className="mt-4 inline-block rounded-md bg-sky-50 px-4 py-1 text-[11px] font-black uppercase tracking-[0.35em] text-sky-700">e-Raport Santri</p>
                     <p className="mt-2 text-sm font-medium text-slate-500">Tahun Pelajaran {reportGrades[0]?.academic_year || '-'} - Semester {reportGrades[0]?.semester || '-'}</p>
                   </div>
-                </div>
                 <div className="grid grid-cols-1 gap-4 border-b border-slate-200 bg-slate-50 px-8 py-5 md:grid-cols-2 print:px-0">
                   <div className="space-y-2 text-sm">
                     <p><span className="font-black text-slate-700">Nama Santri:</span> <span className="font-semibold text-slate-600">{selectedReportStudent?.name || 'Santri'}</span></p>
@@ -828,11 +999,11 @@ export default function AcademicsPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4 print:grid-cols-4">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 print:border-slate-300 print:bg-white">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rata-rata Nilai</p>
-                  <p className="mt-2 text-3xl font-black text-emerald-600">{reportAverage}</p>
+                  <p className="mt-2 text-3xl font-black text-sky-600">{reportAverage}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 print:border-slate-300 print:bg-white">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hadir</p>
-                  <p className="mt-2 text-3xl font-black text-emerald-600">{reportAttendanceSummary.hadir || 0}</p>
+                  <p className="mt-2 text-3xl font-black text-sky-600">{reportAttendanceSummary.hadir || 0}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 print:border-slate-300 print:bg-white">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Izin / Sakit</p>
@@ -865,7 +1036,7 @@ export default function AcademicsPage() {
                         <td className="px-4 py-3 font-bold text-slate-800">{item.subject_name}</td>
                         <td className="px-4 py-3 text-sm text-slate-500">{item.semester}</td>
                         <td className="px-4 py-3 text-sm text-slate-500">{item.academic_year}</td>
-                        <td className="px-4 py-3 font-black text-emerald-600">{item.final_score}</td>
+                        <td className="px-4 py-3 font-black text-sky-600">{item.final_score}</td>
                         <td className="px-4 py-3 font-black text-slate-800">{item.grade_letter} - {getLetterPredicate(item.grade_letter)}</td>
                         <td className="px-4 py-3 text-sm text-slate-500">{item.notes || 'Menunjukkan perkembangan belajar yang baik.'}</td>
                       </tr>
@@ -923,16 +1094,18 @@ export default function AcademicsPage() {
                     Secara umum santri menunjukkan perkembangan akademik dan adab yang baik. Area ini dapat digunakan untuk catatan evaluasi akhir, penguatan karakter, dan saran pembinaan.
                   </div>
                 </div>
-                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 print:rounded-none print:border-slate-300 print:bg-white">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Pengesahan</p>
-                  <div className="mt-6 grid grid-cols-2 gap-6 text-center text-sm text-slate-500">
-                    <div>
-                      <p>Wali Kelas / Musyrif</p>
-                      <div className="mt-16 border-b border-slate-300" />
+
+                <div className="pt-4">
+                  <div className="grid grid-cols-1 gap-8 print:grid-cols-2 print:gap-12">
+                    <div className="text-center">
+                      <p className="font-black uppercase tracking-widest text-slate-600">Guru Kelas</p>
+                      <div className="mt-24 border-b border-slate-400" />
+                      <p className="mt-2 text-xs text-slate-400">( Nama &amp; Tanda Tangan )</p>
                     </div>
-                    <div>
-                      <p>Pimpinan Pondok</p>
-                      <div className="mt-16 border-b border-slate-300" />
+                    <div className="text-center">
+                      <p className="font-black uppercase tracking-widest text-slate-600">Wali Murid</p>
+                      <div className="mt-24 border-b border-slate-400" />
+                      <p className="mt-2 text-xs text-slate-400">( Nama &amp; Tanda Tangan )</p>
                     </div>
                   </div>
                 </div>
@@ -957,9 +1130,9 @@ export default function AcademicsPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/80 p-5 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700/80">Santri Terekap</p>
-              <p className="mt-2 text-3xl font-black text-emerald-700">{recapCompletionStats.total}</p>
+            <div className="rounded-[1.5rem] border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Santri Terekap</p>
+              <p className="mt-2 text-3xl font-black text-sky-700">{recapCompletionStats.total}</p>
             </div>
             <div className="rounded-[1.5rem] border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Mapel Aktif</p>
@@ -983,7 +1156,7 @@ export default function AcademicsPage() {
               {recapSubjectAverages.map((subject) => (
                 <div key={subject.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                   <p className="text-sm font-black text-slate-800">{subject.name}</p>
-                  <p className="mt-2 text-2xl font-black text-emerald-600">{subject.average.toFixed(1)}</p>
+                  <p className="mt-2 text-2xl font-black text-sky-600">{subject.average.toFixed(1)}</p>
                   <p className="mt-1 text-xs font-semibold text-slate-500">{subject.totalStudents} santri masuk rekap</p>
                 </div>
               ))}
@@ -999,7 +1172,7 @@ export default function AcademicsPage() {
             <div className="border-b border-slate-100 px-5 py-4">
               <h5 className="text-sm font-black uppercase tracking-widest text-slate-500">Peringkat Santri</h5>
             </div>
-            <div className="overflow-x-auto">
+            <div className="ap-table-wrap overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-widest text-slate-400">
                   <tr>
@@ -1013,7 +1186,7 @@ export default function AcademicsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {studentRecaps.map((item) => (
                     <tr key={item.studentId}>
-                      <td className="px-4 py-4 text-center font-black text-emerald-700">{item.rank}</td>
+                      <td className="px-4 py-4 text-center font-black text-sky-700">{item.rank}</td>
                       <td className="px-4 py-4">
                         <p className="font-bold text-slate-800">{item.studentName}</p>
                         <p className="text-xs font-medium text-slate-500">{item.subjectCount} mapel terekap</p>
@@ -1023,7 +1196,7 @@ export default function AcademicsPage() {
                       ))}
                       <td className="px-4 py-4 text-center font-black text-slate-900">{item.average.toFixed(1)}</td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${item.average >= kkm ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}>
                           {item.status}
                         </span>
                       </td>
@@ -1066,9 +1239,9 @@ export default function AcademicsPage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Total Tersedia</p>
               <p className="mt-2 text-3xl font-black text-sky-700">{studentRecaps.length}</p>
             </div>
-            <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/80 p-5 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700/80">Status</p>
-              <p className="mt-2 text-sm font-black uppercase tracking-widest text-emerald-700">{selectedBulkStudentIds.length ? 'Siap Diproses' : 'Belum Ada Pilihan'}</p>
+            <div className="rounded-[1.5rem] border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-700/80">Status</p>
+              <p className="mt-2 text-sm font-black uppercase tracking-widest text-sky-700">{selectedBulkStudentIds.length ? 'Siap Diproses' : 'Belum Ada Pilihan'}</p>
             </div>
           </div>
 
@@ -1080,12 +1253,12 @@ export default function AcademicsPage() {
               {studentRecaps.map((item) => {
                 const checked = selectedBulkStudentIds.includes(String(item.studentId));
                 return (
-                  <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${checked ? 'border-emerald-200 bg-emerald-50/80' : 'border-slate-200 bg-slate-50'}`}>
+                  <label key={item.studentId} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${checked ? 'border-sky-200 bg-sky-50/80' : 'border-slate-200 bg-slate-50'}`}>
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleBulkStudent(String(item.studentId))}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                     />
                     <div className="min-w-0">
                       <p className="font-black text-slate-800">{item.studentName}</p>
@@ -1108,7 +1281,7 @@ export default function AcademicsPage() {
               type="button"
               onClick={handlePreviewBulkReports}
               disabled={!selectedBulkStudentIds.length || isBulkGenerating}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-black text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-emerald-50 disabled:hover:shadow-none"
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black text-sky-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-sky-50 disabled:hover:shadow-none"
             >
               {isBulkGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
               PREVIEW RAPORT MASSAL
@@ -1130,3 +1303,4 @@ export default function AcademicsPage() {
     </div>
   );
 }
+

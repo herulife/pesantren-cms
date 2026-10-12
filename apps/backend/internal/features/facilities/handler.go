@@ -24,6 +24,21 @@ func sendJSONResponse(w http.ResponseWriter, status int, success bool, message s
 	})
 }
 
+func parsePagination(r *http.Request) (limit, offset int) {
+	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
 func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
 }
@@ -50,7 +65,19 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if facilities == nil {
 		facilities = []Facility{}
 	}
-	sendJSONResponse(w, http.StatusOK, true, "Daftar fasilitas berhasil dimuat", facilities)
+	limit, offset := parsePagination(r)
+	if len(facilities) > limit {
+		end := offset + limit
+		if end > len(facilities) {
+			end = len(facilities)
+		}
+		if offset < len(facilities) {
+			facilities = facilities[offset:end]
+		} else {
+			facilities = facilities[:0]
+		}
+	}
+		sendJSONResponse(w, http.StatusOK, true, "Daftar fasilitas berhasil dimuat", facilities)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

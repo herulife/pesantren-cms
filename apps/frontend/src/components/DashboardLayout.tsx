@@ -1,18 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
-import NotificationBell from './admin/NotificationBell';
+import FloatingQuickMenu from './FloatingQuickMenu';
+import UserAvatar from './UserAvatar';
 import { useAuth } from './AuthProvider';
+import NotificationBell from './NotificationBell';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="admin-panel-shell min-h-screen bg-slate-50 text-slate-800">
       {isMobileSidebarOpen && (
         <button
           type="button"
@@ -27,11 +29,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <Sidebar onClose={() => setIsMobileSidebarOpen(false)} />
+        <Suspense fallback={<div className="h-full w-64" aria-hidden="true" />}>
+          <Sidebar onClose={() => setIsMobileSidebarOpen(false)} />
+        </Suspense>
       </div>
 
       <div className="flex min-h-screen flex-col lg:pl-[17rem]">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm lg:mx-3 lg:mt-3 lg:rounded-xl lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/85 px-4 shadow-sm backdrop-blur-md lg:mx-3 lg:mt-3 lg:rounded-xl lg:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -42,27 +46,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu size={22} />
             </button>
             <div className="flex flex-col">
-              <Link href="/admin" className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">
+              <Link href="/admin" className="text-sm font-black uppercase tracking-[0.18em] text-sky-700">
                 Dashboard
               </Link>
-              <Link href="/" className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-colors hover:text-emerald-700">
+              <Link href="/" className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-colors hover:text-sky-700">
                 Lihat Website
               </Link>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Lonceng notifikasi sistem (Jilid 82) */}
+            <NotificationBell />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-slate-700">{user?.name || 'Admin'}</p>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
                 {user?.role || 'staff'}
               </p>
             </div>
-            <NotificationBell />
+            {/* Avatar profil. j70: komentar lamanya ("model User tidak punya
+                kolom foto") sudah basi sejak Jilid 69 menambah users.photo_url;
+                kolom itu ada dan sudah terisi. Titik ini sebelumnya dipakai
+                tombol "X" yang mati — sidebar sudah punya tombol tutup sendiri
+                di Sidebar.tsx. */}
+            <Link
+              href="/admin/akun"
+              aria-label="Akun saya"
+              title="Akun Saya"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+            >
+              <UserAvatar name={user?.name} photoUrl={user?.photo_url} />
+            </Link>
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:px-8 lg:pb-8 lg:pt-7">{children}</main>
+        <main className="ap-fade-in flex-1 p-4 lg:px-8 lg:pb-8 lg:pt-7">{children}</main>
+
+        <FloatingQuickMenu />
       </div>
     </div>
   );

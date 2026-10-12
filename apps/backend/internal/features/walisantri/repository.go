@@ -4,9 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 var ErrDuplicateEmail = errors.New("email sudah dipakai akun lain")
+
+var ErrNotWali = errors.New("akun ini bukan akun wali")
 
 // Santri adalah anak yang tertaut ke satu akun wali.
 type Santri struct {
@@ -24,7 +28,7 @@ type Account struct {
 	Email    string `json:"email"`
 	Whatsapp string `json:"whatsapp"`
 	Role     string `json:"role"`
-	// IsPlaceholder = email masih @almaparung.local hasil import.
+	// IsPlaceholder = email masih @darussunnah.local hasil import.
 	IsPlaceholder bool `json:"is_placeholder"`
 	// NamePlaceholder = nama masih karangan "Wali <nama Santri>".
 	NamePlaceholder bool     `json:"name_placeholder"`
@@ -34,11 +38,16 @@ type Account struct {
 }
 
 // Orphan adalah akun role=user yang tidak tertaut ke Santri mana pun.
-// Tidak dihapus otomatis, tapi ditampilkan agar terlihat.
+// Tidak dihapus otomatis, tapi ditampilkan agar terlihat dan bisa diedit
+// (nama/email/whatsapp) lewat endpoint yang sama dengan akun wali.
 type Orphan struct {
-	UserID int    `json:"user_id"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
+	UserID         int    `json:"user_id"`
+	Name           string `json:"name"`
+	Email          string `json:"email"`
+	Whatsapp       string `json:"whatsapp"`
+	IsPlaceholder  bool   `json:"is_placeholder"`
+	NamePlaceholder bool   `json:"name_placeholder"`
+	LastLoginAt    string `json:"last_login_at,omitempty"`
 }
 
 type Stats struct {
@@ -72,8 +81,7 @@ func isPlaceholderName(name string) bool {
 
 func isPlaceholderEmail(email string) bool {
 	e := strings.ToLower(strings.TrimSpace(email))
-	return (strings.HasPrefix(e, placeholderPrefix+"") && strings.HasSuffix(e, "@almaparung.local")) ||
-		(strings.HasPrefix(e, placeholderPrefix+"") && strings.HasSuffix(e, "@darussunnah.local"))
+	return strings.HasPrefix(e, placeholderPrefix+"") && strings.HasSuffix(e, "@darussunnah.local")
 }
 
 // ListAll menyatukan akun wali dengan Santri-nya. Query sengaja dipisah dua
@@ -130,7 +138,8 @@ func (r *Repository) ListAll() (*List, error) {
 	}
 
 	// Tahap 3: akun yatim + statistik.
-	orows, err := r.db.Query(`SELECT u.id, u.name, u.email FROM users u
+	orows, err := r.db.Query(`SELECT u.id, u.name, u.email, COALESCE(u.whatsapp,''),
+		COALESCE(u.last_login_at,'') FROM users u
 		WHERE u.role='user'
 		  AND NOT EXISTS (SELECT 1 FROM santri s WHERE s.user_id=u.id)
 		ORDER BY u.id`)
@@ -140,16 +149,23 @@ func (r *Repository) ListAll() (*List, error) {
 	defer orows.Close()
 	for orows.Next() {
 		var o Orphan
-		if err := orows.Scan(&o.UserID, &o.Name, &o.Email); err != nil {
+		var lastLogin string
+		if err := orows.Scan(&o.UserID, &o.Name, &o.Email, &o.Whatsapp, &lastLogin); err != nil {
 			return nil, err
 		}
+		o.IsPlaceholder = isPlaceholderEmail(o.Email)
+		o.NamePlaceholder = isPlaceholderName(o.Name)
+		o.LastLoginAt = lastLogin
 		out.Orphans = append(out.Orphans, o)
 	}
 	if err := orows.Err(); err != nil {
 		return nil, err
 	}
 
-	for _, a := range out.Accounts {
+	// Hitung statistik lewat indeks: `for _, a := range` membuat salinan, jadi
+	// tulisan a.NeedsNote tidak pernah sampai ke slice (bug Jilid 84).
+	for i := range out.Accounts {
+		a := &out.Accounts[i]
 		out.Stats.TotalAccounts++
 		out.Stats.TotalSantri += len(a.Santri)
 		if len(a.Santri) > 1 {
@@ -159,7 +175,7 @@ func (r *Repository) ListAll() (*List, error) {
 			out.Stats.Placeholder++
 			a.NeedsNote = "Nama wali masih karangan - ganti dengan nama asli"
 		} else if a.IsPlaceholder {
-			a.NeedsNote = "Email masih placeholder - ganti dengan email asli"
+			a.NeedsNote = "Email masih @darussunnah.local - ganti dengan email asli"
 		}
 	}
 	out.Stats.Orphan = len(out.Orphans)
@@ -167,13 +183,13 @@ func (r *Repository) ListAll() (*List, error) {
 }
 
 type UpdateInput struct {
-	Name  string
-	Email string
+	Name     string
+	Email    string
+	Whatsapp string
 }
 
-// Update mengubah nama + email akun wali. Ini yang membuat data karangan bisa
-// diganti admin kapan saja tanpa membuat akun baru (user hanya melihat datanya
-// sendiri, jadi tidak ada risiko wali mengedit akun orang lain).
+// Update mengubah nama + email + nomor WhatsApp akun wali. Ini yang membuat
+// data karangan bisa diganti admin kapan saja tanpa membuat akun baru.
 func (r *Repository) Update(userID int, in UpdateInput) error {
 	var emailTaken bool
 	err := r.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE email=? AND id<>?)`, in.Email, userID).Scan(&emailTaken)
@@ -188,8 +204,94 @@ func (r *Repository) Update(userID int, in UpdateInput) error {
 		return err
 	}
 	if role != "user" {
-		return errors.New("akun ini bukan akun wali")
+		return ErrNotWali
 	}
-	_, err = r.db.Exec(`UPDATE users SET name=?, email=? WHERE id=?`, in.Name, in.Email, userID)
+	_, err = r.db.Exec(`UPDATE users SET name=?, email=?, whatsapp=? WHERE id=?`, in.Name, in.Email, in.Whatsapp, userID)
+	return err
+}
+
+// CreateInput untuk membuat akun wali baru (superadmin/bendahara). Password
+// diwajibkan: admin menentukan password awal dan menyampaikannya ke wali.
+// SantriIDs opsional: santri yang langsung ditautkan (satu keluarga berbagi 1 login).
+type CreateInput struct {
+	Name      string
+	Email     string
+	Whatsapp  string
+	Password  string
+	SantriIDs []int
+}
+
+// Create membuat akun role 'user' + menautkan Santri yang dipilih. Ditulis
+// dalam satu transaksi supaya kalau ada Santri yang dipilih tapi tidak ada,
+// akun tidak jadi terlanjur dibuat.
+func (r *Repository) Create(in CreateInput) (int, error) {
+	var taken bool
+	if err := r.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE email=?)`, in.Email).Scan(&taken); err != nil {
+		return 0, err
+	}
+	if taken {
+		return 0, ErrDuplicateEmail
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return 0, err
+	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`INSERT INTO users (email, password_hash, name, role, whatsapp, created_at)
+		VALUES (?, ?, ?, 'user', ?, datetime('now'))`,
+		in.Email, string(hash), in.Name, in.Whatsapp)
+	if err != nil {
+		return 0, err
+	}
+	uid, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	for _, sid := range in.SantriIDs {
+		if sid <= 0 {
+			continue
+		}
+		var exists int
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM santri WHERE id=?`, sid).Scan(&exists); err != nil {
+			return 0, err
+		}
+		if exists == 0 {
+			return 0, sql.ErrNoRows
+		}
+		if _, err := tx.Exec(`UPDATE santri SET user_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+			uid, sid); err != nil {
+			return 0, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return int(uid), nil
+}
+
+// ResetPassword mengganti password akun wali dan memutar token_version supaya
+// semua sesi lama otomatis tidak berlaku (wali wajib login ulang).
+func (r *Repository) ResetPassword(userID int, newPassword string) error {
+	var role string
+	if err := r.db.QueryRow(`SELECT role FROM users WHERE id=?`, userID).Scan(&role); err != nil {
+		return err
+	}
+	if role != "user" {
+		return ErrNotWali
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(`UPDATE users SET password_hash=?, token_version=token_version+1 WHERE id=?`,
+		string(hash), userID)
 	return err
 }

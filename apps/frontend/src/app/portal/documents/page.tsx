@@ -2,11 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, FileText, RefreshCw, ShieldCheck, UploadCloud } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, FileText, RefreshCw, ShieldCheck, UploadCloud } from 'lucide-react';
 import { useToast } from '@/components/Toast';
-import { getMyPSBRegistration, saveMyPSBDocuments, uploadPrivateDocument } from '@/lib/api';
+import { getMyPSBRegistration, saveMyPSBDocuments, uploadImage, normalizeApiAssetUrl } from '@/lib/api';
 
-type DocumentKey = 'kk_url' | 'ijazah_url' | 'pasfoto_url';
+type DocumentKey =
+  | 'kk_url'
+  | 'ijazah_url'
+  | 'pasfoto_url'
+  | 'yatim_doc_url'
+  | 'sktm_doc_url'
+  | 'akta_url'
+  | 'ktp_ortu_url'
+  | 'surat_kelulusan_url'
+  | 'foto_pendaftaran_url';
 type DocumentStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function DocumentsPage() {
@@ -14,20 +23,39 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState<DocumentKey | ''>('');
   const [isBiodataReady, setIsBiodataReady] = useState(false);
+  const [category, setCategory] = useState('reguler');
   const [documents, setDocuments] = useState<Record<DocumentKey, string>>({
     kk_url: '',
     ijazah_url: '',
     pasfoto_url: '',
+    yatim_doc_url: '',
+    sktm_doc_url: '',
+    akta_url: '',
+    ktp_ortu_url: '',
+    surat_kelulusan_url: '',
+    foto_pendaftaran_url: '',
   });
   const [documentStatus, setDocumentStatus] = useState<Record<DocumentKey, DocumentStatus>>({
     kk_url: 'idle',
     ijazah_url: 'idle',
     pasfoto_url: 'idle',
+    yatim_doc_url: 'idle',
+    sktm_doc_url: 'idle',
+    akta_url: 'idle',
+    ktp_ortu_url: 'idle',
+    surat_kelulusan_url: 'idle',
+    foto_pendaftaran_url: 'idle',
   });
   const [documentNotes, setDocumentNotes] = useState<Record<DocumentKey, string>>({
     kk_url: '',
     ijazah_url: '',
     pasfoto_url: '',
+    yatim_doc_url: '',
+    sktm_doc_url: '',
+    akta_url: '',
+    ktp_ortu_url: '',
+    surat_kelulusan_url: '',
+    foto_pendaftaran_url: '',
   });
 
   useEffect(() => {
@@ -43,7 +71,6 @@ export default function DocumentsPage() {
           data?.birth_date,
           data?.address,
           data?.school_origin,
-          data?.program_choice,
           data?.father_name,
           data?.father_job,
           data?.father_phone,
@@ -53,20 +80,39 @@ export default function DocumentsPage() {
         ];
 
         setIsBiodataReady(requiredBiodataFields.every((value) => Boolean(value && String(value).trim())));
+        setCategory(data?.category || 'reguler');
         setDocuments({
           kk_url: data?.kk_url || '',
           ijazah_url: data?.ijazah_url || '',
           pasfoto_url: data?.pasfoto_url || '',
+          yatim_doc_url: data?.yatim_doc_url || '',
+          sktm_doc_url: data?.sktm_doc_url || '',
+          akta_url: data?.akta_url || '',
+          ktp_ortu_url: data?.ktp_ortu_url || '',
+          surat_kelulusan_url: data?.surat_kelulusan_url || '',
+          foto_pendaftaran_url: data?.foto_pendaftaran_url || '',
         });
         setDocumentStatus({
           kk_url: data?.kk_url ? 'success' : 'idle',
           ijazah_url: data?.ijazah_url ? 'success' : 'idle',
           pasfoto_url: data?.pasfoto_url ? 'success' : 'idle',
+          yatim_doc_url: data?.yatim_doc_url ? 'success' : 'idle',
+          sktm_doc_url: data?.sktm_doc_url ? 'success' : 'idle',
+          akta_url: data?.akta_url ? 'success' : 'idle',
+          ktp_ortu_url: data?.ktp_ortu_url ? 'success' : 'idle',
+          surat_kelulusan_url: data?.surat_kelulusan_url ? 'success' : 'idle',
+          foto_pendaftaran_url: data?.foto_pendaftaran_url ? 'success' : 'idle',
         });
         setDocumentNotes({
           kk_url: data?.kk_url ? 'Dokumen sudah tersimpan di server.' : '',
           ijazah_url: data?.ijazah_url ? 'Dokumen sudah tersimpan di server.' : '',
           pasfoto_url: data?.pasfoto_url ? 'Dokumen sudah tersimpan di server.' : '',
+          yatim_doc_url: data?.yatim_doc_url ? 'Dokumen sudah tersimpan di server.' : '',
+          sktm_doc_url: data?.sktm_doc_url ? 'Dokumen sudah tersimpan di server.' : '',
+          akta_url: data?.akta_url ? 'Dokumen sudah tersimpan di server.' : '',
+          ktp_ortu_url: data?.ktp_ortu_url ? 'Dokumen sudah tersimpan di server.' : '',
+          surat_kelulusan_url: data?.surat_kelulusan_url ? 'Dokumen sudah tersimpan di server.' : '',
+          foto_pendaftaran_url: data?.foto_pendaftaran_url ? 'Dokumen sudah tersimpan di server.' : '',
         });
       } finally {
         setIsLoading(false);
@@ -90,7 +136,7 @@ export default function DocumentsPage() {
     setDocumentStatus((prev) => ({ ...prev, [type]: 'uploading' }));
     setDocumentNotes((prev) => ({ ...prev, [type]: `Sedang mengunggah ${file.name}...` }));
     try {
-      const uploadResult = await uploadPrivateDocument(file);
+      const uploadResult = await uploadImage(file);
       const url = uploadResult?.url || uploadResult?.data?.url || '';
       if (!url) {
         throw new Error('URL dokumen tidak ditemukan setelah upload.');
@@ -113,46 +159,55 @@ export default function DocumentsPage() {
     }
   };
 
-  const docItems = [
+  const baseDocs: Array<{ id: DocumentKey; title: string; desc: string }> = [
     { id: 'kk_url', title: 'Kartu Keluarga (KK)', desc: 'Scan asli berwarna, ukuran maksimal 2MB (JPG/PNG/PDF).' },
+    { id: 'akta_url', title: 'Akta Kelahiran', desc: 'Scan/akta kelahiran calon santri (JPG/PNG/PDF).' },
+    { id: 'ktp_ortu_url', title: 'KTP Orang Tua', desc: 'Scan KTP ayah/ibu atau wali (JPG/PNG/PDF).' },
     { id: 'ijazah_url', title: 'Ijazah / Raport Terakhir', desc: 'Scan asli ijazah, SKL, atau raport terbaru.' },
+    { id: 'surat_kelulusan_url', title: 'Surat Kelulusan', desc: 'Scan/surat keterangan lulus dari sekolah asal (JPG/PNG/PDF).' },
     { id: 'pasfoto_url', title: 'Pas Foto 3x4', desc: 'Latar belakang merah, ukuran maksimal 1MB.' },
-  ] as const;
+    { id: 'foto_pendaftaran_url', title: 'Foto Pendaftaran Siswa', desc: 'Foto calon santri saat pendaftaran (JPG/PNG).' },
+  ];
+  const categoryDocs: Array<{ id: DocumentKey; title: string; desc: string }> =
+    category === 'yatim'
+      ? [{ id: 'yatim_doc_url', title: 'Surat Keterangan Kematian', desc: 'Surat keterangan kematian orang tua (JPG/PNG/PDF). Wajib untuk kategori yatim.' }]
+      : category === 'dhuafa'
+        ? [{ id: 'sktm_doc_url', title: 'SKTM', desc: 'Surat Keterangan Tidak Mampu dari kelurahan (JPG/PNG/PDF). Wajib untuk kategori dhuafa.' }]
+        : [];
+  const docItems = [...baseDocs, ...categoryDocs];
   const uploadedCount = docItems.filter((doc) => Boolean(documents[doc.id])).length;
   const allDocumentsUploaded = uploadedCount === docItems.length;
 
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-blue-600" />
+        <RefreshCw className="animate-spin text-sky-600" />
       </div>
     );
   }
 
   return (
     <>
-      <div className="lte-content-header">
-        <h3 className="lte-page-title">Unggah Dokumen</h3>
-        <p className="lte-page-subtitle">
-          Unggah dokumen persyaratan PSB. Dokumen yang sudah masuk akan langsung terhubung ke akun pendaftaran kamu.
-        </p>
-      </div>
+      <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900">Unggah Dokumen</h3>
+      <p className="mb-10 max-w-xl text-sm leading-relaxed text-slate-500">
+        Unggah dokumen persyaratan PSB. Dokumen yang sudah masuk akan langsung terhubung ke akun pendaftaran kamu.
+      </p>
 
-      <div className="lte-alert lte-alert-success mb-4 flex items-start gap-3">
-        <ShieldCheck className="mt-0.5 shrink-0" />
+      <div className="mb-10 flex gap-4 rounded-3xl border border-sky-100 bg-sky-50 p-6 text-sky-800">
+        <ShieldCheck className="mt-1 shrink-0 text-sky-500" />
         <p className="text-sm font-medium leading-relaxed">
           Pastikan biodata sudah tersimpan sebelum mengunggah dokumen. File akan dikirim ke server dan dibaca panitia dari dashboard PSB.
         </p>
       </div>
 
       {!isBiodataReady ? (
-        <div className="lte-alert lte-alert-warning mb-4">
+        <div className="mb-10 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
           <p className="text-sm font-semibold leading-relaxed">
             Biodata PSB kamu belum lengkap, jadi dokumen belum bisa diunggah. Lengkapi biodata dulu agar sistem bisa menyimpan dokumen ke akun pendaftaran yang benar.
           </p>
           <Link
             href="/portal/biodata"
-            className="lte-btn lte-btn-warning"
+            className="mt-4 inline-flex items-center rounded-full bg-amber-500 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-amber-400"
           >
             Lengkapi Biodata
           </Link>
@@ -174,35 +229,45 @@ export default function DocumentsPage() {
                   : 'Belum diunggah';
           const statusClass =
             status === 'uploading'
-              ? 'lte-badge-soft-info'
+              ? 'border-sky-100 bg-sky-50 text-sky-700'
               : status === 'success'
-                ? 'lte-badge-soft-success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 : status === 'error'
-                  ? 'lte-badge-soft-danger'
-                  : 'lte-badge-light';
+                  ? 'border-rose-100 bg-rose-50 text-rose-600'
+                  : 'border-slate-200 bg-slate-100 text-slate-500';
 
           return (
             <div
               key={doc.id}
-              className={`lte-card gap-6 md:flex-row md:items-center md:justify-between ${
-                isUploaded ? 'lte-card-outline-success' : ''
+              className={`flex flex-col items-start justify-between gap-6 rounded-[2rem] border p-6 md:flex-row md:items-center md:p-8 ${
+                isUploaded ? 'border-emerald-200 bg-white shadow-lg shadow-emerald-900/5' : 'border-dashed border-slate-200 bg-slate-50'
               }`}
             >
-              <div className="flex items-start gap-4 p-4">
-                <div className={`mt-1 inline-flex rounded-lg p-2.5 ${isUploaded ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
-                  {isUploaded ? <CheckCircle2 size={22} /> : <FileText size={22} />}
+              <div className="flex items-start gap-4">
+                <div className={`mt-1 rounded-2xl p-3 ${isUploaded ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
+                  {isUploaded ? <CheckCircle2 size={24} /> : <FileText size={24} />}
                 </div>
                 <div>
                   <h5 className="mb-1 font-bold text-slate-900">{doc.title}</h5>
                   <p className="max-w-sm text-xs leading-relaxed text-slate-500">{doc.desc}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className={`lte-badge ${statusClass}`}>
+                    <span className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass}`}>
                       {statusText}
                     </span>
                     {isUploaded ? (
-                      <span className="lte-badge lte-badge-soft-success">
+                      <span className="inline-flex items-center gap-1 rounded border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
                         Dokumen sudah masuk
                       </span>
+                    ) : null}
+                    {isUploaded && normalizeApiAssetUrl(documents[doc.id]) ? (
+                      <a
+                        href={normalizeApiAssetUrl(documents[doc.id])}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-sky-700 hover:bg-sky-100"
+                      >
+                        Lihat &#8599;
+                      </a>
                     ) : null}
                   </div>
                   {documentNotes[doc.id] ? (
@@ -210,7 +275,7 @@ export default function DocumentsPage() {
                       status === 'error'
                         ? 'text-rose-600'
                         : status === 'uploading'
-                          ? 'text-blue-600'
+                          ? 'text-sky-600'
                           : 'text-slate-500'
                     }`}>
                       {documentNotes[doc.id]}
@@ -219,7 +284,7 @@ export default function DocumentsPage() {
                 </div>
               </div>
 
-              <div className="flex w-full items-center justify-end gap-3 p-4 md:w-auto">
+              <div className="flex w-full items-center justify-end gap-3 md:w-auto">
                 <div className="relative">
                   <input
                     type="file"
@@ -229,8 +294,10 @@ export default function DocumentsPage() {
                     disabled={Boolean(isUploading) || !isBiodataReady}
                   />
                   <button
-                    className={`lte-btn pointer-events-none ${
-                      !isBiodataReady ? 'lte-btn-secondary' : 'lte-btn-outline-secondary'
+                    className={`pointer-events-none flex items-center gap-2 rounded-xl border px-6 py-4 text-xs font-bold uppercase tracking-widest shadow-sm transition-all ${
+                      !isBiodataReady
+                        ? 'border-slate-200 bg-slate-100 text-slate-400'
+                        : 'border-slate-200 bg-white text-slate-700'
                     }`}
                   >
                     {isBusy ? <RefreshCw size={18} className="animate-spin" /> : <UploadCloud size={18} />}
@@ -243,39 +310,52 @@ export default function DocumentsPage() {
         })}
       </div>
 
-      <div className="lte-card mt-8">
-        <div className="lte-card-header">
-          <div className="min-w-0">
-            <p className="lte-card-subtitle">Progress Dokumen</p>
-            <h4 className="lte-card-title">
-              <span className="lte-badge lte-badge-primary mr-2">{uploadedCount}/{docItems.length}</span>
-              dokumen sudah tersimpan
+      <div className="mt-12 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Progress Dokumen</p>
+            <h4 className="mt-2 text-lg font-bold text-slate-900">
+              {uploadedCount}/{docItems.length} dokumen sudah tersimpan
             </h4>
-            <p className="mt-1 text-sm leading-relaxed text-slate-500">
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
               Setiap file yang kamu pilih langsung tersimpan otomatis. Jika ada dokumen yang salah, cukup unggah ulang file baru pada jenis dokumen yang sama.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 md:items-end">
-            <span
-              className={`lte-badge w-fit ${
-                allDocumentsUploaded ? 'lte-badge-soft-success' : 'lte-badge-soft-warning'
-              }`}
-            >
-              {allDocumentsUploaded ? 'Dokumen Lengkap' : 'Masih Ada Yang Kurang'}
-            </span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Link
-              href="/portal"
-              className={`lte-btn w-fit ${
-                allDocumentsUploaded ? 'lte-btn-success' : 'lte-btn-secondary'
-              }`}
+              href="/portal/biodata?part=2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
             >
-              Simpan & Lanjutkan <ArrowRight size={16} />
+              <ArrowLeft size={16} /> Kembali ke Biodata
             </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <span
+                className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] ${
+                  allDocumentsUploaded
+                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border border-amber-100 bg-amber-50 text-amber-700'
+                }`}
+              >
+                {allDocumentsUploaded ? 'Dokumen Lengkap' : 'Masih Ada Yang Kurang'}
+              </span>
+              {allDocumentsUploaded ? (
+                <Link
+                  href="/portal/review"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-7 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-sky-600/35"
+                >
+                  Lanjut ke Review & Konfirmasi <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              ) : (
+                <span className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-200 px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">
+                  Dokumen Belum Lengkap
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="lte-card-body border-t-0 pt-3 text-center">
+        <div className="mt-6 border-t border-slate-100 pt-4 text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
             Kalau dokumen belum muncul di dashboard panitia, pastikan biodata sudah tersimpan lebih dulu.
           </p>

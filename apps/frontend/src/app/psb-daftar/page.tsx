@@ -37,16 +37,16 @@ export default function PSBDaftarPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-emerald-800 bg-emerald-950 py-20 text-center text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.3),transparent_50%)]" />
+      <section className="relative overflow-hidden border-b border-sky-800 bg-sky-950 py-20 text-center text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.3),transparent_50%)]" />
         <div className="container relative z-10 mx-auto max-w-4xl px-4">
-          <span className="mb-6 inline-flex rounded-full bg-amber-400 px-4 py-1 text-xs font-black uppercase tracking-widest text-emerald-950">
+          <span className="mb-6 inline-flex rounded-full bg-amber-400 px-4 py-1 text-xs font-black uppercase tracking-widest text-sky-950">
             Alur Pendaftaran PSB
           </span>
           <h1 className="font-outfit text-4xl font-black uppercase tracking-tight md:text-5xl">
             Mulai Pendaftaran dari Portal Wali Santri
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-emerald-100/90">
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-sky-100/90">
             Pendaftaran PSB tidak lagi memakai formulir lepas. Semua proses sekarang dipusatkan ke akun portal agar data, dokumen, dan status seleksi lebih mudah dipantau.
           </p>
         </div>
@@ -68,11 +68,11 @@ export default function PSBDaftarPage() {
                   const Icon = step.icon;
                   return (
                     <div key={step.title} className="flex gap-4 rounded-[2rem] border border-white bg-white p-5 shadow-sm">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
                         <Icon size={22} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-600">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">
                           Langkah {index + 1}
                         </p>
                         <h3 className="mt-1 text-lg font-bold text-slate-900">{step.title}</h3>
@@ -85,14 +85,14 @@ export default function PSBDaftarPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-[2.5rem] border border-emerald-100 bg-emerald-50 p-8 shadow-sm">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+              <div className="rounded-[2.5rem] border border-sky-100 bg-sky-50 p-8 shadow-sm">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-sm">
                   <ShieldCheck size={26} />
                 </div>
-                <h2 className="font-outfit text-2xl font-black uppercase tracking-tight text-emerald-950">
+                <h2 className="font-outfit text-2xl font-black uppercase tracking-tight text-sky-950">
                   {isPortalUser ? 'Akun Portal Sudah Aktif' : 'Belum Punya Akun?'}
                 </h2>
-                <p className="mt-3 text-sm leading-relaxed text-emerald-900/75">
+                <p className="mt-3 text-sm leading-relaxed text-sky-900/75">
                   {isPortalUser
                     ? 'Kamu sudah login sebagai wali/calon santri. Lanjutkan saja proses pendaftaran dari portal.'
                     : 'Silakan buat akun portal terlebih dahulu. Setelah itu semua proses PSB dilakukan dari satu tempat.'}
@@ -102,7 +102,7 @@ export default function PSBDaftarPage() {
                   {isPortalUser ? (
                     <Link
                       href="/portal"
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-500"
                     >
                       Buka Portal Wali Santri <ArrowRight size={16} />
                     </Link>
@@ -110,13 +110,13 @@ export default function PSBDaftarPage() {
                     <>
                       <Link
                         href="/register?from=psb"
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-500"
                       >
                         Buat Akun Portal Wali Santri <UserPlus size={16} />
                       </Link>
                       <Link
                         href="/login?from=psb"
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-emerald-700 transition hover:bg-emerald-100"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-white px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-sky-700 transition hover:bg-sky-100"
                       >
                         Sudah Punya Akun <LogIn size={16} />
                       </Link>

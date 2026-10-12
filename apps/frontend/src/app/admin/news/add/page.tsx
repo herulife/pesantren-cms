@@ -73,6 +73,51 @@ function stripHtml(value: string) {
   return value.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Ubah file gambar besar/format tidak didukung menjadi WebP berukuran aman
+// (maksimal maxDim di sisi terpanjang) agar lolos batas 5MB API upload.
+async function resizeImageToWebp(file: File, maxDim: number): Promise<File> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('File read error'));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Image load error'));
+    image.src = dataUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  let width = img.width;
+  let height = img.height;
+
+  if (width > height && width > maxDim) {
+    height *= maxDim / width;
+    width = maxDim;
+  } else if (height > maxDim) {
+    width *= maxDim / height;
+    height = maxDim;
+  }
+
+  canvas.width = Math.round(width);
+  canvas.height = Math.round(height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.85));
+  if (!blob) throw new Error('Conversion failed');
+
+  const baseName = (file.name).replace(/\.[^/.]+$/, '') || 'image';
+  return new File([blob], baseName + '-original.webp', {
+    type: 'image/webp',
+    lastModified: Date.now()
+  });
+}
+
 export default function AddNewsPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -94,6 +139,7 @@ export default function AddNewsPage() {
   const [isEditorGalleryOpen, setIsEditorGalleryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<EditorInstance | null>(null);
+  const originalFileRef = useRef<File | null>(null);
 
   // States untuk Cropper Model
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
@@ -137,6 +183,7 @@ export default function AddNewsPage() {
     if (!file) return;
 
     setPendingFileName(file.name.replace(/\.[^/.]+$/, ""));
+    originalFileRef.current = file;
     const reader = new FileReader();
     reader.onload = () => {
       setSelectedImageStr(reader.result as string);
@@ -156,11 +203,36 @@ export default function AddNewsPage() {
       const webpFile = new File([croppedBlob], pendingFileName + ".webp", { type: 'image/webp' });
       const upRes = await uploadImage(webpFile);
       
-      if (upRes.success) {
-        setFormData(prev => ({ ...prev, image_url: { String: normalizeApiAssetUrl(upRes.url), Valid: true } }));
-        showToast('success', 'Gambar berhasil dipotong & diunggah!');
-      } else {
+      if (!upRes.success) {
         showToast('error', 'Gagal mengunggah gambar hasil crop.');
+      } else {
+        setFormData(prev => ({ ...prev, image_url: { String: normalizeApiAssetUrl(upRes.url), Valid: true } }));
+
+        // Terapkan juga gambar ORIGINAL (tanpa crop): unggah foto utuh lalu
+        // sisipkan di awal konten artikel. Thumbnail tetap memakai hasil crop.
+        const originalFile = originalFileRef.current;
+        if (originalFile) {
+          try {
+            let uploadFile = originalFile;
+            if (originalFile.size > 4 * 1024 * 1024) {
+              uploadFile = await resizeImageToWebp(originalFile, 1600);
+            }
+            const origRes = await uploadImage(uploadFile);
+            if (origRes.success && origRes.url) {
+              const origUrl = normalizeApiAssetUrl(origRes.url);
+              const imgTag = `<img src="${origUrl}" alt="Gambar Utuh" style="max-width:100%; border-radius: 1rem; margin: 1rem 0;" />`;
+              setFormData(prev => ({ ...prev, content: imgTag + prev.content }));
+              showToast('success', 'Gambar crop & original berhasil diunggah!');
+            } else {
+              showToast('info', 'Gambar crop tersimpan, gambar original gagal diunggah.');
+            }
+          } catch (err) {
+            console.error(err);
+            showToast('info', 'Gambar crop tersimpan, gambar original gagal diunggah.');
+          }
+        } else {
+          showToast('success', 'Gambar berhasil dipotong & diunggah!');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -168,6 +240,7 @@ export default function AddNewsPage() {
     } finally {
       setIsUploading(false);
       setSelectedImageStr(null);
+      originalFileRef.current = null;
     }
   };
 
@@ -215,7 +288,8 @@ export default function AddNewsPage() {
         showToast('error', 'Gagal menghasilkan konten AI.');
       }
     } catch (e) {
-      showToast('error', 'Terjadi kesalahan sistem AI.');
+      const message = e instanceof Error && e.message ? e.message : 'Terjadi kesalahan sistem AI.';
+      showToast('error', message);
     } finally {
       setIsGenerating(false);
     }
@@ -224,7 +298,7 @@ export default function AddNewsPage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-         <Link href="/admin/news" className="flex items-center gap-2 text-slate-500 hover:text-emerald-700 transition-colors font-bold uppercase tracking-widest text-xs">
+         <Link href="/admin/news" className="flex items-center gap-2 text-slate-500 hover:text-sky-700 transition-colors font-bold uppercase tracking-widest text-xs">
             <ArrowLeft size={16} /> Kembali ke Daftar
          </Link>
       </div>
@@ -240,7 +314,7 @@ export default function AddNewsPage() {
            <div className="lg:col-span-2 space-y-6">
               
               {/* Title Input */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all">
+              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:border-sky-500 transition-all">
                 <input 
                   required
                   value={formData.title}
@@ -251,9 +325,9 @@ export default function AddNewsPage() {
               </div>
 
               {/* Asisten AI Box */}
-              <div className="bg-emerald-50 p-6 border border-emerald-100 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+              <div className="bg-sky-50 p-6 border border-sky-100 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
                  <div className="flex items-start gap-4 z-10">
-                    <div className="w-12 h-12 bg-emerald-600 text-white rounded-lg flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
+                    <div className="w-12 h-12 bg-sky-600 text-white rounded-lg flex items-center justify-center shrink-0 shadow-md shadow-sky-500/20">
                        <Sparkles size={24} />
                     </div>
                     <div>
@@ -266,7 +340,7 @@ export default function AddNewsPage() {
                             value={aiTopic}
                             onChange={(e) => setAiTopic(e.target.value)}
                             placeholder="Ketik topik berita di sini..." 
-                            className="flex-1 px-4 py-2 bg-white border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm"
+                            className="flex-1 px-4 py-2 bg-white border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-sm"
                             disabled={isGenerating}
                           />
                        </div>
@@ -276,20 +350,20 @@ export default function AddNewsPage() {
                     type="button"
                     onClick={handleGenerateAI}
                     disabled={isGenerating}
-                    className="shrink-0 z-10 px-5 py-2.5 bg-white border border-emerald-200 text-emerald-700 rounded-lg font-bold hover:bg-emerald-50 transition-all disabled:opacity-50 flex items-center gap-2 text-sm shadow-sm"
+                    className="shrink-0 z-10 px-5 py-2.5 bg-white border border-sky-200 text-sky-700 rounded-lg font-bold hover:bg-sky-50 transition-all disabled:opacity-50 flex items-center gap-2 text-sm shadow-sm"
                  >
-                    {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} className="text-emerald-600" />}
+                    {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} className="text-sky-600" />}
                     {isGenerating ? 'Menyusun...' : 'Coba Sekarang'}
                  </button>
               </div>
 
               {/* Editor Visual Box (SunEditor) */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all min-h-[500px] suneditor-wrapper relative">
+              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:border-sky-500 transition-all min-h-[500px] suneditor-wrapper relative">
                  <div className="absolute top-2 right-4 z-10">
                     <button 
                       type="button"
                       onClick={() => setIsEditorGalleryOpen(true)}
-                      className="flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest hover:border-emerald-300 hover:text-emerald-700 transition-all shadow-sm active:scale-95"
+                      className="flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest hover:border-sky-300 hover:text-sky-700 transition-all shadow-sm active:scale-95"
                     >
                       <ImageIcon size={14} /> Sisipkan dari Galeri
                     </button>
@@ -403,9 +477,9 @@ export default function AddNewsPage() {
                     <div className="grid grid-cols-2 gap-3">
                        <div 
                          onClick={() => setFormData((prev) => ({ ...prev, status: 'published' }))}
-                         className={`border rounded-lg p-3 flex flex-col gap-1 cursor-pointer transition-all ${formData.status === 'published' ? 'border-emerald-300 shadow-sm bg-emerald-50/30' : 'border-slate-200 hover:border-slate-300'}`}>
-                          <div className={`flex items-center gap-1.5 font-bold text-[13px] ${formData.status === 'published' ? 'text-emerald-700' : 'text-slate-700'}`}>
-                             <div className={formData.status === 'published' ? 'text-emerald-500' : 'text-slate-400'}>OK</div> Langsung
+                         className={`border rounded-lg p-3 flex flex-col gap-1 cursor-pointer transition-all ${formData.status === 'published' ? 'border-sky-300 shadow-sm bg-sky-50/30' : 'border-slate-200 hover:border-slate-300'}`}>
+                          <div className={`flex items-center gap-1.5 font-bold text-[13px] ${formData.status === 'published' ? 'text-sky-700' : 'text-slate-700'}`}>
+                             <div className={formData.status === 'published' ? 'text-sky-500' : 'text-slate-400'}>OK</div> Langsung
                           </div>
                           <div className="text-[10px] text-slate-500 font-medium">Tayang ke web</div>
                        </div>
@@ -421,7 +495,7 @@ export default function AddNewsPage() {
 
                     <div className="flex items-center justify-between mt-2">
                        <div className="flex items-center gap-2">
-                          <div className="text-emerald-500 text-lg">JT</div>
+                          <div className="text-sky-500 text-lg">JT</div>
                           <div>
                              <div className="text-xs font-bold text-slate-800">Jadwalkan Posting</div>
                              <div className="text-[10px] text-slate-400">Pilih rilis waktu otomatis</div>
@@ -441,7 +515,7 @@ export default function AddNewsPage() {
                     <button 
                       type="submit"
                       disabled={isUploading || isGenerating}
-                      className="px-8 py-2.5 bg-emerald-600 text-white rounded-lg text-[13px] font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                      className="px-8 py-2.5 bg-sky-600 text-white rounded-lg text-[13px] font-bold hover:bg-sky-700 transition-all shadow-md shadow-sky-600/20 disabled:opacity-50"
                     >
                       Simpan
                     </button>
@@ -457,7 +531,7 @@ export default function AddNewsPage() {
                     <select 
                        value={formData.category_id.Int64}
                         onChange={(e) => { const val = parseInt(e.target.value); setFormData((prev) => ({ ...prev, category_id: { Int64: val, Valid: val > 0 } })); }}
-                       className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-bold text-slate-600 outline-none appearance-none shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
+                       className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-xs font-bold text-slate-600 outline-none appearance-none shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
                        <option value={0}>Pilih Kategori</option>
                        <option value={1}>Akademik</option>
                        <option value={2}>Kajian</option>
@@ -472,15 +546,15 @@ export default function AddNewsPage() {
                     <h3 className="font-bold text-slate-800 text-[13px]">Gambar Unggulan</h3>
                     <span 
                       onClick={() => setIsGalleryOpen(true)}
-                      className="text-emerald-700 text-[10px] font-bold cursor-pointer hover:underline flex items-center gap-1"
+                      className="text-sky-700 text-[10px] font-bold cursor-pointer hover:underline flex items-center gap-1"
                     >
                        <ImageIcon size={12} /> Buka Galeri
                     </span>
                  </div>
                  <div className="p-5 flex-1 flex flex-col">
                     <div 
-                      className={`w-full flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center relative overflow-hidden transition-all min-h-[12rem] bg-slate-50/50 hover:bg-slate-50 hover:border-emerald-300 ${
-                        formData.image_url.String ? 'border-emerald-300' : 'border-slate-200'
+                      className={`w-full flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center relative overflow-hidden transition-all min-h-[12rem] bg-slate-50/50 hover:bg-slate-50 hover:border-sky-300 ${
+                        formData.image_url.String ? 'border-sky-300' : 'border-slate-200'
                       }`}
                       onClick={() => !isUploading && fileInputRef.current?.click()}
                       style={{ cursor: isUploading ? 'not-allowed' : 'pointer' }}
@@ -493,9 +567,9 @@ export default function AddNewsPage() {
                           </div>
                         </>
                       ) : (
-                        <div className="flex flex-col items-center gap-2 p-6 text-emerald-600 text-center">
+                        <div className="flex flex-col items-center gap-2 p-6 text-sky-600 text-center">
                           {isUploading ? (
-                             <Loader2 size={24} className="animate-spin text-emerald-600 mb-1" />
+                             <Loader2 size={24} className="animate-spin text-sky-600 mb-1" />
                           ) : (
                              <span className="text-3xl text-slate-300 font-light mb-1">+</span>
                           )}
@@ -518,7 +592,7 @@ export default function AddNewsPage() {
                          value={formData.image_url.String}
                          onChange={(e) => setFormData((prev) => ({ ...prev, image_url: { String: e.target.value, Valid: true } }))}
                          placeholder="Tempel link gambar di sini..."
-                         className="flex-1 pl-4 pr-12 py-3 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-700 shadow-sm"
+                         className="flex-1 pl-4 pr-12 py-3 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-700 shadow-sm"
                        />
                        <button 
                          type="button" 

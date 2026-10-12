@@ -40,6 +40,7 @@ type Santri struct {
 	ParentName       string `json:"parent_name"`
 	ParentPhone      string `json:"parent_phone"`
 	NIK              string `json:"nik"`
+	NISN             string `json:"nisn"`
 	FatherName       string `json:"father_name"`
 	FatherPhone      string `json:"father_phone"`
 	MotherName       string `json:"mother_name"`
@@ -48,6 +49,15 @@ type Santri struct {
 	MotherOccupation string `json:"mother_occupation"`
 	RegistrationID   int    `json:"registration_id"`
 	PhotoURL         string `json:"photo_url"`
+	KKURL            string `json:"kk_url"`
+	AktaURL          string `json:"akta_url"`
+	KTPOrtuURL       string `json:"ktp_ortu_url"`
+	IjazahURL        string `json:"ijazah_url"`
+	SuratKelulusanURL string `json:"surat_kelulusan_url"`
+	PasfotoURL       string `json:"pasfoto_url"`
+	FotoPendaftaranURL string `json:"foto_pendaftaran_url"`
+	YatimDocURL      string `json:"yatim_doc_url"`
+	SKTMDocURL       string `json:"sktm_doc_url"`
 	UserID           *int   `json:"user_id,omitempty"`
 	CreatedAt        string `json:"created_at"`
 	UpdatedAt        string `json:"updated_at"`
@@ -71,6 +81,7 @@ type SantriInput struct {
 	ParentName       string `json:"parent_name"`
 	ParentPhone      string `json:"parent_phone"`
 	NIK              string `json:"nik"`
+	NISN             string `json:"nisn"`
 	FatherName       string `json:"father_name"`
 	FatherPhone      string `json:"father_phone"`
 	MotherName       string `json:"mother_name"`
@@ -79,6 +90,15 @@ type SantriInput struct {
 	MotherOccupation string `json:"mother_occupation"`
 	RegistrationID   int    `json:"registration_id"`
 	PhotoURL         string `json:"photo_url"`
+	KKURL            string `json:"kk_url"`
+	AktaURL          string `json:"akta_url"`
+	KTPOrtuURL       string `json:"ktp_ortu_url"`
+	IjazahURL        string `json:"ijazah_url"`
+	SuratKelulusanURL string `json:"surat_kelulusan_url"`
+	PasfotoURL       string `json:"pasfoto_url"`
+	FotoPendaftaranURL string `json:"foto_pendaftaran_url"`
+	YatimDocURL      string `json:"yatim_doc_url"`
+	SKTMDocURL       string `json:"sktm_doc_url"`
 }
 
 func (in *SantriInput) toSantri() *Santri {
@@ -86,7 +106,8 @@ func (in *SantriInput) toSantri() *Santri {
 		NIS: in.NIS, Name: in.Name, Nickname: in.Nickname, Gender: in.Gender,
 		BirthPlace: in.BirthPlace, BirthDate: in.BirthDate, Address: in.Address,
 		Class: in.Class, Jenjang: in.Jenjang, Angkatan: in.Angkatan, Status: in.Status, Category: in.Category,
-		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
+		ParentName: in.ParentName, ParentPhone: in.ParentPhone, NIK: in.NIK, NISN: in.NISN, FatherName: in.FatherName, FatherPhone: in.FatherPhone, MotherName: in.MotherName, MotherPhone: in.MotherPhone, FatherOccupation: in.FatherOccupation, MotherOccupation: in.MotherOccupation, RegistrationID: in.RegistrationID, PhotoURL: in.PhotoURL,
+		KKURL: in.KKURL, AktaURL: in.AktaURL, KTPOrtuURL: in.KTPOrtuURL, IjazahURL: in.IjazahURL, SuratKelulusanURL: in.SuratKelulusanURL, PasfotoURL: in.PasfotoURL, FotoPendaftaranURL: in.FotoPendaftaranURL, YatimDocURL: in.YatimDocURL, SKTMDocURL: in.SKTMDocURL,
 	}
 }
 
@@ -107,6 +128,7 @@ type IRepository interface {
 	FindAvailablePortalUsers(search string, includeID int) ([]PortalUser, error)
 	LinkUserExclusive(santriID, userID int) error
 	ResetLinkedPassword(santriID int, newPassword string) (int, error)
+	UpdateLinkedAccount(santriID int, email, newPassword string) (int, int, error)
 	FindByUserID(userID int) ([]Santri, error)
 	ExportAll(classes []string, restrictClasses bool) ([]ExportRow, error)
 	ListClassesFromSantri(classes []string) ([]ClassCount, error)
@@ -152,6 +174,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/portal-users-available", h.GetAvailablePortalUsers)
 	r.Put("/{id}/link-user-exclusive", h.LinkUserExclusiveHandler)
 	r.Post("/{id}/reset-password", h.ResetSantriPassword)
+	r.Put("/{id}/account", h.UpdateSantriAccount)
 	r.Delete("/{id}", h.Delete)
 	r.Delete("/{id}/purge", h.Purge)
 	r.Delete("/bulk", h.BulkDelete)
@@ -237,11 +260,35 @@ func validateSantri(s *Santri) map[string]string {
 			errs["nik"] = "NIK harus 16 digit angka"
 		}
 	}
+	// Jilid 84: NISN opsional untuk create/update manual, tapi bila diisi harus
+	// valid (8-16 digit angka, standar RDM Kemenag 10 digit).
+	s.NISN = strings.TrimSpace(s.NISN)
+	if !validators.ValidateNISN(s.NISN) {
+		errs["nisn"] = "NISN harus 8-16 digit angka (kosongkan bila belum punya)"
+	}
 	if s.FatherPhone != "" && !validators.ValidatePhone(s.FatherPhone) {
 		errs["father_phone"] = "No HP ayah tidak valid"
 	}
 	if s.MotherPhone != "" && !validators.ValidatePhone(s.MotherPhone) {
 		errs["mother_phone"] = "No HP ibu tidak valid"
+	}
+	// Jilid 93: dokumen diunggah dari form admin. Nilai tidak wajib, tetapi
+	// bila diisi harus berupa URL media yang sah (path /uploads atau URL http).
+	docFields := map[string]string{
+		"kk_url":               s.KKURL,
+		"akta_url":             s.AktaURL,
+		"ktp_ortu_url":         s.KTPOrtuURL,
+		"ijazah_url":           s.IjazahURL,
+		"surat_kelulusan_url":  s.SuratKelulusanURL,
+		"pasfoto_url":          s.PasfotoURL,
+		"foto_pendaftaran_url": s.FotoPendaftaranURL,
+		"yatim_doc_url":        s.YatimDocURL,
+		"sktm_doc_url":         s.SKTMDocURL,
+	}
+	for key, val := range docFields {
+		if strings.TrimSpace(val) != "" && !validators.ValidateMediaURL(strings.TrimSpace(val)) {
+			errs[key] = "Tautan dokumen tidak valid"
+		}
 	}
 	if len(errs) == 0 {
 		return nil

@@ -33,22 +33,22 @@ export default function TeachersPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-emerald-800 bg-slate-950 px-4 py-24 text-white sm:px-6 lg:px-8 lg:py-32">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-emerald-950/70" />
-        <div className="absolute top-0 right-0 h-96 w-96 -translate-y-1/2 translate-x-1/2 rounded-full bg-emerald-900 blur-3xl opacity-30" />
+      <section className="relative overflow-hidden border-b border-sky-800 bg-slate-950 px-4 py-24 text-white sm:px-6 lg:px-8 lg:py-32">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-sky-950/70" />
+        <div className="absolute top-0 right-0 h-96 w-96 -translate-y-1/2 translate-x-1/2 rounded-full bg-sky-900 blur-3xl opacity-30" />
         <div className="absolute bottom-0 left-0 h-64 w-64 -translate-x-1/2 translate-y-1/2 rounded-full bg-amber-400/10 blur-3xl opacity-30" />
 
         <div className="relative z-10 mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
             <div className="max-w-4xl">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-200">
                 <Sparkles size={14} />
                 Dewan Pengajar Darussunnah
               </div>
               <h1 className="mb-6 text-4xl font-black tracking-tight md:text-6xl">
                 Asatidz yang membersamai pembinaan santri.
               </h1>
-              <p className="max-w-3xl text-sm font-medium leading-7 text-emerald-100/85 sm:text-base sm:leading-8">
+              <p className="max-w-3xl text-sm font-medium leading-7 text-sky-100/85 sm:text-base sm:leading-8">
                 Darussunnah dibimbing oleh para pengajar yang hadir bukan hanya menyampaikan materi,
                 tetapi juga menanamkan adab, kedisiplinan, dan semangat menuntut ilmu.
               </p>
@@ -60,7 +60,7 @@ export default function TeachersPage() {
                   className="rounded-[1.6rem] border border-white/10 bg-white/8 px-5 py-5 shadow-[0_20px_42px_-30px_rgba(0,0,0,0.45)] backdrop-blur-sm"
                 >
                   <p className="text-2xl font-black text-white">{item.value}</p>
-                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200/82">
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/82">
                     {item.label}
                   </p>
                 </div>
@@ -72,7 +72,7 @@ export default function TeachersPage() {
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto mb-14 max-w-3xl text-center">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Asatidz</p>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">Asatidz</p>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">
             Pembimbing yang membersamai perjalanan santri
           </h2>
@@ -103,17 +103,17 @@ export default function TeachersPage() {
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center bg-emerald-50 text-slate-300">
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-sky-50 text-slate-300">
                       <UserCheck size={64} className="mb-4 opacity-20" />
                       <span className="text-[10px] font-black uppercase tracking-widest">Wajah Pengajar</span>
                     </div>
                   )}
                   <div className="absolute inset-x-4 bottom-4 translate-y-4 rounded-[1rem] bg-white/92 p-4 text-center opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">{teacher.subject}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-sky-700">{teacher.subject}</p>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="mb-1 text-xl font-bold text-slate-900 transition-colors group-hover:text-emerald-600">
+                  <h3 className="mb-1 text-xl font-bold text-slate-900 transition-colors group-hover:text-sky-600">
                     {teacher.name}
                   </h3>
                   <p className="mb-4 text-xs font-black uppercase tracking-widest text-slate-400">{teacher.subject}</p>
@@ -134,26 +134,26 @@ export default function TeachersPage() {
         )}
       </section>
 
-      <section className="mx-4 mb-16 rounded-[2rem] border border-emerald-100 bg-[linear-gradient(to_bottom,_#ecfdf5,_#f8fafc)] px-6 py-14 md:mx-12 md:mb-24 md:px-8 md:py-20">
+      <section className="mx-4 mb-16 rounded-[2rem] border border-sky-100 bg-[linear-gradient(to_bottom,_#eff6ff,_#f8fafc)] px-6 py-14 md:mx-12 md:mb-24 md:px-8 md:py-20">
         <div className="mx-auto max-w-4xl text-center">
-          <Quote className="mx-auto mb-6 text-emerald-200" size={56} />
-          <h2 className="mb-6 text-2xl font-extrabold tracking-tight text-emerald-950 md:text-3xl">
+          <Quote className="mx-auto mb-6 text-sky-200" size={56} />
+          <h2 className="mb-6 text-2xl font-extrabold tracking-tight text-sky-950 md:text-3xl">
             &quot;Mendidik dengan hati, mengajar dengan keteladanan.&quot;
           </h2>
-          <p className="text-base font-medium leading-8 text-emerald-800/85 md:text-lg">
+          <p className="text-base font-medium leading-8 text-sky-800/85 md:text-lg">
             Di Darussunnah, kehadiran guru adalah qudwah. Para pengajar tidak hanya menyampaikan
             materi, tetapi juga menjadi teladan dalam adab, keteguhan ibadah, dan semangat belajar.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/program"
-              className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+              className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-sky-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-800"
             >
               Lihat Program Pendidikan <ChevronRight size={16} />
             </Link>
             <Link
               href="/psb"
-              className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-white px-5 py-3 text-sm font-bold text-emerald-800 transition hover:border-emerald-300"
+              className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-sky-200 bg-white px-5 py-3 text-sm font-bold text-sky-800 transition hover:border-sky-300"
             >
               Informasi Pendaftaran <ChevronRight size={16} />
             </Link>

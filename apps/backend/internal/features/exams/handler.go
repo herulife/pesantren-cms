@@ -2,6 +2,8 @@ package exams
 
 import (
 	"darussunnah-api/internal/features/auth"
+	"darussunnah-api/internal/platform/database"
+	"darussunnah-api/internal/platform/scope"
 	"darussunnah-api/internal/validators"
 	"encoding/json"
 	"errors"
@@ -36,6 +38,14 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	// Determine if student or admin (to hide/show keys)
 	role, _ := currentUserRole(r)
 	hideAnswers := (role == "user")
+	if hideAnswers {
+		// Enrollment gate: user wajib sudah StartSession untuk ujian ini.
+		studentID, _ := currentUserID(r)
+		if studentID <= 0 || !h.repo.HasSession(studentID, examID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Mulai sesi ujian terlebih dahulu", nil)
+			return
+		}
+	}
 
 	questions, err := h.repo.GetExamQuestions(examID, hideAnswers)
 	if err != nil {
@@ -74,17 +84,19 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSONResponse(w, http.StatusUnauthorized, false, "Akses ditolak", nil)
+		return
+	}
+	// IDOR check: session must belong to caller
+	if !h.repo.IsSessionOwnedBy(body.SessionID, userID) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Sesi tidak milik Anda", nil)
+		return
+	}
 
-	studentID, _ := currentUserID(r)
-
-	err := h.repo.SubmitAnswer(studentID, body.SessionID, body.QuestionID, body.SelectedAnswer)
+	err := h.repo.SubmitAnswer(body.SessionID, body.QuestionID, body.SelectedAnswer)
 	if err != nil {
-		// A session that is not owned (or already finished) is reported as not
-		// found so students cannot enumerate other students' session IDs.
-		if errors.Is(err, ErrSessionNotOwned) {
-			writeJSONResponse(w, http.StatusNotFound, false, "Sesi ujian tidak ditemukan", nil)
-			return
-		}
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal menyimpan jawaban", nil)
 		return
 	}
@@ -100,13 +112,19 @@ func (h *Handler) FinishSession(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
-
-	studentID, _ := currentUserID(r)
-
-	score, err := h.repo.FinishSession(studentID, body.SessionID)
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSONResponse(w, http.StatusUnauthorized, false, "Akses ditolak", nil)
+		return
+	}
+	if !h.repo.IsSessionOwnedBy(body.SessionID, userID) {
+		writeJSONResponse(w, http.StatusForbidden, false, "Sesi tidak milik Anda", nil)
+		return
+	}
+	score, err := h.repo.FinishSession(body.SessionID)
 	if err != nil {
-		if errors.Is(err, ErrSessionNotOwned) {
-			writeJSONResponse(w, http.StatusNotFound, false, "Sesi ujian tidak ditemukan", nil)
+		if errors.Is(err, ErrSessionFinished) {
+			writeJSONResponse(w, http.StatusConflict, false, "Ujian sudah diakhiri sebelumnya", nil)
 			return
 		}
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal mengakhiri ujian", nil)
@@ -123,7 +141,26 @@ func (h *Handler) CreateExam(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
-
+	e.Semester = validators.NormalizeSemester(e.Semester)
+	if errs := validateExam(&e); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Pembuatan ujian hanya oleh guru", nil)
+		return
+	}
+	if role == "guru" {
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if scErr != nil || !sc.HasSubject(e.SubjectID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat membuat ujian mapel yang diampu", nil)
+			return
+		}
+	}
 	if err := h.repo.CreateExam(&e); err != nil {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal membuat ujian", nil)
 		return
@@ -137,12 +174,80 @@ func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 		writeJSONResponse(w, http.StatusBadRequest, false, "Payload tidak valid", nil)
 		return
 	}
+	if errs := validateQuestion(&q); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "message": "Validasi gagal", "errors": errs})
+		return
+	}
 
+	role, _ := auth.GetAuthenticatedRole(r.Context())
+	uid, _ := auth.GetAuthenticatedUserID(r.Context())
+	if scope.ReadOnly(role) || role == "wali_kelas" || role == "ustadz" {
+		writeJSONResponse(w, http.StatusForbidden, false, "Penambahan soal hanya oleh guru", nil)
+		return
+	}
+	if role == "guru" {
+		subjID, subjErr := scope.ExamSubjectID(database.DB, q.ExamID)
+		sc, scErr := scope.Resolve(database.DB, uid, role)
+		if subjErr != nil {
+			writeJSONResponse(w, http.StatusNotFound, false, "Ujian tidak ditemukan", nil)
+			return
+		}
+		if scErr != nil || !sc.HasSubject(subjID) {
+			writeJSONResponse(w, http.StatusForbidden, false, "Hanya dapat menambah soal mapel yang diampu", nil)
+			return
+		}
+	}
 	if err := h.repo.AddQuestion(&q); err != nil {
 		writeJSONResponse(w, http.StatusInternalServerError, false, "Gagal menambahkan soal", nil)
 		return
 	}
 	writeJSONResponse(w, http.StatusOK, true, "Soal berhasil ditambahkan", nil)
+}
+
+func validateExam(e *Exam) map[string]string {
+	errs := map[string]string{}
+	if len(e.Title) < 3 {
+		errs["title"] = "Judul minimal 3 karakter"
+	}
+	if e.SubjectID <= 0 {
+		errs["subject_id"] = "Mata pelajaran wajib dipilih"
+	}
+	if e.DurationMinutes <= 0 {
+		errs["duration"] = "Durasi harus >0 menit"
+	}
+	if e.Semester != "" && e.Semester != "1" && e.Semester != "2" {
+		errs["semester"] = "Semester harus ganjil/genap"
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
+}
+
+// AUDIT FIX: kunci jawaban harus menunjuk opsi yang ada; poin 0-100.
+func validateQuestion(q *Question) map[string]string {
+	errs := map[string]string{}
+	if q.ExamID <= 0 {
+		errs["exam_id"] = "Ujian wajib dipilih"
+	}
+	if len(q.QuestionText) < 3 {
+		errs["question_text"] = "Teks soal minimal 3 karakter"
+	}
+	if len(q.Options) < 2 {
+		errs["options"] = "Minimal 2 opsi jawaban"
+	}
+	if q.CorrectAnswerKey < 0 || q.CorrectAnswerKey >= len(q.Options) {
+		errs["correct_answer_key"] = "Kunci jawaban di luar rentang opsi"
+	}
+	if q.Points < 0 || q.Points > 100 {
+		errs["points"] = "Poin harus 0-100"
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
 }
 
 func currentUserID(r *http.Request) (int, bool) {
@@ -180,6 +285,8 @@ type IRepository interface {
 	GetExamQuestions(examID int, hideAnswers bool) ([]Question, error)
 	// Student: Session Management
 	StartSession(studentID, examID int) (int, error)
-	SubmitAnswer(studentID, sessionID, questionID, selectedAnswer int) error
-	FinishSession(studentID, sessionID int) (float64, error)
+	SubmitAnswer(sessionID, questionID, selectedAnswer int) error
+	FinishSession(sessionID int) (float64, error)
+	IsSessionOwnedBy(sessionID, userID int) bool
+	HasSession(studentID, examID int) bool
 }

@@ -1,8 +1,8 @@
-# Peta Implementasi Website Builder Darussunnah
+# Peta Implementasi Website Builder Al-Maa
 
 ## Tujuan
 
-Membuat konsep Website Builder untuk website publik Darussunnah agar admin bisa mengatur tampilan dari navbar sampai footer tanpa edit kode. Builder dibuat berbasis komponen siap pakai, bukan editor bebas total seperti CSS mentah, supaya desain tetap rapi, aman, cepat, dan tidak merusak identitas visual pondok.
+Membuat konsep Website Builder untuk website publik Al-Maa agar admin bisa mengatur tampilan dari navbar sampai footer tanpa edit kode. Builder dibuat berbasis komponen siap pakai, bukan editor bebas total seperti CSS mentah, supaya desain tetap rapi, aman, cepat, dan tidak merusak identitas visual pondok.
 
 Cakupan akhir:
 - Theme global.
@@ -191,9 +191,9 @@ Field draft tidak boleh masuk public settings.
       "enabled": true,
       "variant": "slider",
       "settings": {
-        "kicker": "Darussunnah Parung",
+        "kicker": "Al-Maa Parung",
         "title": "Tahfidz, Adab, dan Ilmu dalam Satu Pembinaan",
-        "subtitle": "Darussunnah Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.",
+        "subtitle": "Al-Maa Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.",
         "overlay": "medium",
         "text_position": "left-top",
         "mobile_height": "compact",
@@ -204,7 +204,7 @@ Field draft tidak boleh masuk public settings.
         "slides": [
           {
             "title": "Tahfidz, Adab, dan Ilmu dalam Satu Pembinaan",
-            "subtitle": "Darussunnah Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.",
+            "subtitle": "Al-Maa Parung membina santri melalui hafalan Al-Quran, adab, dan pembelajaran terpadu.",
             "image_url": "/assets/img/gedung.webp"
           }
         ]
@@ -894,4 +894,5 @@ MVP dianggap selesai jika:
 - Website tetap aman jika builder dimatikan.
 - Build frontend berhasil.
 - Endpoint public settings tetap tidak membutuhkan login.
+
 

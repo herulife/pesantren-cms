@@ -1,0 +1,16 @@
+[Unit]
+Description=Alma Parung Go Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/alma-parung/app/apps/backend
+EnvironmentFile=/opt/alma-parung/app/deploy/alma-backend/.env
+ExecStart=/usr/local/go/bin/go run cmd/api/main.go
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

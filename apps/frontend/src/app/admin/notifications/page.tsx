@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getNotificationStatus, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs, type ActivityLog } from '@/lib/api';
+import { getNotificationStatus, getWARecipients, sendWhatsApp, broadcastTagihan, broadcastNilai, broadcastPSB, getLogs, type ActivityLog, type WARecipient } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { 
   Bell, 
@@ -14,14 +14,21 @@ import {
   Users,
   BookOpen,
   ClipboardList,
+  Settings2,
+  Search,
+  User,
+  ReceiptText,
+  ChevronDown,
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
-import WAGatewayCard from '@/components/WAGatewayCard';
+import { useConfirm } from '@/components/ConfirmProvider';
+
+import WASettingsPanel from '@/components/WASettingsPanel';
 
 export default function NotificationsPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
-  const [status, setStatus] = useState({ success: false, configured: false });
+  const [status, setStatus] = useState<{ success?: boolean; configured: boolean; whatsapp_configured: boolean; whatsapp_phone?: string; telegram_configured?: boolean }>({ success: false, configured: false, whatsapp_configured: false, telegram_configured: false });
   const [sending, setSending] = useState(false);
   const [broadcastingTagihan, setBroadcastingTagihan] = useState(false);
   const [broadcastingNilai, setBroadcastingNilai] = useState(false);
@@ -31,7 +38,10 @@ export default function NotificationsPage() {
   // Form states
   const [target, setTarget] = useState('');
   const [message, setMessage] = useState('');
-
+  const [recipients, setRecipients] = useState<WARecipient[]>([]);
+  const [q, setQ] = useState('');
+  const [showQ, setShowQ] = useState(false);
+  const [sel, setSel] = useState<WARecipient | null>(null);
   const fetchData = useCallback(async () => {
     const [statusData, logsData] = await Promise.all([
       getNotificationStatus(),
@@ -43,7 +53,13 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     void fetchData();
+    const t = window.setInterval(() => { void fetchData(); }, 15000);
+    return () => window.clearInterval(t);
   }, [fetchData]);
+
+  useEffect(() => {
+    void getWARecipients().then(setRecipients);
+  }, []);
 
   const handleSendManual = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,9 +82,76 @@ export default function NotificationsPage() {
     }
   };
 
+  const selectRecipient = (r: WARecipient) => {
+    setSel(r);
+    setShowQ(false);
+    setQ(r.name);
+    setTarget(r.parent_phone || r.father_phone || r.mother_phone || '');
+  };
+
+  const formatMoney = (n: number) => new Intl.NumberFormat('id-ID').format(n || 0);
+
+  const lunasObj = sel?.lunas_receipt_no
+    ? { receipt_no: sel.lunas_receipt_no, period: sel.lunas_period || '', total: sel.lunas_total || 0, method: sel.lunas_method || '' }
+    : null;
+
+  const tagihanObj = sel?.tagihan_period
+    ? {
+        period: sel.tagihan_period,
+        amount: sel.tagihan_amount || 0,
+        paid: sel.tagihan_paid || 0,
+        status: sel.tagihan_status || 'unpaid',
+        due: sel.tagihan_due || '',
+        kind: sel.tagihan_kind || 'SPP',
+      }
+    : null;
+
+  const useTagihan = () => {
+    if (!sel || !tagihanObj) return;
+    const sisa = tagihanObj.amount - tagihanObj.paid;
+    setMessage(
+      "Assalamu'alaikum Wr. Wb.\n\n" +
+      `Yth. Wali Santri *${sel.name}*,\n` +
+      (sisa > 0
+        ? `Kami mengingatkan bahwa tagihan *${tagihanObj.kind}* bulan *${tagihanObj.period}* sebesar *Rp ${formatMoney(sisa)}* belum terbayarkan.\n\nMohon segera melakukan pembayaran melalui portal atau transfer ke rekening pondok.\nLihat & bayar di dashboard:\nhttps://darussunnahparung.com/portal/payment-spp\n\n`
+        : `Tagihan *${tagihanObj.kind}* bulan *${tagihanObj.period}* sebesar *Rp ${formatMoney(tagihanObj.amount)}* telah terbayar LUNAS. Terima kasih atas pembayarannya.\n\n`) +
+      "Jazakumullahu khairan.\n_Bendahara Darussunnah_"
+    );
+  };
+
+  const useLunas = () => {
+    if (!sel || !lunasObj) return;
+    setMessage(
+      "Assalamu'alaikum Wr. Wb.\n\n" +
+      `Yth. Wali Santri *${sel.name}*,\n` +
+      `Alhamdulillah, pembayaran periode *${lunasObj.period}* telah kami terima dengan rincian:\n\n` +
+      `No. Kwitansi: *${lunasObj.receipt_no}*\n` +
+      `Total: *Rp ${formatMoney(lunasObj.total)}*\n\n` +
+      "Kwitansi rekap dapat dilihat/diunduh di dashboard pembayaran:\nhttps://darussunnahparung.com/portal/payment-spp\n\n" +
+      "Jazakumullahu khairan.\n_Bendahara Darussunnah_"
+    );
+  };
+
+  const filtered = recipients.filter(r => {
+    const hay = [r.name, r.nickname, r.parent_name, r.parent_phone, r.father_phone, r.mother_phone].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q.toLowerCase().trim());
+  });
+
+  const phoneOptions = (() => {
+    if (!sel) return [] as { label: string; phone: string }[];
+    const opts: { label: string; phone: string }[] = [];
+    if (sel.parent_phone) opts.push({ label: `Wali (utama) · ${sel.parent_phone}`, phone: sel.parent_phone });
+    if (sel.father_phone && sel.father_phone !== sel.parent_phone) opts.push({ label: `Ayah · ${sel.father_phone}`, phone: sel.father_phone });
+    if (sel.mother_phone && sel.mother_phone !== sel.parent_phone && sel.mother_phone !== sel.father_phone) opts.push({ label: `Ibu · ${sel.mother_phone}`, phone: sel.mother_phone });
+    if (opts.length === 0) opts.push({ label: 'Belum ada nomor WA', phone: '' });
+    return opts;
+  })();
+
+  const confirmDialog = useConfirm();
+
   const handleBroadcastTagihan = async () => {
-    if (!status.configured) { showToast('error', 'API Key Fonnte belum dikonfigurasi'); return; }
-    if (!confirm('Kirim pengingat tagihan SPP ke semua santri yang menunggak?')) return;
+    if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
+    if (!(await confirmDialog({ title: 'Kirim pengingat tagihan', message: 'Kirim pengingat tagihan SPP ke semua santri yang menunggak? Pesan dikirim via WhatsApp dan tidak bisa ditarik kembali.', confirmText: 'Kirim', type: 'warning' }))) return;
 
     setBroadcastingTagihan(true);
     try {
@@ -86,8 +169,8 @@ export default function NotificationsPage() {
   };
 
   const handleBroadcastNilai = async () => {
-    if (!status.configured) { showToast('error', 'API Key Fonnte belum dikonfigurasi'); return; }
-    if (!confirm('Kirim notifikasi nilai raport ke wali santri yang memiliki nomor WA?')) return;
+    if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
+    if (!(await confirmDialog({ title: 'Kirim notifikasi nilai', message: 'Kirim notifikasi nilai raport ke wali santri yang memiliki nomor WhatsApp?', confirmText: 'Kirim', type: 'warning' }))) return;
 
     setBroadcastingNilai(true);
     try {
@@ -105,8 +188,8 @@ export default function NotificationsPage() {
   };
 
   const handleBroadcastPSB = async () => {
-    if (!status.configured) { showToast('error', 'API Key Fonnte belum dikonfigurasi'); return; }
-    if (!confirm('Kirim status pendaftaran PSB ke semua wali calon santri?')) return;
+    if (!status.configured) { showToast('error', 'WhatsApp Gateway belum tersambung. Minta Superadmin menautkan nomor HP pondok.'); return; }
+    if (!(await confirmDialog({ title: 'Kirim status PSB', message: 'Kirim status pendaftaran PSB ke semua wali calon santri?', confirmText: 'Kirim', type: 'warning' }))) return;
 
     setBroadcastingPSB(true);
     try {
@@ -154,8 +237,8 @@ export default function NotificationsPage() {
   ];
 
   const colorMap: Record<string, { btn: string; shadow: string; bg: string }> = {
-    blue: { btn: 'bg-blue-600 text-white shadow-xl shadow-blue-200', shadow: 'bg-blue-50', bg: 'bg-blue-50' },
-    emerald: { btn: 'bg-emerald-600 text-white shadow-xl shadow-emerald-200', shadow: 'bg-emerald-50', bg: 'bg-emerald-50' },
+    blue: { btn: 'bg-sky-600 text-white shadow-xl shadow-sky-200', shadow: 'bg-sky-50', bg: 'bg-sky-50' },
+    emerald: { btn: 'bg-sky-600 text-white shadow-xl shadow-sky-200', shadow: 'bg-sky-50', bg: 'bg-sky-50' },
     purple: { btn: 'bg-purple-600 text-white shadow-xl shadow-purple-200', shadow: 'bg-purple-50', bg: 'bg-purple-50' },
   };
 
@@ -163,14 +246,12 @@ export default function NotificationsPage() {
     <div className="pb-10 font-outfit">
       <div className="mb-8">
         <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
-          <Bell className="text-blue-600" size={32} />
+          <Bell className="text-sky-600" size={32} />
           WhatsApp Gateway
         </h2>
         <p className="text-slate-500 mt-1">Sistem notifikasi otomatis dan broadcast pesan WhatsApp.</p>
       </div>
 
-      <WAGatewayCard />
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left: Configuration & Broadcasts */}
@@ -179,31 +260,31 @@ export default function NotificationsPage() {
           {/* Status Card */}
           <div className={`p-6 rounded-[2rem] border-2 transition-all ${
             status.configured 
-              ? 'bg-emerald-50 border-emerald-100' 
+              ? 'bg-sky-50 border-sky-100' 
               : 'bg-rose-50 border-rose-100'
           }`}>
             <div className="flex items-center gap-4 mb-4">
               <div className={`p-3 rounded-2xl ${
-                status.configured ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white shadow-lg shadow-rose-200'
+                status.configured ? 'bg-sky-500 text-white' : 'bg-rose-500 text-white shadow-lg shadow-rose-200'
               }`}>
                 <Zap size={24} />
               </div>
               <div>
                 <h4 className="font-black uppercase tracking-tight text-slate-800">Status Gateway</h4>
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${
-                  status.configured ? 'text-emerald-600' : 'text-rose-600'
+                  status.configured ? 'text-sky-600' : 'text-rose-600'
                 }`}>
-                  {status.configured ? 'Terhubung (Fonnte API)' : 'Belum Konfigurasi'}
+                  {status.configured ? 'Terhubung (Gateway Sendiri)' : 'Belum Konfigurasi'}
                 </p>
               </div>
             </div>
             {!status.configured && (
               <p className="text-xs text-rose-500 leading-relaxed bg-white/50 p-3 rounded-xl border border-rose-100">
-                Lengkapi <code className="bg-rose-100 px-1 rounded">FONNTE_API_KEY</code> di file .env untuk mengaktifkan fitur ini.
+                Nomor HP pondok belum ditautkan. Minta Superadmin menautkan lewat panel <b className="font-bold">Konfigurasi &amp; Template</b> di halaman ini (Scan QR / Kode 8 digit) untuk mengaktifkan semua fitur.
               </p>
             )}
             {status.configured && (
-              <div className="flex items-center gap-2 text-emerald-700 bg-white/50 p-3 rounded-xl border border-emerald-100">
+              <div className="flex items-center gap-2 text-sky-700 bg-white/50 p-3 rounded-xl border border-sky-100">
                 <CheckCircle2 size={14} />
                 <span className="text-[10px] font-black uppercase tracking-widest">Sistem Siap Digunakan</span>
               </div>
@@ -228,7 +309,7 @@ export default function NotificationsPage() {
                   <p className="text-slate-500 text-sm mb-5 leading-relaxed">
                     {card.desc}
                     {card.badge && (
-                      <> <span className="text-blue-600 font-bold uppercase tracking-widest text-[10px]">{card.badge}</span>.</>
+                      <> <span className="text-sky-600 font-bold uppercase tracking-widest text-[10px]">{card.badge}</span>.</>
                     )}
                   </p>
                   
@@ -261,49 +342,196 @@ export default function NotificationsPage() {
           {/* Manual Send Form */}
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/20">
              <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-6 flex items-center gap-3">
-               <MessageSquare size={22} className="text-blue-600" />
+               <MessageSquare size={22} className="text-sky-600" />
                Kirim Pesan Manual
              </h4>
              
              <form onSubmit={handleSendManual} className="space-y-5">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nomor WhatsApp</label>
-                    <div className="relative">
-                      <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input 
-                        type="text" 
-                        placeholder="6281234567890"
-                        value={target}
-                        onChange={(e) => setTarget(e.target.value)}
-                        className="w-full pl-11 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-sm transition-all outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-end mb-1">
-                    <p className="text-[11px] text-slate-400 italic">Gunakan format 628xxx tanpa simbol &apos;+&apos; atau &apos;-&apos;</p>
-                  </div>
+               {/* Pilih penerima: santri/wali otomatis */}
+               <div className="space-y-2 relative">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                   Pilih Penerima (Santri / Wali)
+                 </label>
+                 <div className="relative">
+                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                   <input
+                     type="text"
+                     placeholder="Ketik nama santri, nama wali, atau nomor WA..."
+                     value={q}
+                     onChange={(e) => { setQ(e.target.value); setShowQ(true); if (e.target.value.trim() === '') setSel(null); }}
+                     onFocus={() => setShowQ(true)}
+                     className="w-full pl-11 pr-10 py-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl text-sm transition-all outline-none"
+                   />
+                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                 </div>
+
+                 {showQ && (
+                   <>
+                     <div className="absolute z-30 left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-2xl max-h-72 overflow-y-auto">
+                       {recipients.length === 0 ? (
+                         <div className="p-4 text-xs text-slate-400">Memuat data santri...</div>
+                       ) : filtered.length === 0 ? (
+                         <div className="p-4 text-xs text-slate-400">Tidak ada hasil</div>
+                       ) : filtered.slice(0, 12).map(r => (
+                         <button
+                           type="button"
+                           key={r.santri_id}
+                           onClick={() => selectRecipient(r)}
+                           className="w-full text-left px-4 py-3 hover:bg-sky-50/60 transition-colors border-b border-slate-50 last:border-0"
+                         >
+                           <div className="flex items-center justify-between gap-3">
+                             <div className="min-w-0">
+                               <p className="text-sm font-bold text-slate-800 truncate">
+                                 {r.name} <span className="text-slate-400 font-medium text-[11px]">({r.class || 'Kelas -'})</span>
+                               </p>
+                               <p className="text-[11px] text-slate-500 truncate">
+                                 Wali: {r.parent_name || '-'} · {r.parent_phone || r.father_phone || r.mother_phone || '-'}
+                               </p>
+                             </div>
+                             {r.lunas_receipt_no ? (
+                               <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                 Lunas
+                               </span>
+                             ) : r.tagihan_period ? (
+                               <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
+                                 Tagihan
+                               </span>
+                             ) : null}
+                           </div>
+                         </button>
+                       ))}
+                     </div>
+                     <div className="h-2" onClick={() => setShowQ(false)}></div>
+                   </>
+                 )}
                </div>
+
+               {sel && (
+                 <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4 space-y-3">
+                   <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 bg-sky-600 text-white rounded-xl flex items-center justify-center">
+                       <User size={18} />
+                     </div>
+                     <div className="min-w-0">
+                       <p className="text-sm font-black text-slate-800 truncate">{sel.name}</p>
+                       <p className="text-[11px] text-slate-500 truncate">
+                         Wali: {sel.parent_name || '-'} · Status: {sel.status || '-'}
+                       </p>
+                     </div>
+                   </div>
+
+                   <div className="space-y-1.5">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nomor WA Tujuan</label>
+                     <select
+                       value={target}
+                       onChange={(e) => setTarget(e.target.value)}
+                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none"
+                     >
+                       {phoneOptions.map((o, i) => (
+                         <option key={i} value={o.phone}>{o.label}</option>
+                       ))}
+                     </select>
+                     <input
+                       type="text"
+                       value={target}
+                       onChange={(e) => setTarget(e.target.value)}
+                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none font-mono"
+                       placeholder="Edit nomor jika perlu (628xxx)"
+                     />
+                   </div>
+
+                   {tagihanObj && (
+                     <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3">
+                       <div className="flex items-start justify-between gap-3">
+                         <div className="min-w-0">
+                           <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1 flex items-center gap-1.5">
+                             <ClipboardList size={13} /> Kwitansi Tagihan Siap Kirim
+                           </p>
+                           <p className="text-sm font-bold text-slate-800 truncate">{tagihanObj.kind} · Periode {tagihanObj.period}</p>
+                           <p className="text-xs text-slate-500 truncate">
+                             {tagihanObj.status === 'paid'
+                               ? 'Sudah LUNAS'
+                               : `Sisa Rp ${formatMoney(tagihanObj.amount - tagihanObj.paid)}`}
+                             {tagihanObj.due ? ` · Jatuh tempo ${tagihanObj.due}` : ''}
+                           </p>
+                         </div>
+                         <button
+                           type="button"
+                           onClick={useTagihan}
+                           className="shrink-0 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white rounded-xl hover:bg-amber-600"
+                         >
+                           Pakai Tagihan
+                         </button>
+                       </div>
+                     </div>
+                   )}
+                   {lunasObj && (
+                     <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+                       <div className="flex items-start justify-between gap-3">
+                         <div className="min-w-0">
+                           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1.5">
+                             <ReceiptText size={13} /> Kwitansi Lunas Siap Kirim
+                           </p>
+                           <p className="text-sm font-bold text-slate-800 truncate">No. {lunasObj.receipt_no}</p>
+                           <p className="text-xs text-slate-500 truncate">
+                             Periode {lunasObj.period} · Total Rp {formatMoney(lunasObj.total)} · {lunasObj.method || '-'}
+                           </p>
+                         </div>
+                         <button
+                           type="button"
+                           onClick={useLunas}
+                           className="shrink-0 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"
+                         >
+                           Pakai Lunas
+                         </button>
+                       </div>
+                     </div>
+                   )}
+                 </div>
+               )}
+
+               {!sel && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Atau isi nomor manual</label>
+                     <div className="relative">
+                       <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                       <input
+                         type="text"
+                         placeholder="6281234567890"
+                         value={target}
+                         onChange={(e) => setTarget(e.target.value)}
+                         className="w-full pl-11 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl text-sm transition-all outline-none"
+                       />
+                     </div>
+                   </div>
+                   <div className="flex items-end mb-1">
+                     <p className="text-[11px] text-slate-400 italic">Gunakan format 628xxx tanpa simbol &apos;+&apos; atau &apos;-&apos;</p>
+                   </div>
+                 </div>
+               )}
 
                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Isi Pesan</label>
-                  <textarea 
-                    rows={4}
-                    placeholder="Tulis pesan Anda disini..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-sm transition-all outline-none resize-none"
-                  ></textarea>
+                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Isi Pesan</label>
+                 <textarea
+                   rows={4}
+                   placeholder="Tulis pesan Anda disini..."
+                   value={message}
+                   onChange={(e) => setMessage(e.target.value)}
+                   className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl text-sm transition-all outline-none resize-none"
+                 ></textarea>
                </div>
 
-               <button 
-                 type="submit"
-                 disabled={sending}
-                 className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-black transition-all flex items-center gap-2 hover:translate-x-1"
-               >
-                 {sending ? 'Mengirim...' : 'Kirim Sekarang'}
-                 <Send size={16} />
-               </button>
+               <div className="flex flex-wrap items-center gap-3">
+                 <button
+                   type="submit"
+                   disabled={sending || !target.trim() || !message.trim()}
+                   className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-black transition-all flex items-center gap-2 hover:translate-x-1 disabled:opacity-50 disabled:shadow-none"
+                 >
+                   {sending ? 'Mengirim...' : 'Kirim Sekarang'}
+                   <Send size={16} />
+                 </button>
+               </div>
              </form>
           </div>
 
@@ -322,7 +550,7 @@ export default function NotificationsPage() {
                  </div>
                </div>
              ) : (
-             <div className="overflow-x-auto">
+             <div className="ap-table-wrap overflow-x-auto">
                <table className="w-full text-left">
                   <thead className="bg-slate-50">
                     <tr>
@@ -340,10 +568,10 @@ export default function NotificationsPage() {
                         <td className="px-6 py-5">
                           <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
                             log.action?.includes('NILAI') 
-                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              ? 'bg-sky-50 text-sky-600 border-sky-100'
                               : log.action?.includes('PSB')
                               ? 'bg-purple-50 text-purple-600 border-purple-100'
-                              : 'bg-blue-50 text-blue-600 border-blue-100'
+                              : 'bg-sky-50 text-sky-600 border-sky-100'
                           }`}>
                             {log.action}
                           </span>
@@ -369,6 +597,21 @@ export default function NotificationsPage() {
         </div>
 
       </div>
+
+      {user?.role === 'superadmin' && (
+        <div className="mt-12">
+          <div className="mb-6 flex items-center gap-4">
+            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
+              <Settings2 size={24} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight font-outfit">Konfigurasi &amp; Template</h3>
+              <p className="text-slate-500 mt-1 text-sm font-medium">Pairing nomor HP pondok, kwitansi otomatis, dan template pesan — satu tempat.</p>
+            </div>
+          </div>
+          <WASettingsPanel />
+        </div>
+      )}
     </div>
   );
 }

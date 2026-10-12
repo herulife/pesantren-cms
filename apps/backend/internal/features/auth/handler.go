@@ -1,11 +1,12 @@
 package auth
 
 import (
-	"context"
+	"darussunnah-api/internal/platform/audit"
 	"darussunnah-api/internal/platform/database"
 	"darussunnah-api/internal/platform/logger"
-	platsysnotif "darussunnah-api/internal/platform/sysnotif"
+	"darussunnah-api/internal/platform/sysnotif"
 	"darussunnah-api/internal/validators"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -23,59 +24,13 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
-// tokenTTL is how long an access token stays valid. Previously 24h, which meant
-// a stolen token was usable for a full day even after the user logged out or the
-// owner rotated the account password.
-const tokenTTL = 12 * time.Hour
-
-const (
-	tokenIssuer   = "darussunnah-api"
-	tokenAudience = "darussunnah-app"
-)
-
-// GetJWTSecret returns the HMAC signing key.
-//
-// It used to return nil when JWT_SECRET was unset, and both jwt.SignedString and
-// jwt.Parse accept a nil HMAC key, so a missing secret silently produced
-// effectively unsigned, forgeable tokens instead of failing loudly.
 func GetJWTSecret() []byte {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		logger.Error(context.Background(), "missing JWT_SECRET environment variable; tokens will be rejected", nil)
+		logger.Error(context.Background(), "missing JWT_SECRET environment variable", nil)
 		return nil
 	}
 	return []byte(secret)
-}
-
-// SecretConfigured reports whether a usable signing key is present.
-func SecretConfigured() bool {
-	return strings.TrimSpace(os.Getenv("JWT_SECRET")) != ""
-}
-
-// newAuthToken issues a signed access token. All claims required for safe
-// verification are present: iss/aud stop a token minted for another service from
-// being replayed here, iat/nbf prevent replay of stale tokens, and jti lets logout
-// revoke an individual token.
-func newAuthToken(user *User, tokenVersion int) (string, error) {
-	if !SecretConfigured() {
-		return "", errors.New("JWT_SECRET is not configured")
-	}
-
-	now := time.Now()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"role":  user.Role,
-		"jti":   uuid.New().String(),
-		"ver":   tokenVersion,
-		"iat":   now.Unix(),
-		"nbf":   now.Unix(),
-		"iss":   tokenIssuer,
-		"aud":   tokenAudience,
-		"exp":   now.Add(tokenTTL).Unix(),
-	})
-
-	return token.SignedString(GetJWTSecret())
 }
 
 type Handler struct {
@@ -84,6 +39,59 @@ type Handler struct {
 
 func NewHandler(repo IRepository) *Handler {
 	return &Handler{repo: repo}
+}
+
+func isManageableUser(target *User) bool {
+	return target != nil && validators.IsManageableRole(target.Role)
+}
+
+func rejectUnmanageableUser(w http.ResponseWriter, r *http.Request, target *User) bool {
+	if isManageableUser(target) {
+		return false
+	}
+	writeAPIError(w, http.StatusForbidden, logger.CorrelationID(r), "Akun portal tidak dapat dikelola melalui Manajemen Pengguna", nil)
+	return true
+}
+
+func rejectSelfUserAction(w http.ResponseWriter, r *http.Request, id int) bool {
+	me, ok := GetAuthenticatedUser(r)
+	if !ok {
+		writeAPIError(w, http.StatusUnauthorized, logger.CorrelationID(r), "Sesi login tidak ditemukan", nil)
+		return true
+	}
+	if me.ID == id {
+		writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Tidak diizinkan mengubah akun sendiri", nil)
+		return true
+	}
+	return false
+}
+
+func (h *Handler) rejectLastSuperadmin(w http.ResponseWriter, r *http.Request, id int) bool {
+	users, err := h.repo.GetAllUsers("")
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, logger.CorrelationID(r), "Gagal memverifikasi akun super admin", nil)
+		return true
+	}
+	for _, user := range users {
+		if user.Role == "superadmin" && user.ID != id {
+			return false
+		}
+	}
+	writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Super admin terakhir tidak dapat dihapus atau diturunkan", nil)
+	return true
+}
+
+func (h *Handler) issueToken(user *User) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":            user.ID,
+		"email":         user.Email,
+		"role":          user.Role,
+		"token_version": h.repo.GetTokenVersion(user.ID),
+		"iat":           time.Now().Unix(),
+		"jti":           uuid.New().String(),
+		"exp":           time.Now().Add(time.Hour * 24).Unix(),
+	})
+	return token.SignedString(GetJWTSecret())
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -137,10 +145,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		user.LastLoginAt = &now
 	}
 
-	// Create JWT with revocation support (jti + token version)
-	ver, _ := h.repo.GetTokenVersion(user.ID)
-
-	tokenString, err := newAuthToken(user, ver)
+	// Create JWT (revocable session)
+	tokenString, err := h.issueToken(user)
 	if err != nil {
 		logger.Error(r.Context(), "failed generating jwt token", logger.Field{
 			"correlation_id": correlationID,
@@ -154,6 +160,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Log activity
 	logger.RecordActivity(&user.ID, "LOGIN", "Berhasil login ke sistem admin", r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: user.ID, ActorRole: user.Role,
+		Action: "LOGIN", Entity: "user", EntityID: strconv.Itoa(user.ID),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Correlation-ID", correlationID)
@@ -211,6 +222,12 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		})
 		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal membuat akun", nil)
 		return
+	}
+
+	// Jilid 82: admin tahu ada pendaftar akun baru (portal PSB/wali, dst).
+	if err := sysnotif.Emit(r.Context(), database.DB, "user_baru", "Akun baru terdaftar",
+		fmt.Sprintf("%s (%s)", newUser.Name, newUser.Email), "/admin/users"); err != nil {
+		logger.Warn(r.Context(), "sysnotif emit failed", logger.Field{"operation": "sysnotif_user_baru", "error": err.Error()})
 	}
 
 	logger.RecordActivity(&newUser.ID, "REGISTER", "Pengguna baru mendaftar", r.RemoteAddr, r.UserAgent())
@@ -316,9 +333,8 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		user.LastLoginAt = &now
 	}
 
-	// Create local JWT with revocation support (jti + token version)
-	ver, _ := h.repo.GetTokenVersion(user.ID)
-	tokenString, err := newAuthToken(user, ver)
+	// Create local JWT (revocable session)
+	tokenString, err := h.issueToken(user)
 	if err != nil {
 		logger.Error(r.Context(), "failed generating jwt token for google login", logger.Field{
 			"correlation_id": correlationID,
@@ -340,22 +356,20 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	// Revoke whichever credential the caller actually presented. Previously only
-	// the cookie was revoked, so a client that authenticated with
-	// "Authorization: Bearer <jwt>" kept a fully valid token after logging out
-	// and could keep calling the API until it expired.
-	//
-	// extractToken already prefers the Authorization header over the cookie, so
-	// this revokes the same token the request was authenticated with.
-	if tokenString := extractToken(r); tokenString != "" {
-		if parsed, _, perr := jwt.NewParser().ParseUnverified(tokenString, jwt.MapClaims{}); perr == nil {
-			if m, ok := parsed.Claims.(jwt.MapClaims); ok {
-				if jti, _ := m["jti"].(string); jti != "" {
-					var exp int64
-					if ef, ok := m["exp"].(float64); ok {
-						exp = int64(ef)
-					}
-					_ = h.repo.RevokeToken(jti, exp)
+	// PHASE 2: logout mengakhiri sesi server-side (revokasi token).
+	if raw := extractToken(r); raw != "" {
+		if token, err := jwt.Parse(raw, func(token *jwt.Token) (interface{}, error) {
+			return GetJWTSecret(), nil
+		}); err == nil {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if id, ok := claimInt(claims["id"]); ok && id > 0 {
+					_ = h.repo.BumpTokenVersion(id)
+					logger.RecordActivity(&id, "LOGOUT", "Logout (sesi diakhiri)", r.RemoteAddr, r.UserAgent())
+					audit.Record(r.Context(), audit.Entry{
+						RequestID: logger.CorrelationID(r), ActorID: id,
+						Action: "LOGOUT", Entity: "user", EntityID: strconv.Itoa(id),
+						IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+					})
 				}
 			}
 		}
@@ -368,6 +382,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GET /api/premium-check — Returns license status (Darussunnah feature).
 func (h *Handler) GetLicenseStatus(w http.ResponseWriter, r *http.Request) {
 	status, err := CheckLicense(database.DB)
 	if err != nil {
@@ -405,7 +420,89 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GET /api/users — list all users (superadmin only)
+// PUT /api/me/password — user mengganti password-nya sendiri.
+// Password lama wajib cocok, jadi session yang tertinggal tidak bisa langsung
+// mengambil alih akun. Berbeda dari ResetUserPassword (reset paksa oleh admin).
+func (h *Handler) ChangeMyPassword(w http.ResponseWriter, r *http.Request) {
+	correlationID := logger.CorrelationID(r)
+
+	me, ok := GetAuthenticatedUser(r)
+	if !ok {
+		writeAPIError(w, http.StatusUnauthorized, correlationID, "Sesi tidak valid", nil)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+
+	var req validators.ChangePasswordRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	if validationErrs := validators.ValidateChangePasswordRequest(&req); len(validationErrs) > 0 {
+		writeValidationError(w, correlationID, validationErrs)
+		return
+	}
+
+	user, err := h.repo.FindByID(me.ID)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, correlationID, "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if err := h.repo.CheckPassword(user.PasswordHash, req.OldPassword); err != nil {
+		// 400 (validation), bukan 401: password lama salah (error validasi
+		// field, bukan sesi kedaluwarsa). Jangan pakai 401 agar frontend tidak
+		// auto-redirect ke /login akibat parseResponse yang umum.
+		cid := logger.CorrelationID(r)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Correlation-ID", cid)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":        false,
+			"message":        "Validasi gagal",
+			"correlation_id": cid,
+			"errors": map[string]string{
+				"old_password": "Password lama tidak cocok",
+			},
+		})
+		return
+	}
+
+	if err := h.repo.UpdatePassword(me.ID, req.NewPassword); err != nil {
+		logger.Error(r.Context(), "failed changing own password", logger.Field{
+			"user_id": me.ID,
+			"error":   err.Error(),
+		})
+		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal memperbarui password", nil)
+		return
+	}
+
+	// Sama seperti reset password: token_version dinaikkan sehingga SEMUA sesi
+	// (termasuk yang sedang dipakai) jadi tidak valid -> user wajib login ulang.
+	_ = h.repo.BumpTokenVersion(me.ID)
+
+	logger.RecordActivity(&me.ID, "CHANGE_OWN_PASSWORD", "Mengubah password sendiri", r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: me.ID,
+		Action: "CHANGE_OWN_PASSWORD", Entity: "user", EntityID: strconv.Itoa(me.ID),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Password berhasil diubah. Silakan login kembali.",
+		// Sesi di-terminate oleh BumpTokenVersion di atas; frontend wajib
+		// menghapus cookie lalu mengarahkan ke /login.
+		"reauth": true,
+	})
+}
+
+// GET /api/users — list staff users (superadmin/bendahara)
 func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
 	users, err := h.repo.GetAllUsers(search)
@@ -421,7 +518,7 @@ func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// POST /api/users — create user (superadmin only)
+// POST /api/users — create staff user (superadmin/bendahara)
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	correlationID := logger.CorrelationID(r)
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
@@ -446,6 +543,14 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hanya superadmin yang boleh membuat akun superadmin (cegah eskalasi).
+	if req.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, correlationID, "Hanya super admin yang dapat membuat akun super admin", nil)
+			return
+		}
+	}
+
 	newUser := User{
 		Name:         req.Name,
 		Email:        req.Email,
@@ -464,16 +569,16 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "CREATE_USER", fmt.Sprintf("Membuat user baru %s dengan role %s", newUser.Email, newUser.Role), r.RemoteAddr, r.UserAgent())
-
-	if err := platsysnotif.Emit(r.Context(), database.DB, "user_baru", "User Baru", "Akun baru: "+newUser.Email+" ("+newUser.Role+")", "/admin/users"); err != nil {
-		logger.Warn(r.Context(), "sysnotif emit user_baru failed", logger.Field{"operation": "auth_create_user", "error": err.Error()})
-	}
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: adminID,
+		Action: "CREATE_USER", Entity: "user", EntityID: strconv.Itoa(newUser.ID),
+		After: map[string]interface{}{"email": newUser.Email, "role": newUser.Role},
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -488,7 +593,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PUT /api/users/{id}/password — reset user password (superadmin only)
+// PUT /api/users/{id}/password — reset staff password (superadmin/bendahara)
 func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 	correlationID := logger.CorrelationID(r)
 	idStr := r.PathValue("id")
@@ -517,6 +622,25 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Non-superadmin tidak boleh mereset password akun superadmin.
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, correlationID, "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
+		return
+	}
+	if rejectSelfUserAction(w, r, id) {
+		return
+	}
+	if target.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, correlationID, "Hanya super admin yang dapat mereset password super admin", nil)
+			return
+		}
+	}
+
 	if err := h.repo.UpdatePassword(id, req.Password); err != nil {
 		logger.Error(r.Context(), "failed resetting user password", logger.Field{
 			"user_id": id,
@@ -526,16 +650,19 @@ func (h *Handler) ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Revoke all existing sessions for the target user.
+	// PHASE 2: reset password mengakhiri semua sesi user tersebut.
 	_ = h.repo.BumpTokenVersion(id)
 
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "RESET_USER_PASSWORD", fmt.Sprintf("Mereset password User ID %d", id), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: adminID,
+		Action: "RESET_USER_PASSWORD", Entity: "user", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -553,14 +680,34 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if currentID, ok := claims["id"].(float64); ok && int(currentID) == id {
-			writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Tidak diizinkan menghapus akun yang sedang dipakai", nil)
-			return
-		}
+	// Defense in depth: hapus user HANYA boleh dilakukan superadmin.
+	me, ok := GetAuthenticatedUser(r)
+	if !ok || me.Role != "superadmin" {
+		writeAPIError(w, http.StatusForbidden, logger.CorrelationID(r), "Hanya super admin yang dapat menghapus user", nil)
+		return
+	}
+	if me.ID == id {
+		writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Tidak diizinkan menghapus akun yang sedang dipakai", nil)
+		return
+	}
+
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
+		return
+	}
+	if target.Role == "superadmin" && h.rejectLastSuperadmin(w, r, id) {
+		return
 	}
 
 	if err := h.repo.DeleteUser(id); err != nil {
+		if errors.Is(err, ErrLastSuperadmin) {
+			writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Super admin terakhir tidak dapat dihapus", nil)
+			return
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
 			return
@@ -575,12 +722,15 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Log activity
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "DELETE_USER", fmt.Sprintf("Menghapus User ID %d", id), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: adminID,
+		Action: "DELETE_USER", Entity: "user", EntityID: strconv.Itoa(id),
+		IP: r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -589,7 +739,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PUT /api/users/{id}/role — update user role (superadmin only)
+// PUT /api/users/{id}/role — update staff role (superadmin/bendahara)
 func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	if idStr == "" {
@@ -618,7 +768,34 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hanya superadmin yang bisa mengubah role user superadmin, atau
+	// mengangkat/menurunkan user menjadi/ dari superadmin (cegah eskalasi).
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, logger.CorrelationID(r), "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
+		return
+	}
+	if target.Role == "superadmin" || req.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, logger.CorrelationID(r), "Hanya super admin yang dapat mengubah role super admin", nil)
+			return
+		}
+	}
+	if rejectSelfUserAction(w, r, id) {
+		return
+	}
+	if target.Role == "superadmin" && req.Role != "superadmin" && h.rejectLastSuperadmin(w, r, id) {
+		return
+	}
+
 	if err := h.repo.UpdateRole(id, req.Role); err != nil {
+		if errors.Is(err, ErrLastSuperadmin) {
+			writeAPIError(w, http.StatusBadRequest, logger.CorrelationID(r), "Super admin terakhir tidak dapat diturunkan", nil)
+			return
+		}
 		logger.Warn(r.Context(), "failed updating user role", logger.Field{
 			"user_id": id,
 			"role":    req.Role,
@@ -628,17 +805,21 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Revoke all existing sessions for the target user after a role change.
+	// PHASE 2: ganti role mengakhiri semua sesi user tersebut.
 	_ = h.repo.BumpTokenVersion(id)
 
 	// Log activity
 	adminID := 0
-	if claims, ok := r.Context().Value(UserContextKey).(jwt.MapClaims); ok {
-		if cid, ok := claims["id"].(float64); ok {
-			adminID = int(cid)
-		}
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
 	}
 	logger.RecordActivity(&adminID, "UPDATE_ROLE", fmt.Sprintf("Mengubah role User ID %d menjadi '%s'", id, req.Role), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: logger.CorrelationID(r), ActorID: adminID,
+		Action: "UPDATE_ROLE", Entity: "user", EntityID: strconv.Itoa(id),
+		After: map[string]interface{}{"role": req.Role},
+		IP:    r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -647,13 +828,123 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Routes() was removed. It mounted the user-management endpoints behind
-// AuthMiddleware only, with a comment claiming "Admin/Superadmin only" but no
-// RequireRole guard, so any authenticated account (including students) could
-// have reached CreateUser / DeleteUser / UpdateUserRole. The live router never
-// mounted this function - cmd/api/main.go wires those routes explicitly behind
-// RequireRole("superadmin") - so it was dead code carrying an escalation trap.
-// Removing it prevents a future refactor or test from exposing it.
+// PUT /api/users/{id} — ubah nama + email login akun staf (superadmin/bendahara).
+// Guard-nya sengaja sama dengan reset password: akun portal (role 'user')
+// ditolak di sini karena dikelola lewat /api/wali-santri, dan akun sendiri
+// tidak boleh diubah supaya admin tidak bisa mengunci dirinya sendiri.
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	correlationID := logger.CorrelationID(r)
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Invalid user ID", nil)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	var req validators.UpdateUserRequest
+	if err := validators.DecodeStrictJSON(body, &req); err != nil {
+		writeAPIError(w, http.StatusBadRequest, correlationID, "Isi permintaan tidak valid", nil)
+		return
+	}
+	if validationErrs := validators.ValidateUpdateUserRequest(&req); len(validationErrs) > 0 {
+		writeValidationError(w, correlationID, validationErrs)
+		return
+	}
+
+	target, err := h.repo.FindByID(id)
+	if err != nil {
+		writeAPIError(w, http.StatusNotFound, correlationID, "Pengguna tidak ditemukan", nil)
+		return
+	}
+	if rejectUnmanageableUser(w, r, target) {
+		return
+	}
+	if rejectSelfUserAction(w, r, id) {
+		return
+	}
+	if target.Role == "superadmin" {
+		if me, ok := GetAuthenticatedUser(r); !ok || me.Role != "superadmin" {
+			writeAPIError(w, http.StatusForbidden, correlationID, "Hanya super admin yang dapat mengubah akun super admin", nil)
+			return
+		}
+	}
+	if existing, _ := h.repo.FindByEmail(req.Email); existing != nil && existing.ID != id {
+		writeAPIError(w, http.StatusConflict, correlationID, "Email sudah terdaftar", nil)
+		return
+	}
+
+	if err := h.repo.UpdateIdentity(id, req.Name, req.Email); err != nil {
+		logger.Error(r.Context(), "failed updating user identity", logger.Field{
+			"user_id": id,
+			"error":   err.Error(),
+		})
+		writeAPIError(w, http.StatusInternalServerError, correlationID, "Gagal memperbarui akun", nil)
+		return
+	}
+
+	adminID := 0
+	if au, ok := GetAuthenticatedUser(r); ok {
+		adminID = au.ID
+	}
+	logger.RecordActivity(&adminID, "UPDATE_USER", fmt.Sprintf("Mengubah nama/email User ID %d", id), r.RemoteAddr, r.UserAgent())
+	audit.Record(r.Context(), audit.Entry{
+		RequestID: correlationID, ActorID: adminID,
+		Action: "UPDATE_USER", Entity: "user", EntityID: strconv.Itoa(id),
+		Before: map[string]interface{}{"name": target.Name, "email": target.Email},
+		After:  map[string]interface{}{"name": req.Name, "email": req.Email},
+		IP:     r.RemoteAddr, UserAgent: r.UserAgent(),
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Akun user diperbarui",
+		"data": map[string]interface{}{
+			"id":    id,
+			"name":  req.Name,
+			"email": req.Email,
+		},
+	})
+}
+
+func (h *Handler) Routes() chi.Router {
+	r := chi.NewRouter()
+
+	// Public routes
+	r.Post("/login", h.Login)
+	r.Post("/register", h.Register)
+	r.Post("/google", h.GoogleLogin)
+	r.Post("/logout", h.Logout)
+
+	// Protected routes
+	r.Group(func(r chi.Router) {
+		r.Use(AuthMiddleware)
+		r.Get("/me", h.GetMe)
+
+		// Manajemen user: kelola (lihat/tambah/edit/reset) untuk superadmin/bendahara.
+		r.Group(func(r chi.Router) {
+			r.Use(RequireRole("superadmin", "bendahara"))
+			r.Post("/users", h.CreateUser)
+			r.Get("/users", h.GetAllUsers)
+			r.Put("/users/{id}", h.UpdateUser)
+			r.Put("/users/{id}/password", h.ResetUserPassword)
+			r.Put("/users/{id}/role", h.UpdateUserRole)
+		})
+
+		// Hapus user: HANYA superadmin.
+		r.Group(func(r chi.Router) {
+			r.Use(RequireRole("superadmin"))
+			r.Delete("/users/{id}", h.DeleteUser)
+		})
+	})
+
+	return r
+}
+
 func writeValidationError(w http.ResponseWriter, correlationID string, errs validators.ValidationErrors) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Correlation-ID", correlationID)
@@ -687,19 +978,19 @@ func writeAPIError(w http.ResponseWriter, status int, correlationID, message str
 
 func setAuthCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "darussunnah_token",
+		Name:     "alma_token",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   strings.EqualFold(os.Getenv("COOKIE_SECURE"), "true"),
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(tokenTTL.Seconds()),
+		MaxAge:   int((24 * time.Hour).Seconds()),
 	})
 }
 
 func clearAuthCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "darussunnah_token",
+		Name:     "alma_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
@@ -715,15 +1006,16 @@ func clearAuthCookie(w http.ResponseWriter) {
 // IRepository ...
 type IRepository interface {
 	FindByEmail(email string) (*User, error)
+	FindByID(id int) (*User, error)
+	GetTokenVersion(id int) int
+	BumpTokenVersion(id int) error
 	CheckPassword(hashedPassword, password string) error
 	UpdatePassword(id int, newPassword string) error
+	UpdateIdentity(id int, name, email string) error
+	SetPhotoURL(id int, photoURL *string) error
 	CreateUser(user *User) error
 	GetAllUsers(search string) ([]User, error)
 	UpdateLastLogin(id int) error
 	DeleteUser(id int) error
 	UpdateRole(userID int, role string) error
-	GetTokenVersion(id int) (int, error)
-	BumpTokenVersion(id int) error
-	RevokeToken(jti string, expiresAt int64) error
-	IsTokenRevoked(jti string) (bool, error)
 }

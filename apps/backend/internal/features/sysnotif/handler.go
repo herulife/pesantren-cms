@@ -1,14 +1,13 @@
 package sysnotif
 
 import (
+	"darussunnah-api/internal/features/auth"
+	"darussunnah-api/internal/platform/logger"
+	platsysnotif "darussunnah-api/internal/platform/sysnotif"
 	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
-
-	"darussunnah-api/internal/features/auth"
-	"darussunnah-api/internal/platform/logger"
-	platsysnotif "darussunnah-api/internal/platform/sysnotif"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -41,9 +40,13 @@ func writeJSONResponse(w http.ResponseWriter, status int, success bool, message 
 	})
 }
 
+func currentUserID(r *http.Request) (int, bool) {
+	return auth.CurrentUserID(r.Context())
+}
+
 // List mengembalikan 50 notifikasi terbaru + jumlah belum dibaca user.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.CurrentUserID(r.Context())
+	userID, ok := currentUserID(r)
 	if !ok {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
 		return
@@ -62,7 +65,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 // UnreadCount mengembalikan jumlah notifikasi yang belum dibaca user.
 func (h *Handler) UnreadCount(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.CurrentUserID(r.Context())
+	userID, ok := currentUserID(r)
 	if !ok {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
 		return
@@ -80,7 +83,7 @@ func (h *Handler) UnreadCount(w http.ResponseWriter, r *http.Request) {
 
 // MarkRead menandai satu notifikasi sebagai sudah dibaca.
 func (h *Handler) MarkRead(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.CurrentUserID(r.Context())
+	userID, ok := currentUserID(r)
 	if !ok {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
 		return
@@ -100,7 +103,7 @@ func (h *Handler) MarkRead(w http.ResponseWriter, r *http.Request) {
 
 // MarkAllRead menandai semua notifikasi sebagai sudah dibaca.
 func (h *Handler) MarkAllRead(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.CurrentUserID(r.Context())
+	userID, ok := currentUserID(r)
 	if !ok {
 		writeJSONResponse(w, http.StatusUnauthorized, false, "Sesi login tidak ditemukan", nil)
 		return

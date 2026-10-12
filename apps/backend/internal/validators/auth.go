@@ -1,10 +1,6 @@
 package validators
 
-import (
-	"strings"
-
-	"darussunnah-api/internal/platform/roles"
-)
+import "strings"
 
 type LoginRequest struct {
 	Email    string `json:"email"`
@@ -28,8 +24,33 @@ type ResetUserPasswordRequest struct {
 	Password string `json:"password"`
 }
 
+// ChangePasswordRequest dipakai user untuk mengganti password-nya sendiri.
+// Password lama wajib dikirim supaya sesi yang tertinggal tidak bisa langsung
+// mengambil alih akun; ini berbeda dari ResetUserPasswordRequest yang dipakai
+// admin (reset paksa, tanpa password lama).
+type ChangePasswordRequest struct {
+	OldPassword     string `json:"old_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
 type RoleUpdateRequest struct {
 	Role string `json:"role"`
+}
+
+var manageableRoles = map[string]bool{
+	"superadmin":  true,
+	"bendahara":   true,
+	"panitia_psb": true,
+	"tim_media":   true,
+	"pimpinan":    true,
+	"wali_kelas":  true,
+	"guru":        true,
+	"ustadz":      true,
+}
+
+func IsManageableRole(role string) bool {
+	return manageableRoles[role]
 }
 
 func ValidateLoginRequest(req *LoginRequest) ValidationErrors {
@@ -81,7 +102,7 @@ func ValidateCreateUserRequest(req *CreateUserRequest) ValidationErrors {
 		errs.Add("password", "Password minimal 8 karakter")
 	}
 
-	if !roles.IsAssignable(req.Role) {
+	if !IsManageableRole(req.Role) {
 		errs.Add("role", "Role tidak valid")
 	}
 
@@ -99,36 +120,130 @@ func ValidateResetUserPasswordRequest(req *ResetUserPasswordRequest) ValidationE
 	return errs
 }
 
+// ValidateChangePasswordRequest memvalidasi penggantian password sendiri.
+// Password TIDAK di-trim: spasi bisa jadi bagian password yang sah, dan
+// password lama dengan spasi pun harus tetap bisa dicocokkan.
+func ValidateChangePasswordRequest(req *ChangePasswordRequest) ValidationErrors {
+	errs := ValidationErrors{}
+
+	if req.OldPassword == "" {
+		errs.Add("old_password", "Password lama wajib diisi")
+	}
+	if len(req.NewPassword) < 8 {
+		errs.Add("new_password", "Password baru minimal 8 karakter")
+	} else if req.NewPassword == req.OldPassword {
+		errs.Add("new_password", "Password baru harus berbeda dari password lama")
+	}
+	if req.ConfirmPassword != req.NewPassword {
+		errs.Add("confirm_password", "Konfirmasi password tidak cocok")
+	}
+
+	return errs
+}
+
 func ValidateRoleUpdateRequest(req *RoleUpdateRequest) ValidationErrors {
 	errs := ValidationErrors{}
 	req.Role = strings.TrimSpace(req.Role)
 	if req.Role == "" {
 		errs.Add("role", "Role wajib diisi")
-		return errs
-	}
-	if !roles.IsAssignable(req.Role) {
+	} else if !IsManageableRole(req.Role) {
 		errs.Add("role", "Role tidak valid")
 	}
 	return errs
 }
 
 // WaliUpdateRequest dipakai endpoint /api/wali-santri/{id} untuk mengganti nama
-// + email akun wali. Ini yang membuat data karangan bisa diganti admin kapan
-// saja tanpa membuat akun baru.
+// + email + nomor WhatsApp akun wali. Ini yang membuat data karangan bisa
+// diganti admin kapan saja tanpa membuat akun baru.
 type WaliUpdateRequest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Whatsapp string `json:"whatsapp"`
 }
 
 func ValidateWaliUpdateRequest(req *WaliUpdateRequest) ValidationErrors {
 	errs := ValidationErrors{}
 	req.Name = strings.TrimSpace(req.Name)
 	req.Email = NormalizeEmail(req.Email)
+	req.Whatsapp = strings.TrimSpace(req.Whatsapp)
 
 	if req.Name == "" {
 		errs.Add("name", "Nama wali wajib diisi")
 	} else if len([]rune(req.Name)) > 120 {
 		errs.Add("name", "Nama wali maksimal 120 karakter")
+	}
+	if req.Email == "" {
+		errs.Add("email", "Email wajib diisi")
+	} else if !ValidateEmail(req.Email) {
+		errs.Add("email", "Format email tidak valid")
+	} else if len(req.Email) > 190 {
+		errs.Add("email", "Email terlalu panjang")
+	}
+	if req.Whatsapp != "" && !ValidatePhone(req.Whatsapp) {
+		errs.Add("whatsapp", "Nomor WhatsApp tidak valid")
+	}
+	return errs
+}
+
+// WaliCreateRequest dipakai POST /api/wali-santri untuk membuat akun wali
+// baru. SantriIDs opsional: santri yang langsung ditautkan ke akun ini.
+type WaliCreateRequest struct {
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Whatsapp  string `json:"whatsapp"`
+	Password  string `json:"password"`
+	SantriIDs []int  `json:"santri_ids"`
+}
+
+func ValidateWaliCreateRequest(req *WaliCreateRequest) ValidationErrors {
+	errs := ValidationErrors{}
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = NormalizeEmail(req.Email)
+	req.Whatsapp = strings.TrimSpace(req.Whatsapp)
+
+	if req.Name == "" {
+		errs.Add("name", "Nama wali wajib diisi")
+	} else if len([]rune(req.Name)) > 120 {
+		errs.Add("name", "Nama wali maksimal 120 karakter")
+	}
+	if req.Email == "" {
+		errs.Add("email", "Email wajib diisi")
+	} else if !ValidateEmail(req.Email) {
+		errs.Add("email", "Format email tidak valid")
+	} else if len(req.Email) > 190 {
+		errs.Add("email", "Email terlalu panjang")
+	}
+	if len(req.Password) < 8 {
+		errs.Add("password", "Password minimal 8 karakter")
+	}
+	if req.Whatsapp != "" && !ValidatePhone(req.Whatsapp) {
+		errs.Add("whatsapp", "Nomor WhatsApp tidak valid")
+	}
+	for _, sid := range req.SantriIDs {
+		if sid <= 0 {
+			errs.Add("santri_ids", "ID Santri tidak valid")
+			break
+		}
+	}
+	return errs
+}
+
+// UpdateUserRequest dipakai PUT /api/users/{id} untuk mengubah nama + email
+// login akun staf. Role dan password sengaja tidak dimuat di sini: role punya
+// endpoint sendiri (/users/{id}/role) dan reset password juga (/users/{id}/password),
+// supaya satu permintaan tidak bisa diam-diam mengubah dua hal sekaligus.
+type UpdateUserRequest struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func ValidateUpdateUserRequest(req *UpdateUserRequest) ValidationErrors {
+	errs := ValidationErrors{}
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = NormalizeEmail(req.Email)
+
+	if len(req.Name) < 3 {
+		errs.Add("name", "Nama minimal 3 karakter")
 	}
 	if req.Email == "" {
 		errs.Add("email", "Email wajib diisi")

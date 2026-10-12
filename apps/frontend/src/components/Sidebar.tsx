@@ -1,10 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, Cloud } from 'lucide-react';
+import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
+import { getRoleMenuPermissions } from '@/lib/api';
+import { ROLE_MENU_DEFS, ROLE_MENU_PANELS } from '@/lib/roleMenus';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, School, Wallet, Receipt, ScanLine, BarChart3, Nfc, FileSpreadsheet } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -13,63 +16,230 @@ interface MenuItem {
   href: string;
   roles?: string[]; // if empty, accessible by all staff
   docRef?: string;
+  panel?: string;
+}
+
+function isMenuActive(href: string, pathname: string, search: string): boolean {
+  const full = search ? `${pathname}?${search}` : pathname;
+  if (href === '/admin') return full === '/admin';
+  if (href.includes('?')) return full === href || full.startsWith(`${href}&`);
+  return pathname.startsWith(href);
 }
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
-  const { logout, hasRole } = useAuth();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+  const { logout, hasRole, user } = useAuth();
+  const [rolePerms, setRolePerms] = useState<Record<string, string[]>>({});
 
-  const menuItems: MenuItem[] = [
-    { category: 'Utama', icon: <LayoutDashboard size={18} />, label: "Dashboard Utama", href: "/admin", docRef: 'dashboard' },
-    
-    // Publikasi
-    { category: 'Konten & Publikasi', icon: <Newspaper size={18} />, label: "Berita", href: "/admin/news", roles: ["tim_media"], docRef: 'news' },
-    { category: 'Konten & Publikasi', icon: <Layers size={18} />, label: "Program Pondok", href: "/admin/programs", roles: ["tim_media"], docRef: 'programs' },
-    { category: 'Konten & Publikasi', icon: <Calendar size={18} />, label: "Agenda Kegiatan", href: "/admin/agendas", docRef: 'agendas' },
-    { category: 'Konten & Publikasi', icon: <ImageIcon size={18} />, label: "Galeri Foto", href: "/admin/gallery", roles: ["tim_media"], docRef: 'gallery' },
-    { category: 'Konten & Publikasi', icon: <Cloud size={18} />, label: "Galeri Google Drive", href: "/admin/gallery/storage", roles: ["tim_media"], docRef: 'gallery' },
-    { category: 'Konten & Publikasi', icon: <Video size={18} />, label: "Video Kegiatan", href: "/admin/videos", roles: ["tim_media"], docRef: 'videos' },
-    
-    // Akademik & Kesantrian
-    { category: 'Kesantrian', icon: <Users size={18} />, label: "Data Santri (PSB)", href: "/admin/psb", roles: ["panitia_psb"], docRef: 'psb' },
-    { category: 'Kesantrian', icon: <Users size={18} />, label: "Data Santri", href: "/admin/kesantrian", roles: ["superadmin","panitia_psb","wali_kelas","pimpinan"], docRef: 'kesantrian' },
-    { category: 'Kesantrian', icon: <UserCog size={18} />, label: "Akun Wali", href: "/admin/akun/walisantri", roles: ["superadmin","bendahara"], docRef: 'walisantri' },
+  useEffect(() => {
+    getRoleMenuPermissions().then((parsed) => {
+      setRolePerms(parsed);
+    }).catch(()=>{});
+  }, []);
 
-    { category: 'Kesantrian', icon: <GraduationCap size={18} />, label: "eRapor", href: "/admin/academics", roles: ["bendahara"], docRef: 'academics' },
-    { category: 'Kesantrian', icon: <UserCheck size={18} />, label: "Staf Pengajar", href: "/admin/teachers", roles: ["tim_media"], docRef: 'teachers' },
-    { category: 'Kesantrian', icon: <Shield size={18} />, label: "Kedisiplinan", href: "/admin/disciplines", roles: ["panitia_psb"], docRef: 'disciplines' },
-    
-    // Keuangan & Donasi
-    { category: 'Keuangan', icon: <Heart size={18} />, label: "Program Donasi", href: "/admin/donations", roles: ["bendahara"], docRef: 'donations' },
-    { category: 'Keuangan', icon: <CreditCard size={18} />, label: "Pembayaran SPP", href: "/admin/payments", roles: ["bendahara"], docRef: 'payments' },
-    
-    // Institusi & Layanan
-    { category: 'Layanan', icon: <Building size={18} />, label: "Fasilitas Publik", href: "/admin/facilities", roles: ["tim_media"], docRef: 'facilities' },
-    { category: 'Layanan', icon: <MessageSquare size={18} />, label: "Pesan & Inbox", href: "/admin/messages", roles: ["panitia_psb"], docRef: 'messages' },
-    
-    // Sistem
-    { category: 'Sistem', icon: <Bell size={18} />, label: "Notifikasi WA", href: "/admin/notifications", roles: ["bendahara"], docRef: 'notifications' },
-    { category: 'Sistem', icon: <UserCog size={18} />, label: "Manajemen Pengguna", href: "/admin/users", roles: ["superadmin"], docRef: 'users' },
-    { category: 'Sistem', icon: <ScrollText size={18} />, label: "Log Sistem", href: "/admin/logs", roles: ["superadmin"], docRef: 'logs' },
-    { category: 'Sistem', icon: <Settings size={18} />, label: "Pengaturan Utama", href: "/admin/settings", roles: ["superadmin"], docRef: 'settings' },
-    { category: 'Sistem', icon: <HelpCircle size={18} />, label: "Bantuan", href: "/admin/help" },
-  ];
+  const ICONS: Record<string, React.ReactNode> = {
+    '/admin': <LayoutDashboard size={18} />,
+    '/admin/programs': <Layers size={18} />,
+    '/admin/news': <Newspaper size={18} />,
+    '/admin/agendas': <Calendar size={18} />,
+    '/admin/gallery': <ImageIcon size={18} />,
+    '/admin/videos': <Video size={18} />,
+    '/admin/psb': <Users size={18} />,
+    '/admin/raport': <GraduationCap size={18} />,
+    '/admin/academics': <BookOpen size={18} />,
+    '/admin/project': <FolderTree size={18} />,
+    '/admin/teachers': <UserCheck size={18} />,
+    '/admin/disciplines': <Shield size={18} />,
+    '/admin/kesantrian': <ClipboardList size={18} />,
+    '/admin/donations': <Heart size={18} />,
+    '/admin/payments': <CreditCard size={18} />,
+    '/admin/spp': <Receipt size={18} />,
+    '/admin/iuran': <Receipt size={18} />,
+    '/admin/kasir': <ScanLine size={18} />,
+    '/admin/kas': <Wallet size={18} />,
+    '/admin/emoney': <Nfc size={18} />,
+    '/admin/erapor': <FileSpreadsheet size={18} />,
+    '/admin/school': <School size={18} />,
+    '/admin/teachers/report': <UserCheck size={18} />,
+    '/admin/laporan/tagihan': <BarChart3 size={18} />,
+    '/admin/laporan/transaksi': <BarChart3 size={18} />,
+    '/admin/facilities': <Building size={18} />,
+    '/admin/messages': <MessageSquare size={18} />,
+    '/admin/notifications': <Bell size={18} />,
+    '/admin/users': <UserCog size={18} />,
+    '/admin/logs': <ScrollText size={18} />,
+    '/admin/settings': <Settings size={18} />,
+    '/admin/help': <HelpCircle size={18} />,
+  };
 
-  // Filter by role
+  // Daftar menu dari katalog bersama (lib/roleMenus) agar tidak drift
+  // dengan checkbox Hak Akses di Manajemen Pengguna.
+  const menuItems: MenuItem[] = ROLE_MENU_DEFS.map((d) => ({
+    category: d.category,
+    icon: ICONS[d.href] ?? <FileText size={18} />,
+    label: d.label,
+    href: d.href,
+    roles: d.roles,
+    docRef: d.docRef,
+    panel: d.panel,
+  }));
+
+  // Filter menu: daftar tersimpan mengatur penuh per role (bisa tambah
+  // maupun kurang dari standar). Tanpa simpanan -> pakai standar role.
+  // Catatan: backend tetap menegakkan RequireRole, jadi menu yang diberi
+  // di luar jatah role-nya akan tampil tapi API-nya menolak (403).
+  // Menu berkategori (kelompok utama) dan menu berpanel (blok navigasi sendiri)
+  // dipisah supaya panel tidak ikut tercampur ke kategori utama.
+  const groupedItems = menuItems.filter((item) => !item.panel);
+  const panelItems = menuItems.filter((item) => item.panel);
+
+  const groupNames = Array.from(new Set(groupedItems.map((item) => item.category)));
+  const groups: Array<[string, typeof menuItems]> = groupNames.map((cat) => [
+    cat,
+    groupedItems.filter((item) => item.category === cat),
+  ]);
+
+  const groupOfPath = (path: string) => {
+    for (const [cat, items] of groups) {
+      if (items.some((item) => {
+      const base = item.href.split('?')[0];
+      return item.href === '/admin' ? path === base : path.startsWith(base);
+    })) {
+        return cat;
+      }
+    }
+    return null;
+  };
+
+  const panelOfPath = (path: string) => {
+    const hit = panelItems.find((item) => {
+      const base = item.href.split('?')[0];
+      return path.startsWith(base);
+    });
+    return hit?.panel ?? null;
+  };
+
+  // Panel punya state buka/tutup sendiri, terpisah dari kategori utama,
+  // disimpan terpisah supaya tidak bentrok dengan `sidebar-cats`.
+  const [openPanels, setOpenPanels] = React.useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem('sidebar-panels');
+      if (raw) return JSON.parse(raw) as Record<string, boolean>;
+    } catch {
+      // abaikan
+    }
+    return {};
+  });
+
+  const [openCats, setOpenCats] = React.useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem('sidebar-cats');
+      if (raw) return JSON.parse(raw) as Record<string, boolean>;
+    } catch {
+      // abaikan
+    }
+    const active = typeof window === 'undefined' ? null : groupOfPath(window.location.pathname);
+    return active ? { [active]: true } : {};
+  });
+
+  React.useEffect(() => {
+    const active = groupOfPath(pathname);
+    if (active) {
+      setOpenCats((prev) => (prev[active] ? prev : { ...prev, [active]: true }));
+    }
+    const activePanel = panelOfPath(pathname);
+    if (activePanel) {
+      setOpenPanels((prev) => (prev[activePanel] ? prev : { ...prev, [activePanel]: true }));
+    }
+  }, [pathname]);
+
+  const isPanelOpen = (panelId: string) => openPanels[panelId] ?? true;
+
+  const togglePanel = (panelId: string) => {
+    setOpenPanels((prev) => {
+      const next = { ...prev, [panelId]: !(prev[panelId] ?? true) };
+      try {
+        window.localStorage.setItem('sidebar-panels', JSON.stringify(next));
+      } catch {
+        // abaikan
+      }
+      return next;
+    });
+  };
+
+  const toggleCat = (cat: string) => {
+    setOpenCats((prev) => {
+      const next = { ...prev, [cat]: !(prev[cat] ?? true) };
+      try {
+        window.localStorage.setItem('sidebar-cats', JSON.stringify(next));
+      } catch {
+        // abaikan
+      }
+      return next;
+    });
+  };
+
   const visibleItems = menuItems.filter(item => {
-    if (!item.roles || item.roles.length === 0) return true; // accessible by all
+    if (!item.roles || item.roles.length === 0) return true;
+    const role = user?.role;
+    if (role === 'superadmin') return true;
+    const saved = role ? rolePerms[role] : undefined;
+    if (saved && Array.isArray(saved)) return saved.includes(item.href);
     return hasRole(...item.roles);
   });
 
+  // Panel yang punya minimal satu menu terlihat untuk role aktif
+  const activePanels = ROLE_MENU_PANELS
+    .map((p) => ({ ...p, items: visibleItems.filter((item) => item.panel === p.id) }))
+    .filter((p) => p.items.length > 0);
+
+  const renderMenuLink = (item: MenuItem) => {
+    const isActive = isMenuActive(item.href, pathname, search);
+    return (
+      <div key={item.href} className={`flex items-center gap-2 rounded-lg transition-colors ${
+        isActive ? 'bg-gradient-to-r from-sky-500/18 via-sky-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
+      }`}>
+        <Link href={item.href} onClick={onClose} aria-current={isActive ? 'page' : undefined} aria-label={item.label} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
+          <div className={isActive ? 'text-sky-300' : 'text-slate-500'}>
+            {item.icon}
+          </div>
+          <span className={`truncate text-[12.5px] ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
+        </Link>
+
+        {item.docRef && (
+          <Link
+            href={`/admin/help?ref=${item.docRef}`}
+            onClick={onClose}
+            className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
+              isActive
+                ? 'text-sky-100 hover:bg-white/10 hover:text-white'
+                : 'text-slate-500 hover:bg-white/10 hover:text-sky-200'
+            }`}
+            title={`Buka tutorial ${item.label}`}
+            aria-label={`Buka tutorial ${item.label}`}
+          >
+            <HelpCircle size={15} />
+          </Link>
+        )}
+
+        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-sky-400 rounded-r-md"></div>}
+      </div>
+    );
+  };
+
   return (
-    <aside className="flex h-full w-64 flex-col overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-emerald-950 via-slate-950 to-slate-950 text-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] ring-1 ring-white/5">
+    <aside className="flex h-full w-64 flex-col overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-sky-950 via-slate-950 to-slate-950 text-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] ring-1 ring-white/5">
       {/* Header */}
-      <div className="h-[70px] flex items-center px-6 border-b border-emerald-900/40 shrink-0">
+      <div className="h-[70px] flex items-center px-6 border-b border-sky-900/40 shrink-0">
          <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-950/30">D</div>
+            <div className="w-8 h-8 rounded-lg bg-sky-500 text-white flex items-center justify-center font-black shadow-lg shadow-sky-950/30">A</div>
             <div className="min-w-0">
               <span className="block font-semibold text-[15px] text-white tracking-wide uppercase">Darussunnah</span>
-              <span className="block text-[10px] uppercase tracking-[0.24em] text-emerald-200/70">Panel Pondok</span>
+              <span className="block text-[10px] uppercase tracking-[0.24em] text-sky-200/70">Panel Admin</span>
             </div>
             
             <button 
@@ -87,54 +257,87 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style dangerouslySetInnerHTML={{__html: `nav::-webkit-scrollbar { display: none; }`}} />
-        {visibleItems.map((item, index) => {
-          const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
-          const showCategory = index === 0 || visibleItems[index - 1].category !== item.category;
-
+        {groups.map(([cat, items]) => {
+          const shown = items.filter((item) => visibleItems.includes(item));
+          if (shown.length === 0) return null;
+          const isOpen = openCats[cat] ?? false;
           return (
-            <React.Fragment key={item.href}>
-              {showCategory && item.category !== 'Utama' && (
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-[9.5px] font-bold uppercase tracking-widest text-emerald-200/40">
-                    {item.category}
-                  </p>
+            <div key={cat}>
+              <button
+                type="button"
+                onClick={() => toggleCat(cat)}
+                aria-expanded={isOpen}
+                className="flex w-full cursor-pointer items-center justify-between px-3 pt-3 pb-1 text-left"
+              >
+                <p className="text-[9.5px] font-bold uppercase tracking-widest text-sky-200/40">
+                  {cat}
+                </p>
+                <ChevronDown size={14} className={`text-sky-200/40 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+              </button>
+              <div className={`sb-group-items${isOpen ? ' open' : ''}`}>
+                <div className="sb-group-inner">
+              {shown.map((item) => renderMenuLink(item))}
                 </div>
-              )}
-              <div className={`flex items-center gap-2 rounded-lg transition-colors ${
-                isActive ? 'bg-gradient-to-r from-emerald-500/18 via-emerald-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
-              }`}>
-                <Link href={item.href} onClick={onClose} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
-                  <div className={isActive ? 'text-emerald-300' : 'text-slate-500'}>
-                    {item.icon}
-                  </div>
-                  <span className={`truncate text-[12.5px] ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
-                </Link>
-
-                {item.docRef && (
-                  <Link
-                    href={`/admin/help?ref=${item.docRef}`}
-                    onClick={onClose}
-                    className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
-                      isActive
-                        ? 'text-emerald-100 hover:bg-white/10 hover:text-white'
-                        : 'text-slate-500 hover:bg-white/10 hover:text-emerald-200'
-                    }`}
-                    title={`Buka dokumentasi ${item.label}`}
-                    aria-label={`Buka dokumentasi ${item.label}`}
-                >
-                  <HelpCircle size={15} />
-                </Link>
-              )}
-
-                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400 rounded-r-md"></div>}
               </div>
-            </React.Fragment>
+            </div>
+          );
+        })}
+
+        {/* Panel terpisah untuk menu yang dipindah dari Mode Classic.
+            Ditaruh setelah kategori utama, sebagai blok navigasi mandiri
+            (bukan kategori) supaya mudah dikenali. */}
+        {activePanels.map((panel) => {
+          const isOpen = isPanelOpen(panel.id);
+          return (
+            <div key={panel.id} className="mt-3 rounded-xl bg-white/[0.04] p-1.5 ring-1 ring-white/10">
+              <button
+                type="button"
+                onClick={() => togglePanel(panel.id)}
+                aria-expanded={isOpen}
+                className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-white/5"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Wallet size={14} className="shrink-0 text-sky-300" />
+                  <span className="truncate text-[10.5px] font-bold uppercase tracking-widest text-sky-100/85">
+                    {panel.label}
+                  </span>
+                </span>
+                <ChevronDown size={14} className={`shrink-0 text-sky-200/50 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+              </button>
+              {isOpen && (
+                <>
+                  <p className="px-2.5 pb-1.5 text-[10px] leading-tight text-slate-500">{panel.hint}</p>
+                  <div className="space-y-0.5">
+                    {panel.items.map((item) => renderMenuLink(item))}
+                  </div>
+                </>
+              )}
+            </div>
           );
         })}
       </nav>
 
-      {/* Footer / Logout */}
-      <div className="p-4 border-t border-emerald-900/35">
+      {/* Footer / Identitas + Logout */}
+      <div className="p-4 border-t border-sky-900/35">
+         {/* j70: blok identitas. Kotak "A" di header sidebar adalah logo
+             aplikasi "Darussunnah", bukan avatar user — tanpa blok ini, nama dan foto
+             user sama sekali tidak terlihat di sidebar. */}
+         {user ? (
+            <div className="mb-2 flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2.5 ring-1 ring-white/5">
+               <UserAvatar
+                 name={user.name}
+                 photoUrl={user.photo_url}
+                 size="sm"
+                 className="ring-2 ring-sky-400/25"
+               />
+               <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-semibold text-white">{user.name}</p>
+                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-sky-200/60">
+                     {user.role || 'staff'}
+                  </p>
+               </div>
+            </div>
+         ) : null}
          <button 
            onClick={() => {
              logout();

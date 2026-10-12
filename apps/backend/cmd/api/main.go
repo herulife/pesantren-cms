@@ -1,28 +1,38 @@
 package main
 
 import (
-	"context"
 	"darussunnah-api/internal/features/academics"
 	"darussunnah-api/internal/features/agendas"
 	"darussunnah-api/internal/features/attendance"
 	"darussunnah-api/internal/features/auth"
+	"darussunnah-api/internal/features/autobilling"
 	"darussunnah-api/internal/features/disciplines"
 	"darussunnah-api/internal/features/donations"
+	"darussunnah-api/internal/features/erapor"
 	"darussunnah-api/internal/features/exams"
 	"darussunnah-api/internal/features/facilities"
 	"darussunnah-api/internal/features/faqs"
 	"darussunnah-api/internal/features/gallery"
 	"darussunnah-api/internal/features/gstorage"
+	"darussunnah-api/internal/features/hr"
+	"darussunnah-api/internal/features/invoices"
+	"darussunnah-api/internal/features/iuran"
+	"darussunnah-api/internal/features/kas"
 	"darussunnah-api/internal/features/logs"
 	"darussunnah-api/internal/features/messages"
 	"darussunnah-api/internal/features/news"
+	"darussunnah-api/internal/features/notes"
 	"darussunnah-api/internal/features/notifications"
+	"darussunnah-api/internal/features/otp"
 	"darussunnah-api/internal/features/payments"
 	"darussunnah-api/internal/features/programs"
+	"darussunnah-api/internal/features/project"
 	"darussunnah-api/internal/features/psb"
+	"darussunnah-api/internal/features/raport"
 	"darussunnah-api/internal/features/santri"
 	"darussunnah-api/internal/features/school"
 	"darussunnah-api/internal/features/settings"
+	"darussunnah-api/internal/features/spp"
 	"darussunnah-api/internal/features/sysnotif"
 	"darussunnah-api/internal/features/teachers"
 	"darussunnah-api/internal/features/upload"
@@ -35,12 +45,13 @@ import (
 	appmiddleware "darussunnah-api/internal/platform/middleware"
 	"darussunnah-api/internal/platform/wagate"
 	"darussunnah-api/internal/platform/wanotif"
+	"darussunnah-api/internal/platform/weight"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -61,29 +72,31 @@ func main() {
 
 	// 1. Initialize Database
 	database.Connect(getEnv("DB_PATH", "./darussunnah.db"))
+	// PHASE 2: validasi sesi revocable (user exists + role + token_version).
+	auth.ConfigureSessionValidation(database.DB)
+	audit.Configure(database.DB)
 
-	// 2. Initialize License System
-	err := auth.InitLicense("./public.key")
-	if err != nil {
+	// 1a. Lisensi (Darussunnah): muat public key. Tanpa key, premium-check
+	// mengembalikan "Public key missing" tanpa mem-brick aplikasi.
+	if err := auth.InitLicense("./public.key"); err != nil {
 		logger.Warn(context.Background(), "license public key not found or invalid", logger.Field{"error": err.Error()})
 	}
 
-	// 2b. WhatsApp gateway mandiri (auto-connect bila sesi tersimpan ada)
+	// 1b. WhatsApp gateway mandiri (auto-connect bila sesi tersimpan ada)
 	go wagate.GetManager().Start(context.Background())
 
-	// 2c. Pengirim-ulang otomatis notifikasi WA (outbox wa_notifications).
+	// 1c. Pengirim-ulang otomatis notifikasi WA (outbox wa_notifications).
 	wanotif.StartRetrier()
 
-	// 2d. Audit log (aktivitas) terpusat.
-	audit.Configure(database.DB)
-
-	// 3. Setup Router
+	// 2. Setup Router
 	r := chi.NewRouter()
 
 	// Basic Middleware
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	// AUDIT FIX [6.7]: baseline security headers.
+	r.Use(appmiddleware.SecurityHeaders)
 
 	// CORS Configuration
 	r.Use(cors.Handler(cors.Options{
@@ -100,7 +113,16 @@ func main() {
 	newsHandler := news.NewHandler(newsRepo)
 
 	psbRepo := psb.NewRepository(database.DB)
+	santriRepo := santri.NewRepository(database.DB)
+	santriHandler := santri.NewHandler(santriRepo)
+	projectRepo := project.NewRepository(database.DB)
+	projectHandler := project.NewHandler(projectRepo)
+	raportRepo := raport.NewRepository(database.DB)
+	raportHandler := raport.NewHandler(raportRepo)
 	psbHandler := psb.NewHandler(psbRepo)
+
+	eraporRepo := erapor.NewRepository(database.DB)
+	eraporHandler := erapor.NewHandler(eraporRepo)
 
 	teacherRepo := teachers.NewRepository(database.DB)
 	teacherHandler := teachers.NewHandler(teacherRepo)
@@ -108,6 +130,7 @@ func main() {
 	galleryRepo := gallery.NewRepository(database.DB)
 	galleryHandler := gallery.NewHandler(galleryRepo)
 
+	// Multi Google Drive Storage (Darussunnah): akun, sumber, sinkronisasi.
 	gstorageCfg := gstorage.LoadConfig()
 	gstorageRepo := gstorage.NewRepository(database.DB)
 	gstorageSvc := gstorage.NewService(gstorageCfg, gstorageRepo)
@@ -121,6 +144,12 @@ func main() {
 
 	settingRepo := settings.NewRepository(database.DB)
 	settingHandler := settings.NewHandler(settingRepo)
+	// AI Config dari tabel settings disuntikkan ke env runtime agar generator
+	// artikel & draf pesan memakai provider yang dikonfigurasi admin.
+	loadAISettingsFromDB(settingRepo)
+	loadKKMFromDB(settingRepo)
+	// PSB memakai pengaturan publik (biaya & rekening) untuk notifikasi WA.
+	psbHandler = psbHandler.WithSettingsStore(settingRepo)
 
 	authRepo := auth.NewRepository(database.DB)
 	authHandler := auth.NewHandler(authRepo)
@@ -143,6 +172,25 @@ func main() {
 	paymentRepo := payments.NewRepository(database.DB)
 	paymentHandler := payments.NewHandler(paymentRepo)
 
+	sppRepo := spp.NewRepository(database.DB)
+	sppHandler := spp.NewHandler(sppRepo).WithConfigStore(settingRepo)
+	autobilling.New(settingRepo, sppRepo, 6*time.Hour).Start(context.Background())
+
+	iuranRepo := iuran.NewRepository(database.DB)
+	iuranHandler := iuran.NewHandler(iuranRepo)
+
+	schoolRepo := school.NewRepository(database.DB)
+	schoolHandler := school.NewHandler(schoolRepo)
+
+	kasRepo := kas.NewRepository(database.DB)
+	kasHandler := kas.NewHandler(kasRepo)
+
+	waliSantriRepo := walisantri.NewRepository(database.DB)
+	waliSantriHandler := walisantri.NewHandler(waliSantriRepo)
+
+	hrRepo := hr.NewRepository(database.DB)
+	hrHandler := hr.NewHandler(hrRepo)
+
 	logRepo := logs.NewRepository(database.DB)
 	logHandler := logs.NewHandler(logRepo)
 
@@ -157,15 +205,6 @@ func main() {
 
 	sysnotifHandler := sysnotif.NewHandler(database.DB)
 
-	schoolRepo := school.NewRepository(database.DB)
-	schoolHandler := school.NewHandler(schoolRepo)
-
-	santriRepo := santri.NewRepository(database.DB)
-	santriHandler := santri.NewHandler(santriRepo)
-
-	waliSantriRepo := walisantri.NewRepository(database.DB)
-	waliSantriHandler := walisantri.NewHandler(waliSantriRepo)
-
 	attendanceRepo := attendance.NewRepository(database.DB)
 	attendanceHandler := attendance.NewHandler(attendanceRepo)
 
@@ -173,20 +212,33 @@ func main() {
 	examHandler := exams.NewHandler(examRepo)
 
 	walletRepo := wallet.NewRepository(database.DB)
-	walletHandler := wallet.NewHandler(walletRepo)
+	walletHandler := wallet.NewHandler(walletRepo, kasRepo)
 
-	loginLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
-	googleLoginLimiter := appmiddleware.NewRateLimiter(5, 15*time.Minute)
-	// registerLimiter removed — public registration disabled for security
-	contactLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
-	aiGenerateLimiter := appmiddleware.NewRateLimiter(10, time.Minute)
-	uploadLimiter := appmiddleware.NewRateLimiter(30, time.Minute)
+	otpRepo := otp.NewRepository(database.DB)
+	otpHandler := otp.NewHandler(otpRepo)
+
+	invoiceRepo := invoices.NewRepository(database.DB)
+	invoiceHandler := invoices.NewHandler(invoiceRepo)
+
+	noteRepo := notes.NewRepository(database.DB)
+	noteHandler := notes.NewHandler(noteRepo)
+
+	loginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
+	googleLoginLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
+	registerLimiter := appmiddleware.NewRateLimiter(30, 5*time.Minute)
+	contactLimiter := appmiddleware.NewRateLimiter(20, time.Hour)
+	// AUDIT FIX [6.8]: spam/DoS protection. Upload stays open to role "user"
+	// (portal butuh upload bukti), dibatasi 30/jam. Webhook Telegram 120/menit.
+	uploadLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
+	webhookLimiter := appmiddleware.NewRateLimiter(120, time.Minute)
+	newsGenLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
+	noteLimiter := appmiddleware.NewRateLimiter(60, time.Hour)
+	otpRequestLimiter := appmiddleware.NewRateLimiter(10, time.Hour)
+	otpVerifyLimiter := appmiddleware.NewRateLimiter(30, time.Hour)
 
 	// 5. Mount Routes
 	r.Route("/api", func(r chi.Router) {
-		// CSRF defense: for state-changing requests, reject cross-origin Origins.
-		// Same-site/app requests send an allowed Origin; browser CSRF attacks send a
-		// foreign Origin (or none). Combined with SameSite=Lax cookies + CORS this closes CSRF.
+		// CSRF defense: untuk request yang mengubah state, tolak Origin lintas-situs.
 		r.Use(csrfOriginMiddleware(getAllowedOrigins()))
 
 		// Public Routes
@@ -194,25 +246,45 @@ func main() {
 			w.Write([]byte("OK"))
 		})
 
+		// Readiness: liveness OK belum berarti DB bisa diakses.
+		r.Get("/ready", func(w http.ResponseWriter, r *http.Request) {
+			var one int
+			if err := database.DB.QueryRow("SELECT 1").Scan(&one); err != nil {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				w.Write([]byte("NOT READY"))
+				return
+			}
+			w.Write([]byte("READY"))
+		})
+
 		// Public Auth
 		r.With(loginLimiter.Middleware).Post("/login", authHandler.Login)
-		// Register DISABLED for security — only superadmin can create users via POST /api/users
-		// r.With(registerLimiter.Middleware).With(auth.RequireLicense(database.DB)).Post("/register", authHandler.Register)
+		r.With(registerLimiter.Middleware).Post("/register", authHandler.Register)
 		r.With(googleLoginLimiter.Middleware).Post("/auth/google", authHandler.GoogleLogin)
 		r.Get("/auth/storage/google/callback", gstorageHandler.OAuthCallback) // Public OAuth callback (Google redirect)
 		r.Post("/logout", authHandler.Logout)
 		r.Get("/premium-check", authHandler.GetLicenseStatus)
-		r.Post("/telegram/webhook", notificationHandler.TelegramWebhook)
+		r.With(webhookLimiter.Middleware).Post("/telegram/webhook", notificationHandler.TelegramWebhook)
+		r.With(otpRequestLimiter.Middleware).Post("/otp/request", otpHandler.Request)
+		r.With(otpVerifyLimiter.Middleware).Post("/otp/verify", otpHandler.Verify)
+		r.With(webhookLimiter.Middleware).Post("/invoices/webhook", invoiceHandler.Webhook)
 
-		// Public Contact Message
-		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
+		// Public Notes (pastebin tanpa login). GET publik; CREATE rate-limited per IP.
+		r.Route("/notes", func(r chi.Router) {
+			r.With(noteLimiter.Middleware).Post("/", noteHandler.Create)
+			r.Get("/mine", noteHandler.ListMine)
+			r.Get("/{urlID}", noteHandler.Get)
+			r.Delete("/{urlID}", noteHandler.Delete)
+		})
+
+		// Public PSB Pengumuman: cek kelulusan dengan nomor pendaftaran (tanpa login).
+		r.Get("/psb/pengumuman", psbHandler.GetPengumuman)
 
 		// ── Public Access + Protected Writes ──────────────────
 		r.Route("/faqs", func(r chi.Router) {
 			r.Get("/", faqHandler.List)
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
-				r.Use(auth.RequireLicense(database.DB))
 				r.Use(auth.RequireRole("superadmin", "tim_media"))
 				r.Post("/", faqHandler.Create)
 				r.Put("/{id}", faqHandler.Update)
@@ -224,8 +296,7 @@ func main() {
 			r.Get("/", agendaHandler.List)
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
-				r.Use(auth.RequireLicense(database.DB))
-				r.Use(auth.RequireRole("superadmin", "tim_media", "panitia_psb"))
+				r.Use(auth.RequireRole("superadmin", "tim_media"))
 				r.Post("/", agendaHandler.Create)
 				r.Put("/{id}", agendaHandler.Update)
 				r.Delete("/{id}", agendaHandler.Delete)
@@ -234,8 +305,8 @@ func main() {
 
 		// ── Gallery Management ──────────────────
 		r.Route("/gallery", func(r chi.Router) {
-			r.Get("/", galleryHandler.GetAll) // Public Read
-			r.Get("/albums/metadata", galleryHandler.GetMeta) // Public - get Drive links + album meta
+			r.Get("/", galleryHandler.GetAll)                 // Public Read
+			r.Get("/albums/metadata", galleryHandler.GetMeta) // Public - Drive links + album meta
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
@@ -270,21 +341,20 @@ func main() {
 
 		// ── News Management ──────────────────
 		r.Route("/news", func(r chi.Router) {
-			r.Get("/", newsHandler.GetAllPublic)         // Public Read - published only
+			r.Get("/", newsHandler.GetAll)               // Public Read
 			r.Get("/slug/{slug}", newsHandler.GetBySlug) // Public Read by Slug
-			r.Get("/{id}", newsHandler.GetByIDPublic)    // Public Read - published only
+			r.Get("/{id}", newsHandler.GetByID)          // Public Read
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
 				r.Use(auth.RequireRole("tim_media", "superadmin"))
-				r.Get("/manage/all", newsHandler.GetAll) // Admin listing: honours status (draft/trash)
-				r.Get("/manage/{id}", newsHandler.GetByID) // Admin single read: any status
 				r.Post("/", newsHandler.Create)
 				r.Put("/{id}", newsHandler.Update)
 				r.Delete("/{id}", newsHandler.Delete)
 				r.Put("/{id}/restore", newsHandler.Restore)
+				r.Put("/{id}/pin", newsHandler.SetPinned)
 				r.Delete("/{id}/force", newsHandler.ForceDelete)
-				r.With(aiGenerateLimiter.Middleware).Post("/generate", newsHandler.GenerateArticle) // AI Generation
+				r.With(newsGenLimiter.Middleware).Post("/generate", newsHandler.GenerateArticle) // AI Generation
 			})
 		})
 
@@ -334,56 +404,65 @@ func main() {
 
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
-			r.Use(auth.RequireLicense(database.DB))
 
 			r.Get("/me", authHandler.GetMe)
-			// Uploads are staff-only. This endpoint previously sat behind
-			// AuthMiddleware + RequireLicense with no role gate, so any student
-			// account (role "user") could write arbitrary files into the publicly
-			// served /uploads/ directory.
-			r.With(
-				uploadLimiter.Middleware,
-				auth.RequireRole("superadmin", "tim_media", "panitia_psb", "bendahara"),
-			).Post("/upload", upload.HandleUpload)
+			r.Put("/me/password", authHandler.ChangeMyPassword)
+			// Avatar milik user yang sedang login (Jilid 69). Field: image.
+			r.With(uploadLimiter.Middleware).Put("/me/photo", upload.HandleMyPhoto(authRepo))
+			r.With(uploadLimiter.Middleware).Delete("/me/photo", upload.HandleDeleteMyPhoto(authRepo))
+			r.Get("/settings/role-permissions", settingHandler.GetRolePermissions)
+			r.With(uploadLimiter.Middleware).Post("/upload", upload.HandleUpload)
 
-			// Student document upload (PSB: KK, akta kelahiran, ijazah). Kept
-			// separate from the staff content-image endpoint so minors' documents
-			// never land in the publicly served directory.
-			r.With(
-				uploadLimiter.Middleware,
-				auth.RequireRole("user", "superadmin", "tim_media", "panitia_psb", "bendahara"),
-			).Post("/upload/document", upload.HandleDocumentUpload)
-			r.Get("/documents/{userID}/{filename}", upload.ServeDocument)
-
-			// Admin notification bell (system notifications with per-user read state)
-			r.With(
-				auth.RequireRole("superadmin", "tim_media", "panitia_psb", "bendahara"),
-			).Mount("/snotif", sysnotifHandler.Routes())
+			// Manajemen user: superadmin/bendahara boleh kelola (lihat,
+			// tambah, ubah nama+email, ubah role, reset password). Hapus user
+			// tetap hanya superadmin; akun portal (role=user) ditolak oleh handler.
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Get("/users", authHandler.GetAllUsers)
+				r.Post("/users", authHandler.CreateUser)
+				r.Put("/users/{id}", authHandler.UpdateUser)
+				r.Put("/users/{id}/password", authHandler.ResetUserPassword)
+				r.Put("/users/{id}/role", authHandler.UpdateUserRole)
+			})
 
 			// Superadmin Only
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("superadmin"))
-				r.Post("/users", authHandler.CreateUser)
-				r.Get("/users", authHandler.GetAllUsers)
-				r.Put("/users/{id}/password", authHandler.ResetUserPassword)
-				r.Put("/users/{id}/role", authHandler.UpdateUserRole)
 				r.Delete("/users/{id}", authHandler.DeleteUser)
 				r.Mount("/settings", settingHandler.Routes())
 				r.Mount("/logs", logHandler.Routes())
 
-				// CBT Admin
-				r.Post("/exams", examHandler.CreateExam)
-				r.Post("/exams/questions", examHandler.CreateQuestion)
-
 				// Wallet Admin
 				r.Post("/wallet/topup", walletHandler.TopUp)
+			})
+
+			// E-Money (Dompet) Admin: superadmin + bendahara. CRUD penuh +
+			// sinkron otomatis ke jurnal Kas (Jilid 93).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Get("/wallet/admin/list", walletHandler.AdminList)
+				r.Get("/wallet/admin/{userID}/history", walletHandler.AdminHistory)
+				r.Post("/wallet/admin/adjust", walletHandler.AdminAdjust)
+				r.Put("/wallet/admin/{userID}/active", walletHandler.AdminSetActive)
+				r.Post("/wallet/admin/{userID}/reset-pin", walletHandler.AdminResetPIN)
+				r.Delete("/wallet/admin/{userID}", walletHandler.AdminDelete)
+			})
+
+			// CBT Admin: superadmin + guru (mapel sendiri dicek di handler)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "guru"))
+				r.Post("/exams", examHandler.CreateExam)
+				r.Post("/exams/questions", examHandler.CreateQuestion)
 			})
 
 			// Bendahara Ops
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("bendahara"))
 				r.Mount("/payments", paymentHandler.Routes())
+				r.Mount("/spp", sppHandler.Routes())
+				r.Mount("/iuran", iuranHandler.Routes())
 				r.Mount("/donations", donationHandler.Routes())
+				r.Mount("/kas", kasHandler.Routes())
 			})
 
 			// Akun wali + Santri-nya. Dibuka untuk superadmin & bendahara saja:
@@ -396,21 +475,34 @@ func main() {
 			// Master Sekolah (kelas + tahun ajaran).
 			// READ (kelas + tahun ajaran) dibuka ke semua role operasional: form
 			// Kesantrian & halaman raport milik wali_kelas/pimpinan memanggil
-			// GET /school/classes. Sebelumnya grup ini hanya superadmin/setting
-			// -> 403 -> dropdown "Kelas" kosong dan wali kelas tidak bisa memilih
-			// kelas sama sekali.
+			// GET /school/classes. Sebelumnya grup ini hanya superadmin/bendahara/
+			// panitia_psb/admin -> 403 -> dropdown "Kelas" kosong dan wali kelas
+			// tidak bisa memilih kelas sama sekali.
 			// WRITE (create/update/delete/activate) tetap superadmin/bendahara/
-			// panitia_psb.
+			// panitia_psb/admin.
 			r.Route("/school", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
-					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "wali_kelas", "pimpinan"))
+					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin", "wali_kelas", "pimpinan", "user"))
 					r.Get("/classes", schoolHandler.ListClasses)
 					r.Get("/years", schoolHandler.ListYears)
 				})
 				r.Group(func(r chi.Router) {
-					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb"))
+					r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin"))
 					r.Mount("/", schoolHandler.Routes())
 				})
+			})
+
+			// HR/pegawai: hanya superadmin + bendahara (panitia_psb over-broad).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Mount("/hr", hrHandler.Routes())
+			})
+
+			// Panitia PSB Ops
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("panitia_psb"))
+				r.Mount("/psb", psbHandler.Routes())
+				r.Mount("/contact", messageHandler.Routes())
 			})
 
 			// Kesantrian (Data Santri)
@@ -419,25 +511,48 @@ func main() {
 				r.Mount("/santri", santriHandler.Routes())
 			})
 
-			// Panitia PSB Ops
+			// Academics Ops (Project & E-Raport)
 			r.Group(func(r chi.Router) {
-				r.Use(auth.RequireRole("panitia_psb"))
-				r.Mount("/psb", psbHandler.Routes())
-				r.Mount("/messages", messageHandler.Routes())
+				r.Use(auth.RequireRole("superadmin", "admin", "pimpinan", "wali_kelas", "ustadz"))
+				r.Mount("/project", projectHandler.Routes())
+				r.Mount("/raport", raportHandler.Routes())
+			})
+
+			// E-Rapor / RDM Kemenag (Jilid 84-86): export data pokok & nilai +
+			// log sinkron. Dibatasi superadmin/admin/pimpinan (tanpa wali_kelas
+			// & ustadz) karena menyangkut data identitas lintas kelas.
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "admin", "pimpinan"))
+				r.Mount("/erapor", eraporHandler.Routes())
+			})
+
+			// Invoice manual oleh panitia/bendahara. Webhook gateway tetap publik + HMAC.
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb"))
+				r.Post("/invoices", invoiceHandler.Create)
 			})
 
 			// Portal PSB for calon santri / wali
 			r.Group(func(r chi.Router) {
 				r.Use(auth.RequireRole("user"))
 				r.Get("/psb/me", psbHandler.GetMine)
+				r.Get("/psb/me/receipt", psbHandler.GetMyReceipt)
 				r.Put("/psb/me", psbHandler.SaveMine)
 				r.Put("/psb/me/documents", psbHandler.SaveMyDocuments)
 				r.Put("/psb/me/payment", psbHandler.SaveMyPayment)
 				r.Get("/portal/academics/grades", academicHandler.GetMyGrades)
 				r.Get("/portal/academics/attendance-summary", academicHandler.GetMyAttendanceSummary)
-r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
-			r.Get("/attendance/token", attendanceHandler.GetToken)
-			r.Get("/my-santri", santriHandler.GetMySantri)
+				r.Get("/my-santri", santriHandler.GetMySantri)
+				r.Get("/my-bills", paymentHandler.GetMyBills)
+				r.Get("/my-ledger", paymentHandler.GetMyLedger)
+				r.Post("/my-bills/spp/{id}/proof", sppHandler.SubmitProof)
+				r.Post("/my-bills/iuran/{id}/proof", iuranHandler.SubmitProof)
+				r.Get("/my-receipt", paymentHandler.GetMyReceipt)
+				r.Get("/portal/raport/me", raportHandler.GetMine)
+				r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
+				r.Get("/portal/academics/arbain/me", academicHandler.GetMyArbainProgress)
+				r.Get("/portal/academics/arbain/reference", academicHandler.GetArbainReference)
+				r.Get("/attendance/token", attendanceHandler.GetToken)
 
 				// CBT Student
 				r.Get("/exams", examHandler.GetAvailableExams)
@@ -459,24 +574,64 @@ r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
 				r.Mount("/disciplines", disciplineHandler.Routes())
 			})
 
+			// Broadcast PSB + log/retry WA PSB: panitia boleh akses (endpoint notifikasi lain tetap superadmin/bendahara).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb"))
+				r.Post("/notifications/broadcast-psb", notificationHandler.BroadcastPSB)
+				r.Get("/notifications/wa-log", notificationHandler.GetWALog)
+				r.Post("/notifications/wa-retry", notificationHandler.PostWARetry)
+			})
+
 			// Academic & Notifications
 			r.Group(func(r chi.Router) {
-				r.Use(auth.RequireRole("superadmin", "bendahara"))
+				r.Use(auth.RequireRole("superadmin", "admin", "pimpinan", "wali_kelas", "guru", "ustadz"))
 				r.Mount("/academics", academicHandler.Routes())
 				r.Mount("/notifications", notificationHandler.Routes())
 				r.Post("/attendance/scan", attendanceHandler.Scan)
 			})
+
+			// Notifikasi sistem (lonceng) — dibuka untuk SEMUA role admin.
+			// Jilid 82: superadmin/bendahara/panitia_psb/admin/pimpinan/wali_kelas/
+			// guru/ustadz semuanya melihat notifikasi yang sama (broadcast).
+			r.Group(func(r chi.Router) {
+				r.Use(auth.RequireRole("superadmin", "bendahara", "panitia_psb", "admin", "pimpinan", "wali_kelas", "guru", "ustadz"))
+				r.Mount("/snotif", sysnotifHandler.Routes())
+			})
 		})
+
+		// ── Public Donasi ──────────
+		// Didaftarkan di SINI (setelah semua grup ber-auth, tapi SEBELUM chi
+		// menyelesaikan routing /api) dengan sengaja: chi Mount("/donations", ...)
+		// di grup Bendahara menulis handler mALL di node PERSIS "/donations", jadi
+		// kalau `r.Get("/donations")` didaftarkan SEBELUM mount, handler publik
+		// mGET-nya tertimpa dan GET /api/donations masuk ke mount (butuh role
+		// bendahara) -> 401. Rute literal /campaigns & /stats juga dipindah ke
+		// sini supaya urutannya konsisten (leaf static tetap terdahulukan dari
+		// wildcard "/donations/*" milik mount).
+		r.Get("/donations/campaigns", donationHandler.GetCampaigns)
+		r.Get("/donations", donationHandler.GetDonations)
+		r.Get("/donations/stats", donationHandler.GetStats)
+
+		// ── Public Pesan Kontak ──────────
+		// Didaftarkan di SINI (setelah semua grup ber-auth) karena group Panitia PSB
+		// me-mount "/contact" (messages.Routes) lebih dahulu. Bila didaftarkan sebelum
+		// mount, metode POST tertimpa -> form kontak publik 401/403. Mount "/contact"
+		// tetap menangani GET/{id}/PATCH/DELETE untuk manajemen pesan oleh panitia.
+		r.With(contactLimiter.Middleware).Post("/contact", messageHandler.Create)
 
 	})
 
+	// PHASE 4: proofs privat via handler berauth (chi memprioritaskan node
+	// statis /uploads/proofs di atas catch-all /uploads/*).
+	// AuthMiddleware WAJIB: ServeProof membaca user dari context.
+	r.Group(func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Get("/uploads/proofs/{file}", upload.ServeProof(database.DB))
+	})
+
 	// Serve Static Files -> public/uploads
-	//
-	// http.FileServer emits a full directory listing for any path that resolves to
-	// a directory, which let anyone enumerate every uploaded filename. Staff images
-	// (news, facilities) are meant to be world-readable, so the files stay public,
-	// but directory listing is now refused and only single files are served.
-	r.Handle("/uploads/*", singleFileStatic("/uploads/", http.Dir("./public/uploads")))
+	fileServer := http.FileServer(http.Dir("./public/uploads"))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fileServer))
 
 	// 6. Start Server
 	port := ":" + getEnv("API_PORT", "8080")
@@ -486,29 +641,34 @@ r.Get("/portal/academics/tahfidz", academicHandler.GetMyTahfidz)
 		"allowed_origins": getAllowedOrigins(),
 		"log_level":       getEnv("LOG_LEVEL", "info"),
 	})
-
-	server := &http.Server{Addr: port, Handler: r}
-
-	// Graceful shutdown: close DB and stop accepting new requests on signal.
+	srv := &http.Server{
+		Addr:              port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       90 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
 	go func() {
-		stop := make(chan os.Signal, 1)
-		signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-		<-stop
-		logger.Info(context.Background(), "shutdown signal received, closing resources", logger.Field{"event": "shutdown"})
-		if database.DB != nil {
-			_ = database.DB.Close()
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error(context.Background(), "api server stopped unexpectedly", logger.Field{"error": err.Error()})
+			os.Exit(1)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		_ = server.Shutdown(ctx)
 	}()
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error(context.Background(), "api server stopped unexpectedly", logger.Field{"error": err.Error()})
-		if database.DB != nil {
-			_ = database.DB.Close()
-		}
-		os.Exit(1)
+	// PHASE 22: graceful shutdown — berhenti terima request, selesaikan
+	// transaksi aktif, tutup DB, hentikan antrean WA dengan aman.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logger.Info(context.Background(), "api server shutting down gracefully", nil)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error(context.Background(), "api server shutdown error", logger.Field{"error": err.Error()})
+	}
+	if database.DB != nil {
+		_ = database.DB.Close()
 	}
 }
 
@@ -529,6 +689,37 @@ func getEnv(key, fallback string) string {
 	return value
 }
 
+// loadAISettingsFromDB menyuntikkan konfigurasi AI dari tabel settings ke env
+// runtime (mirip pola di handler notifications) agar dipakai oleh semua fitur
+// yang memanggil platform/ai, termasuk generator artikel berita.
+// loadKKMFromDB menyuntikkan ambang KKM akademik dari settings ke runtime
+// weight engine agar huruf & predikat mengikuti KKM yang diatur admin.
+func loadKKMFromDB(settingRepo *settings.Repository) {
+	if v, err := settingRepo.GetByKey("academic_kkm"); err == nil {
+		if n, convErr := strconv.Atoi(strings.TrimSpace(v)); convErr == nil && n > 0 {
+			weight.SetKKM(n)
+			logger.Info(context.Background(), "academic kkm loaded", logger.Field{"kkm": n})
+		}
+	}
+}
+
+func loadAISettingsFromDB(settingRepo *settings.Repository) {
+	load := func(key, env string) {
+		if v, err := settingRepo.GetByKey(key); err == nil && strings.TrimSpace(v) != "" {
+			os.Setenv(env, strings.TrimSpace(v))
+		}
+	}
+	load("ai_openai_key", "AI_OPENAI_KEY")
+	load("ai_model", "AI_MODEL")
+	if v, err := settingRepo.GetByKey("ai_api_url"); err == nil && strings.TrimSpace(v) != "" {
+		apiURL := strings.TrimSpace(v)
+		os.Setenv("XKIRO_API_URL", apiURL)
+		os.Setenv("OPENAI_API_URL", apiURL)
+	}
+	logger.Info(context.Background(), "ai settings loaded from db",
+		logger.Field{"ai_model": os.Getenv("AI_MODEL"), "ai_api_url": os.Getenv("XKIRO_API_URL"), "has_key": os.Getenv("AI_OPENAI_KEY") != ""})
+}
+
 func getAllowedOrigins() []string {
 	raw := getEnv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
 	parts := strings.Split(raw, ",")
@@ -541,9 +732,9 @@ func getAllowedOrigins() []string {
 	return origins
 }
 
-// csrfOriginMiddleware rejects state-changing requests whose Origin header is
-// present but not in the allow-list. Browsers always send Origin for cross-site
-// and CORS-triggering same-site requests, so a foreign Origin = CSRF attempt.
+// csrfOriginMiddleware menolak request yang mengubah state (non-GET/HEAD/
+// OPTIONS/TRACE) bila header Origin ada dan bukan origin yang diizinkan.
+// Dipadukan dengan cookie SameSite=Lax + CORS, ini menutup CSRF.
 func csrfOriginMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 	allowed := make(map[string]bool, len(allowedOrigins))
 	for _, o := range allowedOrigins {
@@ -612,37 +803,4 @@ func validateEnv() {
 			}
 		}
 	}
-}
-
-// singleFileStatic serves static assets from root without directory listing.
-//
-// http.FileServer responds to a path that resolves to a directory with a full
-// listing of every entry, which published the complete set of uploaded filenames
-// to anonymous visitors. We resolve the path ourselves and refuse anything that
-// is a directory, then delegate to http.ServeContent for the actual file so
-// Range requests, If-Modified-Since and Content-Type still work.
-func singleFileStatic(mountPrefix string, root http.Dir) http.Handler {
-	fileServer := http.StripPrefix(mountPrefix, http.FileServer(root))
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Resolve the requested path inside root. mountPrefix is stripped because
-		// the route is mounted at /uploads/* while the files live under ./public.
-		rel := path.Clean("/" + strings.TrimPrefix(r.URL.Path, strings.TrimSuffix(mountPrefix, "/")))
-		rel = strings.TrimPrefix(rel, "/")
-
-		// Defence in depth: reject traversal explicitly instead of relying only on
-		// http.Dir, so the intent survives future refactors.
-		if rel == "" || !filepath.IsLocal(rel) {
-			http.NotFound(w, r)
-			return
-		}
-
-		info, err := os.Stat(filepath.Join(string(root), rel))
-		if err != nil || info.IsDir() {
-			http.NotFound(w, r)
-			return
-		}
-
-		fileServer.ServeHTTP(w, r)
-	})
 }

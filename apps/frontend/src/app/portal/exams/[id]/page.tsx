@@ -21,11 +21,16 @@ import {
   GraduationCap,
   ShieldCheck
 } from 'lucide-react';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmProvider';
+
 
 export default function ExamInterfacePage() {
   const params = useParams();
   const router = useRouter();
   const examID = parseInt(params.id as string);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [sessionID, setSessionID] = useState<number | null>(null);
@@ -53,7 +58,7 @@ export default function ExamInterfacePage() {
       }
 
       if (!sid) {
-        alert("Gagal memulai sesi ujian. Silakan kembali.");
+        showToast('error', 'Gagal memulai sesi ujian. Silakan kembali.');
         router.push('/portal/exams');
         return;
       }
@@ -69,13 +74,13 @@ export default function ExamInterfacePage() {
     return () => {
       isMounted = false;
     };
-  }, [examID, router]);
+  }, [examID, router, showToast]);
 
   const handleFinish = useCallback(async (skipConfirm: boolean = false) => {
     if (!sessionID || isSubmitting || isFinished) return;
     
     if (!skipConfirm) {
-      const confirmFinish = window.confirm("Apakah Anda yakin ingin menyelesaikan ujian ini? Jawaban tidak dapat diubah lagi.");
+      const confirmFinish = await confirmDialog({ title: 'Selesaikan ujian', message: 'Apakah Anda yakin ingin menyelesaikan ujian ini? Jawaban tidak dapat diubah lagi.', confirmText: 'Selesaikan', type: 'warning' });
       if (!confirmFinish && (timeLeft ?? 0) > 0) return;
     }
 
@@ -85,10 +90,10 @@ export default function ExamInterfacePage() {
       setScore(res.score);
       setIsFinished(true);
     } else {
-      alert("Gagal mengirim jawaban akhir. Silakan coba lagi.");
+      showToast('error', 'Gagal mengirim jawaban akhir. Silakan coba lagi.');
     }
     setIsSubmitting(false);
-  }, [isFinished, isSubmitting, sessionID, timeLeft]);
+  }, [confirmDialog, isFinished, isSubmitting, sessionID, showToast, timeLeft]);
 
   // Timer
   useEffect(() => {
@@ -153,7 +158,7 @@ export default function ExamInterfacePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-50">
         <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] bg-white shadow-xl ring-1 ring-slate-100">
-          <RefreshCw className="h-10 w-10 animate-spin text-blue-600" />
+          <RefreshCw className="h-10 w-10 animate-spin text-sky-600" />
         </div>
         <p className="font-outfit text-sm font-black uppercase tracking-widest text-slate-500">Mempersiapkan Lembar Soal...</p>
       </div>
@@ -164,9 +169,9 @@ export default function ExamInterfacePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <div className="w-full max-w-md overflow-hidden rounded-[3rem] bg-white text-center shadow-2xl ring-1 ring-slate-100">
-          <div className="relative bg-gradient-to-b from-emerald-500 to-emerald-600 p-12 text-white">
+          <div className="relative bg-gradient-to-b from-sky-500 to-sky-600 p-12 text-white">
             <div className="absolute inset-0 bg-[url('/assets/noise.png')] opacity-10 mix-blend-overlay" />
-            <CheckCircle2 size={72} className="relative z-10 mx-auto mb-6 text-emerald-100" />
+            <CheckCircle2 size={72} className="relative z-10 mx-auto mb-6 text-sky-100" />
             <h2 className="relative z-10 font-outfit text-3xl font-black uppercase tracking-tight">Ujian Selesai!</h2>
           </div>
           <div className="p-12">
@@ -177,7 +182,7 @@ export default function ExamInterfacePage() {
             </div>
             <button 
               onClick={() => router.push('/portal/exams')}
-              className="w-full rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-slate-900/20 hover:bg-emerald-600 transition-all active:scale-95"
+              className="w-full rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-slate-900/20 hover:bg-sky-600 transition-all active:scale-95"
             >
               Kembali ke Menu Ujian
             </button>
@@ -199,7 +204,7 @@ export default function ExamInterfacePage() {
               <GraduationCap size={24} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Sesi CBT Berjalan</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-600">Sesi CBT Berjalan</p>
               <h3 className="font-outfit text-lg font-black text-slate-900">Ujian {examID}</h3>
             </div>
           </div>
@@ -224,7 +229,7 @@ export default function ExamInterfacePage() {
               {/* Question Header */}
               <div className="mb-8 flex items-center justify-between border-b border-slate-100 pb-6">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-black text-blue-700">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sm font-black text-sky-700">
                     {currentIdx + 1}
                   </span>
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
@@ -253,24 +258,24 @@ export default function ExamInterfacePage() {
                       onClick={() => handleSelectOption(currentQuestion.id, idx)}
                       className={`group relative flex items-center gap-5 rounded-2xl border-2 p-4 text-left transition-all ${
                         isSelected 
-                          ? 'border-blue-600 bg-blue-50/50 shadow-md ring-4 ring-blue-600/10' 
-                          : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50 focus:outline-none'
+                          ? 'border-sky-600 bg-sky-50/50 shadow-md ring-4 ring-sky-600/10' 
+                          : 'border-slate-100 hover:border-sky-200 hover:bg-slate-50 focus:outline-none'
                       }`}
                     >
                       <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-outfit text-lg font-black transition-colors ${
                         isSelected 
-                          ? 'bg-blue-600 text-white shadow-inner' 
-                          : 'bg-slate-100 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600'
+                          ? 'bg-sky-600 text-white shadow-inner' 
+                          : 'bg-slate-100 text-slate-400 group-hover:bg-sky-100 group-hover:text-sky-600'
                       }`}>
                         {label}
                       </div>
-                      <span className={`text-sm font-semibold leading-relaxed transition-colors ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
+                      <span className={`text-sm font-semibold leading-relaxed transition-colors ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>
                         {opt}
                       </span>
                       
                       {isSelected && (
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 text-blue-600">
-                          <CheckCircle2 size={24} className="fill-blue-100" />
+                        <div className="absolute right-6 top-1/2 -translate-y-1/2 text-sky-600">
+                          <CheckCircle2 size={24} className="fill-sky-100" />
                         </div>
                       )}
                     </button>
@@ -292,7 +297,7 @@ export default function ExamInterfacePage() {
               {currentIdx < totalQuestions - 1 ? (
                 <button
                   onClick={() => setCurrentIdx(prev => prev + 1)}
-                  className="flex items-center gap-3 rounded-[1.25rem] bg-slate-900 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-blue-600 hover:shadow-blue-600/30 active:scale-95"
+                  className="flex items-center gap-3 rounded-[1.25rem] bg-slate-900 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-sky-600 hover:shadow-sky-600/30 active:scale-95"
                 >
                   Selanjutnya <ChevronRight size={20} />
                 </button>
@@ -302,7 +307,7 @@ export default function ExamInterfacePage() {
                     void handleFinish();
                   }}
                   disabled={isSubmitting}
-                  className="flex items-center gap-3 rounded-[1.25rem] bg-emerald-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/30 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-3 rounded-[1.25rem] bg-sky-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-500/30 transition-all hover:bg-sky-700 active:scale-95 disabled:opacity-50"
                 >
                   {isSubmitting ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} />}
                   Selesai Ujian
@@ -315,7 +320,7 @@ export default function ExamInterfacePage() {
           <div className="lg:col-span-4 flex flex-col gap-6">
             <div className="rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm">
               <h4 className="mb-6 flex items-center gap-3 font-outfit text-sm font-black uppercase tracking-widest text-slate-900">
-                <LayoutGrid size={18} className="text-blue-600" /> Navigasi & Status
+                <LayoutGrid size={18} className="text-sky-600" /> Navigasi & Status
               </h4>
 
               {/* Number Grid */}
@@ -326,9 +331,9 @@ export default function ExamInterfacePage() {
                   
                   let btnColor = "bg-slate-50 text-slate-500 ring-1 ring-slate-200 hover:bg-slate-100";
                   if (isCurrent) {
-                    btnColor = "bg-white text-blue-600 ring-4 ring-blue-600 font-black shadow-md z-10 scale-105";
+                    btnColor = "bg-white text-sky-600 ring-4 ring-sky-600 font-black shadow-md z-10 scale-105";
                   } else if (isAnswered) {
-                    btnColor = "bg-emerald-500 text-white ring-1 ring-emerald-600 shadow-sm";
+                    btnColor = "bg-sky-500 text-white ring-1 ring-sky-600 shadow-sm";
                   }
 
                   return (
@@ -347,7 +352,7 @@ export default function ExamInterfacePage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="h-4 w-4 rounded-md bg-emerald-500 shadow-sm" />
+                      <div className="h-4 w-4 rounded-md bg-sky-500 shadow-sm" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Sudah Terjawab</span>
                     </div>
                     <span className="font-outfit font-black text-slate-900">{Object.keys(answers).length}</span>

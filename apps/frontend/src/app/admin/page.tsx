@@ -33,14 +33,14 @@ const quickLinks = [
     label: 'Manajemen User',
     description: 'Atur akun, role, dan akses admin.',
     icon: Users,
-    roles: ['superadmin'],
+    roles: ['superadmin', 'bendahara'],
   },
   {
-    href: '/admin/wallet/topup',
-    label: 'Top Up Wallet',
-    description: 'Kelola saldo santri dari panel admin.',
+    href: '/admin/emoney',
+    label: 'E-Money (Dompet)',
+    description: 'Kelola saldo, PIN, dan mutasi dompet santri.',
     icon: Wallet,
-    roles: ['superadmin'],
+    roles: ['superadmin', 'bendahara'],
   },
   {
     href: '/admin/settings',
@@ -68,9 +68,10 @@ export default function AdminDashboardPage() {
   const visibleLinks = quickLinks.filter((item) => item.roles.includes(user?.role || ''));
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-white via-emerald-50/60 to-teal-50/60 p-8 shadow-sm">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">
+    <div className="ap-fade-in space-y-8">
+      <section className="relative overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-br from-white via-sky-50/60 to-sky-50/60 p-8 shadow-sm">
+        <div className="ap-stat-deco" style={{ background: '#0ea5e9' }} />
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-600">
           Dashboard Admin
         </p>
         <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
@@ -89,9 +90,10 @@ export default function AdminDashboardPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg"
+              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-lg"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+              <div className="ap-stat-deco" style={{ background: '#0ea5e9', width: 90, height: 90 }} />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-700">
                 <Icon size={22} />
               </div>
               <h2 className="mt-5 text-lg font-black text-slate-900">{item.label}</h2>

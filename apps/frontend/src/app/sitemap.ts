@@ -1,28 +1,13 @@
-import type { MetadataRoute } from "next";
-
-const BASE_URL = "https://darussunnahparung.com";
-
-// Curated list of public, indexable pages (admin/portal/audit pages excluded).
-const STATIC_PATHS = [
-  "",
-  "/profil",
-  "/sambutan",
-  "/program",
-  "/psb",
-  "/psb-daftar",
-  "/teachers",
-  "/videos",
-  "/news",
-  "/gallery",
-  "/contact",
-];
+import type { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const base = 'https://darussunnahparung.com';
   const now = new Date();
-  return STATIC_PATHS.map((path) => ({
-    url: BASE_URL + path,
+  const routes = ['', '/profil', '/program', '/psb', '/donations', '/kontak', '/galeri', '/news', '/video-youtube'];
+  return routes.map((p) => ({
+    url: `${base}${p || '/'}`,
     lastModified: now,
-    changeFrequency: "weekly" as const,
-    priority: path === "" ? 1 : 0.7,
+    changeFrequency: p === '' ? 'daily' : 'weekly',
+    priority: p === '' ? 1 : p.startsWith('/psb') || p.startsWith('/donations') ? 0.9 : 0.7,
   }));
 }
