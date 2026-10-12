@@ -44,7 +44,7 @@ export default function PsbStatusPage() {
 
   const statusTone =
     result?.status === 'accepted' || result?.status === 're_registration'
-      ? { box: 'bg-sky-50 border-sky-100', icon: 'text-sky-500', title: 'text-sky-800', body: 'text-sky-700' }
+      ? { box: 'bg-emerald-50 border-emerald-100', icon: 'text-emerald-500', title: 'text-emerald-800', body: 'text-emerald-700' }
       : result?.status === 'tes'
         ? { box: 'bg-indigo-50 border-indigo-100', icon: 'text-indigo-500', title: 'text-indigo-800', body: 'text-indigo-700' }
         : result?.status === 'rejected'
@@ -56,7 +56,7 @@ export default function PsbStatusPage() {
       <section className="py-20 bg-slate-50 min-h-screen">
         <div className="container mx-auto px-4 max-w-2xl">
           <div className="text-center mb-12">
-            <div className="w-20 h-20 bg-sky-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-sky-200 text-sky-600">
+            <div className="w-20 h-20 bg-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-emerald-200 text-emerald-600">
               <GraduationCap size={40} />
             </div>
             <h1 className="text-4xl font-black text-slate-900 mb-4 font-outfit uppercase tracking-tight">Pengumuman Kelulusan</h1>
@@ -74,14 +74,14 @@ export default function PsbStatusPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
-                    className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-medium"
+                    className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-medium"
                   />
-                  <Search className="absolute left-4 top-4 text-slate-400 group-focus-within:text-sky-500 transition-colors" size={20} />
+                  <Search className="absolute left-4 top-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={20} />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading || !searchQuery.trim()}
-                  className="px-8 py-4 bg-sky-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-sky-700 transition-all shadow-lg shadow-sky-600/20 active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                  className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-70 disabled:active:scale-100"
                 >
                   {isLoading ? 'Mencari...' : 'Cari'}
                 </button>
@@ -90,7 +90,7 @@ export default function PsbStatusPage() {
 
             {hasSearched && isLoading ? (
               <div className="py-10 flex justify-center">
-                <Loader2 size={32} className="animate-spin text-sky-500" />
+                <Loader2 size={32} className="animate-spin text-emerald-500" />
               </div>
             ) : null}
 
@@ -162,7 +162,7 @@ export default function PsbStatusPage() {
                 </div>
 
                 <div className="mt-8 text-center">
-                  <Link href="/psb" className="text-sky-600 text-sm font-bold hover:underline">
+                  <Link href="/psb" className="text-emerald-600 text-sm font-bold hover:underline">
                     Kembali ke Informasi Pendaftaran
                   </Link>
                 </div>

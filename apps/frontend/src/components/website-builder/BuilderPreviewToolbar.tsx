@@ -67,8 +67,8 @@ export default function BuilderPreviewToolbar({
             href={currentDraftPath}
             className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${
               mode === 'draft'
-                ? 'bg-sky-600 text-white'
-                : 'border border-sky-200 bg-sky-50 text-sky-700'
+                ? 'bg-emerald-600 text-white'
+                : 'border border-emerald-200 bg-emerald-50 text-emerald-700'
             }`}
           >
             <Eye size={14} />

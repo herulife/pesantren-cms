@@ -71,7 +71,7 @@ export default function ProofImage({ src, alt, className }: Props) {
   if (state.status === 'loading') {
     return (
       <div className={`${className || ''} flex items-center justify-center bg-slate-100`} aria-label="Memuat bukti">
-        <RefreshCw size={20} className="animate-spin text-sky-500" />
+        <RefreshCw size={20} className="animate-spin text-emerald-500" />
       </div>
     );
   }

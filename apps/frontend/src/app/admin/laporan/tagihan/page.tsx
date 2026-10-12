@@ -13,14 +13,14 @@ export default function LaporanTagihanPage() {
   const [tab, setTab] = useState<Tab>('spp');
   const tabCls = (active: boolean) =>
     `px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-      active ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
+      active ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
     }`;
 
   return (
     <div className="pb-10">
       <div className="mb-8">
         <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight flex items-center gap-3">
-          <BarChart3 className="text-sky-600" size={32} />
+          <BarChart3 className="text-emerald-600" size={32} />
           Laporan Tagihan
         </h1>
         <p className="text-slate-500 text-sm">

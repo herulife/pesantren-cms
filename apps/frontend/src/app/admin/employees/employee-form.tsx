@@ -85,7 +85,7 @@ export default function EmployeeForm({
     `w-full rounded-xl border px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:ring-4 ${
       hasError
         ? 'border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-500/10'
-        : 'border-slate-200 bg-slate-50 focus:border-sky-500 focus:bg-white focus:ring-sky-500/10'
+        : 'border-slate-200 bg-slate-50 focus:border-emerald-500 focus:bg-white focus:ring-emerald-500/10'
     }`;
 
   const err = (key: keyof EmployeeFormData) =>
@@ -107,7 +107,7 @@ export default function EmployeeForm({
           )}
           {uploading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-              <RefreshCw size={22} className="animate-spin text-sky-600" />
+              <RefreshCw size={22} className="animate-spin text-emerald-600" />
             </div>
           )}
         </div>
@@ -115,7 +115,7 @@ export default function EmployeeForm({
           <p className="text-xs font-black uppercase tracking-widest text-slate-700">Foto Pegawai</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">Opsional. JPG, PNG, atau WEBP, maksimal 5MB.</p>
           <div className="mt-2.5 flex flex-wrap gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 shadow-sm transition hover:border-sky-300 hover:text-sky-700">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700">
               <Camera size={14} />
               {photoDisplayUrl ? 'Ganti Foto' : 'Pilih Foto'}
               <input
@@ -237,7 +237,7 @@ export default function EmployeeForm({
         <button
           type="submit"
           disabled={saving || uploading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-8 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-8 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
         >
           {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
           {saving ? 'Menyimpan…' : submitLabel}

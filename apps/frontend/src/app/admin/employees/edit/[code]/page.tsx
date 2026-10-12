@@ -124,7 +124,7 @@ export default function EditEmployeePage() {
       {loading ? (
         <div className="flex justify-center rounded-2xl border border-slate-200 bg-white p-16">
           <span className="inline-flex items-center gap-2 text-sm text-slate-400">
-            <RefreshCw size={18} className="animate-spin text-sky-500" />
+            <RefreshCw size={18} className="animate-spin text-emerald-500" />
             Memuat data pegawai…
           </span>
         </div>

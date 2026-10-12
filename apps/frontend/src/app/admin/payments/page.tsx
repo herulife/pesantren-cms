@@ -111,7 +111,7 @@ export default function PaymentsAdminPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight flex items-center gap-3">
-             <CreditCard className="text-sky-600" size={32} />
+             <CreditCard className="text-emerald-600" size={32} />
              Manajemen Pembayaran
           </h1>
           <p className="text-slate-500 text-sm">Catat dan kelola transaksi pembayaran SPP atau administrasi santri.</p>
@@ -127,14 +127,14 @@ export default function PaymentsAdminPage() {
           </button>
           <button 
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-6 py-3 bg-sky-50 text-sky-600 border border-sky-100 rounded-xl font-bold hover:bg-sky-100 transition-all shadow-sm"
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold hover:bg-emerald-100 transition-all shadow-sm"
           >
             <FileSpreadsheet size={18} />
             <span className="hidden sm:block">Excel</span>
           </button>
           <Link 
             href="/admin/payments/form"
-            className="flex items-center gap-2 px-6 py-3 bg-sky-600 text-white rounded-xl font-bold hover:bg-sky-700 transition-all shadow-lg shadow-sky-600/20 active:scale-95"
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
           >
             <Plus size={20} />
             <span>Tambah Pembayaran</span>
@@ -146,43 +146,43 @@ export default function PaymentsAdminPage() {
       <div className="flex gap-2 mb-8">
         <button
           onClick={() => setActiveTab('bills')}
-          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'bills' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'bills' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
           Tagihan SPP
         </button>
         <button
           onClick={() => setActiveTab('manual')}
-          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'manual' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'manual' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
           Pembayaran
         </button>
         <button
           onClick={() => setActiveTab('report')}
-          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'report' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'report' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
           Laporan Tagihan
         </button>
         <button
           onClick={() => setActiveTab('iuran')}
-          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
           Tagihan Iuran
         </button>
         <button
           onClick={() => setActiveTab('iuran-report')}
-          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran-report' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'iuran-report' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
           Laporan Iuran
         </button>
         <button
           onClick={() => setActiveTab('kasir')}
-          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'kasir' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'kasir' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
           Kasir
         </button>
         <button
           onClick={() => setActiveTab('transaksi')}
-          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'transaksi' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+          className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'transaksi' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
         >
           Lap. Transaksi
         </button>
@@ -215,8 +215,8 @@ export default function PaymentsAdminPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center gap-6 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-r from-sky-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="w-16 h-16 rounded-xl bg-sky-50 flex items-center justify-center text-sky-500 shrink-0 shadow-inner">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="w-16 h-16 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 shadow-inner">
             <Receipt size={28} />
           </div>
           <div className="relative z-10">
@@ -247,14 +247,14 @@ export default function PaymentsAdminPage() {
             placeholder="Cari nama santri, keterangan, atau metode bayar..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-medium"
+            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
           />
         </div>
         <div className="shrink-0 w-full md:w-56 relative">
            <select 
              value={filterStatus}
              onChange={(e) => setFilterStatus(e.target.value)}
-             className="w-full pl-5 pr-10 py-4 appearance-none bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700 cursor-pointer"
+             className="w-full pl-5 pr-10 py-4 appearance-none bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 cursor-pointer"
            >
              <option value="all">Semua Status</option>
              <option value="success">Sukses / Lunas</option>
@@ -270,7 +270,7 @@ export default function PaymentsAdminPage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
         {isLoading ? (
           <div className="py-32 text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full mx-auto"></div>
+            <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
           </div>
         ) : payments.length > 0 ? (
           <div className="ap-table-wrap overflow-x-auto">
@@ -310,7 +310,7 @@ export default function PaymentsAdminPage() {
                     </td>
                     <td className="px-8 py-6">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        p.status === 'success' ? 'bg-sky-100 text-sky-700' : 
+                        p.status === 'success' ? 'bg-emerald-100 text-emerald-700' : 
                         p.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
                       }`}>
                         {p.status}

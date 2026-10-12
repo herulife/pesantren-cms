@@ -53,7 +53,7 @@ export default function WASettingsPanel() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-sky-600" /></div>;
+  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-emerald-600" /></div>;
 
   const sendTestKwitansi = async () => {
     if (!testPhone.trim()) {
@@ -98,7 +98,7 @@ export default function WASettingsPanel() {
                   value={testPhone}
                   onChange={(e) => setTestPhone(e.target.value)}
                   placeholder="Nomor WA uji (cth: 0812xxxx)"
-                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500"
+                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-emerald-500"
                 />
                 <button onClick={sendTestKwitansi} disabled={testing} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
                   {testing ? 'Mengirim…' : 'Coba Kirim'}
@@ -111,7 +111,7 @@ export default function WASettingsPanel() {
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600">
+                <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
                    <MessageCircle size={24} />
                 </div>
                 <div>
@@ -140,7 +140,7 @@ export default function WASettingsPanel() {
                   placeholder="Contoh: Menginformasikan pelanggaran santri {{nama}}..."
                   value={formValues['wa_discipline_violation_template'] || ''}
                   onChange={(e) => handleChange('wa_discipline_violation_template', e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-medium text-slate-800 leading-relaxed"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-800 leading-relaxed"
                 />
              </div>
           </div>
@@ -149,7 +149,7 @@ export default function WASettingsPanel() {
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600">
+                <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
                    <Settings2 size={24} />
                 </div>
                 <div>
@@ -159,14 +159,14 @@ export default function WASettingsPanel() {
              </div>
           </div>
           <div className="p-8 space-y-6">
-             <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 flex gap-4">
-                <Info className="text-sky-600 shrink-0" size={20} />
-                <div className="text-sm text-sky-800 leading-relaxed">
+             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-6 flex gap-4">
+                <Info className="text-emerald-600 shrink-0" size={20} />
+                <div className="text-sm text-emerald-800 leading-relaxed">
                    <p className="font-bold mb-1">Variabel yang tersedia:</p>
                    <ul className="list-disc list-inside space-y-1 opacity-90">
-                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{'{{nama}}'}</code> : Nama Lengkap Santri</li>
-                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{'{{sisa}}'}</code> : Sisa Poin Saat Ini</li>
-                      <li><code className="bg-sky-200/50 px-1 rounded text-xs font-bold">{'{{status}}'}</code> : Status Sanksi (Aman, SP1, dsb)</li>
+                      <li><code className="bg-emerald-200/50 px-1 rounded text-xs font-bold">{'{{nama}}'}</code> : Nama Lengkap Santri</li>
+                      <li><code className="bg-emerald-200/50 px-1 rounded text-xs font-bold">{'{{sisa}}'}</code> : Sisa Poin Saat Ini</li>
+                      <li><code className="bg-emerald-200/50 px-1 rounded text-xs font-bold">{'{{status}}'}</code> : Status Sanksi (Aman, SP1, dsb)</li>
                    </ul>
                 </div>
              </div>
@@ -176,7 +176,7 @@ export default function WASettingsPanel() {
                   placeholder="Contoh: Rekap poin santri {{nama}} sisa {{sisa}}..."
                   value={formValues['wa_discipline_summary_template'] || ''}
                   onChange={(e) => handleChange('wa_discipline_summary_template', e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-medium text-slate-800 leading-relaxed"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-800 leading-relaxed"
                 />
              </div>
           </div>
@@ -186,7 +186,7 @@ export default function WASettingsPanel() {
           <button 
              onClick={handleSaveAll}
              disabled={isSaving}
-             className="px-8 py-4 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition flex items-center gap-3 shadow-lg shadow-sky-600/20 disabled:opacity-50"
+             className="px-8 py-4 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition flex items-center gap-3 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
           >
              {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
              SIMPAN TEMPLATE NOTIFIKASI

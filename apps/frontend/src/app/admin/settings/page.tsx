@@ -81,7 +81,7 @@ export default function SettingsAdminPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`rounded-lg px-4 py-2.5 text-xs font-black tracking-[0.08em] transition-all duration-300 sm:px-6 sm:py-3 sm:text-sm sm:tracking-wide ${
                   effectiveTab === tab.id
-                    ? 'bg-sky-600 text-white shadow-lg shadow-sky-900/20'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
                     : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
                 }`}
               >

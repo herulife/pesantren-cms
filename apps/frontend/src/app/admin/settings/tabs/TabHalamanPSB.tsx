@@ -84,7 +84,7 @@ export default function TabHalamanPSB() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -100,7 +100,7 @@ export default function TabHalamanPSB() {
           {KEYS.map((key) => (
             <div key={key}>
               <label className="mb-1.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                <span className="text-sky-600">{ICONS[key]}</span>
+                <span className="text-emerald-600">{ICONS[key]}</span>
                 {LABELS[key]}
               </label>
               {MULTILINE.has(key) ? (
@@ -108,13 +108,13 @@ export default function TabHalamanPSB() {
                   value={formValues[key] || ''}
                   onChange={(e) => setFormValues((p) => ({ ...p, [key]: e.target.value }))}
                   rows={key === 'psb_page_requirements' ? 7 : 3}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-emerald-500"
                 />
               ) : (
                 <input
                   value={formValues[key] || ''}
                   onChange={(e) => setFormValues((p) => ({ ...p, [key]: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-emerald-500"
                 />
               )}
             </div>
@@ -123,7 +123,7 @@ export default function TabHalamanPSB() {
         <button
           onClick={handleSaveAll}
           disabled={isSaving}
-          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
         >
           <Save size={16} /> {isSaving ? 'Menyimpan…' : 'Simpan halaman PSB'}
         </button>

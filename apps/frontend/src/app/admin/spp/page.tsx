@@ -13,14 +13,14 @@ export default function SppPage() {
     <div className="pb-10">
       <div className="mb-8">
         <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight flex items-center gap-3">
-          <Receipt className="text-sky-600" size={32} />
+          <Receipt className="text-emerald-600" size={32} />
           Tagihan SPP
         </h1>
         <p className="text-slate-500 text-sm">
           Buat tagihan bulanan Santri, verifikasi bukti bayar, dan atur tagihan otomatis.
         </p>
         <p className="mt-3 text-xs text-slate-500">
-          <Link href="/admin/payments" className="font-bold text-sky-600 hover:underline">
+          <Link href="/admin/payments" className="font-bold text-emerald-600 hover:underline">
             Buka Manajemen Pembayaran
           </Link>{' '}
           untuk melihat tab lain (Tagihan Iuran, Kasir, Laporan).

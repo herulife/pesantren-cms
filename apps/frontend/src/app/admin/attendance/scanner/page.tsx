@@ -76,7 +76,7 @@ export default function AttendanceScannerPage() {
           <Link href="/admin" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900">
             <ArrowLeft size={16} /> Dashboard
           </Link>
-          <div className="rounded-full bg-sky-100 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-sky-700">
+          <div className="rounded-full bg-emerald-100 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
             Scanner Presensi
           </div>
         </div>
@@ -88,18 +88,18 @@ export default function AttendanceScannerPage() {
 
         <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-2 shadow-2xl">
           {scanResult ? (
-            <div className={`flex min-h-[400px] flex-col items-center justify-center p-10 text-center transition-all ${scanResult.success ? 'bg-sky-50/50' : 'bg-rose-50/50'}`}>
-              <div className={`mb-6 flex h-20 w-20 items-center justify-center rounded-3xl shadow-lg ${scanResult.success ? 'bg-sky-500 text-white' : 'bg-rose-500 text-white'}`}>
+            <div className={`flex min-h-[400px] flex-col items-center justify-center p-10 text-center transition-all ${scanResult.success ? 'bg-emerald-50/50' : 'bg-rose-50/50'}`}>
+              <div className={`mb-6 flex h-20 w-20 items-center justify-center rounded-3xl shadow-lg ${scanResult.success ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
                 {scanResult.success ? <CheckCircle size={40} /> : <XCircle size={40} />}
               </div>
-              <h2 className={`mb-3 text-2xl font-black uppercase tracking-tight ${scanResult.success ? 'text-sky-900' : 'text-rose-900'}`}>
+              <h2 className={`mb-3 text-2xl font-black uppercase tracking-tight ${scanResult.success ? 'text-emerald-900' : 'text-rose-900'}`}>
                 {scanResult.success ? 'Berhasil!' : 'Gagal'}
               </h2>
               <p className="mb-10 text-sm leading-relaxed text-slate-600">{scanResult.message}</p>
               
               <button
                 onClick={resetScanner}
-                className={`flex w-full items-center justify-center gap-3 rounded-2xl py-5 text-sm font-black uppercase tracking-widest text-white shadow-xl transition-all hover:-translate-y-1 ${scanResult.success ? 'bg-sky-600 shadow-sky-500/20' : 'bg-rose-600 shadow-rose-500/20'}`}
+                className={`flex w-full items-center justify-center gap-3 rounded-2xl py-5 text-sm font-black uppercase tracking-widest text-white shadow-xl transition-all hover:-translate-y-1 ${scanResult.success ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-rose-600 shadow-rose-500/20'}`}
               >
                 <RefreshCw size={20} />
                 Scan Ulang
@@ -111,7 +111,7 @@ export default function AttendanceScannerPage() {
               
               {isProcessing && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
-                  <Loader2 className="mb-4 h-12 w-12 animate-spin text-sky-600" />
+                  <Loader2 className="mb-4 h-12 w-12 animate-spin text-emerald-600" />
                   <p className="font-black uppercase tracking-widest text-slate-900">Memproses...</p>
                 </div>
               )}
@@ -125,7 +125,7 @@ export default function AttendanceScannerPage() {
 
         <div className="mt-10 grid grid-cols-1 gap-4">
           <div className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
               <Camera size={24} />
             </div>
             <div>

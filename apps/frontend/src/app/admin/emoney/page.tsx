@@ -182,7 +182,7 @@ export default function AdminEMoneyPage() {
   };
 
   const inputClass =
-    'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10';
+    'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-400/10';
 
   return (
     <div className="space-y-6">
@@ -198,7 +198,7 @@ export default function AdminEMoneyPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama / NIS / email"
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10 md:w-72"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 md:w-72"
             />
           </div>
           <button
@@ -269,7 +269,7 @@ export default function AdminEMoneyPage() {
                     </td>
                     <td className="px-5 py-4">
                       {row.is_active ? (
-                        <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-sky-600">Aktif</span>
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-600">Aktif</span>
                       ) : (
                         <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-rose-600">Beku</span>
                       )}
@@ -373,7 +373,7 @@ export default function AdminEMoneyPage() {
               <button
                 onClick={() => void submitAdjust()}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 {actionLoading ? <Loader2 size={16} className="animate-spin" /> : adjustTarget.kind === 'deposit' ? <Plus size={16} /> : <Minus size={16} />}
                 Simpan
@@ -413,7 +413,7 @@ export default function AdminEMoneyPage() {
               <button
                 onClick={() => void submitPin()}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
                 Simpan

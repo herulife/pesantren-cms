@@ -104,7 +104,7 @@ export default function FloatingQuickMenu({ anchor = 'right', desktop = false, i
           href: '/login',
           label: 'Login',
           icon: <LogIn size={17} />,
-          className: 'text-sky-700 hover:bg-sky-50',
+          className: 'text-emerald-700 hover:bg-emerald-50',
         },
         {
           href: '/register',
@@ -167,7 +167,7 @@ export default function FloatingQuickMenu({ anchor = 'right', desktop = false, i
         aria-label={user ? `Menu cepat ${user.name}` : 'Masuk'}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-lg shadow-sky-700/30 ring-4 ring-white/40 transition-all duration-200 hover:scale-105 hover:shadow-sky-700/50 active:scale-95"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-700/30 ring-4 ring-white/40 transition-all duration-200 hover:scale-105 hover:shadow-emerald-700/50 active:scale-95"
       >
         {user ? <UserAvatar name={user?.name} photoUrl={user?.photo_url} size="h14" /> : <LogIn size={24} />}
       </button>

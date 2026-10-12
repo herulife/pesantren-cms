@@ -45,12 +45,12 @@ export function NoteViewContent({ urlId }: { urlId: string }) {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <div className="relative overflow-hidden bg-slate-950 py-16 text-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-sky-950/70" />
-        <div className="absolute right-0 top-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-800/30 blur-[100px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-emerald-950/70" />
+        <div className="absolute right-0 top-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-800/30 blur-[100px]" />
         <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
           <Link
             href="/note"
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-bold tracking-widest text-sky-200 transition hover:bg-white/20"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-bold tracking-widest text-emerald-200 transition hover:bg-white/20"
           >
             <StickyNote size={15} /> PASTEBIN DARUSSUNNAH
           </Link>
@@ -58,7 +58,7 @@ export function NoteViewContent({ urlId }: { urlId: string }) {
             {note?.title || 'Catatan'}
           </h1>
           {note ? (
-            <p className="mt-3 inline-flex items-center gap-2 text-sm text-sky-200/80">
+            <p className="mt-3 inline-flex items-center gap-2 text-sm text-emerald-200/80">
               <Calendar size={15} /> Dibuat {formattedDate}
               {note.expires_at
                 ? ` • Berlaku hingga ${new Date(note.expires_at).toLocaleString('id-ID')}`
@@ -71,7 +71,7 @@ export function NoteViewContent({ urlId }: { urlId: string }) {
       <div className="relative z-20 mx-auto -mt-8 max-w-4xl px-4">
         {loading ? (
           <div className="flex items-center justify-center gap-3 rounded-[2.5rem] border border-slate-100 bg-white/95 p-16 shadow-xl shadow-slate-200/50">
-            <RefreshCw size={20} className="animate-spin text-sky-600" />
+            <RefreshCw size={20} className="animate-spin text-emerald-600" />
             <span className="text-sm font-bold text-slate-500">Memuat catatan…</span>
           </div>
         ) : notFound || !note ? (
@@ -85,7 +85,7 @@ export function NoteViewContent({ urlId }: { urlId: string }) {
             </p>
             <Link
               href="/note"
-              className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/20 transition hover:bg-sky-700"
+              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700"
             >
               <Plus size={16} /> Buat Catatan Baru
             </Link>
@@ -107,7 +107,7 @@ export function NoteViewContent({ urlId }: { urlId: string }) {
                 </button>
                 <Link
                   href="/note"
-                  className="flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                  className="flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 transition hover:border-emerald-300 hover:text-emerald-600"
                 >
                   <ExternalLink size={14} /> Baru
                 </Link>

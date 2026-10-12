@@ -25,11 +25,11 @@ export default function ErrorPage({
         <button
           type="button"
           onClick={() => reset()}
-          className="rounded-full bg-sky-600 px-6 py-3 text-sm font-bold text-white hover:bg-sky-700"
+          className="rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white hover:bg-emerald-700"
         >
           Coba Lagi
         </button>
-        <Link href="/" className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-sky-300">
+        <Link href="/" className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-emerald-300">
           Ke Beranda
         </Link>
       </div>

@@ -19,7 +19,7 @@ export default function IuranPage() {
           Buat tagihan iuran Santri (kegunaan/activity), verifikasi bukti bayar, dan pantau yang belum lunas.
         </p>
         <p className="mt-3 text-xs text-slate-500">
-          <Link href="/admin/payments" className="font-bold text-sky-600 hover:underline">
+          <Link href="/admin/payments" className="font-bold text-emerald-600 hover:underline">
             Buka Manajemen Pembayaran
           </Link>{' '}
           untuk melihat tab lain (Tagihan SPP, Kasir, Laporan).

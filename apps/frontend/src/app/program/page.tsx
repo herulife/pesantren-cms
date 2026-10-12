@@ -130,7 +130,7 @@ export function ProgramPageContent({
 
   return (
     <>
-      <section className="relative overflow-hidden border-b border-sky-900/80 bg-slate-950 py-16 text-white lg:py-20">
+      <section className="relative overflow-hidden border-b border-emerald-900/80 bg-slate-950 py-16 text-white lg:py-20">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: `url('${pageContent.hero.background_image_url}')` }}
@@ -140,14 +140,14 @@ export function ProgramPageContent({
         <div className="relative mx-auto max-w-6xl px-4">
           <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-sky-100 backdrop-blur-sm">
-                <span className="h-2 w-2 rounded-full bg-sky-300" />
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100 backdrop-blur-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-300" />
                 {pageContent.hero.eyebrow}
               </p>
               <h1 className="mt-5 max-w-3xl text-3xl font-black tracking-tight md:text-5xl">
                 {pageContent.hero.title}
               </h1>
-              <p className="mt-4 line-clamp-2 max-w-2xl text-base leading-7 text-sky-50/90">
+              <p className="mt-4 line-clamp-2 max-w-2xl text-base leading-7 text-emerald-50/90">
                 {pageContent.hero.subtitle}
               </p>
             </div>
@@ -159,7 +159,7 @@ export function ProgramPageContent({
                   className="rounded-[1.65rem] border border-white/10 bg-white/8 px-5 py-5 shadow-[0_20px_45px_-30px_rgba(0,0,0,0.45)] backdrop-blur-sm"
                 >
                   <p className="text-3xl font-black leading-none text-white">{item.value}</p>
-                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/85">
+                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200/85">
                     {item.label}
                   </p>
                 </div>
@@ -173,7 +173,7 @@ export function ProgramPageContent({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.08),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.05),_transparent_22%)]" />
         <div className="mx-auto max-w-6xl px-4">
           <div className="text-center">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
               {pageContent.featured.eyebrow}
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
@@ -211,7 +211,7 @@ export function ProgramPageContent({
                     />
                   ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/16 to-transparent" />
-                  <div className="absolute left-5 top-5 inline-flex rounded-2xl bg-white/12 p-4 text-sky-100 backdrop-blur-sm">
+                  <div className="absolute left-5 top-5 inline-flex rounded-2xl bg-white/12 p-4 text-emerald-100 backdrop-blur-sm">
                     {featuredCardIcons[index % featuredCardIcons.length]}
                   </div>
                   <div className="absolute inset-x-0 bottom-0 p-5 text-white">
@@ -230,7 +230,7 @@ export function ProgramPageContent({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.08),_transparent_28%)]" />
         <div className="mx-auto grid max-w-6xl gap-8 px-4 lg:grid-cols-[0.95fr_1.05fr] lg:items-stretch">
           <div className="rounded-[2rem] border border-white/80 bg-white/92 p-8 shadow-[0_24px_55px_-36px_rgba(250,204,21,0.18)] backdrop-blur-sm">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
               {pageContent.curriculum.eyebrow}
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
@@ -240,7 +240,7 @@ export function ProgramPageContent({
             <div className="mt-8 space-y-4">
               {pageContent.curriculum.tracks.map((track, index) => (
                 <div key={track} className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-5 py-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
                     0{index + 1}
                   </p>
                   <p className="mt-2 font-bold text-slate-800">{track}</p>
@@ -250,7 +250,7 @@ export function ProgramPageContent({
           </div>
 
           <div className="rounded-[2rem] border border-slate-900 bg-[linear-gradient(180deg,#facc15_0%,#10251d_100%)] p-8 text-white shadow-[0_30px_70px_-35px_rgba(250,204,21,0.35)]">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-200">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">
               {pageContent.extracurricular.eyebrow}
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">
@@ -282,7 +282,7 @@ export function ProgramPageContent({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(14,165,233,0.05),_transparent_24%)]" />
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto mb-12 max-w-3xl text-center">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
               {pageContent.listing.eyebrow}
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
@@ -309,7 +309,7 @@ export function ProgramPageContent({
                 return (
                   <div
                     key={program.id}
-                    className="group overflow-hidden rounded-[2.2rem] border border-slate-100 bg-white shadow-[0_20px_50px_-35px_rgba(250,204,21,0.22)] transition-all hover:-translate-y-1 hover:border-sky-200"
+                    className="group overflow-hidden rounded-[2.2rem] border border-slate-100 bg-white shadow-[0_20px_50px_-35px_rgba(250,204,21,0.22)] transition-all hover:-translate-y-1 hover:border-emerald-200"
                   >
                     <div className="relative h-56 overflow-hidden bg-slate-50">
                       {imageUrl ? (
@@ -322,7 +322,7 @@ export function ProgramPageContent({
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sky-300">
+                        <div className="flex h-full w-full items-center justify-center text-emerald-300">
                           <BookOpen size={48} />
                         </div>
                       )}
@@ -352,7 +352,7 @@ export function ProgramPageContent({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.08),_transparent_28%)]" />
         <div className="mx-auto max-w-5xl px-4 text-center">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/92 p-8 shadow-[0_28px_65px_-38px_rgba(250,204,21,0.18)] backdrop-blur-sm md:p-10">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
               {pageContent.cta.eyebrow}
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
@@ -370,7 +370,7 @@ export function ProgramPageContent({
               </Link>
               <Link
                 href={pageContent.cta.secondary_button.url}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-sky-200 hover:text-sky-700"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-emerald-200 hover:text-emerald-700"
               >
                 {pageContent.cta.secondary_button.label} <ArrowRight size={16} />
               </Link>

@@ -60,7 +60,7 @@ export default function UserAvatar({ name, photoUrl, size = 'sm', className = ''
     return (
       <span
         aria-hidden="true"
-        className={`flex ${SIZE_CLASS[size]} shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 font-black text-white ${className}`}
+        className={`flex ${SIZE_CLASS[size]} shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-indigo-500 font-black text-white ${className}`}
       >
         {initialsOf(name, count) || 'A'}
       </span>

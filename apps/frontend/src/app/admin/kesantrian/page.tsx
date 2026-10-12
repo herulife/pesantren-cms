@@ -50,7 +50,7 @@ const statusOptions = [
 const PAGE_SIZE = 20;
 
 const filterCls =
-  'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10';
+  'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-400/10';
 
 export default function KesantrianPage() {
   const router = useRouter();
@@ -172,7 +172,7 @@ export default function KesantrianPage() {
   const statusColor = (s: string) => {
     switch (s) {
       case 'aktif': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'lulus': return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'lulus': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'pindah': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'cuti': return 'bg-slate-100 text-slate-600 border-slate-200';
       default: return 'bg-slate-100 text-slate-600 border-slate-200';
@@ -347,13 +347,13 @@ export default function KesantrianPage() {
           </button>
           <button
             onClick={() => router.push('/admin/kesantrian/import')}
-            className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-700 transition hover:bg-sky-100"
+            className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
           >
             <Import size={16} /> Import Massal
           </button>
           <button
             onClick={() => router.push('/admin/kesantrian/form')}
-            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700"
           >
             <Plus size={16} /> Tambah Santri
           </button>
@@ -370,7 +370,7 @@ export default function KesantrianPage() {
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && applySearch()}
               placeholder="Cari NIS, nama, atau panggilan..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-400/10"
             />
           </div>
           <div className="lg:w-44">
@@ -397,7 +397,7 @@ export default function KesantrianPage() {
           </div>
           <button
             onClick={applySearch}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-700"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
           >
             <RefreshCw size={15} /> Terapkan Filter
           </button>
@@ -406,22 +406,22 @@ export default function KesantrianPage() {
 
       {/* Bulk actions toolbar */}
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
-          <span className="text-sm font-bold text-sky-800">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <span className="text-sm font-bold text-emerald-800">
             {selected.size} santri dipilih
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <button
               onClick={() => exportData('pdf', 'selected')}
               disabled={exporting}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
             >
               <FileText size={14} /> {exporting ? 'Menyiapkan...' : 'Export PDF'}
             </button>
             <button
               onClick={() => exportData('excel', 'selected')}
               disabled={exporting}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
             >
               <FileSpreadsheet size={14} /> {exporting ? 'Menyiapkan...' : 'Export Excel'}
             </button>
@@ -452,7 +452,7 @@ export default function KesantrianPage() {
                     type="checkbox"
                     checked={items.length > 0 && items.every((i) => selected.has(i.id))}
                     onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
                 </th>
                 <th className="px-4 py-3 font-bold">Foto</th>
@@ -471,7 +471,7 @@ export default function KesantrianPage() {
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-sm text-slate-400">
                     <div className="flex flex-col items-center gap-2">
-                      <RefreshCw size={22} className="animate-spin text-sky-500" />
+                      <RefreshCw size={22} className="animate-spin text-emerald-500" />
                       Memuat data santri...
                     </div>
                   </td>
@@ -486,13 +486,13 @@ export default function KesantrianPage() {
                 </tr>
               ) : (
                 items.map((s) => (
-                  <tr key={s.id} className="border-b border-slate-100 transition hover:bg-sky-50/40">
+                  <tr key={s.id} className="border-b border-slate-100 transition hover:bg-emerald-50/40">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={selected.has(s.id)}
                         onChange={() => toggleSelect(s.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -504,7 +504,7 @@ export default function KesantrianPage() {
                           className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200"
                         />
                       ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-xs font-black text-sky-600 ring-1 ring-sky-100">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-xs font-black text-emerald-600 ring-1 ring-emerald-100">
                           {getInitials(s.name) || <User size={16} />}
                         </div>
                       )}
@@ -529,7 +529,7 @@ export default function KesantrianPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => router.push(`/admin/kesantrian/form?id=${s.id}`)}
-                          className="rounded-lg p-2 text-sky-600 transition hover:bg-sky-100"
+                          className="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-100"
                           title="Edit"
                         >
                           <Pencil size={16} />
@@ -591,7 +591,7 @@ export default function KesantrianPage() {
                 id="link-user-select"
                 value={linkUserId}
                 onChange={(e) => setLinkUserId(e.target.value)}
-                className="mb-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-sky-500"
+                className="mb-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-emerald-500"
               >
                 <option value="">-- Pilih akun --</option>
                 {userOptions.map((u) => (
@@ -624,7 +624,7 @@ export default function KesantrianPage() {
                     value={accountEmail}
                     onChange={(e) => setAccountEmail(e.target.value)}
                     placeholder="nama@email.com"
-                    className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                    className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                   />
                   <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400" htmlFor="portal-password">
                     Password baru (opsional)
@@ -636,7 +636,7 @@ export default function KesantrianPage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Minimal 6 karakter"
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                     />
                     <button
                       onClick={() => void savePortalAccount()}

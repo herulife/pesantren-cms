@@ -7,7 +7,7 @@ import { useAuth } from './AuthProvider';
 import UserAvatar from './UserAvatar'; // j70: blok identitas user di footer
 import { getRoleMenuPermissions } from '@/lib/api';
 import { ROLE_MENU_DEFS, ROLE_MENU_PANELS } from '@/lib/roleMenus';
-import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Heart, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, School, Wallet, Receipt, ScanLine, BarChart3, Nfc, FileSpreadsheet } from 'lucide-react';
+import { Newspaper, LayoutDashboard, Settings, Bell, Users, Image as ImageIcon, Video, X, LogOut, Calendar, UserCheck, Building, MessageSquare, HelpCircle, GraduationCap, Layers, CreditCard, ScrollText, UserCog, Shield, FolderTree, ClipboardList, BookOpen, FileText, ChevronDown, School, Wallet, Receipt, ScanLine, BarChart3, Nfc, FileSpreadsheet } from 'lucide-react';
 
 interface MenuItem {
   category: string;
@@ -53,7 +53,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     '/admin/teachers': <UserCheck size={18} />,
     '/admin/disciplines': <Shield size={18} />,
     '/admin/kesantrian': <ClipboardList size={18} />,
-    '/admin/donations': <Heart size={18} />,
     '/admin/payments': <CreditCard size={18} />,
     '/admin/spp': <Receipt size={18} />,
     '/admin/iuran': <Receipt size={18} />,
@@ -201,10 +200,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     const isActive = isMenuActive(item.href, pathname, search);
     return (
       <div key={item.href} className={`flex items-center gap-2 rounded-lg transition-colors ${
-        isActive ? 'bg-gradient-to-r from-sky-500/18 via-sky-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
+        isActive ? 'bg-gradient-to-r from-emerald-500/18 via-emerald-400/8 to-transparent text-white relative shadow-inner' : 'hover:bg-white/5 hover:text-white'
       }`}>
         <Link href={item.href} onClick={onClose} aria-current={isActive ? 'page' : undefined} aria-label={item.label} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5">
-          <div className={isActive ? 'text-sky-300' : 'text-slate-500'}>
+          <div className={isActive ? 'text-emerald-300' : 'text-slate-500'}>
             {item.icon}
           </div>
           <span className={`truncate text-[12.5px] ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
@@ -216,8 +215,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             onClick={onClose}
             className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
               isActive
-                ? 'text-sky-100 hover:bg-white/10 hover:text-white'
-                : 'text-slate-500 hover:bg-white/10 hover:text-sky-200'
+                ? 'text-emerald-100 hover:bg-white/10 hover:text-white'
+                : 'text-slate-500 hover:bg-white/10 hover:text-emerald-200'
             }`}
             title={`Buka tutorial ${item.label}`}
             aria-label={`Buka tutorial ${item.label}`}
@@ -226,20 +225,20 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           </Link>
         )}
 
-        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-sky-400 rounded-r-md"></div>}
+        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400 rounded-r-md"></div>}
       </div>
     );
   };
 
   return (
-    <aside className="flex h-full w-64 flex-col overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-sky-950 via-slate-950 to-slate-950 text-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] ring-1 ring-white/5">
+    <aside className="flex h-full w-64 flex-col overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-emerald-950 via-slate-950 to-slate-950 text-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] ring-1 ring-white/5">
       {/* Header */}
-      <div className="h-[70px] flex items-center px-6 border-b border-sky-900/40 shrink-0">
+      <div className="h-[70px] flex items-center px-6 border-b border-emerald-900/40 shrink-0">
          <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 rounded-lg bg-sky-500 text-white flex items-center justify-center font-black shadow-lg shadow-sky-950/30">A</div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-950/30">A</div>
             <div className="min-w-0">
               <span className="block font-semibold text-[15px] text-white tracking-wide uppercase">Darussunnah</span>
-              <span className="block text-[10px] uppercase tracking-[0.24em] text-sky-200/70">Panel Admin</span>
+              <span className="block text-[10px] uppercase tracking-[0.24em] text-emerald-200/70">Panel Admin</span>
             </div>
             
             <button 
@@ -269,10 +268,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 aria-expanded={isOpen}
                 className="flex w-full cursor-pointer items-center justify-between px-3 pt-3 pb-1 text-left"
               >
-                <p className="text-[9.5px] font-bold uppercase tracking-widest text-sky-200/40">
+                <p className="text-[9.5px] font-bold uppercase tracking-widest text-emerald-200/40">
                   {cat}
                 </p>
-                <ChevronDown size={14} className={`text-sky-200/40 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+                <ChevronDown size={14} className={`text-emerald-200/40 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
               </button>
               <div className={`sb-group-items${isOpen ? ' open' : ''}`}>
                 <div className="sb-group-inner">
@@ -297,12 +296,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-white/5"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <Wallet size={14} className="shrink-0 text-sky-300" />
-                  <span className="truncate text-[10.5px] font-bold uppercase tracking-widest text-sky-100/85">
+                  <Wallet size={14} className="shrink-0 text-emerald-300" />
+                  <span className="truncate text-[10.5px] font-bold uppercase tracking-widest text-emerald-100/85">
                     {panel.label}
                   </span>
                 </span>
-                <ChevronDown size={14} className={`shrink-0 text-sky-200/50 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+                <ChevronDown size={14} className={`shrink-0 text-emerald-200/50 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
               </button>
               {isOpen && (
                 <>
@@ -318,7 +317,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* Footer / Identitas + Logout */}
-      <div className="p-4 border-t border-sky-900/35">
+      <div className="p-4 border-t border-emerald-900/35">
          {/* j70: blok identitas. Kotak "A" di header sidebar adalah logo
              aplikasi "Darussunnah", bukan avatar user — tanpa blok ini, nama dan foto
              user sama sekali tidak terlihat di sidebar. */}
@@ -328,11 +327,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                  name={user.name}
                  photoUrl={user.photo_url}
                  size="sm"
-                 className="ring-2 ring-sky-400/25"
+                 className="ring-2 ring-emerald-400/25"
                />
                <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-semibold text-white">{user.name}</p>
-                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-sky-200/60">
+                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200/60">
                      {user.role || 'staff'}
                   </p>
                </div>

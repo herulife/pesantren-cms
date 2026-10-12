@@ -29,7 +29,7 @@ export default function ProgramPage() {
     <Suspense
       fallback={
         <div className="flex justify-center p-10">
-          <RefreshCw className="animate-spin text-sky-600" />
+          <RefreshCw className="animate-spin text-emerald-600" />
         </div>
       }
     >
@@ -106,7 +106,7 @@ function ProgramPageContent() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -116,7 +116,7 @@ function ProgramPageContent() {
       <div className="space-y-6">
         <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
           <div className="mb-5 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white">
               <GraduationCap size={20} />
             </span>
             <div>
@@ -135,15 +135,15 @@ function ProgramPageContent() {
                   aria-pressed={selected}
                   className={`flex flex-col gap-1 rounded-2xl border p-5 text-left transition ${
                     selected
-                      ? 'border-sky-300 bg-sky-600 text-white shadow-lg shadow-sky-600/20'
+                      ? 'border-emerald-300 bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                       : errors.jenjang
                         ? 'border-rose-300 bg-white hover:border-rose-400'
-                        : 'border-slate-200 bg-white hover:border-sky-300 hover:bg-sky-50'
+                        : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50'
                   }`}
                 >
                   <span className={`text-lg font-black ${selected ? 'text-white' : 'text-slate-900'}`}>{opt.title}</span>
-                  <span className={`text-xs font-semibold ${selected ? 'text-sky-100' : 'text-slate-600'}`}>{opt.desc}</span>
-                  <span className={`mt-1 text-[11px] font-medium ${selected ? 'text-sky-200' : 'text-slate-400'}`}>{opt.note}</span>
+                  <span className={`text-xs font-semibold ${selected ? 'text-emerald-100' : 'text-slate-600'}`}>{opt.desc}</span>
+                  <span className={`mt-1 text-[11px] font-medium ${selected ? 'text-emerald-200' : 'text-slate-400'}`}>{opt.note}</span>
                 </button>
               );
             })}
@@ -153,7 +153,7 @@ function ProgramPageContent() {
 
         <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
           <div className="mb-5 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white">
               <Users size={20} />
             </span>
             <div>
@@ -172,12 +172,12 @@ function ProgramPageContent() {
                   aria-pressed={selected}
                   className={`flex flex-col gap-1 rounded-2xl border p-5 text-left transition ${
                     selected
-                      ? 'border-sky-300 bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-                      : 'border-slate-200 bg-white hover:border-sky-300 hover:bg-sky-50'
+                      ? 'border-emerald-300 bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                      : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50'
                   }`}
                 >
                   <span className={`text-sm font-black ${selected ? 'text-white' : 'text-slate-900'}`}>{opt.title}</span>
-                  <span className={`mt-1 text-[11px] leading-relaxed ${selected ? 'text-sky-100' : 'text-slate-500'}`}>{opt.desc}</span>
+                  <span className={`mt-1 text-[11px] leading-relaxed ${selected ? 'text-emerald-100' : 'text-slate-500'}`}>{opt.desc}</span>
                 </button>
               );
             })}
@@ -202,7 +202,7 @@ function ProgramPageContent() {
             type="submit"
             value="save"
             disabled={isSaving}
-            className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-sky-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-sky-700 transition hover:border-sky-300 hover:bg-sky-50 disabled:opacity-70 md:w-auto"
+            className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-emerald-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:opacity-70 md:w-auto"
           >
             {isSaving ? 'Menyimpan...' : (
               <>
@@ -214,7 +214,7 @@ function ProgramPageContent() {
             type="submit"
             value="continue"
             disabled={isSaving}
-            className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-sky-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/20 transition-all hover:bg-sky-700 disabled:opacity-70 md:w-auto"
+            className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-emerald-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-600/20 transition-all hover:bg-emerald-700 disabled:opacity-70 md:w-auto"
           >
             {isSaving ? 'Menyimpan...' : (
               <>

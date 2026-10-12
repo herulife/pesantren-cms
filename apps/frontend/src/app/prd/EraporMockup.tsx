@@ -118,13 +118,13 @@ const TABS: { id: Tab; label: string }[] = [
 
 function toneBar(tone: Stat['tone']) {
   if (tone === 'emerald') return 'bg-emerald-500';
-  if (tone === 'sky') return 'bg-sky-500';
+  if (tone === 'sky') return 'bg-emerald-500';
   return 'bg-amber-500';
 }
 
 function toneValue(tone: Stat['tone']) {
   if (tone === 'emerald') return 'text-emerald-600';
-  if (tone === 'sky') return 'text-sky-600';
+  if (tone === 'sky') return 'text-emerald-600';
   if (tone === 'amber') return 'text-amber-600';
   return 'text-slate-700';
 }
@@ -165,10 +165,10 @@ export default function EraporMockup() {
             <span className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">
               Ganjil (1) ▾
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-bold text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-white">
               <FileSpreadsheet size={13} /> Ekspor Data Pokok
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700">
               <Download size={13} /> Ekspor Nilai
             </span>
           </div>
@@ -203,9 +203,9 @@ export default function EraporMockup() {
               role="tab"
               aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
-              className={`rounded-t-lg px-3.5 py-2 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none ${
+              className={`rounded-t-lg px-3.5 py-2 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
                 tab === t.id
-                  ? 'border-b-2 border-sky-500 bg-white text-sky-700'
+                  ? 'border-b-2 border-emerald-500 bg-white text-emerald-700'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -299,7 +299,7 @@ export default function EraporMockup() {
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       {l.status === 'Berhasil' && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-sky-600">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
                           <Download size={13} /> Unduh
                         </span>
                       )}

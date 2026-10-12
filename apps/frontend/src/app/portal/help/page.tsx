@@ -47,7 +47,7 @@ function PortalHelpContent() {
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
               <BookOpen className="h-3.5 w-3.5" />
               Panduan Wali
             </div>
@@ -82,13 +82,13 @@ function PortalHelpContent() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Contoh: upload KK, lihat nilai..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:bg-white"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white"
             />
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <LayoutList className="h-4 w-4 text-sky-600" />
+              <LayoutList className="h-4 w-4 text-emerald-600" />
               Pilih kebutuhan
             </div>
 
@@ -99,12 +99,12 @@ function PortalHelpContent() {
                         onClick={() => setSelectedTab(section.id)}
                   className={`w-full rounded-2xl px-4 py-3 text-left transition ${
                     activeTab === section.id
-                      ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/15'
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/15'
                       : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <p className="text-sm font-semibold">{section.title}</p>
-                  <p className={`mt-1 text-xs leading-5 ${activeTab === section.id ? 'text-sky-100' : 'text-slate-500'}`}>
+                  <p className={`mt-1 text-xs leading-5 ${activeTab === section.id ? 'text-emerald-100' : 'text-slate-500'}`}>
                     {section.summary}
                   </p>
                 </button>
@@ -123,7 +123,7 @@ function PortalHelpContent() {
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
                   <CircleHelp className="h-3.5 w-3.5" />
                   Panduan
                 </div>
@@ -133,7 +133,7 @@ function PortalHelpContent() {
                 <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">{currentSection.summary}</p>
                 {currentSection.image && (
                   <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2">
-                    <p className="mb-2 px-1 text-[11px] font-black uppercase tracking-[0.22em] text-sky-700">
+                    <p className="mb-2 px-1 text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700">
                       Tampilan asli halamannya
                     </p>
                     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -152,7 +152,7 @@ function PortalHelpContent() {
 
               <Link
                 href={`${currentSection.href}?from=docs`}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-700"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
               >
                 Buka Halamannya
                 <ExternalLink className="h-4 w-4" />
@@ -194,7 +194,7 @@ function PortalHelpContent() {
                   <div className="mt-4 space-y-3">
                     {workflow.steps.map((step, index) => (
                       <div key={step} className="flex gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-600 text-sm font-black text-white">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-black text-white">
                           {index + 1}
                         </div>
                         <p className="pt-1 text-sm leading-6 text-slate-700 sm:text-base">{step}</p>
@@ -234,7 +234,7 @@ export default function PortalHelpPage() {
       <Suspense
         fallback={
           <div className="flex h-40 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-sky-600"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-600"></div>
           </div>
         }
       >

@@ -86,7 +86,7 @@ export default function IuranReport() {
     await exportToExcel(`Laporan Tagihan Iuran ${start} s/d ${end}`, exportColumns, exportRows(), 'laporan_tagihan_iuran');
   };
 
-  const selectCls = 'px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700 cursor-pointer';
+  const selectCls = 'px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 cursor-pointer';
 
   return (
     <div>
@@ -128,14 +128,14 @@ export default function IuranReport() {
               placeholder="Cari nama, NIS, atau kelas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-medium"
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
             />
           </div>
           <div className="flex gap-2">
             <button onClick={handleExportPDF} className="flex items-center gap-2 px-6 py-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl font-bold hover:bg-rose-100 transition-all shadow-sm">
               <FileDown size={18} /><span className="hidden sm:block">PDF</span>
             </button>
-            <button onClick={handleExportExcel} className="flex items-center gap-2 px-6 py-3 bg-sky-50 text-sky-600 border border-sky-100 rounded-xl font-bold hover:bg-sky-100 transition-all shadow-sm">
+            <button onClick={handleExportExcel} className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold hover:bg-emerald-100 transition-all shadow-sm">
               <FileSpreadsheet size={18} /><span className="hidden sm:block">Excel</span>
             </button>
           </div>
@@ -144,7 +144,7 @@ export default function IuranReport() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center gap-6">
-          <div className="w-16 h-16 rounded-xl bg-sky-50 flex items-center justify-center text-sky-500 shrink-0 shadow-inner">
+          <div className="w-16 h-16 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 shadow-inner">
             <Receipt size={28} />
           </div>
           <div>
@@ -175,7 +175,7 @@ export default function IuranReport() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[300px]">
         {isLoading ? (
           <div className="py-24 text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full mx-auto"></div>
+            <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
           </div>
         ) : filtered.length > 0 ? (
           <div className="overflow-x-auto">

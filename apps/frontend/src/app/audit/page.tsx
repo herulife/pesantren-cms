@@ -322,14 +322,14 @@ function CatCard({ cat }: { cat: Cat }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-black uppercase tracking-widest text-sky-700">
+        <h2 className="text-sm font-black uppercase tracking-widest text-emerald-700">
           K{cat.id} · {cat.title}
         </h2>
         <span className="text-sm font-black text-slate-900">{cat.score}</span>
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500"
+          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-500"
           style={{ width: `${(cat.denomination / cat.denominator) * 100}%` }}
         />
       </div>
@@ -363,13 +363,13 @@ export default function AuditPage() {
         <div className="flex flex-wrap items-center gap-3">
           <ShieldCheck size={30} className="text-emerald-600" />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-600">Full-Stack Audit</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-600">Full-Stack Audit</p>
             <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Audit Menyeluruh 90 Checkpoint</h1>
             <p className="mt-1 text-sm text-slate-500">
               24 September 2026 · jilid 36 · ditarik dari kode & pengujian live (bukan klaim) · menggantikan halaman audit 19 September.
             </p>
           </div>
-          <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-sky-300">
+          <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-emerald-300">
             <ArrowLeft size={14} /> Beranda
           </Link>
         </div>
@@ -379,7 +379,7 @@ export default function AuditPage() {
             <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Full-Stack</p>
             <p className="mt-1 text-3xl font-black text-slate-900">{FULLSCORE.ok}<span className="text-lg text-slate-400">/{FULLSCORE.denom}</span></p>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-sky-500" style={{ width: `${(FULLSCORE.ok / FULLSCORE.denom) * 100}%` }} />
+              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${(FULLSCORE.ok / FULLSCORE.denom) * 100}%` }} />
             </div>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -423,12 +423,12 @@ export default function AuditPage() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-5">
-          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-sky-700"><ArrowRight size={16} /> Top 5 Prioritas</h2>
+        <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-emerald-700"><ArrowRight size={16} /> Top 5 Prioritas</h2>
           <ol className="mt-3 space-y-2">
             {TOP5.map((t, i) => (
               <li key={i} className="flex items-start gap-2 text-sm leading-6 text-slate-700">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[11px] font-black text-white">{i + 1}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-black text-white">{i + 1}</span>
                 {t}
               </li>
             ))}
@@ -436,7 +436,7 @@ export default function AuditPage() {
         </div>
 
         <div className="mt-10">
-          <h1 className="flex items-center gap-2 text-xl font-black text-slate-900"><Lock size={20} className="text-sky-600" /> Full-Stack Audit · {FULLSCORE.ok}/{FULLSCORE.denom} ({FULLSCORE.denom} item, 2 N/A)</h1>
+          <h1 className="flex items-center gap-2 text-xl font-black text-slate-900"><Lock size={20} className="text-emerald-600" /> Full-Stack Audit · {FULLSCORE.ok}/{FULLSCORE.denom} ({FULLSCORE.denom} item, 2 N/A)</h1>
           <p className="mt-1 text-sm text-slate-500">10 kategori · 50 checkpoint (48 dinilai). Diuji dari kode backend Go & frontend Next.js + header/login live.</p>
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             {FULL.map((c) => <CatCard key={c.id} cat={c} />)}
@@ -462,13 +462,13 @@ export default function AuditPage() {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/psb" className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-sky-700">
+          <Link href="/psb" className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-emerald-700">
             <ExternalLink size={16} /> Info PSB
           </Link>
-          <Link href="/portal" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-sky-300">
+          <Link href="/portal" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-300">
             <Search size={16} /> Buka Portal Wali
           </Link>
-          <Link href="/donations" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-sky-300">
+          <Link href="/donations" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-300">
             <AlertTriangle size={16} /> Halaman Donasi
           </Link>
         </div>

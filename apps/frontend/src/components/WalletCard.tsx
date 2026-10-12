@@ -49,10 +49,10 @@ export default function WalletCard() {
   return (
     <div className="flex h-full flex-col gap-4">
       {/* The "Physical" Card */}
-      <div className="group relative flex-1 overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 shadow-2xl transition-all hover:shadow-cyan-500/20">
+      <div className="group relative flex-1 overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 shadow-2xl transition-all hover:shadow-emerald-500/20">
         {/* Glow Effects */}
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-500/20 blur-[80px] transition-all group-hover:bg-cyan-400/30" />
-        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-sky-500/20 blur-[80px] transition-all group-hover:bg-sky-400/30" />
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-500/20 blur-[80px] transition-all group-hover:bg-emerald-400/30" />
+        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-emerald-500/20 blur-[80px] transition-all group-hover:bg-emerald-400/30" />
         
         {/* Card Pattern/Texture */}
         <div className="absolute inset-0 bg-[url('/assets/noise.png')] opacity-10 mix-blend-overlay" />
@@ -103,12 +103,12 @@ export default function WalletCard() {
       <div className="grid grid-cols-2 gap-3">
         <Link
           href="/portal/wallet/topup"
-          className="group flex flex-col items-center justify-center gap-2 rounded-[1.5rem] bg-sky-50 py-4 border border-sky-100 transition-all hover:bg-sky-500 hover:shadow-lg hover:shadow-sky-500/20"
+          className="group flex flex-col items-center justify-center gap-2 rounded-[1.5rem] bg-emerald-50 py-4 border border-emerald-100 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-500/20"
         >
-          <div className="rounded-full bg-sky-100 p-2 text-sky-600 transition-colors group-hover:bg-white/20 group-hover:text-white">
+          <div className="rounded-full bg-emerald-100 p-2 text-emerald-600 transition-colors group-hover:bg-white/20 group-hover:text-white">
             <Plus size={18} />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors group-hover:text-white">Top Up</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors group-hover:text-white">Top Up</span>
         </Link>
         <Link
           href="/portal/wallet"
@@ -140,7 +140,7 @@ export default function WalletCard() {
       
       {!isLoading && wallet?.has_pin && (
         <div className="flex items-center justify-center gap-2 rounded-xl py-2">
-          <ShieldCheck size={14} className="text-sky-500" />
+          <ShieldCheck size={14} className="text-emerald-500" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Dompet Terlindungi PIN</span>
         </div>
       )}

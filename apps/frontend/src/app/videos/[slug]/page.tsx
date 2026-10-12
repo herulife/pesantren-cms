@@ -98,9 +98,9 @@ export default function VideoSeriesPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-sky-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.22),_transparent_42%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-20 text-white">
+      <section className="relative overflow-hidden border-b border-emerald-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.22),_transparent_42%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-20 text-white">
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <Link href="/videos" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-sky-100/80 hover:text-white">
+          <Link href="/videos" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-100/80 hover:text-white">
             <ArrowLeft size={14} />
             Kembali ke Video
           </Link>
@@ -121,10 +121,10 @@ export default function VideoSeriesPage() {
             <PublicGridSkeleton count={6} className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" itemClassName="h-[240px] rounded-[2rem]" />
           ) : series ? (
             <>
-              <div className="mb-10 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-sky-700">
+              <div className="mb-10 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
                 {series.eventDate && (
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
-                    <CalendarDays size={14} className="text-sky-600" />
+                    <CalendarDays size={14} className="text-emerald-600" />
                     {series.eventDate}
                   </span>
                 )}
@@ -143,7 +143,7 @@ export default function VideoSeriesPage() {
                     />
                   </div>
                   <div className="px-6 py-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-600">Video Utama</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Video Utama</p>
                     <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-slate-900">{leadVideo.title}</h2>
                   </div>
                 </div>
@@ -170,7 +170,7 @@ export default function VideoSeriesPage() {
                         </div>
                       </div>
                       <div className="px-5 py-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-600">Video</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">Video</p>
                         <h3 className="mt-2 text-lg font-black uppercase tracking-tight text-slate-900 line-clamp-2">{video.title}</h3>
                       </div>
                     </a>

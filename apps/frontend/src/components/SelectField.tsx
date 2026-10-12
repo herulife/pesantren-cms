@@ -126,7 +126,7 @@ export default function SelectField({
                 onClick={() => pick(o.value)}
                 className={`cursor-pointer px-3.5 py-2 text-sm font-medium ${
                   o.value === value
-                    ? 'bg-sky-50 text-sky-700'
+                    ? 'bg-emerald-50 text-emerald-700'
                     : i === cursor
                       ? 'bg-slate-50 text-slate-900'
                       : 'text-slate-700'

@@ -87,7 +87,7 @@ export default function Kasir() {
         </span>
         <div className="max-h-96 overflow-y-auto divide-y">
           {list.map((s) => (
-            <button key={s.id} onClick={() => pick(s)} className={`w-full text-left p-3 hover:bg-slate-50 ${selected?.id === s.id ? "bg-sky-50" : ""}`}>
+            <button key={s.id} onClick={() => pick(s)} className={`w-full text-left p-3 hover:bg-slate-50 ${selected?.id === s.id ? "bg-emerald-50" : ""}`}>
               <p className="font-bold text-sm">{s.name}</p>
               <p className="text-xs text-slate-500 font-mono">{s.nis} • {s.class}</p>
             </button>
@@ -123,7 +123,7 @@ export default function Kasir() {
               <p className="font-bold text-sm">{b.bill_type === "SPP" ? `SPP ${b.period}` : b.name} <span className="text-xs font-normal text-slate-500">({b.period})</span></p>
               <p className="text-xs text-slate-500">Sisa: <b className="text-rose-600">{fmtRp(b.remain)}</b> dari {fmtRp(b.amount)}</p>
             </div>
-            <button onClick={() => { setPaying(b); setAmount(String(b.remain)); }} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Bayar</button>
+            <button onClick={() => { setPaying(b); setAmount(String(b.remain)); }} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Bayar</button>
           </div>
         ))}
         {paying && (

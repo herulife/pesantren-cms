@@ -77,7 +77,7 @@ export default function VideosPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-sky-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_38%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-24 text-white lg:py-28">
+      <section className="relative overflow-hidden border-b border-emerald-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_38%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-24 text-white lg:py-28">
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
             <PublicSectionIntro
@@ -90,7 +90,7 @@ export default function VideosPage() {
               {videoHighlights.map((item) => (
                 <div key={item.label} className="rounded-[1.6rem] border border-white/10 bg-white/8 px-5 py-5 shadow-[0_20px_42px_-30px_rgba(0,0,0,0.45)] backdrop-blur-sm">
                   <p className="text-2xl font-black text-white">{item.value}</p>
-                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/82">{item.label}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200/82">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -108,7 +108,7 @@ export default function VideosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari seri, kajian, atau kegiatan..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-500/10"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
               />
             </div>
           </div>
@@ -148,11 +148,11 @@ export default function VideosPage() {
                     </div>
                   </div>
                   <div className="p-6">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">{series.count} video</p>
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-700">{series.count} video</p>
                     <h2 className="text-2xl font-black tracking-tight text-slate-900">{series.title}</h2>
                     {series.eventDate && (
                       <p className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-slate-500">
-                        <CalendarDays size={14} className="text-sky-600" />
+                        <CalendarDays size={14} className="text-emerald-600" />
                         {series.eventDate}
                       </p>
                     )}

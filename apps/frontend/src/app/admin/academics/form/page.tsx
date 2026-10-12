@@ -55,7 +55,7 @@ function descriptionByType(type: FormType) {
 
 export default function AcademicsFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
       <AcademicsFormContent />
     </Suspense>
   );
@@ -237,7 +237,7 @@ function AcademicsFormContent() {
       { label: 'Tahun', value: selectedYear },
     ];
   }, [bulkEditRows.length, bulkGradeRows.length, id, selectedSemester, selectedSubjectName, selectedYear, students.length, type]);
-  const controlClass = 'block w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100';
+  const controlClass = 'block w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-all duration-200 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100';
   const textAreaClass = `${controlClass} min-h-[160px] resize-y leading-6 font-medium`;
 
   const updateBulkGradeRow = (studentId: string, field: 'uts_score' | 'uas_score' | 'task_score' | 'uh_score' | 'notes', value: string) => {
@@ -372,7 +372,7 @@ function AcademicsFormContent() {
   };
 
   if (isLoading) {
-    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>;
+    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>;
   }
 
   return (
@@ -384,12 +384,12 @@ function AcademicsFormContent() {
             <button
               type="button"
               onClick={() => router.push('/admin/academics')}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-sky-200 hover:text-sky-600"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-emerald-200 hover:text-emerald-600"
             >
               <ArrowLeft size={20} />
             </button>
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.25em] text-sky-700">Form eRapor</p>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Form eRapor</p>
               <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 font-outfit">{titleByType(type, Boolean(id))}</h1>
               <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-slate-500">{descriptionByType(type)}</p>
               <p className="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{academicPeriodLabel}</p>
@@ -413,7 +413,7 @@ function AcademicsFormContent() {
           <div className="space-y-5">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
               <div className="mb-8 flex items-center gap-3">
-                <div className="rounded-xl bg-sky-50 p-3 text-sky-600">
+                <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
                   {type === 'grade' ? <BookOpen size={20} /> : type === 'attendance' ? <Calendar size={20} /> : type === 'arbain' ? <ScrollText size={20} /> : <ClipboardList size={20} />}
                 </div>
                 <div>
@@ -521,7 +521,7 @@ function AcademicsFormContent() {
                     const ref = arbainRef.find((h) => String(h.number) === String(arbainForm.hadith_number));
                     if (!ref) return null;
                     return (
-                      <div className="md:col-span-2 rounded-xl border border-sky-100 bg-sky-50/60 p-5">
+                      <div className="md:col-span-2 rounded-xl border border-emerald-100 bg-emerald-50/60 p-5">
                         <p className="text-sm font-black text-slate-800">{ref.number}. {ref.title} <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{ref.category}</span></p>
                         <p className="mt-2 text-sm text-slate-600">{ref.translation}</p>
                         <p className="mt-2 text-[11px] font-semibold text-slate-400">{ref.source}</p>
@@ -578,12 +578,12 @@ function AcademicsFormContent() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-5 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700/80">Ringkasan Form</p>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700/80">Ringkasan Form</p>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {formStats.map((item) => (
-                    <div key={item.label} className="rounded-xl border border-sky-100 bg-white/70 px-4 py-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700/70">{item.label}</p>
+                    <div key={item.label} className="rounded-xl border border-emerald-100 bg-white/70 px-4 py-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700/70">{item.label}</p>
                       <p className="mt-2 text-sm font-black text-slate-900">{item.value}</p>
                     </div>
                   ))}
@@ -597,7 +597,7 @@ function AcademicsFormContent() {
           <div className="space-y-6">
             <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
               <div className="mb-6 flex items-center gap-3">
-                <div className="rounded-xl bg-sky-50 p-3 text-sky-600">
+                <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
                   <Users size={20} />
                 </div>
                 <div>
@@ -740,7 +740,7 @@ function AcademicsFormContent() {
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-sky-600 disabled:opacity-50"
+            className="flex items-center gap-3 rounded-lg bg-slate-900 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-600 disabled:opacity-50"
           >
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             {type === 'bulk-grade' ? 'Simpan Nilai Massal' : type === 'bulk-edit' ? 'Simpan Edit Massal' : 'Simpan Form'}

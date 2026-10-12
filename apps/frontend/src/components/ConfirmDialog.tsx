@@ -110,7 +110,7 @@ export default function ConfirmDialog({
                        onClose();
                      }
                    }}
-                   className={`flex-1 py-4 ${isDanger ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20' : 'bg-sky-500 hover:bg-sky-600 shadow-sky-500/20'} text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs transition-all shadow-xl outline-none focus:ring-4 ${isDanger ? 'focus:ring-rose-500/20' : 'focus:ring-sky-500/20'} disabled:cursor-not-allowed disabled:opacity-60`}
+                   className={`flex-1 py-4 ${isDanger ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'} text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs transition-all shadow-xl outline-none focus:ring-4 ${isDanger ? 'focus:ring-rose-500/20' : 'focus:ring-emerald-500/20'} disabled:cursor-not-allowed disabled:opacity-60`}
                  >
                    {isLoading ? 'Memproses...' : confirmText}
                  </button>

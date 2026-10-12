@@ -208,7 +208,7 @@ function DataProgramTab() {
 				</div>
 				<button 
 					onClick={() => router.push(`/admin/programs/form?category=${activeTab}`)}
-					className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-200 active:scale-95"
+					className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 active:scale-95"
 				>
 					<Plus size={20} />
 					<span>Tambah {activeTab === 'program' ? 'Program' : 'Ekskul'}</span>
@@ -222,7 +222,7 @@ function DataProgramTab() {
 						onClick={() => setActiveTab('program')}
 						className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
 							activeTab === 'program' 
-								? 'bg-sky-50 text-sky-700 shadow-sm' 
+								? 'bg-emerald-50 text-emerald-700 shadow-sm' 
 								: 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
 						}`}
 					>
@@ -241,7 +241,7 @@ function DataProgramTab() {
 				</div>
 
 				<div className="flex-1 relative group bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-					<Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-700 transition-colors" size={18} />
+					<Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-700 transition-colors" size={18} />
 					<input 
 						type="text" 
 						placeholder="Cari judul program atau materi..." 
@@ -257,7 +257,7 @@ function DataProgramTab() {
 				{!isLoading ? (
 					programs.length > 0 ? (
 						programs.map((p) => (
-							<div key={p.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-2xl hover:shadow-sky-900/10 transition-all duration-500 flex flex-col h-full relative">
+							<div key={p.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-500 flex flex-col h-full relative">
 								<div className="h-56 bg-slate-100 relative overflow-hidden shrink-0">
 									{p.image_url ? (
 										<img src={resolveDisplayImageUrl(p.image_url)} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -269,7 +269,7 @@ function DataProgramTab() {
 									<div className="absolute top-4 right-4 flex flex-col gap-2 transition-transform duration-500 md:translate-x-12 md:group-hover:translate-x-0">
 										<button 
 											onClick={() => router.push(`/admin/programs/form?id=${p.id}`)}
-											className="p-2.5 bg-white/90 text-slate-400 hover:text-sky-600 rounded-xl backdrop-blur-md shadow-lg transition-all"
+											className="p-2.5 bg-white/90 text-slate-400 hover:text-emerald-600 rounded-xl backdrop-blur-md shadow-lg transition-all"
 										>
 											<Pencil size={18} />
 										</button>
@@ -288,7 +288,7 @@ function DataProgramTab() {
 									)}
 
 									<div className="absolute bottom-4 left-4">
-										<span className={`px-4 py-1.5 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-lg ${activeTab === 'program' ? 'bg-sky-900/85' : 'bg-amber-700/85'}`}>
+										<span className={`px-4 py-1.5 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-lg ${activeTab === 'program' ? 'bg-emerald-900/85' : 'bg-amber-700/85'}`}>
 											Urutan: {p.order_index}
 										</span>
 									</div>
@@ -325,7 +325,7 @@ function DataProgramTab() {
 					<div className="bg-white w-full max-w-3xl rounded-xl shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300 max-h-[95vh]">
 						<div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
 							<div className="flex items-center gap-4">
-								<div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-lg ${form.category === 'program' ? 'bg-sky-600 shadow-sky-200' : 'bg-amber-500 shadow-amber-200'}`}>
+								<div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-lg ${form.category === 'program' ? 'bg-emerald-600 shadow-emerald-200' : 'bg-amber-500 shadow-amber-200'}`}>
 									<Layers size={24} />
 								</div>
 								<div>
@@ -350,7 +350,7 @@ function DataProgramTab() {
 												placeholder="Contoh: Tahfizh Akhwat Intensive"
 												value={form.title}
 												onChange={handleTitleChange}
-												className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+												className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
 											/>
 										</div>
 										<div>
@@ -361,7 +361,7 @@ function DataProgramTab() {
 												placeholder="tahfizh-akhwat-intensive"
 												value={form.slug}
 												onChange={(e) => setForm({ ...form, slug: e.target.value })}
-												className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-xs text-slate-400"
+												className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-xs text-slate-400"
 											/>
 										</div>
 									</div>
@@ -372,13 +372,13 @@ function DataProgramTab() {
 											<button 
 												type="button"
 												onClick={() => setIsGalleryOpen(true)}
-												className="text-[9px] font-black text-sky-700 uppercase tracking-widest hover:underline flex items-center gap-1"
+												className="text-[9px] font-black text-emerald-700 uppercase tracking-widest hover:underline flex items-center gap-1"
 											>
 												<ImageIcon size={12} /> Galeri
 											</button>
 										</div>
 										<div className={`w-full h-[155px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all relative ${
-											croppedImageUrl ? 'border-sky-300' : 'border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 cursor-pointer'
+											croppedImageUrl ? 'border-emerald-300' : 'border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 cursor-pointer'
 										}`}>
 											{croppedImageUrl ? (
 												<img src={croppedImageUrl} className="w-full h-full object-cover" />
@@ -415,7 +415,7 @@ function DataProgramTab() {
 										<select
 											value={form.category}
 											onChange={(e) => setForm({ ...form, category: e.target.value as ProgramCategory })}
-											className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold appearance-none"
+											className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold appearance-none"
 										>
 											<option value="program">Program Unggulan</option>
 											<option value="ekskul">Ekstrakurikuler</option>
@@ -427,7 +427,7 @@ function DataProgramTab() {
 											type="number"
 											value={form.order_index}
 											onChange={(e) => setForm({ ...form, order_index: parseInt(e.target.value) || 0 })}
-											className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold"
+											className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
 										/>
 									</div>
 									<div className="flex flex-col justify-end">
@@ -454,7 +454,7 @@ function DataProgramTab() {
 										placeholder="Ringkasan singkat yang menarik minat..."
 										value={form.excerpt}
 										onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-										className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-medium text-sm leading-relaxed"
+										className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-sm leading-relaxed"
 									/>
 								</div>
 
@@ -466,7 +466,7 @@ function DataProgramTab() {
 										placeholder="Uraikan kurikulum, biaya, silabus, dan manfaat detail dari program ini..."
 										value={form.content}
 										onChange={(e) => setForm({ ...form, content: e.target.value })}
-										className="w-full px-8 py-6 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-medium text-slate-700 text-sm leading-relaxed"
+										className="w-full px-8 py-6 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-700 text-sm leading-relaxed"
 									/>
 								</div>
 
@@ -481,7 +481,7 @@ function DataProgramTab() {
 									<button 
 										disabled={isSubmitting}
 										type="submit"
-										className="flex-[2] py-5 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+										className="flex-[2] py-5 bg-slate-900 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-slate-200 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
 									>
 										{isSubmitting ? 'Menyimpan...' : (
 											<>

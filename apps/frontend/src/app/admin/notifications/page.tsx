@@ -237,8 +237,8 @@ export default function NotificationsPage() {
   ];
 
   const colorMap: Record<string, { btn: string; shadow: string; bg: string }> = {
-    blue: { btn: 'bg-sky-600 text-white shadow-xl shadow-sky-200', shadow: 'bg-sky-50', bg: 'bg-sky-50' },
-    emerald: { btn: 'bg-sky-600 text-white shadow-xl shadow-sky-200', shadow: 'bg-sky-50', bg: 'bg-sky-50' },
+    blue: { btn: 'bg-emerald-600 text-white shadow-xl shadow-emerald-200', shadow: 'bg-emerald-50', bg: 'bg-emerald-50' },
+    emerald: { btn: 'bg-emerald-600 text-white shadow-xl shadow-emerald-200', shadow: 'bg-emerald-50', bg: 'bg-emerald-50' },
     purple: { btn: 'bg-purple-600 text-white shadow-xl shadow-purple-200', shadow: 'bg-purple-50', bg: 'bg-purple-50' },
   };
 
@@ -246,7 +246,7 @@ export default function NotificationsPage() {
     <div className="pb-10 font-outfit">
       <div className="mb-8">
         <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
-          <Bell className="text-sky-600" size={32} />
+          <Bell className="text-emerald-600" size={32} />
           WhatsApp Gateway
         </h2>
         <p className="text-slate-500 mt-1">Sistem notifikasi otomatis dan broadcast pesan WhatsApp.</p>
@@ -260,19 +260,19 @@ export default function NotificationsPage() {
           {/* Status Card */}
           <div className={`p-6 rounded-[2rem] border-2 transition-all ${
             status.configured 
-              ? 'bg-sky-50 border-sky-100' 
+              ? 'bg-emerald-50 border-emerald-100' 
               : 'bg-rose-50 border-rose-100'
           }`}>
             <div className="flex items-center gap-4 mb-4">
               <div className={`p-3 rounded-2xl ${
-                status.configured ? 'bg-sky-500 text-white' : 'bg-rose-500 text-white shadow-lg shadow-rose-200'
+                status.configured ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white shadow-lg shadow-rose-200'
               }`}>
                 <Zap size={24} />
               </div>
               <div>
                 <h4 className="font-black uppercase tracking-tight text-slate-800">Status Gateway</h4>
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${
-                  status.configured ? 'text-sky-600' : 'text-rose-600'
+                  status.configured ? 'text-emerald-600' : 'text-rose-600'
                 }`}>
                   {status.configured ? 'Terhubung (Gateway Sendiri)' : 'Belum Konfigurasi'}
                 </p>
@@ -284,7 +284,7 @@ export default function NotificationsPage() {
               </p>
             )}
             {status.configured && (
-              <div className="flex items-center gap-2 text-sky-700 bg-white/50 p-3 rounded-xl border border-sky-100">
+              <div className="flex items-center gap-2 text-emerald-700 bg-white/50 p-3 rounded-xl border border-emerald-100">
                 <CheckCircle2 size={14} />
                 <span className="text-[10px] font-black uppercase tracking-widest">Sistem Siap Digunakan</span>
               </div>
@@ -309,7 +309,7 @@ export default function NotificationsPage() {
                   <p className="text-slate-500 text-sm mb-5 leading-relaxed">
                     {card.desc}
                     {card.badge && (
-                      <> <span className="text-sky-600 font-bold uppercase tracking-widest text-[10px]">{card.badge}</span>.</>
+                      <> <span className="text-emerald-600 font-bold uppercase tracking-widest text-[10px]">{card.badge}</span>.</>
                     )}
                   </p>
                   
@@ -342,7 +342,7 @@ export default function NotificationsPage() {
           {/* Manual Send Form */}
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/20">
              <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-6 flex items-center gap-3">
-               <MessageSquare size={22} className="text-sky-600" />
+               <MessageSquare size={22} className="text-emerald-600" />
                Kirim Pesan Manual
              </h4>
              
@@ -360,7 +360,7 @@ export default function NotificationsPage() {
                      value={q}
                      onChange={(e) => { setQ(e.target.value); setShowQ(true); if (e.target.value.trim() === '') setSel(null); }}
                      onFocus={() => setShowQ(true)}
-                     className="w-full pl-11 pr-10 py-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl text-sm transition-all outline-none"
+                     className="w-full pl-11 pr-10 py-4 bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl text-sm transition-all outline-none"
                    />
                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                  </div>
@@ -377,7 +377,7 @@ export default function NotificationsPage() {
                            type="button"
                            key={r.santri_id}
                            onClick={() => selectRecipient(r)}
-                           className="w-full text-left px-4 py-3 hover:bg-sky-50/60 transition-colors border-b border-slate-50 last:border-0"
+                           className="w-full text-left px-4 py-3 hover:bg-emerald-50/60 transition-colors border-b border-slate-50 last:border-0"
                          >
                            <div className="flex items-center justify-between gap-3">
                              <div className="min-w-0">
@@ -407,9 +407,9 @@ export default function NotificationsPage() {
                </div>
 
                {sel && (
-                 <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4 space-y-3">
+                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 space-y-3">
                    <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 bg-sky-600 text-white rounded-xl flex items-center justify-center">
+                     <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center">
                        <User size={18} />
                      </div>
                      <div className="min-w-0">
@@ -425,7 +425,7 @@ export default function NotificationsPage() {
                      <select
                        value={target}
                        onChange={(e) => setTarget(e.target.value)}
-                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none"
+                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-emerald-500 rounded-xl text-sm outline-none"
                      >
                        {phoneOptions.map((o, i) => (
                          <option key={i} value={o.phone}>{o.label}</option>
@@ -435,7 +435,7 @@ export default function NotificationsPage() {
                        type="text"
                        value={target}
                        onChange={(e) => setTarget(e.target.value)}
-                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-sky-500 rounded-xl text-sm outline-none font-mono"
+                       className="w-full px-4 py-2.5 bg-white border-2 border-transparent focus:border-emerald-500 rounded-xl text-sm outline-none font-mono"
                        placeholder="Edit nomor jika perlu (628xxx)"
                      />
                    </div>
@@ -501,7 +501,7 @@ export default function NotificationsPage() {
                          placeholder="6281234567890"
                          value={target}
                          onChange={(e) => setTarget(e.target.value)}
-                         className="w-full pl-11 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl text-sm transition-all outline-none"
+                         className="w-full pl-11 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl text-sm transition-all outline-none"
                        />
                      </div>
                    </div>
@@ -518,7 +518,7 @@ export default function NotificationsPage() {
                    placeholder="Tulis pesan Anda disini..."
                    value={message}
                    onChange={(e) => setMessage(e.target.value)}
-                   className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl text-sm transition-all outline-none resize-none"
+                   className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl text-sm transition-all outline-none resize-none"
                  ></textarea>
                </div>
 
@@ -568,10 +568,10 @@ export default function NotificationsPage() {
                         <td className="px-6 py-5">
                           <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
                             log.action?.includes('NILAI') 
-                              ? 'bg-sky-50 text-sky-600 border-sky-100'
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                               : log.action?.includes('PSB')
                               ? 'bg-purple-50 text-purple-600 border-purple-100'
-                              : 'bg-sky-50 text-sky-600 border-sky-100'
+                              : 'bg-emerald-50 text-emerald-600 border-emerald-100'
                           }`}>
                             {log.action}
                           </span>

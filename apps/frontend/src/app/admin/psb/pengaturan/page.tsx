@@ -27,7 +27,7 @@ export default function PsbPengaturanPage() {
             onClick={() => setActive(t.id)}
             className={`px-4 py-2.5 text-sm font-bold ${
               active === t.id
-                ? 'border-b-2 border-sky-600 text-sky-700'
+                ? 'border-b-2 border-emerald-600 text-emerald-700'
                 : 'text-slate-500'
             }`}
           >
@@ -44,7 +44,7 @@ export default function PsbPengaturanPage() {
             <p className="text-sm text-slate-600">Pengaturan pembayaran PSB pindah ke Pengaturan Website agar satu pintu dengan rekening Donasi &amp; SPP.</p>
             <Link
               href="/admin/settings?tab=No.%20Rekening"
-              className="mt-3 inline-block rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-bold text-white"
+              className="mt-3 inline-block rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white"
             >
               Buka Pengaturan No. Rekening →
             </Link>
@@ -55,7 +55,7 @@ export default function PsbPengaturanPage() {
             <p className="text-sm text-slate-600">Data pendaftar ada di halamannya sendiri.</p>
             <Link
               href="/admin/psb"
-              className="mt-3 inline-block rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-bold text-white"
+              className="mt-3 inline-block rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white"
             >
               Buka Data Pendaftar →
             </Link>

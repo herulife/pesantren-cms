@@ -84,9 +84,9 @@ export default function SchoolAdminPage() {
     <div className="p-6">
       <h1 className="text-xl font-black mb-4">Master Sekolah</h1>
       <div className="flex gap-2 mb-6">
-        <button onClick={() => setTab("classes")} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "classes" ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>Kelas</button>
-        <button onClick={() => setTab("years")} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "years" ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>Tahun Ajaran</button>
-        <button onClick={() => { setTab("setkelas"); loadSantris(); }} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "setkelas" ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>Set Kelas</button>
+        <button onClick={() => setTab("classes")} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "classes" ? "bg-emerald-600 text-white" : "bg-white border text-slate-500"}`}>Kelas</button>
+        <button onClick={() => setTab("years")} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "years" ? "bg-emerald-600 text-white" : "bg-white border text-slate-500"}`}>Tahun Ajaran</button>
+        <button onClick={() => { setTab("setkelas"); loadSantris(); }} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === "setkelas" ? "bg-emerald-600 text-white" : "bg-white border text-slate-500"}`}>Set Kelas</button>
       </div>
       {tab === "classes" ? (
         <>
@@ -97,7 +97,7 @@ export default function SchoolAdminPage() {
               <option value="">-- Wali kelas --</option>
               {waliUsers.map(u => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
             </select>
-            <button className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><Plus size={16} /> Tambah</button>
+            <button className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><Plus size={16} /> Tambah</button>
           </form>
           <div className="bg-white border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
@@ -143,7 +143,7 @@ export default function SchoolAdminPage() {
                                 setEditWaliId(c.wali_user_id ? String(c.wali_user_id) : "");
                               }}
                               title="Ubah kelas"
-                              className="text-sky-600"
+                              className="text-emerald-600"
                             >
                               <Pencil size={16} />
                             </button>
@@ -167,7 +167,7 @@ export default function SchoolAdminPage() {
         <>
           <form onSubmit={addYear} className="flex gap-2 mb-4">
             <input value={yearName} onChange={(e) => setYearName(e.target.value)} placeholder="cth: 2025/2026" className="border rounded-xl px-3 py-2 text-sm" />
-            <button className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><Plus size={16} /> Tambah</button>
+            <button className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><Plus size={16} /> Tambah</button>
           </form>
           <div className="bg-white border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
@@ -175,7 +175,7 @@ export default function SchoolAdminPage() {
               <tbody>
                 {years.map((y) => (
                   <tr key={y.id} className="border-t"><td className="p-3 font-bold">{y.name}</td>
-                    <td className="p-3">{y.is_active ? <span className="text-emerald-600 font-bold">Aktif</span> : <button onClick={async () => { const r = await activateAcademicYear(y.id); if (r.success) { showToast("success", "Tahun diaktifkan."); load(); } }} className="text-sky-600 flex items-center gap-1"><CheckCircle size={16} /> Aktifkan</button>}</td>
+                    <td className="p-3">{y.is_active ? <span className="text-emerald-600 font-bold">Aktif</span> : <button onClick={async () => { const r = await activateAcademicYear(y.id); if (r.success) { showToast("success", "Tahun diaktifkan."); load(); } }} className="text-emerald-600 flex items-center gap-1"><CheckCircle size={16} /> Aktifkan</button>}</td>
                     <td className="p-3"><button onClick={() => { setDelId(y.id); setDelKind("year"); }} className="text-rose-600"><Trash2 size={16} /></button></td></tr>
                 ))}
                 {years.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-slate-400">Belum ada tahun ajaran.</td></tr>}
@@ -198,7 +198,7 @@ export default function SchoolAdminPage() {
               setSavingKelas(false);
               if (r.ok) { showToast("success", r.message); loadSantris(); }
               else showToast("error", r.message);
-            }} disabled={savingKelas} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60">
+            }} disabled={savingKelas} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60">
               {savingKelas ? "Menyimpan..." : "Simpan"}
             </button>
           </div>

@@ -97,7 +97,7 @@ export default function LogsAdminPage() {
             </button>
             <button 
               onClick={handleExportExcel}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-sky-50 text-sky-600 border border-sky-100 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-sky-100 transition-all shadow-sm"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm"
             >
               <FileSpreadsheet size={16} /> Excel Sync
             </button>

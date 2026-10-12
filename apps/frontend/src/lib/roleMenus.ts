@@ -35,7 +35,6 @@ export const ROLE_MENU_DEFS: RoleMenuDef[] = [
   { category: 'Transaksi', label: 'Kasir Pembayaran', href: '/admin/kasir', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'Kas & Laba Rugi', href: '/admin/kas', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Transaksi', label: 'E-Money (Dompet)', href: '/admin/emoney', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
-  { category: 'Transaksi', label: 'Program Donasi', href: '/admin/donations', roles: ['bendahara'], docRef: 'donations' },
   { category: 'Laporan', label: 'Laporan Tagihan', href: '/admin/laporan/tagihan', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Laporan', label: 'Laporan Transaksi', href: '/admin/laporan/transaksi', panel: 'administrasi', roles: ['superadmin', 'bendahara'], docRef: 'payments' },
   { category: 'Akademik', label: 'eRapor', href: '/admin/raport', roles: ['superadmin', 'admin', 'pimpinan', 'wali_kelas'], docRef: 'academics' },

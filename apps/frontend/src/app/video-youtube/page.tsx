@@ -125,17 +125,17 @@ export default function VideoYouTubePage() {
   return (
     <PublicLayout>
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-sky-900/40 bg-gradient-to-br from-[#032144] via-[#0a3a6b] to-[#0e4d8f] py-20 text-white lg:py-24">
+      <section className="relative overflow-hidden border-b border-emerald-900/40 bg-gradient-to-br from-[#032144] via-[#0a3a6b] to-[#0e4d8f] py-20 text-white lg:py-24">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-yellow-400 blur-[120px]" />
-          <div className="absolute -bottom-10 -left-20 h-60 w-60 rounded-full bg-sky-300 blur-[100px]" />
+          <div className="absolute -bottom-10 -left-20 h-60 w-60 rounded-full bg-emerald-300 blur-[100px]" />
         </div>
         <div className="container relative z-10 mx-auto max-w-6xl px-4 text-center">
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-yellow-300">Darussunnah TV</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
             Video Kegiatan <span className="text-yellow-400">Darussunnah</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-sky-100/80 sm:text-base">
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-emerald-100/80 sm:text-base">
             Kumpulan video kegiatan, kajian, halaqoh Al-Qur&apos;an, dan momen berharga
             Pondok Pesantren Darussunnah Parung Bogor dari channel DarussunnahTV.
           </p>
@@ -152,8 +152,8 @@ export default function VideoYouTubePage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`rounded-full border px-4 py-2 text-xs font-bold transition-all ${
                   selectedCategory === cat
-                    ? 'border-sky-600 bg-sky-600 text-white shadow-md shadow-sky-600/20'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-sky-300 hover:text-sky-700'
+                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'
                 }`}
               >
                 {cat}
@@ -224,7 +224,7 @@ export default function VideoYouTubePage() {
                     href={`https://www.youtube.com/watch?v=${video.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 hover:text-yellow-500"
+                    className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-yellow-500"
                   >
                     Tonton di YouTube
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -242,7 +242,7 @@ export default function VideoYouTubePage() {
       <section className="bg-white py-14">
         <div className="container mx-auto max-w-6xl px-4 text-center">
           <h2 className="text-2xl font-black text-slate-900">
-            Subscribe <span className="text-sky-600">DarussunnahTV</span>
+            Subscribe <span className="text-emerald-600">DarussunnahTV</span>
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-slate-500">
             Dapatkan notifikasi video terbaru dari Pondok Pesantren Darussunnah Parung Bogor.

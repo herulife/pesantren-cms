@@ -73,7 +73,7 @@ export default function TeacherAttendancePage() {
       <p className="text-sm text-slate-500 mb-4">Rekap absensi per guru: Masuk, Sakit, Ijin, Tanpa Keterangan + total jam.</p>
       <div className="flex flex-wrap gap-2 mb-6">
         {(["perguru", "rekap", "absen", "pegawai", "rawlog"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === t ? "bg-sky-600 text-white" : "bg-white border text-slate-500"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 rounded-xl text-xs font-black uppercase ${tab === t ? "bg-emerald-600 text-white" : "bg-white border text-slate-500"}`}>
             {t === "perguru" ? "Lap. Per Guru" : t === "rekap" ? "Rekap Absen" : t === "absen" ? "Data Absen" : t === "pegawai" ? "Pegawai" : "Raw Log"}
           </button>
         ))}
@@ -87,7 +87,7 @@ export default function TeacherAttendancePage() {
             </select></label>
             <label className="text-sm">Dari Tanggal<br /><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border rounded-xl px-3 py-2 text-sm" /></label>
             <label className="text-sm">Sampai Tanggal<br /><input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border rounded-xl px-3 py-2 text-sm" /></label>
-            <button onClick={show} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Tampilkan</button>
+            <button onClick={show} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Tampilkan</button>
             <button onClick={() => exportToExcel("Lap Per Guru", ["Tanggal", "Status", "Keterangan", "Jam Masuk", "Jam Pulang", "Jumlah Jam"], rows.map((r) => [r.date, r.status, r.notes, r.time_in, r.time_out, fmtRow(r.minutes)]), "lap_per_guru")} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><FileSpreadsheet size={16} /> Excel</button>
           </div>
           {summary && (
@@ -112,7 +112,7 @@ export default function TeacherAttendancePage() {
           <div className="flex flex-wrap gap-2 mb-4 items-end">
             <label className="text-sm">Dari<br /><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border rounded-xl px-3 py-2 text-sm" /></label>
             <label className="text-sm">Sampai<br /><input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border rounded-xl px-3 py-2 text-sm" /></label>
-            <button onClick={loadRekap} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Tampilkan</button>
+            <button onClick={loadRekap} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Tampilkan</button>
             <button onClick={() => exportToExcel("Rekap Absen", ["Kode", "Nama", "Jml Hari", "Masuk", "Sakit", "Ijin", "Alfa", "Kehadiran"], rekap.map((r) => [r.code, r.name, r.days, r.present, r.sick, r.permit, r.alpha, r.percent.toFixed(1) + "%"]), "rekap_absen")} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1"><FileSpreadsheet size={16} /> Excel</button>
           </div>
           <div className="bg-white border rounded-xl overflow-hidden">
@@ -142,7 +142,7 @@ export default function TeacherAttendancePage() {
             <input value={form.time_in} onChange={(e) => setForm({ ...form, time_in: e.target.value })} placeholder="Masuk HH:MM" className="border rounded-xl px-3 py-2 text-sm" />
             <input value={form.time_out} onChange={(e) => setForm({ ...form, time_out: e.target.value })} placeholder="Pulang HH:MM" className="border rounded-xl px-3 py-2 text-sm" />
             <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Keterangan" className="border rounded-xl px-3 py-2 text-sm" />
-            <button className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-1"><Plus size={16} /> Catat</button>
+            <button className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-1"><Plus size={16} /> Catat</button>
           </form>
           <AbsenTable code={code} from={from} to={to} onDelete={(id) => setDelId(id)} />
         </>
@@ -157,7 +157,7 @@ export default function TeacherAttendancePage() {
             <input value={peg.phone} onChange={(e) => setPeg({ ...peg, phone: e.target.value })} placeholder="Telp" className="border rounded-xl px-3 py-2 text-sm" />
             <input value={peg.email} onChange={(e) => setPeg({ ...peg, email: e.target.value })} placeholder="Email" className="border rounded-xl px-3 py-2 text-sm" />
             <select value={peg.kind} onChange={(e) => setPeg({ ...peg, kind: e.target.value })} className="border rounded-xl px-3 py-2 text-sm"><option>Guru</option><option>Staf</option></select>
-            <button className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-1"><Plus size={16} /> Tambah</button>
+            <button className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-1"><Plus size={16} /> Tambah</button>
           </form>
           <div className="bg-white border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
@@ -178,7 +178,7 @@ export default function TeacherAttendancePage() {
         <>
           <p className="text-sm text-slate-500 mb-3">Data diambil langsung dari file log fingerprint yang sudah di-import. Format paste per baris: <code>ID_FP,Tanggal(YYYY-MM-DD),Jam,Verifikasi,Mesin</code></p>
           <div className="flex flex-wrap gap-2 mb-4 items-end">
-            <button onClick={loadRawLogs} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Tampilkan</button>
+            <button onClick={loadRawLogs} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold">Tampilkan</button>
             <button onClick={async () => {
               setSyncing(true);
               const r = await syncAbsen(from, to);
@@ -199,7 +199,7 @@ export default function TeacherAttendancePage() {
             const r = await importRawLogs(rows);
             if (r.success) { showToast("success", "Import selesai."); setRawText(""); loadRawLogs(); }
             else showToast("error", r.message || "Gagal import.");
-          }} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold mb-4">Import Log</button>
+          }} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold mb-4">Import Log</button>
           <div className="bg-white border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead><tr className="bg-slate-50 text-left"><th className="p-3">No</th><th className="p-3">ID FP</th><th className="p-3">Tgl Transaksi</th><th className="p-3">Jam</th><th className="p-3">Verifikasi</th><th className="p-3">Mesin</th></tr></thead>

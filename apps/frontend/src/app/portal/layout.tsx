@@ -476,7 +476,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="sticky top-0 z-30 mb-6 flex flex-wrap items-center justify-between gap-3 bg-slate-50/85 py-3 backdrop-blur-md">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
               >
                 <Home size={14} />
                 Beranda
@@ -503,7 +503,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Alur Pendaftaran Online</p>
               <h2 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
                 {wizardTitles[activeWizardIdx]}
               </h2>
@@ -532,7 +532,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                         href={step.href}
                         className={`flex flex-1 items-center gap-2 rounded-full px-3 py-2.5 text-xs font-black transition ${
                           step.active
-                            ? 'bg-sky-600 text-white shadow'
+                            ? 'bg-emerald-600 text-white shadow'
                             : step.done
                               ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300'
                               : 'bg-slate-50 text-slate-500 border border-slate-200'
@@ -541,7 +541,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                         <span
                           className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black ${
                             step.active
-                              ? 'bg-white text-sky-600'
+                              ? 'bg-white text-emerald-600'
                               : step.done
                                 ? 'bg-emerald-500 text-white'
                                 : 'bg-white text-slate-400 border border-slate-200'
@@ -577,7 +577,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="sticky top-0 z-30 mb-6 flex flex-wrap items-center justify-between gap-3 bg-slate-50/85 py-3 backdrop-blur-md">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
             >
               <Home size={14} />
               Beranda
@@ -603,7 +603,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                 <div className="border-b border-slate-100 px-5 py-5 lg:px-8">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Mode Fokus</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Mode Fokus</p>
                       <h2 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900 lg:text-3xl">
                         Raport Akademik Santri
                       </h2>
@@ -619,7 +619,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                         <ArrowLeft size={16} />
                         Kembali ke Dashboard Portal
                       </Link>
-                      <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800">
+                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
                         Tampilan fokus tanpa sidebar samping
                       </div>
                     </div>
@@ -632,7 +632,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                       <div key={`focus-${group.id}`}>
                         <div className="mb-2 flex items-center gap-2">
                           <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                            group.active ? 'bg-sky-50 text-sky-700' : 'bg-slate-100 text-slate-500'
+                            group.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
                           }`}>
                             {group.label}
                           </span>
@@ -652,11 +652,11 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                                 aria-current={isActive ? 'page' : undefined}
                                 className={`inline-flex shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
                                   isActive
-                                    ? 'border-sky-200 bg-sky-50 text-sky-700'
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                                 } ${group.locked ? 'opacity-70' : ''}`}
                               >
-                                <span className={isActive ? 'text-sky-500' : 'text-slate-400'}>{item.icon}</span>
+                                <span className={isActive ? 'text-emerald-500' : 'text-slate-400'}>{item.icon}</span>
                                 <span>{item.label}</span>
                               </Link>
                             );
@@ -677,7 +677,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Sidebar Portal */}
             <div className="hidden shrink-0 border-r border-slate-200 bg-slate-100 p-6 md:block md:w-72 md:border-b-0 lg:w-80 lg:p-8">
                <div className="mb-8">
-                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Navigasi Portal</p>
+                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Navigasi Portal</p>
                  <h2 className="mt-2 text-2xl font-black text-slate-900 font-outfit tracking-tight">Portal Pendaftaran & Santri</h2>
                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
                    Selesaikan pendaftaran, pantau status, dan buka menu yang tersedia dari satu tempat.
@@ -690,14 +690,14 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                      key={group.id}
                      className={`rounded-[1.5rem] border px-4 py-4 transition ${
                        group.active
-                         ? 'border-sky-200 bg-sky-50 text-sky-800'
+                         ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                          : 'border-slate-200 bg-white text-slate-600'
                      }`}
                    >
                      <div className="flex items-center justify-between gap-3">
                        <div>
                          <p className="text-xs font-black uppercase tracking-[0.18em]">{group.label}</p>
-                         <p className={`mt-1 text-xs leading-relaxed ${group.active ? 'text-sky-700/80' : 'text-slate-500'}`}>
+                         <p className={`mt-1 text-xs leading-relaxed ${group.active ? 'text-emerald-700/80' : 'text-slate-500'}`}>
                            {group.description}
                          </p>
                        </div>
@@ -708,7 +708,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                          </span>
                        ) : (
                          <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                           group.active ? 'bg-white text-sky-700' : 'bg-slate-100 text-slate-500'
+                           group.active ? 'bg-white text-emerald-700' : 'bg-slate-100 text-slate-500'
                          }`}>
                            {group.active ? 'Aktif' : 'Tersedia'}
                          </span>
@@ -736,15 +736,15 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                              key={item.href}
                              className={`flex items-center gap-2 rounded-2xl transition-all ${
                                isActive
-                                 ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
+                                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                              } ${group.locked ? 'opacity-70' : ''}`}
                            >
                              <Link href={group.locked ? '/portal' : item.href} aria-current={isActive ? 'page' : undefined} className="flex flex-1 items-center gap-4 p-4">
-                               <span className={isActive ? 'text-sky-200' : 'text-slate-400'}>{item.icon}</span>
+                               <span className={isActive ? 'text-emerald-200' : 'text-slate-400'}>{item.icon}</span>
                                <div className="min-w-0">
                                  <div className="font-bold text-sm tracking-wide">{item.label}</div>
-                                 <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-sky-100/80' : 'text-slate-500'}`}>
+                                 <div className={`mt-1 text-xs leading-relaxed ${isActive ? 'text-emerald-100/80' : 'text-slate-500'}`}>
                                    {item.description}
                                  </div>
                                </div>
@@ -753,8 +753,8 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                                href={`/portal/help?ref=${item.docRef}`}
                                className={`mr-3 flex h-8 w-8 items-center justify-center rounded-full transition ${
                                  isActive
-                                   ? 'text-sky-100 hover:bg-white/10'
-                                   : 'text-slate-400 hover:bg-slate-100 hover:text-sky-600'
+                                   ? 'text-emerald-100 hover:bg-white/10'
+                                   : 'text-slate-400 hover:bg-slate-100 hover:text-emerald-600'
                                }`}
                                title={`Buka panduan ${item.label}`}
                                aria-label={`Buka panduan ${item.label}`}
@@ -792,7 +792,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="ap-fade-in min-w-0 flex-1 p-5 pb-28 md:p-8 lg:p-10">
               {!isLoading && !hasStudentAccess && !isRaportPage && (
                 <div className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Alur Pendaftaran Online</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Alur Pendaftaran Online</p>
                   <div className="mt-3 flex items-center gap-2">
                     {flowSteps.map((step, idx, arr) => (
                       <React.Fragment key={step.href}>
@@ -814,7 +814,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                             href={step.href}
                             className={`flex flex-1 items-center gap-2 rounded-full px-3 py-2 text-xs font-black transition ${
                               step.active
-                                ? 'bg-sky-600 text-white shadow'
+                                ? 'bg-emerald-600 text-white shadow'
                                 : step.done
                                   ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300'
                                   : 'bg-slate-50 text-slate-500 border border-slate-200'
@@ -822,7 +822,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                           >
                             <span
                               className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
-                                step.active ? 'bg-white text-sky-600' : step.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200'
+                                step.active ? 'bg-white text-emerald-600' : step.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200'
                               }`}
                             >
                               {step.done ? <Check size={12} /> : idx + 1}
@@ -844,7 +844,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
               )}
                {isLoading && !isPortalDashboard ? (
                  <div className="mb-6 flex items-center gap-3 rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-500">
-                   <RefreshCw size={16} className="animate-spin text-sky-600" />
+                   <RefreshCw size={16} className="animate-spin text-emerald-600" />
                    Menyiapkan struktur portal sesuai status akunmu...
                  </div>
                ) : null}
@@ -918,11 +918,11 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                     aria-current={item.active ? 'page' : undefined}
                     className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-bold transition-all duration-300 ${
                       item.active
-                        ? 'bg-sky-50 text-sky-700 shadow-sm'
+                        ? 'bg-emerald-50 text-emerald-700 shadow-sm'
                         : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                     }`}
                   >
-                    <span className={item.active ? 'text-sky-700' : 'text-slate-400'}>{item.icon}</span>
+                    <span className={item.active ? 'text-emerald-700' : 'text-slate-400'}>{item.icon}</span>
                     <span className="w-full truncate text-center">{item.label}</span>
                   </Link>
                 );

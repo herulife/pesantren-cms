@@ -187,7 +187,7 @@ export default function PrdPage() {
                 key={a.n}
                 className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
-                <span className="font-[family-name:var(--font-outfit)] text-2xl font-black text-sky-500">
+                <span className="font-[family-name:var(--font-outfit)] text-2xl font-black text-emerald-500">
                   {a.n}
                 </span>
                 <h3 className="mt-1 text-sm font-bold text-slate-800">{a.title}</h3>
@@ -265,7 +265,7 @@ export default function PrdPage() {
             {JILID.map((j) => (
               <div key={j.n} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-black text-sky-700">
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-black text-emerald-700">
                     Jilid {j.n}
                   </span>
                   <h3 className="text-sm font-bold text-slate-800">{j.title}</h3>
@@ -273,7 +273,7 @@ export default function PrdPage() {
                 <ul className="mt-3 space-y-1.5 text-sm text-slate-600">
                   {j.items.map((it) => (
                     <li key={it} className="flex items-start gap-2">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" aria-hidden />
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden />
                       {it.includes('`') ? (
                         <span>
                           {it.split('`').map((part, i) =>
@@ -300,13 +300,13 @@ export default function PrdPage() {
         <div className="mt-14 flex flex-wrap gap-3">
           <Link
             href="/audit-eraport"
-            className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-sky-700"
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
           >
             <GitCompareArrows size={16} /> Lihat Audit eRapor
           </Link>
           <Link
             href="/admin/raport"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-sky-300"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-300"
           >
             <History size={16} /> eRapor Saat Ini
           </Link>

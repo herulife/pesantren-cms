@@ -33,7 +33,7 @@ export default function ReviewPage() {
     <Suspense
       fallback={
         <div className="flex justify-center p-10">
-          <RefreshCw className="animate-spin text-sky-600" />
+          <RefreshCw className="animate-spin text-emerald-600" />
         </div>
       }
     >
@@ -64,7 +64,7 @@ function ReviewPageContent() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -188,7 +188,7 @@ function ReviewPageContent() {
               </div>
               <Link
                 href={section.href}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50"
               >
                 {section.done ? 'Periksa Ulang' : 'Lengkapi'} <ArrowRight size={14} />
               </Link>
@@ -210,11 +210,11 @@ function ReviewPageContent() {
       <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-sky-600 p-3 text-white">
+            <div className="rounded-2xl bg-emerald-600 p-3 text-white">
               <CreditCard size={22} />
             </div>
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-700">Tahap Akhir — Pembayaran</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700">Tahap Akhir — Pembayaran</p>
               <h4 className="mt-1 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
                 Konfirmasi & Lanjut ke Pembayaran
               </h4>
@@ -235,7 +235,7 @@ function ReviewPageContent() {
             }}
             className={`inline-flex shrink-0 items-center justify-center gap-3 rounded-full px-10 py-5 text-xs font-black uppercase tracking-widest shadow-xl transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               allComplete
-                ? 'bg-sky-600 text-white shadow-sky-600/20 hover:bg-sky-700'
+                ? 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
                 : 'bg-slate-300 text-slate-600'
             }`}
           >

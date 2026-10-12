@@ -46,16 +46,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div 
             key={toast.id}
-            className={`flex w-full items-center gap-4 rounded-2xl border-l-4 px-5 py-4 shadow-xl shadow-sky-950/20 animate-in slide-in-from-right duration-300 md:min-w-[300px] md:px-6 ${
-              toast.type === 'success' ? 'bg-white border-sky-500 text-sky-900' : 
+            className={`flex w-full items-center gap-4 rounded-2xl border-l-4 px-5 py-4 shadow-xl shadow-emerald-950/20 animate-in slide-in-from-right duration-300 md:min-w-[300px] md:px-6 ${
+              toast.type === 'success' ? 'bg-white border-emerald-500 text-emerald-900' : 
               toast.type === 'error' ? 'bg-white border-rose-500 text-rose-900' : 
-              'bg-white border-sky-500 text-sky-900'
+              'bg-white border-emerald-500 text-emerald-900'
             }`}
           >
             <div className="flex-shrink-0">
-              {toast.type === 'success' && <CheckCircle2 className="text-sky-500" size={24} />}
+              {toast.type === 'success' && <CheckCircle2 className="text-emerald-500" size={24} />}
               {toast.type === 'error' && <AlertCircle className="text-rose-500" size={24} />}
-              {toast.type === 'info' && <Info className="text-sky-500" size={24} />}
+              {toast.type === 'info' && <Info className="text-emerald-500" size={24} />}
             </div>
             <p className="font-bold text-sm">{toast.message}</p>
             <button onClick={() => removeToast(toast.id)} className="ml-auto text-slate-300 hover:text-slate-500">

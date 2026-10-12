@@ -76,7 +76,7 @@ export default function AdminExamManagement() {
         </Link>
         <button 
           onClick={() => setShowAddExam(true)}
-          className="flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-500/20 hover:bg-sky-700 transition-all active:scale-95"
+          className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95"
         >
           <Plus size={18} /> Paket Ujian Baru
         </button>
@@ -89,7 +89,7 @@ export default function AdminExamManagement() {
 
       {isLoading ? (
         <div className="flex justify-center p-20">
-          <RefreshCw className="animate-spin text-sky-600" size={40} />
+          <RefreshCw className="animate-spin text-emerald-600" size={40} />
         </div>
       ) : exams.length === 0 ? (
         <div className="rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-white p-20 text-center">
@@ -99,9 +99,9 @@ export default function AdminExamManagement() {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {exams.map(exam => (
-            <div key={exam.id} className="group flex items-center justify-between rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-sky-200 hover:shadow-md">
+            <div key={exam.id} className="group flex items-center justify-between rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
               <div className="flex items-center gap-6">
-                <div className="hidden h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 md:flex">
+                <div className="hidden h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 md:flex">
                   <FileText size={28} />
                 </div>
                 <div>
@@ -110,7 +110,7 @@ export default function AdminExamManagement() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="rounded-xl border border-slate-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:border-sky-200 hover:text-sky-600">Edit Soal</button>
+                <button className="rounded-xl border border-slate-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:border-emerald-200 hover:text-emerald-600">Edit Soal</button>
                 <button className="rounded-xl border border-slate-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:border-rose-100 hover:text-rose-600">Hapus</button>
               </div>
             </div>
@@ -130,7 +130,7 @@ export default function AdminExamManagement() {
                   type="text"
                   required
                   placeholder="Contoh: UAS Tahfidz Ganjil"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-900 focus:border-sky-500 outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-900 focus:border-emerald-500 outline-none"
                   onChange={e => setNewExam({...newExam, title: e.target.value})}
                 />
               </div>
@@ -140,7 +140,7 @@ export default function AdminExamManagement() {
                   <input 
                     type="text"
                     defaultValue="2023/2024"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-900 focus:border-sky-500 outline-none"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-900 focus:border-emerald-500 outline-none"
                     onChange={e => setNewExam({...newExam, academic_year: e.target.value})}
                   />
                 </div>
@@ -149,14 +149,14 @@ export default function AdminExamManagement() {
                   <input 
                     type="number"
                     defaultValue={60}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-900 focus:border-sky-500 outline-none"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-900 focus:border-emerald-500 outline-none"
                     onChange={e => setNewExam({...newExam, duration_minutes: parseInt(e.target.value)})}
                   />
                 </div>
               </div>
               <div className="mt-8 flex gap-4">
                 <button type="button" onClick={() => setShowAddExam(false)} className="flex-1 rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-900">Batal</button>
-                <button type="submit" className="flex-1 rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white hover:bg-sky-600 transition-all">Simpan Paket</button>
+                <button type="submit" className="flex-1 rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-600 transition-all">Simpan Paket</button>
               </div>
             </form>
           </div>

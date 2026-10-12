@@ -113,7 +113,7 @@ export default function BiodataPage() {
     <Suspense
       fallback={
         <div className="flex justify-center p-10">
-          <RefreshCw className="animate-spin text-sky-600" />
+          <RefreshCw className="animate-spin text-emerald-600" />
         </div>
       }
     >
@@ -261,7 +261,7 @@ function BiodataPageContent() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -282,7 +282,7 @@ function BiodataPageContent() {
               : 'Lengkapi data ayah dan ibu agar panitia bisa menghubungi wali santri.'}
           </p>
         </div>
-        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
           Langkah 1 dari 2 {part === 1 ? '— Data Siswa' : '— Data Orang Tua'}
         </span>
       </div>
@@ -293,7 +293,7 @@ function BiodataPageContent() {
           onClick={() => submitPart(1)}
           className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
             part === 1
-              ? 'border-sky-200 bg-sky-50 text-sky-700'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
               : diriDoneNow
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300'
                 : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
@@ -302,7 +302,7 @@ function BiodataPageContent() {
           <span
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${
               part === 1
-                ? 'bg-sky-600 text-white'
+                ? 'bg-emerald-600 text-white'
                 : diriDoneNow
                   ? 'bg-emerald-500 text-white'
                   : 'border border-slate-200 bg-white text-slate-400'
@@ -322,7 +322,7 @@ function BiodataPageContent() {
           onClick={() => submitPart(2)}
           className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
             part === 2
-              ? 'border-sky-200 bg-sky-50 text-sky-700'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
               : ortuDoneNow
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300'
                 : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
@@ -331,7 +331,7 @@ function BiodataPageContent() {
           <span
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${
               part === 2
-                ? 'bg-sky-600 text-white'
+                ? 'bg-emerald-600 text-white'
                 : ortuDoneNow
                   ? 'bg-emerald-500 text-white'
                   : 'border border-slate-200 bg-white text-slate-400'
@@ -359,13 +359,13 @@ function BiodataPageContent() {
       {!isEditMode && hasSavedBiodata && isBiodataComplete(formData) ? (
         <div className="space-y-8">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-            <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-sm">
+            <div className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-sm">
               <div className="flex items-start gap-4">
-                <div className="rounded-2xl bg-sky-100 p-3 text-sky-600">
+                <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-600">
                   <CheckCircle2 size={28} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-600">Biodata Tersimpan</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-600">Biodata Tersimpan</p>
                   <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
                     Form Tidak Perlu Aktif Terus
                   </h4>
@@ -390,7 +390,7 @@ function BiodataPageContent() {
               <div className="mt-6 flex flex-col gap-3">
                 <Link
                   href="/portal/program"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-500"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500"
                 >
                   Pilih Program & Jenjang <ArrowRight size={16} />
                 </Link>
@@ -407,7 +407,7 @@ function BiodataPageContent() {
 
           <div className="grid gap-6 xl:grid-cols-2">
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-              <div className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] border-sky-100 bg-sky-50 text-sky-700`}>
+              <div className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] border-emerald-100 bg-emerald-50 text-emerald-700`}>
                 Data Calon Santri
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -431,7 +431,7 @@ function BiodataPageContent() {
             </div>
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-              <div className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] border-sky-100 bg-sky-50 text-sky-700`}>
+              <div className={`inline-flex rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] border-emerald-100 bg-emerald-50 text-emerald-700`}>
                 Data Orang Tua
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -460,8 +460,8 @@ function BiodataPageContent() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {part === 1 ? (
             <div className="space-y-6">
-              <div className="mb-4 flex gap-4 rounded-3xl border border-sky-100 bg-sky-50 p-6 text-sky-800">
-                <AlertCircle className="mt-1 shrink-0 text-sky-500" />
+              <div className="mb-4 flex gap-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-6 text-emerald-800">
+                <AlertCircle className="mt-1 shrink-0 text-emerald-500" />
                 <p className="text-sm font-medium leading-relaxed">
                   Nama lengkap akan otomatis mengikuti akun portal saat biodata pertama kali dibuat, tetapi tetap bisa disesuaikan di formulir ini jika perlu mengikuti dokumen resmi.
                 </p>
@@ -476,7 +476,7 @@ function BiodataPageContent() {
                     onChange={(e) => handleChange('full_name', e.target.value)}
                     autoComplete="name"
                     aria-invalid={!!errors.full_name}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     required
                   />
                 </div>
@@ -488,7 +488,7 @@ function BiodataPageContent() {
                     value={formData.nickname}
                     onChange={(e) => handleChange('nickname', e.target.value)}
                     aria-invalid={!!errors.nickname}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     placeholder="Contoh: Ahmad"
                   />
                 </div>
@@ -498,7 +498,7 @@ function BiodataPageContent() {
                   <select
                     value={formData.gender}
                     onChange={(e) => handleChange('gender', e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     required
                   >
                     <option value="">Pilih jenis kelamin</option>
@@ -515,7 +515,7 @@ function BiodataPageContent() {
                     onChange={(e) => handleChange('nik', e.target.value)}
                     aria-invalid={!!errors.nik}
                     aria-describedby={errors.nik ? 'err-nik' : undefined}
-                    className={`w-full rounded-2xl border px-5 py-4 font-bold outline-none transition-all focus:ring-4 ${errors.nik ? 'border-rose-300 bg-rose-50 text-rose-900 focus:border-rose-400 focus:ring-rose-500/10' : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-sky-500 focus:ring-sky-500/10'}`}
+                    className={`w-full rounded-2xl border px-5 py-4 font-bold outline-none transition-all focus:ring-4 ${errors.nik ? 'border-rose-300 bg-rose-50 text-rose-900 focus:border-rose-400 focus:ring-rose-500/10' : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-emerald-500 focus:ring-emerald-500/10'}`}
                     placeholder="16 digit NIK"
                     maxLength={16}
                     required
@@ -530,7 +530,7 @@ function BiodataPageContent() {
                     value={formData.nisn}
                     onChange={(e) => handleChange('nisn', e.target.value)}
                     aria-invalid={!!errors.nisn}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     placeholder="10 digit NISN (bila sudah punya, utk E-Rapor RDM/EMIS)"
                     maxLength={16}
                   />
@@ -544,7 +544,7 @@ function BiodataPageContent() {
                     value={formData.birth_place}
                     onChange={(e) => handleChange('birth_place', e.target.value)}
                     aria-invalid={!!errors.birth_place}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     required
                   />
                 </div>
@@ -557,7 +557,7 @@ function BiodataPageContent() {
                     onChange={(e) => handleChange('birth_date', e.target.value)}
                     autoComplete="bday"
                     aria-invalid={!!errors.birth_date}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     required
                   />
                 </div>
@@ -569,7 +569,7 @@ function BiodataPageContent() {
                     value={formData.school_origin}
                     onChange={(e) => handleChange('school_origin', e.target.value)}
                     aria-invalid={!!errors.school_origin}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     required
                   />
                 </div>
@@ -582,7 +582,7 @@ function BiodataPageContent() {
                     onChange={(e) => handleChange('address', e.target.value)}
                     autoComplete="street-address"
                     aria-invalid={!!errors.address}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                     required
                   />
                 </div>
@@ -641,7 +641,7 @@ function BiodataPageContent() {
                   type="submit"
                   value="save"
                   disabled={isSaving}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-sky-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-sky-700 transition hover:border-sky-300 hover:bg-sky-50 disabled:opacity-70 md:w-auto"
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-emerald-200 bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:opacity-70 md:w-auto"
                 >
                   {isSaving ? 'Menyimpan...' : <><Save size={18} /> Simpan</>}
                 </button>
@@ -649,7 +649,7 @@ function BiodataPageContent() {
                   type="submit"
                   value="continue"
                   disabled={isSaving}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-sky-600/35 disabled:opacity-70 md:w-auto"
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-600 to-indigo-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-emerald-600/35 disabled:opacity-70 md:w-auto"
                 >
                   {isSaving
                     ? 'Menyimpan...'

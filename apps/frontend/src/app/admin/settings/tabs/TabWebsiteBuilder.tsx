@@ -1802,7 +1802,7 @@ export default function TabWebsiteBuilder() {
                   <button
                     type="button"
                     onClick={() => window.open('/builder-preview/home', '_blank', 'noopener,noreferrer')}
-                    className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
                   >
                     <Eye size={16} />
                     Buka Preview Tab
@@ -2142,7 +2142,7 @@ export default function TabWebsiteBuilder() {
                     <button
                       type="button"
                       onClick={() => window.open(`/builder-preview/${selectedPageKey}`, '_blank', 'noopener,noreferrer')}
-                      className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                      className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
                     >
                       <Eye size={14} />
                       Preview Draft

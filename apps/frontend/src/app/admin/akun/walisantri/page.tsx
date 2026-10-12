@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 const inputClass =
-	'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10';
+	'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10';
 
 type EditDraft = {
 	name: string;
@@ -276,7 +276,7 @@ export default function WaliSantriAccountsPage() {
 					<button
 						type="button"
 						onClick={openCreate}
-						className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-700"
+						className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
 					>
 						<Plus className="h-4 w-4" />
 						Buat Akun Wali
@@ -333,7 +333,7 @@ export default function WaliSantriAccountsPage() {
 						type="checkbox"
 						checked={onlyPlaceholder}
 						onChange={(e) => setOnlyPlaceholder(e.target.checked)}
-						className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+						className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
 					/>
 					Hanya nama karangan
 				</label>
@@ -566,13 +566,13 @@ export default function WaliSantriAccountsPage() {
 												type="button"
 												key={s.id}
 												onClick={() => toggleStudent(s.id)}
-												className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2 text-left transition last:border-0 hover:bg-sky-50"
+												className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2 text-left transition last:border-0 hover:bg-emerald-50"
 											>
 												<input
 													type="checkbox"
 													readOnly
 													checked={selectedStudents.has(s.id)}
-													className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+													className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
 												/>
 												<div className="min-w-0 flex-1">
 													<div className="truncate text-sm font-semibold text-slate-800">{s.name}</div>
@@ -604,7 +604,7 @@ export default function WaliSantriAccountsPage() {
 								type="button"
 								onClick={() => void submitCreate()}
 								disabled={creating}
-								className="inline-flex items-center gap-1 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-sky-700 disabled:opacity-50"
+								className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
 							>
 								{creating ? 'Menyimpan...' : 'Simpan Akun'}
 							</button>
@@ -717,7 +717,7 @@ export default function WaliSantriAccountsPage() {
 								type="button"
 								onClick={() => void saveEdit()}
 								disabled={saving}
-								className="inline-flex items-center gap-1 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-sky-700 disabled:opacity-50"
+								className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
 							>
 								{saving ? 'Menyimpan...' : 'Simpan Perubahan'}
 							</button>

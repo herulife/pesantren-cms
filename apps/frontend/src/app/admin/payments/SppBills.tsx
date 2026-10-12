@@ -29,7 +29,7 @@ function formatPeriod(period: string) {
 function statusBadge(status: string) {
   if (status === 'paid') return 'bg-emerald-100 text-emerald-700';
   if (status === 'partial') return 'bg-amber-100 text-amber-700';
-  if (status === 'pending') return 'bg-sky-100 text-sky-700';
+  if (status === 'pending') return 'bg-emerald-100 text-emerald-700';
   return 'bg-rose-100 text-rose-700';
 }
 
@@ -290,7 +290,7 @@ export default function SppBills() {
     return matchStatus && matchSearch;
   });
 
-  const inputCls = 'w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-800';
+  const inputCls = 'w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-800';
   const labelCls = 'block text-xs font-black text-slate-400 uppercase tracking-widest mb-2';
 
   return (
@@ -302,7 +302,7 @@ export default function SppBills() {
             type="month"
             value={period}
             onChange={(e) => e.target.value && setPeriod(e.target.value)}
-            className="px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700"
+            className="px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700"
           />
         </div>
         <div className="flex flex-wrap gap-2 md:ml-auto">
@@ -314,7 +314,7 @@ export default function SppBills() {
           </button>
           <button
             onClick={() => setIsGenerateOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-sky-600 text-white rounded-xl font-bold hover:bg-sky-700 transition-all shadow-lg shadow-sky-600/20 active:scale-95"
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
           >
             <Users size={18} /> Generate Sebulan
           </button>
@@ -323,7 +323,7 @@ export default function SppBills() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center gap-6">
-          <div className="w-16 h-16 rounded-xl bg-sky-50 flex items-center justify-center text-sky-500 shrink-0 shadow-inner">
+          <div className="w-16 h-16 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 shadow-inner">
             <Receipt size={28} />
           </div>
           <div>
@@ -387,7 +387,7 @@ export default function SppBills() {
             <button
               type="button"
               onClick={() => setAutoCfg({ ...autoCfg, wa_enabled: !autoCfg.wa_enabled })}
-              className={`flex-1 py-4 rounded-xl border font-black uppercase tracking-widest text-[10px] transition-all ${autoCfg.wa_enabled ? 'bg-sky-600 text-white border-sky-600 shadow-lg shadow-sky-600/20' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+              className={`flex-1 py-4 rounded-xl border font-black uppercase tracking-widest text-[10px] transition-all ${autoCfg.wa_enabled ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
             >
               WA Wali {autoCfg.wa_enabled ? 'ON' : 'OFF'}
             </button>
@@ -409,14 +409,14 @@ export default function SppBills() {
             placeholder="Cari nama, NIS, atau kelas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-medium"
+            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
           />
         </div>
         <div className="shrink-0 w-full md:w-56">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all font-bold text-slate-700 cursor-pointer"
+            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 cursor-pointer"
           >
             <option value="all">Semua Status</option>
             <option value="unpaid">Belum Bayar</option>
@@ -430,7 +430,7 @@ export default function SppBills() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[300px]">
         {isLoading ? (
           <div className="py-24 text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full mx-auto"></div>
+            <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
           </div>
         ) : filteredBills.length > 0 ? (
           <div className="overflow-x-auto">
@@ -490,7 +490,7 @@ export default function SppBills() {
                             </>
                           )}
                           {b.status !== 'paid' && b.status !== 'pending' && (
-                            <button onClick={() => openPay(b)} title="Bayar" className="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-black uppercase hover:bg-sky-700 transition-all">
+                            <button onClick={() => openPay(b)} title="Bayar" className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase hover:bg-emerald-700 transition-all">
                               Bayar
                             </button>
                           )}
@@ -499,7 +499,7 @@ export default function SppBills() {
                               <RotateCcw size={18} />
                             </button>
                           )}
-                          <button onClick={() => openEditBill(b)} title="Ubah" className="p-2 text-slate-300 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all">
+                          <button onClick={() => openEditBill(b)} title="Ubah" className="p-2 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
                             <Pencil size={18} />
                           </button>
                           <button
@@ -561,7 +561,7 @@ export default function SppBills() {
               </div>
               <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex gap-4">
                 <button type="button" onClick={() => setIsGenerateOpen(false)} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all">Batal</button>
-                <button type="submit" disabled={isGenerating} className="flex-1 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 disabled:opacity-60">
+                <button type="submit" disabled={isGenerating} className="flex-1 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 disabled:opacity-60">
                   {isGenerating ? 'Memproses...' : 'Buat Tagihan'}
                 </button>
               </div>
@@ -602,7 +602,7 @@ export default function SppBills() {
               </div>
               <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex gap-4">
                 <button type="button" onClick={() => setIsBillModalOpen(false)} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all">Batal</button>
-                <button type="submit" className="flex-1 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20">Simpan</button>
+                <button type="submit" className="flex-1 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20">Simpan</button>
               </div>
             </form>
           </div>

@@ -27,21 +27,21 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
   review: {
     title: 'Berkas Sedang Direview',
     description: 'Panitia sedang memeriksa biodata dan dokumen yang sudah kamu kirim. Pantau portal secara berkala.',
-    accent: 'from-sky-700 to-cyan-800',
+    accent: 'from-emerald-700 to-emerald-800',
     actionLabel: 'Lihat Dokumen',
     actionHref: '/portal/documents',
   },
   tes: {
     title: 'Diundang Tes Seleksi',
     description: 'Alhamdulillah, berkas kamu lolos pemeriksaan. Perhatikan jadwal dan lokasi tes seleksi di bawah.',
-    accent: 'from-indigo-700 to-sky-800',
+    accent: 'from-indigo-700 to-emerald-800',
     actionLabel: 'Hubungi Panitia',
     actionHref: '#tes-info',
   },
   accepted: {
     title: 'Diterima',
     description: 'Selamat! Kamu dinyatakan diterima. Lanjutkan ke masa daftar ulang sesuai arahan panitia.',
-    accent: 'from-sky-700 to-cyan-800',
+    accent: 'from-emerald-700 to-emerald-800',
     actionLabel: 'Buka Raport',
     actionHref: '/portal/raport',
   },
@@ -55,7 +55,7 @@ const statusMeta: Record<string, { title: string; description: string; accent: s
   re_registration: {
     title: 'Masa Daftar Ulang',
     description: 'Saatnya melakukan daftar ulang. Selesaikan sebelum batas waktu agar status santri kamu terekam.',
-    accent: 'from-sky-800 to-indigo-800',
+    accent: 'from-emerald-800 to-indigo-800',
     actionLabel: 'Info Daftar Ulang',
     actionHref: '#daftar-ulang-info',
   },
@@ -433,12 +433,12 @@ export default function PortalDashboard() {
                 <img
                   src={photo}
                   alt={`Foto ${displayName}`}
-                  className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-slate-200 ring-2 ring-sky-100"
+                  className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-slate-200 ring-2 ring-emerald-100"
                 />
               );
             }
             return (
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-lg font-black text-white shadow-lg shadow-sky-200 ring-2 ring-sky-100">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-indigo-600 text-lg font-black text-white shadow-lg shadow-emerald-200 ring-2 ring-emerald-100">
                 {initials || <User size={24} />}
               </div>
             );
@@ -446,7 +446,7 @@ export default function PortalDashboard() {
         </div>
         <div>
           <h3 className="mb-2 font-outfit text-3xl font-black uppercase tracking-tight text-slate-900 md:text-4xl">
-            Ahlan Wa Sahlan, <br /> <span className="text-sky-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
+            Ahlan Wa Sahlan, <br /> <span className="text-emerald-600">{user?.name || registration?.full_name || 'Calon Santri'}</span>
           </h3>
           <p className="text-lg text-slate-500">
             {hasStudentAccess
@@ -491,7 +491,7 @@ export default function PortalDashboard() {
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                         item.completed
-                          ? 'bg-white/95 text-sky-700'
+                          ? 'bg-white/95 text-emerald-700'
                           : isAttentionPaymentStep
                             ? 'bg-rose-600 text-white'
                             : 'bg-white/10 text-white/80'
@@ -553,7 +553,7 @@ export default function PortalDashboard() {
 
         {status === 'tes' ? (
           <div id="tes-info" className="md:col-span-3 grid gap-6 md:grid-cols-2">
-            <div className="rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-6 shadow-sm">
+            <div className="rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 p-6 shadow-sm">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
                 <GraduationCap size={24} />
               </div>
@@ -594,8 +594,8 @@ export default function PortalDashboard() {
 
         {status === 're_registration' ? (
           <div id="daftar-ulang-info" className="md:col-span-3 grid gap-6 md:grid-cols-2">
-            <div className="rounded-[2rem] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-6 shadow-sm">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
+            <div className="rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 p-6 shadow-sm">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
                 <BookOpen size={24} />
               </div>
               <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900">Masa Daftar Ulang</h4>
@@ -604,7 +604,7 @@ export default function PortalDashboard() {
               </p>
               <dl className="mt-5 space-y-3">
                 <div className="rounded-2xl bg-white px-4 py-3">
-                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">Batas Waktu</dt>
+                  <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-600">Batas Waktu</dt>
                   <dd className="mt-1 text-sm font-black text-slate-800">
                     {registration?.re_registration_deadline ? formatDateLabel(registration.re_registration_deadline) : 'Menunggu info panitia'}
                   </dd>
@@ -613,11 +613,11 @@ export default function PortalDashboard() {
             </div>
 
             <div className="flex flex-col justify-center rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Perlu diperhatikan</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Perlu diperhatikan</p>
               <ul className="mt-4 space-y-3 text-sm text-slate-600">
                 {['Daftar ulang adalah proses penetapan status santri aktif', 'Jika melewati batas waktu, status bisa dibatalkan oleh panitia', 'Hubungi panitia bila ada kendala atau pertanyaan'].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <AlertCircle size={17} className="mt-0.5 shrink-0 text-sky-500" />
+                    <AlertCircle size={17} className="mt-0.5 shrink-0 text-emerald-500" />
                     {item}
                   </li>
                 ))}
@@ -627,10 +627,10 @@ export default function PortalDashboard() {
         ) : null}
 
         {hasStudentAccess ? (
-          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-sky-50/40 p-5 shadow-sm md:p-6">
+          <div className="md:col-span-3 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-emerald-50/40 p-5 shadow-sm md:p-6">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">Akses Santri</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Akses Santri</p>
                 <h4 className="mt-2 font-outfit text-2xl font-black uppercase tracking-tight text-slate-900">
                   Presensi & Dompet
                 </h4>
@@ -638,7 +638,7 @@ export default function PortalDashboard() {
                   Gunakan QR presensi untuk scan kehadiran dan pantau saldo Darussunnah Pay dari satu area yang lebih ringkas.
                 </p>
               </div>
-              <div className="inline-flex w-fit rounded-full border border-sky-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+              <div className="inline-flex w-fit rounded-full border border-emerald-100 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
                 Live tools untuk akses harian
               </div>
             </div>
@@ -680,9 +680,9 @@ export default function PortalDashboard() {
                 <div className={`inline-flex rounded-2xl border px-3 py-3 ${item.accent}`}>
                   {item.icon}
                 </div>
-                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-sky-700">{item.title}</h5>
+                <h5 className="mt-4 font-bold text-slate-900 transition-colors group-hover:text-emerald-700">{item.title}</h5>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-sky-600">
+                <div className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors group-hover:text-emerald-600">
                   Buka Menu
                   <ChevronRight size={14} />
                 </div>
@@ -702,11 +702,11 @@ export default function PortalDashboard() {
         <div className="mb-10 space-y-4">
           {portalState.checklist.map((item, index) => {
             const cardClasses = item.completed
-              ? 'border-sky-100 bg-white shadow-sm'
-              : 'border-slate-200 bg-white shadow-sm hover:border-sky-300';
+              ? 'border-emerald-100 bg-white shadow-sm'
+              : 'border-slate-200 bg-white shadow-sm hover:border-emerald-300';
             const iconClasses = item.completed
-              ? 'bg-sky-50 text-sky-500'
-              : 'bg-slate-50 text-slate-400 group-hover:bg-sky-50 group-hover:text-sky-500';
+              ? 'bg-emerald-50 text-emerald-500'
+              : 'bg-slate-50 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500';
 
             const content = (
               <>
@@ -715,7 +715,7 @@ export default function PortalDashboard() {
                     {item.icon}
                   </div>
                   <div>
-                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-sky-700'}`}>
+                    <h5 className={`font-bold transition-colors ${item.completed ? 'text-slate-900' : 'text-slate-900 group-hover:text-emerald-700'}`}>
                       {item.title}
                     </h5>
                     <p className="mt-1 max-w-sm text-xs text-slate-500">{item.description}</p>
@@ -723,7 +723,7 @@ export default function PortalDashboard() {
                 </div>
 
                 {item.completed ? (
-                  <span className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sky-600">
+                  <span className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
                     Selesai
                   </span>
                 ) : (
@@ -731,7 +731,7 @@ export default function PortalDashboard() {
                     <span className="hidden text-[10px] font-black uppercase tracking-widest text-slate-400 md:inline">
                       Langkah {index + 1}
                     </span>
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-sky-600 group-hover:text-white">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-emerald-600 group-hover:text-white">
                       <ChevronRight size={20} />
                     </span>
                   </div>
@@ -773,7 +773,7 @@ export default function PortalDashboard() {
             </div>
             <Link
               href="/portal/biodata"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:bg-sky-100 md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors hover:bg-emerald-100 md:w-auto md:shrink-0"
             >
               Edit Biodata
             </Link>
@@ -809,7 +809,7 @@ export default function PortalDashboard() {
             </div>
             <Link
               href="/portal/documents"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:bg-sky-100 md:w-auto md:shrink-0"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-colors hover:bg-emerald-100 md:w-auto md:shrink-0"
             >
               Kelola Dokumen
             </Link>
@@ -827,7 +827,7 @@ export default function PortalDashboard() {
                 <span
                   className={`inline-flex w-fit rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest ${
                     item.uploaded
-                      ? 'border border-sky-100 bg-sky-50 text-sky-600'
+                      ? 'border border-emerald-100 bg-emerald-50 text-emerald-600'
                       : 'border border-amber-100 bg-amber-50 text-amber-600'
                   }`}
                 >

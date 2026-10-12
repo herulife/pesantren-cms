@@ -63,12 +63,12 @@ export default function NewsPortal() {
             />
 
             <div className="rounded-[1.8rem] border border-white/80 bg-white/88 p-5 shadow-[0_22px_50px_-36px_rgba(250,204,21,0.16)] backdrop-blur-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-600">Pencarian Berita</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Pencarian Berita</p>
               <div className="relative mt-4 w-full">
                 <input
                   type="text"
                   placeholder="Cari judul atau ringkasan berita..."
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-12 py-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-12 py-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                 />
@@ -106,8 +106,8 @@ export default function NewsPortal() {
             {filteredNews.length > 3 ? (
               <div>
                 <div className="mb-6 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-gradient-to-r from-sky-200 via-sky-100 to-transparent" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-700">
+                  <div className="h-px flex-1 bg-gradient-to-r from-emerald-200 via-emerald-100 to-transparent" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">
                     Arsip Berita
                   </p>
                 </div>
@@ -133,10 +133,10 @@ export default function NewsPortal() {
         <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-600">Agenda</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Agenda</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Agenda Mendatang</h2>
             </div>
-            <Link href="/agendas" className="text-xs font-black uppercase tracking-[0.2em] text-sky-600 hover:text-sky-800">
+            <Link href="/agendas" className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 hover:text-emerald-800">
               Lihat agenda lengkap →
             </Link>
           </div>
@@ -144,7 +144,7 @@ export default function NewsPortal() {
             {agendas.map((agenda) => (
               <article key={agenda.id} className="flex h-full flex-col rounded-[1.75rem] border border-slate-200/80 bg-white p-5 shadow-[0_20px_42px_-32px_rgba(250,204,21,0.16)]">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-[1.35rem] bg-sky-500 text-white shadow-lg shadow-sky-200/70">
+                  <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-[1.35rem] bg-emerald-500 text-white shadow-lg shadow-emerald-200/70">
                     <span className="text-[9px] font-black uppercase tracking-[0.18em]">
                       {agenda.start_date ? new Date(agenda.start_date).toLocaleDateString('id-ID', { month: 'short' }) : '-'}
                     </span>
@@ -153,7 +153,7 @@ export default function NewsPortal() {
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
                       {agenda.category || 'Agenda'}
                     </p>
                     <h3 className="mt-2 line-clamp-2 text-lg font-black tracking-tight text-slate-900">
@@ -168,11 +168,11 @@ export default function NewsPortal() {
                 ) : null}
                 <div className="mt-5 space-y-2 text-sm text-slate-500">
                   <div className="flex items-start gap-2">
-                    <CalendarDays size={15} className="mt-0.5 shrink-0 text-sky-500" />
+                    <CalendarDays size={15} className="mt-0.5 shrink-0 text-emerald-500" />
                     <span>{agenda.time_info || (agenda.start_date ? new Date(agenda.start_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-')}</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <MapPin size={15} className="mt-0.5 shrink-0 text-sky-500" />
+                    <MapPin size={15} className="mt-0.5 shrink-0 text-emerald-500" />
                     <span>{agenda.location || 'Kompleks Darussunnah Parung'}</span>
                   </div>
                 </div>

@@ -272,7 +272,7 @@ const aoa = [
     <div className="space-y-6">
       <button
         onClick={() => router.push('/admin/kesantrian')}
-        className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-sky-600"
+        className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-emerald-600"
       >
         <ArrowLeft size={16} /> Kembali ke Data Santri
       </button>
@@ -290,13 +290,13 @@ const aoa = [
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600">File Excel</label>
               <button
                 onClick={downloadTemplate}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
               >
                 <Download size={14} /> Unduh Template
               </button>
             </div>
 
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center transition hover:border-sky-400 hover:bg-sky-50/40">
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center transition hover:border-emerald-400 hover:bg-emerald-50/40">
               <FileSpreadsheet className="mb-3 h-10 w-10 text-emerald-600" />
               <span className="text-sm font-bold text-slate-700">
                 {fileName || 'Klik untuk pilih file .xlsx'}
@@ -331,7 +331,7 @@ const aoa = [
             <div className="mb-3 flex items-center justify-between">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Pratinjau</label>
               {rows.length > 0 && (
-                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-700">
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
                   {rows.length} baris
                 </span>
               )}
@@ -403,7 +403,7 @@ const aoa = [
           <button
             onClick={handleImport}
             disabled={importing || rows.length === 0 || errors.length > 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 disabled:opacity-50"
           >
             <Import size={16} /> {importing ? 'Mengimpor...' : `Import ${rows.length} Santri`}
           </button>

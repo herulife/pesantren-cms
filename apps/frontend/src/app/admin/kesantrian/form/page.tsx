@@ -83,7 +83,7 @@ const DOC_FIELDS: Array<{ key: keyof typeof initialForm; label: string }> = [
 
 export default function SantriFormPage() {
   return (
-    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-sky-500" size={40} /></div>}>
+    <Suspense fallback={<div className="flex h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>}>
       <SantriFormContent />
     </Suspense>
   );
@@ -246,13 +246,13 @@ function SantriFormContent() {
   ];
 
   const inputClass = (hasError?: string) =>
-    `mt-1 w-full rounded-xl border ${hasError ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'} px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/10`;
+    `mt-1 w-full rounded-xl border ${hasError ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'} px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-400/10`;
 
   return (
     <div className="space-y-6">
       <button
         onClick={() => router.push('/admin/kesantrian')}
-        className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-sky-600"
+        className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-emerald-600"
       >
         <ArrowLeft size={16} /> Kembali ke Data Santri
       </button>
@@ -265,7 +265,7 @@ function SantriFormContent() {
           {isEdit ? 'Perbarui informasi data santri.' : 'Lengkapi data di bawah untuk menambahkan santri baru.'}
         </p>
         {isEdit && form.registration_id > 0 && (
-          <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">
+          <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
             Asal PSB #{form.registration_id} — data ortu tersalin otomatis
           </p>
         )}
@@ -289,7 +289,7 @@ function SantriFormContent() {
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                NISN <span className="text-xs font-normal normal-case tracking-normal text-sky-500">(opsional, utk RDM/EMIS)</span>
+                NISN <span className="text-xs font-normal normal-case tracking-normal text-emerald-500">(opsional, utk RDM/EMIS)</span>
               </label>
               <input
                 value={form.nisn}
@@ -302,7 +302,7 @@ function SantriFormContent() {
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                NIK <span className="text-xs font-normal normal-case tracking-normal text-sky-500">(opsional)</span>
+                NIK <span className="text-xs font-normal normal-case tracking-normal text-emerald-500">(opsional)</span>
               </label>
               <input
                 value={form.nik}
@@ -564,7 +564,7 @@ function SantriFormContent() {
                               href={normalizeApiAssetUrl(url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-bold text-sky-700 transition hover:bg-sky-100"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
                             >
                               <FileText size={13} /> Lihat <ExternalLink size={11} />
                             </a>
@@ -594,7 +594,7 @@ function SantriFormContent() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 <Save size={16} /> {saving ? 'Menyimpan...' : 'Simpan'}
               </button>

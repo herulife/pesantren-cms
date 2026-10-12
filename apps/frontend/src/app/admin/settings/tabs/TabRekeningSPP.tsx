@@ -54,7 +54,7 @@ export default function TabRekeningSPP() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -63,7 +63,7 @@ export default function TabRekeningSPP() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-4 border-b border-slate-100 p-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
             <Wallet size={24} />
           </div>
           <div>
@@ -74,7 +74,7 @@ export default function TabRekeningSPP() {
 
         <div className="grid gap-8 p-8 md:grid-cols-2">
           <div className="space-y-4">
-            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">
+            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
               <Building2 size={12} /> Nama Bank
             </label>
             <input
@@ -86,7 +86,7 @@ export default function TabRekeningSPP() {
           </div>
 
           <div className="space-y-4">
-            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">
+            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
               <Hash size={12} /> Nomor Rekening
             </label>
             <input
@@ -98,7 +98,7 @@ export default function TabRekeningSPP() {
           </div>
 
           <div className="space-y-4 md:col-span-2">
-            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">
+            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
               <UserRound size={12} /> Atas Nama
             </label>
             <input
@@ -115,7 +115,7 @@ export default function TabRekeningSPP() {
         <button
           onClick={handleSaveAll}
           disabled={isSaving}
-          className="flex items-center gap-3 rounded-lg bg-sky-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 disabled:opacity-50"
+          className="flex items-center gap-3 rounded-lg bg-emerald-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
         >
           {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
           Simpan SPP

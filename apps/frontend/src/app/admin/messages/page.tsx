@@ -123,7 +123,7 @@ export default function MessagesAdminPage() {
 				</div>
 				<button 
 					onClick={() => fetchMessages()}
-					className="flex items-center justify-center p-4 bg-white text-slate-400 rounded-lg border border-slate-200 hover:text-sky-700 hover:border-sky-200 transition-all shadow-sm group active:scale-95"
+					className="flex items-center justify-center p-4 bg-white text-slate-400 rounded-lg border border-slate-200 hover:text-emerald-700 hover:border-emerald-200 transition-all shadow-sm group active:scale-95"
 					title="Segarkan Kotak Masuk"
 				>
 					<RefreshCw size={22} className={isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'} />
@@ -132,8 +132,8 @@ export default function MessagesAdminPage() {
 
 			{/* Stats & Filters Row */}
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-				<div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm group hover:shadow-xl hover:shadow-sky-900/5 transition-all duration-500 flex items-center gap-6">
-					<div className="w-16 h-16 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600 border border-sky-100 shadow-inner">
+				<div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm group hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 flex items-center gap-6">
+					<div className="w-16 h-16 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 border border-emerald-100 shadow-inner">
 						<Inbox size={28} />
 					</div>
 					<div>
@@ -142,8 +142,8 @@ export default function MessagesAdminPage() {
 					</div>
 				</div>
 
-				<div className="bg-white p-8 rounded-xl border border-sky-100 shadow-sm group hover:shadow-xl hover:shadow-sky-900/5 transition-all duration-500 flex items-center gap-6">
-					<div className="w-16 h-16 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600 border border-sky-100 shadow-inner">
+				<div className="bg-white p-8 rounded-xl border border-emerald-100 shadow-sm group hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 flex items-center gap-6">
+					<div className="w-16 h-16 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 border border-emerald-100 shadow-inner">
 						<CheckCircle2 size={28} />
 					</div>
 					<div>
@@ -174,7 +174,7 @@ export default function MessagesAdminPage() {
 								onClick={() => setActiveFilter(tab.id)}
 							className={`flex-1 lg:flex-none px-8 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
 									activeFilter === tab.id 
-										? 'bg-white text-sky-700 shadow-md border border-slate-100' 
+										? 'bg-white text-emerald-700 shadow-md border border-slate-100' 
 										: 'text-slate-400 hover:text-slate-600'
 								}`}
 							>
@@ -184,13 +184,13 @@ export default function MessagesAdminPage() {
 					</div>
 
 					<div className="flex-1 relative group w-full">
-						<Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-700 transition-colors" size={20} />
+						<Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-700 transition-colors" size={20} />
 						<input 
 							type="text"
 							placeholder="Cari pesan berdasarkan nama pengirim, email, atau isi pesan..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full pl-16 pr-8 py-4 bg-slate-50 border border-slate-100 focus:bg-white focus:border-sky-500 rounded-xl text-sm font-bold transition-all outline-none shadow-inner"
+							className="w-full pl-16 pr-8 py-4 bg-slate-50 border border-slate-100 focus:bg-white focus:border-emerald-500 rounded-xl text-sm font-bold transition-all outline-none shadow-inner"
 						/>
 						{searchQuery && (
 							<button onClick={() => setSearchQuery('')} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-rose-500 transition-colors">
@@ -233,12 +233,12 @@ export default function MessagesAdminPage() {
 								{messages.map((msg) => (
 									<tr 
 										key={msg.id} 
-										className={`group hover:bg-sky-50/40 transition-all duration-500 cursor-pointer ${!msg.is_read ? 'bg-sky-50/40' : ''}`}
+										className={`group hover:bg-emerald-50/40 transition-all duration-500 cursor-pointer ${!msg.is_read ? 'bg-emerald-50/40' : ''}`}
 										onClick={() => openModal(msg)}
 									>
 										<td className="pl-10 pr-6 py-8">
 											<div className="flex items-center gap-4">
-												<div className={`w-14 h-14 rounded-lg flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-500 ${!msg.is_read ? 'bg-sky-600 text-white shadow-sky-100 ring-4 ring-sky-200/50' : 'bg-slate-100 text-slate-400 ring-4 ring-slate-50'}`}>
+												<div className={`w-14 h-14 rounded-lg flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-500 ${!msg.is_read ? 'bg-emerald-600 text-white shadow-emerald-100 ring-4 ring-emerald-200/50' : 'bg-slate-100 text-slate-400 ring-4 ring-slate-50'}`}>
 													{msg.is_read ? <Mail size={20} /> : <MessageSquare size={20} />}
 												</div>
 												<div>
@@ -259,7 +259,7 @@ export default function MessagesAdminPage() {
 													{new Date(msg.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
 												</div>
 												{!msg.is_read && (
-													<span className="text-sky-500 animate-pulse flex items-center gap-1.5 mt-1">
+													<span className="text-emerald-500 animate-pulse flex items-center gap-1.5 mt-1">
 														<div className="w-1.5 h-1.5 rounded-full bg-current"></div>
 														Menunggu Tindak Lanjut
 													</span>
@@ -274,7 +274,7 @@ export default function MessagesAdminPage() {
 														target="_blank"
 														rel="noreferrer"
 														onClick={(e) => e.stopPropagation()}
-														className="inline-flex items-center gap-2 rounded-lg bg-sky-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-sky-700 hover:bg-sky-100 transition-all"
+														className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 hover:bg-emerald-100 transition-all"
 													>
 														<MessageCircle size={15} />
 														Kirim WA
@@ -304,9 +304,9 @@ export default function MessagesAdminPage() {
 						
 						{/* Modal Header */}
 						<div className="px-10 py-12 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center relative overflow-hidden">
-							<div className="absolute top-0 left-0 w-32 h-32 bg-sky-500/5 rounded-full -ml-16 -mt-16"></div>
+							<div className="absolute top-0 left-0 w-32 h-32 bg-emerald-500/5 rounded-full -ml-16 -mt-16"></div>
 							<div className="flex gap-6 relative z-10">
-								<div className="w-16 h-16 bg-sky-600 shadow-2xl shadow-sky-200 rounded-lg flex items-center justify-center text-white ring-4 ring-sky-50">
+								<div className="w-16 h-16 bg-emerald-600 shadow-2xl shadow-emerald-200 rounded-lg flex items-center justify-center text-white ring-4 ring-emerald-50">
 									<Send size={32} />
 								</div>
 								<div>
@@ -327,7 +327,7 @@ export default function MessagesAdminPage() {
 							<div className="flex flex-col md:flex-row gap-10">
 								<div className="flex-1 space-y-4">
 									<div className="flex items-center gap-3">
-										<div className="p-2 bg-sky-50 text-sky-600 rounded-xl">
+										<div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
 											<User size={18} />
 										</div>
 										<label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Pengirim</label>
@@ -337,14 +337,14 @@ export default function MessagesAdminPage() {
 								
 								<div className="flex-1 space-y-4">
 									<div className="flex items-center gap-3">
-										<div className="p-2 bg-sky-50 text-sky-600 rounded-xl">
+										<div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
 											<ShieldAlert size={18} />
 										</div>
 										<label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status Verifikasi</label>
 									</div>
-									<div className={`flex items-center gap-3 font-black text-xs uppercase tracking-widest ${selectedMessage.is_read ? 'text-sky-600' : 'text-amber-600'}`}>
+									<div className={`flex items-center gap-3 font-black text-xs uppercase tracking-widest ${selectedMessage.is_read ? 'text-emerald-600' : 'text-amber-600'}`}>
 										{selectedMessage.is_read ? (
-											<><CheckCircle size={20} className="fill-sky-50" /> Pesan Terarsip</>
+											<><CheckCircle size={20} className="fill-emerald-50" /> Pesan Terarsip</>
 										) : (
 											<><div className="w-3 h-3 rounded-full bg-amber-500 animate-ping" /> Menunggu Respon</>
 										)}
@@ -355,15 +355,15 @@ export default function MessagesAdminPage() {
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-8 rounded-xl border border-slate-100 shadow-inner">
 								<div className="space-y-2">
 									<label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Saluran WhatsApp</label>
-									<a href={selectedMessage.whatsapp ? `tel:${selectedMessage.whatsapp}` : '#'} className="flex items-center gap-3 text-slate-800 font-black hover:text-sky-700 transition-colors">
-										<Phone size={14} className="text-sky-500" />
+									<a href={selectedMessage.whatsapp ? `tel:${selectedMessage.whatsapp}` : '#'} className="flex items-center gap-3 text-slate-800 font-black hover:text-emerald-700 transition-colors">
+										<Phone size={14} className="text-emerald-500" />
 										{selectedMessage.whatsapp || 'Tidak Tersedia'}
 									</a>
 								</div>
 								<div className="space-y-2">
 									<label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Alamat Email</label>
-									<a href={`mailto:${selectedMessage.email}`} className="flex items-center gap-3 text-slate-800 font-black hover:text-sky-700 transition-colors">
-										<Mail size={14} className="text-sky-500" />
+									<a href={`mailto:${selectedMessage.email}`} className="flex items-center gap-3 text-slate-800 font-black hover:text-emerald-700 transition-colors">
+										<Mail size={14} className="text-emerald-500" />
 										{selectedMessage.email || 'Tidak Tersedia'}
 									</a>
 								</div>
@@ -371,7 +371,7 @@ export default function MessagesAdminPage() {
 
 							<div className="space-y-4">
 								<div className="flex items-center gap-3">
-									<div className="p-2 bg-sky-50 text-sky-600 rounded-xl">
+									<div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
 										<MessageSquare size={18} />
 									</div>
 									<label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Substansi Komunikasi</label>

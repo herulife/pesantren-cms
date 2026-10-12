@@ -148,12 +148,12 @@ export default function EraporPage() {
             <ArrowLeft size={17} />
           </Link>
           <h1 className="flex items-center gap-2 text-2xl font-black text-slate-900">
-            <FileSpreadsheet size={24} className="text-sky-600" /> Sinkron E-Rapor <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-sky-700">RDM / EMIS</span>
+            <FileSpreadsheet size={24} className="text-emerald-600" /> Sinkron E-Rapor <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-emerald-700">RDM / EMIS</span>
           </h1>
         </div>
         <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5">
-          <button onClick={() => setTab('kelengkapan')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'kelengkapan' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Kelengkapan Identitas</button>
-          <button onClick={() => setTab('log')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'log' ? 'bg-sky-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Export & Log</button>
+          <button onClick={() => setTab('kelengkapan')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'kelengkapan' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Kelengkapan Identitas</button>
+          <button onClick={() => setTab('log')} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${tab === 'log' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Export & Log</button>
         </div>
       </div>
 
@@ -197,7 +197,7 @@ export default function EraporPage() {
             </div>
             <div className="rounded-3xl border border-slate-100 bg-white p-5">
               <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Siap EMIS <span className="normal-case tracking-normal">(data pokok lengkap)</span></p>
-              <p className="mt-1 text-3xl font-black text-sky-600">{ready}</p>
+              <p className="mt-1 text-3xl font-black text-emerald-600">{ready}</p>
             </div>
             <div className="rounded-3xl border border-slate-100 bg-white p-5">
               <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Perlu Dilengkapi</p>
@@ -210,7 +210,7 @@ export default function EraporPage() {
               <p className="text-xs font-bold text-slate-500">
                 Kolom inti EMIS: <span className="text-slate-800">NISN, Nama, Jenis Kelamin, Tempat &amp; Tanggal Lahir, Rombel</span>. NIK &amp; Angkatan pelengkap.
               </p>
-              <button onClick={downloadPokok} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition hover:bg-sky-700">
+              <button onClick={downloadPokok} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition hover:bg-emerald-700">
                 <Download size={14} /> Unduh Data Pokok (xlsx)
               </button>
             </div>
@@ -280,11 +280,11 @@ export default function EraporPage() {
                   {exporting === 'pokok' ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
                   {exporting === 'pokok' ? 'Mencatat...' : 'Export Data Pokok'}
                 </button>
-                <button onClick={() => void doExport('nilai')} disabled={exporting !== ''} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-sky-700 disabled:opacity-50">
+                <button onClick={() => void doExport('nilai')} disabled={exporting !== ''} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-700 disabled:opacity-50">
                   {exporting === 'nilai' ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
                   {exporting === 'nilai' ? 'Mencatat...' : 'Export Nilai'}
                 </button>
-                <button onClick={downloadNilai} disabled={hasRapor === false} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:border-sky-300 disabled:opacity-50">
+                <button onClick={downloadNilai} disabled={hasRapor === false} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:border-emerald-300 disabled:opacity-50">
                   <Download size={14} /> Unduh Nilai (xlsx)
                 </button>
               </div>
@@ -302,7 +302,7 @@ export default function EraporPage() {
               <p className="text-sm font-black text-slate-800">Log Sinkron E-Rapor</p>
               <div className="flex items-center gap-2">
                 {role !== 'pimpinan' && (
-                  <Link href="/admin/raport" className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-700">
+                  <Link href="/admin/raport" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700">
                     <GraduationCap size={14} /> Buka E-Raport
                   </Link>
                 )}

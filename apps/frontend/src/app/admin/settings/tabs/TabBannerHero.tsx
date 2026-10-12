@@ -287,7 +287,7 @@ export default function TabBannerHero() {
   if (isLoading || !selectedSlide) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -299,7 +299,7 @@ export default function TabBannerHero() {
       {/* Header WordPress-style */}
       <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-500 text-white shadow-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-500 text-white shadow-md">
             <Images size={22} />
           </div>
           <div>
@@ -312,8 +312,8 @@ export default function TabBannerHero() {
                   Belum disimpan
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sky-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   Tersimpan
                 </span>
               )}
@@ -324,10 +324,10 @@ export default function TabBannerHero() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={addSlide} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-sky-700">
+          <button type="button" onClick={addSlide} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-emerald-700">
             <Plus size={16} /> Tambah Slide
           </button>
-          <button type="button" onClick={handleSaveAll} disabled={isSaving || isUploading} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-sky-700 disabled:opacity-50">
+          <button type="button" onClick={handleSaveAll} disabled={isSaving || isUploading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-emerald-700 disabled:opacity-50">
             {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />} Simpan
           </button>
         </div>
@@ -351,14 +351,14 @@ export default function TabBannerHero() {
               {/* Konten overlay */}
               <div className="relative z-10 flex h-full items-center px-8 sm:px-12">
                 <div className="max-w-lg">
-                  <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-500/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-sky-200 backdrop-blur">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+                  <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Pondok Pesantren Darussunnah Parung • Slide {selectedIndex + 1} / {slides.length}
                   </span>
                   <h3 className="text-3xl font-black leading-tight text-white sm:text-4xl">{selectedSlide.title || 'Tanpa Judul'}</h3>
                   <p className="mt-3 text-sm leading-6 text-slate-200 sm:text-base">{selectedSlide.subtitle || 'Tambahkan subjudul untuk slide ini.'}</p>
                   <div className="mt-6 flex flex-wrap gap-3">
-                    <span className="rounded-full bg-gradient-to-r from-sky-500 to-sky-500 px-5 py-2.5 text-sm font-bold text-white shadow">{selectedSlide.button_text || 'Tombol'}</span>
+                    <span className="rounded-full bg-gradient-to-r from-emerald-500 to-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow">{selectedSlide.button_text || 'Tombol'}</span>
                     <span className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur">Lihat Program</span>
                   </div>
                 </div>
@@ -382,10 +382,10 @@ export default function TabBannerHero() {
               {slides.map((slide, idx) => {
                 const active = slide.id === selectedSlide.id;
                 return (
-                  <div key={slide.id} className={`group relative shrink-0 overflow-hidden rounded-xl border-2 ${active ? 'border-sky-500 ring-2 ring-sky-500/20' : 'border-slate-200'}`}>
+                  <div key={slide.id} className={`group relative shrink-0 overflow-hidden rounded-xl border-2 ${active ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'}`}>
                     <button type="button" onClick={() => setSelectedSlideId(slide.id)} className="block">
                       <img src={resolveDisplayImageUrl(slide.image_url || 'https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80')} alt={slide.title} className="h-20 w-32 object-cover" />
-                      {active && <span className="absolute left-1.5 top-1.5 rounded-full bg-sky-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white">DIPILIH</span>}
+                      {active && <span className="absolute left-1.5 top-1.5 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white">DIPILIH</span>}
                       <span className="absolute bottom-1 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">#{idx + 1}</span>
                     </button>
                     <div className="flex items-center justify-between bg-white px-1 py-1">
@@ -404,41 +404,41 @@ export default function TabBannerHero() {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Edit Slide {selectedIndex + 1}</h3>
-            <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${isDirty ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'}`}>{isDirty ? 'Belum disimpan' : 'Tersimpan'}</span>
+            <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${isDirty ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{isDirty ? 'Belum disimpan' : 'Tersimpan'}</span>
           </div>
 
           <div className="space-y-5">
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-sky-700"><Type size={12} /> Judul Utama</label>
-              <input value={selectedSlide.title} onChange={(e) => updateSlide(selectedSlide.id, 'title', e.target.value)} placeholder="Contoh: Merekam Jejak Intelektual & Spiritual" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10" />
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-emerald-700"><Type size={12} /> Judul Utama</label>
+              <input value={selectedSlide.title} onChange={(e) => updateSlide(selectedSlide.id, 'title', e.target.value)} placeholder="Contoh: Merekam Jejak Intelektual & Spiritual" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" />
             </div>
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-sky-700"><Type size={12} /> Teks Pendukung</label>
-              <textarea rows={3} value={selectedSlide.subtitle} onChange={(e) => updateSlide(selectedSlide.id, 'subtitle', e.target.value)} placeholder="Tulis penjelasan singkat di bawah judul" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-relaxed text-slate-800 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10" />
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-emerald-700"><Type size={12} /> Teks Pendukung</label>
+              <textarea rows={3} value={selectedSlide.subtitle} onChange={(e) => updateSlide(selectedSlide.id, 'subtitle', e.target.value)} placeholder="Tulis penjelasan singkat di bawah judul" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-relaxed text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-sky-700"><Type size={12} /> Teks Tombol</label>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-emerald-700"><Type size={12} /> Teks Tombol</label>
                 <input value={selectedSlide.button_text} onChange={(e) => updateSlide(selectedSlide.id, 'button_text', e.target.value)} placeholder="Daftar Sekarang" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800" />
               </div>
               <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-sky-700"><LinkIcon size={12} /> Link Tombol</label>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-emerald-700"><LinkIcon size={12} /> Link Tombol</label>
                 <input value={selectedSlide.button_url} onChange={(e) => updateSlide(selectedSlide.id, 'button_url', e.target.value)} placeholder="/psb" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800" />
               </div>
             </div>
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-sky-700"><ImageIcon size={12} /> Link Gambar</label>
-              <input value={selectedSlide.image_url} onChange={(e) => updateSlide(selectedSlide.id, 'image_url', e.target.value)} placeholder="Tempel URL gambar atau upload di bawah" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10" />
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-emerald-700"><ImageIcon size={12} /> Link Gambar</label>
+              <input value={selectedSlide.image_url} onChange={(e) => updateSlide(selectedSlide.id, 'image_url', e.target.value)} placeholder="Tempel URL gambar atau upload di bawah" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" />
               <p className="mt-1.5 text-xs text-slate-400">Gambar akan tampil di preview kiri setelah Anda simpan.</p>
             </div>
 
-            <div className="rounded-xl border border-dashed border-sky-200 bg-sky-50/60 p-4">
+            <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/60 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-bold text-slate-900">Upload gambar baru</p>
                   <p className="text-xs text-slate-500">Pilih file untuk slide ini.</p>
                 </div>
-                <button type="button" onClick={() => inputRef.current?.click()} disabled={isUploading} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-sky-700 disabled:opacity-60">
+                <button type="button" onClick={() => inputRef.current?.click()} disabled={isUploading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-700 disabled:opacity-60">
                   {isUploading ? <RefreshCw size={14} className="animate-spin" /> : <UploadCloud size={14} />}{isUploading ? 'Mengunggah...' : 'Upload'}
                 </button>
               </div>
@@ -447,7 +447,7 @@ export default function TabBannerHero() {
 
             <div className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
-                <p className="flex items-center gap-2 text-sm font-bold text-slate-900"><Images size={14} className="text-sky-600" /> Pilih dari galeri</p>
+                <p className="flex items-center gap-2 text-sm font-bold text-slate-900"><Images size={14} className="text-emerald-600" /> Pilih dari galeri</p>
                 <button type="button" onClick={() => void fetchGalleryItems()} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100"><RefreshCw size={12} className={isGalleryLoading ? 'animate-spin' : ''} /> Muat</button>
               </div>
               {isGalleryLoading ? (
@@ -461,7 +461,7 @@ export default function TabBannerHero() {
                     const imageUrl = resolveDisplayImageUrl(item.image_url);
                     const isActive = selectedSlide.image_url === item.image_url || selectedSlide.image_url === imageUrl;
                     return (
-                      <button key={item.id} type="button" onClick={() => updateSlide(selectedSlide.id, 'image_url', item.image_url)} className={`overflow-hidden rounded-xl border text-left ${isActive ? 'border-sky-500 ring-2 ring-sky-500/20' : 'border-slate-200 hover:border-sky-300'}`}>
+                      <button key={item.id} type="button" onClick={() => updateSlide(selectedSlide.id, 'image_url', item.image_url)} className={`overflow-hidden rounded-xl border text-left ${isActive ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-emerald-300'}`}>
                         <img src={imageUrl} alt={item.title} className="h-16 w-full object-cover" />
                         <p className="line-clamp-1 p-2 text-xs font-bold text-slate-700">{item.title}</p>
                       </button>
@@ -486,7 +486,7 @@ export default function TabBannerHero() {
           </div>
 
           <div className="mt-6 flex gap-2">
-            <button type="button" onClick={handleSaveAll} disabled={isSaving || isUploading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-sky-700 disabled:opacity-50">
+            <button type="button" onClick={handleSaveAll} disabled={isSaving || isUploading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-emerald-700 disabled:opacity-50">
               {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Simpan Slider
             </button>
             {isDirty && (

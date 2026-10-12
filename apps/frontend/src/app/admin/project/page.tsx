@@ -31,7 +31,7 @@ const blockLabels = {
 
 type TabKey = 'subprojects' | 'activities' | 'indicators' | 'weights';
 
-const DEFAULT_COLORS = ['from-sky-500 to-sky-600', 'from-sky-500 to-sky-600', 'from-amber-500 to-orange-600'];
+const DEFAULT_COLORS = ['from-emerald-500 to-emerald-600', 'from-emerald-500 to-emerald-600', 'from-amber-500 to-orange-600'];
 
 function Modal({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
 	if (!open) return null;
@@ -53,7 +53,7 @@ function Scorebar({ score }: { score: number }) {
 	return (
 		<div className="flex items-center gap-2">
 			<div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-				<div className={`h-full rounded-full ${pct >= 100 ? 'bg-sky-500' : pct >= 50 ? 'bg-sky-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+				<div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
 			</div>
 			<span className="w-14 text-right text-sm font-bold text-slate-700">{pct}%</span>
 		</div>
@@ -154,13 +154,13 @@ export default function ProjectPage() {
 					<h1 className="text-2xl font-black text-slate-900">Project &amp; Kegiatan</h1>
 					<p className="mt-1 text-sm text-slate-500">Kelola profil Projek Penguatan (Qur&apos;ani · Mandiri · Peduli), kegiatan, dan indikator.</p>
 				</div>
-				<button onClick={openSubCreate} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/25 hover:bg-sky-700">
+				<button onClick={openSubCreate} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
 					<Plus size={18} /> Tambah Sub Project
 				</button>
 			</div>
 
 			{/* Weight status banner */}
-			<div className={`flex items-center gap-3 rounded-2xl border px-5 py-4 ${weightMsg?.ok ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
+			<div className={`flex items-center gap-3 rounded-2xl border px-5 py-4 ${weightMsg?.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
 				{weightMsg?.ok ? <CheckCircle2 size={22} /> : <AlertTriangle size={22} />}
 				<div className="flex-1">
 					<p className="text-sm font-bold">{weightMsg?.text || 'Memvalidasi bobot...'}</p>
@@ -188,7 +188,7 @@ export default function ProjectPage() {
 										<FolderTree size={20} />
 									</div>
 									<div className="flex gap-1">
-										<button onClick={() => openSubEdit(s)} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:text-sky-600"><Pencil size={15} /></button>
+										<button onClick={() => openSubEdit(s)} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:text-emerald-600"><Pencil size={15} /></button>
 										<button onClick={() => setDeleteTarget({ type: 'sub', id: s.id })} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:text-rose-600"><Trash2 size={15} /></button>
 									</div>
 								</div>
@@ -197,7 +197,7 @@ export default function ProjectPage() {
 								<div className="mt-4"><Scorebar score={s.weight} /></div>
 								<div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
 									<span className="text-xs font-semibold text-slate-400">{activitiesFor(s.id).length} kegiatan</span>
-									<button onClick={() => openActCreate(s.id)} className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-800"><Plus size={14} /> Kegiatan</button>
+									<button onClick={() => openActCreate(s.id)} className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-800"><Plus size={14} /> Kegiatan</button>
 								</div>
 							</div>
 						</div>
@@ -210,8 +210,8 @@ export default function ProjectPage() {
 					{subs.map(s => (
 						<div key={s.id} className="rounded-3xl border border-slate-200 bg-white p-5">
 							<div className="flex items-center justify-between">
-								<h3 className="flex items-center gap-2 text-base font-black text-slate-900"><FolderTree size={17} className="text-sky-600" /> {s.name} <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">{s.weight}%</span></h3>
-								<button onClick={() => openActCreate(s.id)} className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-100"><Plus size={14} /> Kegiatan</button>
+								<h3 className="flex items-center gap-2 text-base font-black text-slate-900"><FolderTree size={17} className="text-emerald-600" /> {s.name} <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">{s.weight}%</span></h3>
+								<button onClick={() => openActCreate(s.id)} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100"><Plus size={14} /> Kegiatan</button>
 							</div>
 							<div className="mt-3 space-y-2">
 								{activitiesFor(s.id).length === 0 && <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-400">Belum ada kegiatan. Tambahkan agar bobot sub project terisi penuh (total 100%).</p>}
@@ -220,14 +220,14 @@ export default function ProjectPage() {
 									return (
 										<div key={a.id} className="overflow-hidden rounded-2xl border border-slate-100">
 											<div className="flex items-center gap-3 px-4 py-3">
-												<button onClick={() => setSelectedSub(open ? null : a.id)} className="text-slate-400 hover:text-sky-600">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</button>
+												<button onClick={() => setSelectedSub(open ? null : a.id)} className="text-slate-400 hover:text-emerald-600">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</button>
 												<div className="min-w-0 flex-1">
 													<p className="truncate text-sm font-bold text-slate-800">{a.name}</p>
 													<div className="mt-1 w-48"><Scorebar score={a.weight} /></div>
 												</div>
 												<div className="flex gap-1">
-													<button onClick={() => openIndCreate(a.id)} className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:text-sky-600" title="Tambah indikator"><Plus size={14} /></button>
-													<button onClick={() => openActEdit(a)} className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:text-sky-600"><Pencil size={14} /></button>
+													<button onClick={() => openIndCreate(a.id)} className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:text-emerald-600" title="Tambah indikator"><Plus size={14} /></button>
+													<button onClick={() => openActEdit(a)} className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:text-emerald-600"><Pencil size={14} /></button>
 													<button onClick={() => setDeleteTarget({ type: 'act', id: a.id })} className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:text-rose-600"><Trash2 size={14} /></button>
 												</div>
 											</div>
@@ -257,18 +257,18 @@ export default function ProjectPage() {
 				<div className="space-y-4">
 					{subs.map(s => (
 						<div key={s.id} className="rounded-3xl border border-slate-200 bg-white p-5">
-							<h3 className="flex items-center gap-2 text-base font-black text-slate-900"><FolderTree size={17} className="text-sky-600" /> {s.name}</h3>
+							<h3 className="flex items-center gap-2 text-base font-black text-slate-900"><FolderTree size={17} className="text-emerald-600" /> {s.name}</h3>
 							{activitiesFor(s.id).map(a => (
 								<div key={a.id} className="mt-3 rounded-2xl bg-slate-50 p-4">
 									<div className="flex items-center justify-between">
 										<p className="text-sm font-bold text-slate-800">{a.name} <span className="ml-1 text-xs font-semibold text-slate-400">{a.weight}%</span></p>
-										<button onClick={() => { setIndForm({ activity_id: a.id, name: '', weight: '' }); setIndModal(true); }} className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-800"><Plus size={14} /> Indikator</button>
+										<button onClick={() => { setIndForm({ activity_id: a.id, name: '', weight: '' }); setIndModal(true); }} className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-800"><Plus size={14} /> Indikator</button>
 									</div>
 									<div className="mt-2 space-y-1.5">
 										{indicatorsFor(a.id).map(i => (
 											<div key={i.id} className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2 shadow-sm">
 												<p className="min-w-0 flex-1 text-sm text-slate-700">{i.name}</p>
-												<span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-700">{i.weight}%</span>
+												<span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">{i.weight}%</span>
 												<button onClick={() => setDeleteTarget({ type: 'ind', id: i.id })} className="text-slate-400 hover:text-rose-600"><Trash2 size={14} /></button>
 											</div>
 										))}
@@ -282,7 +282,7 @@ export default function ProjectPage() {
 
 			{tab === 'weights' && (
 				<div className="rounded-3xl border border-slate-200 bg-white p-6">
-					<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Save size={18} className="text-sky-600" /> Ringkasan Bobot</h3>
+					<h3 className="flex items-center gap-2 text-lg font-black text-slate-900"><Save size={18} className="text-emerald-600" /> Ringkasan Bobot</h3>
 					<p className="mt-1 text-sm text-slate-500">Total bobot semua sub-project wajib 100% (misalnya 4 sub-project @25%). Nilai Project ini lalu menyumbang 25% ke Nilai Akhir E-Raport.</p>
 					<div className="mt-5 space-y-3">
 						{subs.map(s => (
@@ -294,7 +294,7 @@ export default function ProjectPage() {
 						<div className="border-t border-slate-100 pt-3">
 							<div className="flex items-center gap-4">
 								<span className="w-40 text-sm font-black text-slate-900">Total</span>
-								<span className={`text-base font-black ${totalWeight === 100 ? 'text-sky-600' : 'text-rose-600'}`}>{totalWeight.toFixed(1)}%</span>
+								<span className={`text-base font-black ${totalWeight === 100 ? 'text-emerald-600' : 'text-rose-600'}`}>{totalWeight.toFixed(1)}%</span>
 							</div>
 						</div>
 					</div>
@@ -304,29 +304,29 @@ export default function ProjectPage() {
 			{/* Modals */}
 			<Modal open={subModal} title={subForm.id ? 'Edit Sub Project' : 'Tambah Sub Project'} onClose={() => setSubModal(false)}>
 				<div className="space-y-4">
-					<div><label className="text-xs font-bold text-slate-500">Nama *</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" value={subForm.name} onChange={e => setSubForm({ ...subForm, name: e.target.value })} /></div>
-					<div><label className="text-xs font-bold text-slate-500">Kode</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" value={subForm.code} onChange={e => setSubForm({ ...subForm, code: e.target.value })} /></div>
-					<div><label className="text-xs font-bold text-slate-500">Bobot (%) *</label><input type="number" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" value={subForm.weight} onChange={e => setSubForm({ ...subForm, weight: e.target.value })} /></div>
-					<div><label className="text-xs font-bold text-slate-500">Deskripsi</label><textarea className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" rows={3} value={subForm.description} onChange={e => setSubForm({ ...subForm, description: e.target.value })} /></div>
-					<button onClick={saveSub} className="w-full rounded-2xl bg-sky-600 py-3 text-sm font-bold text-white hover:bg-sky-700">Simpan</button>
+					<div><label className="text-xs font-bold text-slate-500">Nama *</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" value={subForm.name} onChange={e => setSubForm({ ...subForm, name: e.target.value })} /></div>
+					<div><label className="text-xs font-bold text-slate-500">Kode</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" value={subForm.code} onChange={e => setSubForm({ ...subForm, code: e.target.value })} /></div>
+					<div><label className="text-xs font-bold text-slate-500">Bobot (%) *</label><input type="number" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" value={subForm.weight} onChange={e => setSubForm({ ...subForm, weight: e.target.value })} /></div>
+					<div><label className="text-xs font-bold text-slate-500">Deskripsi</label><textarea className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" rows={3} value={subForm.description} onChange={e => setSubForm({ ...subForm, description: e.target.value })} /></div>
+					<button onClick={saveSub} className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-700">Simpan</button>
 				</div>
 			</Modal>
 
 			<Modal open={actModal} title={actForm.id ? 'Edit Kegiatan' : 'Tambah Kegiatan'} onClose={() => setActModal(false)}>
 				<div className="space-y-4">
-					<div><label className="text-xs font-bold text-slate-500">Nama *</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" value={actForm.name} onChange={e => setActForm({ ...actForm, name: e.target.value })} /></div>
-					<div><label className="text-xs font-bold text-slate-500">Bobot (%) *</label><input type="number" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" value={actForm.weight} onChange={e => setActForm({ ...actForm, weight: e.target.value })} /></div>
-					<div><label className="text-xs font-bold text-slate-500">Tujuan</label><textarea className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" rows={2} value={actForm.tujuan} onChange={e => setActForm({ ...actForm, tujuan: e.target.value })} /></div>
-					<div><label className="text-xs font-bold text-slate-500">Indikator (deskripsi)</label><textarea className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" rows={2} value={actForm.indikator} onChange={e => setActForm({ ...actForm, indikator: e.target.value })} /></div>
-					<button onClick={saveAct} className="w-full rounded-2xl bg-sky-600 py-3 text-sm font-bold text-white hover:bg-sky-700">Simpan</button>
+					<div><label className="text-xs font-bold text-slate-500">Nama *</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" value={actForm.name} onChange={e => setActForm({ ...actForm, name: e.target.value })} /></div>
+					<div><label className="text-xs font-bold text-slate-500">Bobot (%) *</label><input type="number" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" value={actForm.weight} onChange={e => setActForm({ ...actForm, weight: e.target.value })} /></div>
+					<div><label className="text-xs font-bold text-slate-500">Tujuan</label><textarea className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" rows={2} value={actForm.tujuan} onChange={e => setActForm({ ...actForm, tujuan: e.target.value })} /></div>
+					<div><label className="text-xs font-bold text-slate-500">Indikator (deskripsi)</label><textarea className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" rows={2} value={actForm.indikator} onChange={e => setActForm({ ...actForm, indikator: e.target.value })} /></div>
+					<button onClick={saveAct} className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-700">Simpan</button>
 				</div>
 			</Modal>
 
 			<Modal open={indModal} title="Tambah Indikator" onClose={() => setIndModal(false)}>
 				<div className="space-y-4">
-					<div><label className="text-xs font-bold text-slate-500">Indikator *</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" value={indForm.name} onChange={e => setIndForm({ ...indForm, name: e.target.value })} placeholder="cth: Kelancaran hafalan juz 30" /></div>
-					<div><label className="text-xs font-bold text-slate-500">Bobot (%) *</label><input type="number" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-sky-500" value={indForm.weight} onChange={e => setIndForm({ ...indForm, weight: e.target.value })} /></div>
-					<button onClick={saveInd} className="w-full rounded-2xl bg-sky-600 py-3 text-sm font-bold text-white hover:bg-sky-700">Simpan</button>
+					<div><label className="text-xs font-bold text-slate-500">Indikator *</label><input className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" value={indForm.name} onChange={e => setIndForm({ ...indForm, name: e.target.value })} placeholder="cth: Kelancaran hafalan juz 30" /></div>
+					<div><label className="text-xs font-bold text-slate-500">Bobot (%) *</label><input type="number" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" value={indForm.weight} onChange={e => setIndForm({ ...indForm, weight: e.target.value })} /></div>
+					<button onClick={saveInd} className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-700">Simpan</button>
 				</div>
 			</Modal>
 

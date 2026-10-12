@@ -49,8 +49,8 @@ const SEVERITY_META: Record<
   },
   low: {
     label: 'Low',
-    badge: 'bg-sky-100 text-sky-700 ring-sky-600/20',
-    dot: 'bg-sky-500',
+    badge: 'bg-emerald-100 text-emerald-700 ring-emerald-600/20',
+    dot: 'bg-emerald-500',
   },
   info: {
     label: 'Info',
@@ -227,7 +227,7 @@ export default function AuditDashboard() {
           <SummaryTile label="Critical" value={sev.critical} tone="text-red-600" icon={<XCircle className="h-4 w-4" />} />
           <SummaryTile label="High" value={sev.high} tone="text-orange-600" icon={<AlertTriangle className="h-4 w-4" />} />
           <SummaryTile label="Medium" value={sev.medium} tone="text-amber-600" icon={<AlertTriangle className="h-4 w-4" />} />
-          <SummaryTile label="Low" value={sev.low} tone="text-sky-600" icon={<Info className="h-4 w-4" />} />
+          <SummaryTile label="Low" value={sev.low} tone="text-emerald-600" icon={<Info className="h-4 w-4" />} />
           <SummaryTile label="Info" value={sev.info} tone="text-slate-500" icon={<Info className="h-4 w-4" />} />
           <SummaryTile label="Fixed" value={stat.fixed} tone="text-emerald-600" icon={<CheckCircle2 className="h-4 w-4" />} />
         </section>

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 const inputClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10';
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10';
 
 const roleLabels: Record<string, string> = {
   superadmin: 'Super Admin',
@@ -172,7 +172,7 @@ export default function AccountPage() {
           </p>
         </div>
         <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-6 py-4 shadow-sm shadow-slate-100 md:flex">
-          <ShieldCheck size={20} className="text-sky-500" />
+          <ShieldCheck size={20} className="text-emerald-500" />
           <span className="text-xs font-black uppercase tracking-widest text-slate-700">
             Sesi Terenkripsi
           </span>
@@ -185,17 +185,17 @@ export default function AccountPage() {
             name={user?.name}
             photoUrl={user?.photo_url}
             size="lg"
-            className="ring-4 ring-sky-50"
+            className="ring-4 ring-emerald-50"
           />
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">
               Identitas Akun
             </p>
             <h2 className="mt-2 truncate text-2xl font-black tracking-tight text-slate-900">
               {user?.name || 'Administrator'}
             </h2>
             <p className="mt-1 text-sm font-medium text-slate-500">{user?.email || '-'}</p>
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-sky-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-sky-700">
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">
               <UserRound size={13} />
               {roleLabels[user?.role || ''] || user?.role || 'staff'}
             </p>
@@ -215,7 +215,7 @@ export default function AccountPage() {
               type="button"
               disabled={isPhotoSaving}
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               <Camera size={16} />
               {isPhotoSaving ? 'Memproses...' : user?.photo_url ? 'Ganti Foto' : 'Unggah Foto'}
@@ -240,7 +240,7 @@ export default function AccountPage() {
 
         <p className="mt-6 border-t border-slate-100 pt-5 text-xs font-medium leading-6 text-slate-500">
           Nama, email, dan role dikelola oleh Super Admin lewat halaman{' '}
-          <Link href="/admin/users" className="font-bold text-sky-700 underline-offset-2 hover:underline">
+          <Link href="/admin/users" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
             Manajemen Pengguna
           </Link>
           . Halaman ini hanya mengubah foto profil dan password milik akun Anda sendiri.
@@ -260,7 +260,7 @@ export default function AccountPage() {
 
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-700">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
             <KeyRound size={20} />
           </div>
           <div>
@@ -334,7 +334,7 @@ export default function AccountPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               <KeyRound size={16} />
               {isSaving ? 'Menyimpan...' : 'Simpan Password Baru'}
@@ -360,7 +360,7 @@ export default function AccountPage() {
         </p>
         <Link
           href="/admin/akun/walisantri"
-          className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+          className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
         >
           <Users size={16} />
           Kelola Akun Wali Santri

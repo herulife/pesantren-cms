@@ -181,7 +181,7 @@ export default function DocumentsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -193,8 +193,8 @@ export default function DocumentsPage() {
         Unggah dokumen persyaratan PSB. Dokumen yang sudah masuk akan langsung terhubung ke akun pendaftaran kamu.
       </p>
 
-      <div className="mb-10 flex gap-4 rounded-3xl border border-sky-100 bg-sky-50 p-6 text-sky-800">
-        <ShieldCheck className="mt-1 shrink-0 text-sky-500" />
+      <div className="mb-10 flex gap-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-6 text-emerald-800">
+        <ShieldCheck className="mt-1 shrink-0 text-emerald-500" />
         <p className="text-sm font-medium leading-relaxed">
           Pastikan biodata sudah tersimpan sebelum mengunggah dokumen. File akan dikirim ke server dan dibaca panitia dari dashboard PSB.
         </p>
@@ -229,7 +229,7 @@ export default function DocumentsPage() {
                   : 'Belum diunggah';
           const statusClass =
             status === 'uploading'
-              ? 'border-sky-100 bg-sky-50 text-sky-700'
+              ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
               : status === 'success'
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 : status === 'error'
@@ -264,7 +264,7 @@ export default function DocumentsPage() {
                         href={normalizeApiAssetUrl(documents[doc.id])}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1 rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-sky-700 hover:bg-sky-100"
+                        className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700 hover:bg-emerald-100"
                       >
                         Lihat &#8599;
                       </a>
@@ -275,7 +275,7 @@ export default function DocumentsPage() {
                       status === 'error'
                         ? 'text-rose-600'
                         : status === 'uploading'
-                          ? 'text-sky-600'
+                          ? 'text-emerald-600'
                           : 'text-slate-500'
                     }`}>
                       {documentNotes[doc.id]}
@@ -342,7 +342,7 @@ export default function DocumentsPage() {
               {allDocumentsUploaded ? (
                 <Link
                   href="/portal/review"
-                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-7 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-sky-600/35"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-600 to-indigo-600 px-7 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/35"
                 >
                   Lanjut ke Review & Konfirmasi <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </Link>

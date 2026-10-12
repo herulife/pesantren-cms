@@ -139,12 +139,12 @@ export default function EmployeesAdminPage() {
           <h1 className="text-3xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">Data Pegawai</h1>
           <p className="text-slate-500 text-sm font-medium">
             Master data SDM operasional: kode pegawai dipakai absensi fingerprint dan
-            laporan. Etalase profil publik dikelola terpisah di <Link href="/admin/settings?tab=Staf%20Mengajar" className="font-bold text-sky-700 hover:underline">menu Pengajar</Link>.
+            laporan. Etalase profil publik dikelola terpisah di <Link href="/admin/settings?tab=Staf%20Mengajar" className="font-bold text-emerald-700 hover:underline">menu Pengajar</Link>.
           </p>
         </div>
         <Link
           href="/admin/employees/add"
-          className="flex items-center justify-center gap-3 px-6 py-3 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/15"
+          className="flex items-center justify-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/15"
         >
           <Plus size={20} />
           <span>Tambah Pegawai</span>
@@ -158,7 +158,7 @@ export default function EmployeesAdminPage() {
               <button
                 key={tab.id}
                 onClick={() => { setKindFilter(tab.id); setCurrentPage(1); }}
-                className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${kindFilter === tab.id ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${kindFilter === tab.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 {tab.label}
               </button>
@@ -166,25 +166,25 @@ export default function EmployeesAdminPage() {
           </div>
 
           <div className="flex-1 w-full relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors" size={18} />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
             <input
               type="text"
               placeholder="Cari pegawai berdasarkan kode atau nama…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Cari pegawai berdasarkan kode atau nama"
-              className="w-full pl-14 pr-6 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-sm shadow-inner"
+              className="w-full pl-14 pr-6 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm shadow-inner"
             />
           </div>
         </div>
 
         {selectedCodes.size > 0 && (
-          <div className="bg-sky-50 px-8 py-4 border-b border-sky-100 flex items-center justify-between animate-in slide-in-from-top duration-300">
+          <div className="bg-emerald-50 px-8 py-4 border-b border-emerald-100 flex items-center justify-between animate-in slide-in-from-top duration-300">
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
+              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
                 {selectedCodes.size}
               </div>
-              <span className="text-xs font-black text-sky-800 uppercase tracking-widest">Pegawai Terpilih</span>
+              <span className="text-xs font-black text-emerald-800 uppercase tracking-widest">Pegawai Terpilih</span>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -211,7 +211,7 @@ export default function EmployeesAdminPage() {
                       checked={pageRows.length > 0 && selectedCodes.size === pageRows.length && pageRows.every((r) => selectedCodes.has(r.code))}
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       aria-label="Pilih semua di halaman ini"
-                      className="w-5 h-5 rounded-lg border-slate-200 text-sky-600 focus:ring-sky-500/20 cursor-pointer transition-all"
+                      className="w-5 h-5 rounded-lg border-slate-200 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer transition-all"
                     />
                   </div>
                 </th>
@@ -248,7 +248,7 @@ export default function EmployeesAdminPage() {
                 pageRows.map((item) => {
                   const isChecked = selectedCodes.has(item.code);
                   return (
-                    <tr key={item.code} className={`group hover:bg-slate-50 transition-colors ${isChecked ? 'bg-sky-50/50' : ''}`}>
+                    <tr key={item.code} className={`group hover:bg-slate-50 transition-colors ${isChecked ? 'bg-emerald-50/50' : ''}`}>
                       <td className="pl-10 pr-6 py-6 text-center">
                         <div className="flex items-center justify-center">
                           <input
@@ -256,13 +256,13 @@ export default function EmployeesAdminPage() {
                             checked={isChecked}
                             onChange={(e) => handleSelectOne(item.code, e.target.checked)}
                             aria-label={`Pilih ${item.name}`}
-                            className="w-5 h-5 rounded-lg border-slate-200 text-sky-600 focus:ring-sky-500/20 cursor-pointer transition-all"
+                            className="w-5 h-5 rounded-lg border-slate-200 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer transition-all"
                           />
                         </div>
                       </td>
                       <td className="px-6 py-6 max-w-lg">
                         <div className="flex items-center gap-6">
-                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-sky-50 text-sky-700 border border-sky-100 flex items-center justify-center font-black text-xl shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center font-black text-xl shrink-0 shadow-inner group-hover:scale-105 transition-transform">
                             {item.photo_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={resolveDisplayImageUrl(item.photo_url)} alt={`Foto ${item.name}`} className="h-full w-full object-cover" />
@@ -271,7 +271,7 @@ export default function EmployeesAdminPage() {
                             )}
                           </div>
                           <div className="flex flex-col gap-1.5">
-                            <Link href={`/admin/employees/edit/${encodeURIComponent(item.code)}`} className="font-black text-slate-900 leading-snug uppercase tracking-tight group-hover:text-sky-600 transition-colors line-clamp-2">
+                            <Link href={`/admin/employees/edit/${encodeURIComponent(item.code)}`} className="font-black text-slate-900 leading-snug uppercase tracking-tight group-hover:text-emerald-600 transition-colors line-clamp-2">
                               {item.name}
                             </Link>
                             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
@@ -293,13 +293,13 @@ export default function EmployeesAdminPage() {
                         </div>
                       </td>
                       <td className="px-6 py-6 hidden md:table-cell">
-                        <span className={`inline-flex items-center px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border shadow-sm ${item.kind === 'Guru' ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                        <span className={`inline-flex items-center px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border shadow-sm ${item.kind === 'Guru' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                           {item.kind || '-'}
                         </span>
                       </td>
                       <td className="pr-10 pl-6 py-6 text-right">
                         <div className="flex justify-end items-center gap-2">
-                          <Link href={`/admin/employees/edit/${encodeURIComponent(item.code)}`} className="p-3 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors" title="Ubah" aria-label={`Ubah ${item.name}`}>
+                          <Link href={`/admin/employees/edit/${encodeURIComponent(item.code)}`} className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Ubah" aria-label={`Ubah ${item.name}`}>
                             <Pencil size={20} />
                           </Link>
                           <button onClick={() => { setSelectedCode(item.code); setIsDeleteOpen(true); }} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus" aria-label={`Hapus ${item.name}`}>

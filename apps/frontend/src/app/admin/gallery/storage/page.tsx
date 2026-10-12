@@ -29,7 +29,7 @@ function statusBadge(status: string, extra?: string) {
   const base = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border';
   switch (status) {
     case 'syncing':
-      return <span className={`${base} bg-sky-50 text-sky-700 border-sky-200`}><Loader2 size={11} className="animate-spin" />{extra || 'Menyinkron'}</span>;
+      return <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200`}><Loader2 size={11} className="animate-spin" />{extra || 'Menyinkron'}</span>;
     case 'success':
       return <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200`}><CheckCircle2 size={11} />{extra || 'Berhasil'}</span>;
     case 'error':
@@ -343,7 +343,7 @@ function StorageAdminPageContent() {
       {totals && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
           {[
-            { icon: <Cloud size={20} />, label: 'Akun Terhubung', value: totals.accounts, tint: 'bg-sky-50 text-sky-700 border-sky-100' },
+            { icon: <Cloud size={20} />, label: 'Akun Terhubung', value: totals.accounts, tint: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
             { icon: <FolderTree size={20} />, label: 'Sumber Data', value: totals.sources, tint: 'bg-violet-50 text-violet-700 border-violet-100' },
             { icon: <Images size={20} />, label: 'Foto Tersinkron', value: totals.synced_media, tint: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
             { icon: <Database size={20} />, label: 'Total Galeri', value: totals.media, tint: 'bg-slate-100 text-slate-700 border-slate-200' },
@@ -445,7 +445,7 @@ function StorageAdminPageContent() {
                           </div>
                           {progress && (syncing || progress.files > 0 || progress.added > 0) && (
                             <div className="mt-3 flex items-center gap-4 text-[11px] font-black text-slate-600">
-                              <span className="inline-flex items-center gap-1.5"><RefreshCw size={13} className={syncing ? 'animate-spin text-sky-500' : 'text-slate-300'} />{progress.files || 0} file</span>
+                              <span className="inline-flex items-center gap-1.5"><RefreshCw size={13} className={syncing ? 'animate-spin text-emerald-500' : 'text-slate-300'} />{progress.files || 0} file</span>
                               <span className="inline-flex items-center gap-1.5 text-emerald-600">+{progress.added || 0} baru</span>
                               {progress.errors ? <span className="inline-flex items-center gap-1.5 text-rose-500">! {progress.errors} gagal</span> : null}
                             </div>

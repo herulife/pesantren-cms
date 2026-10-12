@@ -61,7 +61,7 @@ function LoginPageContent() {
   };
 
   const formContent = (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50/40 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 flex items-center justify-center px-4 py-10">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -70,7 +70,7 @@ function LoginPageContent() {
       >
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/60 p-8 sm:p-10">
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-sky-500 to-sky-600 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/20 mb-5">
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-5">
               <HeartPulse className="text-white" size={28} />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
@@ -97,7 +97,7 @@ function LoginPageContent() {
                   required
                   placeholder="nama@email.com"
                   autoComplete="username"
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 focus:border-sky-400 transition-all outline-none"
+                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-400 transition-all outline-none"
                 />
               </div>
             </div>
@@ -117,7 +117,7 @@ function LoginPageContent() {
                   required
                   placeholder="Masukkan kata sandi"
                   autoComplete="current-password"
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 focus:border-sky-400 transition-all outline-none"
+                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-400 transition-all outline-none"
                 />
               </div>
             </div>
@@ -125,7 +125,7 @@ function LoginPageContent() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-6 py-3.5 bg-gradient-to-r from-sky-600 to-sky-500 text-white rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              className="w-full mt-6 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               {isLoading ? (
                 <>
@@ -165,7 +165,7 @@ function LoginPageContent() {
             Belum punya akun?{" "}
             <Link
               href={fromPSB ? "/register?from=psb" : "/register"}
-              className="text-sky-600 font-semibold hover:text-sky-700"
+              className="text-emerald-600 font-semibold hover:text-emerald-700"
             >
               Daftar
             </Link>
@@ -185,9 +185,9 @@ function LoginPageContent() {
 
 function LoginLoadingFallback() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50/40 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-7 w-7 animate-spin text-sky-600" />
+        <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
         <p className="text-sm text-slate-600">Memuat...</p>
       </div>
     </div>

@@ -321,16 +321,16 @@ export function NotePageContent() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <div className="relative overflow-hidden bg-slate-950 py-20 text-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-sky-950/70" />
-        <div className="absolute right-0 top-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-800/30 blur-[100px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-emerald-950/70" />
+        <div className="absolute right-0 top-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-800/30 blur-[100px]" />
         <div className="relative z-10 mx-auto max-w-7xl px-4 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-bold tracking-widest text-sky-200">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-bold tracking-widest text-emerald-200">
             <StickyNote size={15} /> PASTEBIN DARUSSUNNAH
           </div>
           <h1 className="font-outfit mb-4 text-4xl font-black tracking-tight md:text-5xl">
             Tempel Catatan, Bagikan Link
           </h1>
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-sky-100/80">
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-emerald-100/80">
             Tempel teks, simpan, lalu bagikan link-nya. Semua catatanmu tersimpan di server,
             bisa dibuka dari HP atau komputer mana pun — tanpa login.
           </p>
@@ -350,7 +350,7 @@ export function NotePageContent() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={200}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   placeholder="Cth: Jadwal rapat guru"
                 />
               </div>
@@ -368,7 +368,7 @@ export function NotePageContent() {
                     value={customUrl}
                     onChange={(e) => setCustomUrl(e.target.value)}
                     maxLength={60}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-[46%] pr-6 font-mono text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 md:pl-[34%]"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-[46%] pr-6 font-mono text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:pl-[34%]"
                     placeholder="jadwal-rapat-guru"
                   />
                 </div>
@@ -395,7 +395,7 @@ export function NotePageContent() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={14}
-                  className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 font-mono text-sm leading-relaxed transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 font-mono text-sm leading-relaxed transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   placeholder="Tempel teks Anda di sini…"
                 />
               </div>
@@ -413,8 +413,8 @@ export function NotePageContent() {
                         onClick={() => setExpiresInDays(opt.value)}
                         className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-wide transition ${
                           expiresInDays === opt.value
-                            ? 'border-sky-600 bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-sky-300 hover:text-sky-600'
+                            ? 'border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-300 hover:text-emerald-600'
                         }`}
                       >
                         {opt.label}
@@ -425,7 +425,7 @@ export function NotePageContent() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center justify-center gap-3 rounded-2xl bg-sky-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/20 transition hover:bg-sky-700 disabled:opacity-50"
+                  className="flex items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -445,8 +445,8 @@ export function NotePageContent() {
             </form>
           ) : (
             <div className="space-y-6">
-              <div className="rounded-3xl border border-sky-200 bg-sky-50 p-6 text-center">
-                <p className="mb-3 text-sm font-bold text-sky-800">
+              <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+                <p className="mb-3 text-sm font-bold text-emerald-800">
                   Catatan berhasil disimpan. Bagikan link ini:
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row">
@@ -454,13 +454,13 @@ export function NotePageContent() {
                     readOnly
                     value={shareUrl}
                     onFocus={(e) => e.currentTarget.select()}
-                    className="w-full rounded-2xl border border-sky-200 bg-white px-5 py-4 font-mono text-sm font-bold text-slate-800 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-emerald-200 bg-white px-5 py-4 font-mono text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={handleCopy}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 sm:flex-none"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 sm:flex-none"
                     >
                       {copied ? <ClipboardCheck size={16} /> : <Clipboard size={16} />}
                       {copied ? 'Tersalin!' : 'Salin'}
@@ -476,9 +476,9 @@ export function NotePageContent() {
                   </div>
                 </div>
                 {result.title ? (
-                  <p className="mt-4 text-xs font-bold text-sky-700">Judul: {result.title}</p>
+                  <p className="mt-4 text-xs font-bold text-emerald-700">Judul: {result.title}</p>
                 ) : null}
-                <p className="mt-1 text-xs text-sky-600/80">
+                <p className="mt-1 text-xs text-emerald-600/80">
                   Dibuat {formattedDate}
                   {result.expires_at
                     ? ` • Berlaku hingga ${new Date(result.expires_at).toLocaleString('id-ID')}`
@@ -507,7 +507,7 @@ export function NotePageContent() {
                   <button
                     type="button"
                     onClick={scrollToMyNotes}
-                    className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                    className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-600 transition hover:border-emerald-300 hover:text-emerald-600"
                   >
                     <ListVideo size={16} /> Lihat Semua Catatanku ({myNotes.length})
                   </button>
@@ -536,7 +536,7 @@ export function NotePageContent() {
         <div ref={myNotesRef} id="my-notes" className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white/95 shadow-xl shadow-slate-200/50">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5 md:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                 <FolderOpen size={20} />
               </div>
               <div>
@@ -547,7 +547,7 @@ export function NotePageContent() {
                 </p>
               </div>
             </div>
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-black text-sky-700">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-black text-emerald-700">
               {myNotesLoading ? 'Memuat…' : `${myNotes.length} catatan`}
             </span>
           </div>
@@ -570,7 +570,7 @@ export function NotePageContent() {
                 {myNotes.map((item) => (
                   <li
                     key={item.url_id}
-                    className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-sky-200 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-emerald-200 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -597,7 +597,7 @@ export function NotePageContent() {
                     <div className="flex shrink-0 gap-2">
                       <Link
                         href={`/note/${item.url_id}`}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-600"
                       >
                         <Eye size={14} /> Buka
                       </Link>
@@ -638,14 +638,14 @@ export function NotePageContent() {
                   <button
                     type="button"
                     onClick={() => setKeyEditing(true)}
-                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wide text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-600"
                   >
                     <PenLine size={13} /> Ganti Kunci
                   </button>
                   <button
                     type="button"
                     onClick={handleRandomizeKey}
-                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wide text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-600"
                   >
                     <RefreshCw size={13} /> Kunci Baru
                   </button>
@@ -657,12 +657,12 @@ export function NotePageContent() {
                     value={keyInput}
                     onChange={(e) => setKeyInput(e.target.value)}
                     placeholder="Ketuk kunci sendiri (min. 6 karakter)…"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-sm font-bold text-slate-700 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-sm font-bold text-slate-700 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                   <button
                     type="button"
                     onClick={handleApplyKey}
-                    className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
+                    className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
                   >
                     <Check size={15} /> Pakai
                   </button>
@@ -679,12 +679,12 @@ export function NotePageContent() {
                   value={keyInput}
                   onChange={(e) => setKeyInput(e.target.value)}
                   placeholder="Tempel kunci dari perangkat lain ini…"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-sm font-bold text-slate-700 transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-mono text-sm font-bold text-slate-700 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                 />
                 <button
                   type="button"
                   onClick={handleApplyKey}
-                  className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
                 >
                   <Link2 size={15} /> Pakai Kunci
                 </button>

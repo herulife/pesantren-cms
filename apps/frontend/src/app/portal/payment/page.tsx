@@ -358,7 +358,7 @@ export default function PortalPaymentPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -428,31 +428,31 @@ export default function PortalPaymentPage() {
       </div>
 
       {paymentStatus === 'pending' ? (
-        <div className="mb-8 rounded-[2rem] border border-sky-200 bg-sky-50 p-6 shadow-sm">
+        <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-white p-3 text-sky-600 shadow-sm">
+            <div className="rounded-2xl bg-white p-3 text-emerald-600 shadow-sm">
               <Clock size={24} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">Yang Perlu Kamu Tahu</p>
-              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-sky-950">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Yang Perlu Kamu Tahu</p>
+              <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-emerald-950">
                 Bukti Diterima, Verifikasi Sedang Berjalan
               </h4>
-              <ul className="mt-4 space-y-2 text-sm font-semibold leading-6 text-sky-900/80">
+              <ul className="mt-4 space-y-2 text-sm font-semibold leading-6 text-emerald-900/80">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-1 shrink-0 text-sky-600" />
+                  <CheckCircle2 size={16} className="mt-1 shrink-0 text-emerald-600" />
                   Bukti transfer kamu sudah masuk ke panitia.
                 </li>
                 <li className="flex items-start gap-2">
-                  <Clock size={16} className="mt-1 shrink-0 text-sky-600" />
+                  <Clock size={16} className="mt-1 shrink-0 text-emerald-600" />
                   Verifikasi biasanya selesai dalam 1–2 hari kerja.
                 </li>
                 <li className="flex items-start gap-2">
-                  <ShieldCheck size={16} className="mt-1 shrink-0 text-sky-600" />
+                  <ShieldCheck size={16} className="mt-1 shrink-0 text-emerald-600" />
                   Jangan upload ulang / kirim ganda — kecuali ada catatan panitia.
                 </li>
                 <li className="flex items-start gap-2">
-                  <RefreshCw size={16} className="mt-1 shrink-0 text-sky-600" />
+                  <RefreshCw size={16} className="mt-1 shrink-0 text-emerald-600" />
                   Status di halaman ini diperbarui otomatis.
                 </li>
               </ul>
@@ -463,13 +463,13 @@ export default function PortalPaymentPage() {
 
       {(paymentStatus === 'pending' || paymentStatus === 'paid') && Boolean(proofUrl) ? (
         <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
                 <Receipt size={18} />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Kwitansi Pembayaran</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Kwitansi Pembayaran</p>
                 <h4 className="font-outfit text-lg font-black uppercase tracking-tight text-slate-900">
                   {paymentStatus === 'paid' ? 'Pembayaran Dinyatakan Lunas' : 'Kwitansi Sementara'}
                 </h4>
@@ -487,7 +487,7 @@ export default function PortalPaymentPage() {
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <dt className="font-semibold text-slate-500">Kode Kwitansi</dt>
-                <dd className="font-black tracking-wide text-sky-900">{receipt?.code || 'KWI-...'}</dd>
+                <dd className="font-black tracking-wide text-emerald-900">{receipt?.code || 'KWI-...'}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="font-semibold text-slate-500">Atas Nama</dt>
@@ -495,7 +495,7 @@ export default function PortalPaymentPage() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="font-semibold text-slate-500">Nominal</dt>
-                <dd className="font-black text-sky-900">{formatCurrency(registration?.payment_amount)}</dd>
+                <dd className="font-black text-emerald-900">{formatCurrency(registration?.payment_amount)}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="font-semibold text-slate-500">Tanggal Transfer</dt>
@@ -526,7 +526,7 @@ export default function PortalPaymentPage() {
               <button
                 type="button"
                 onClick={() => void loadReceipt()}
-                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-sky-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-sky-600/35 active:translate-y-0"
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-600 to-indigo-600 px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/35 active:translate-y-0"
               >
                 <Banknote size={15} className="transition-transform group-hover:scale-110" /> Buka / Unduh Kwitansi
               </button>
@@ -538,7 +538,7 @@ export default function PortalPaymentPage() {
       <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Checklist Pembayaran</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Checklist Pembayaran</p>
             <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Langkah Yang Sudah Dilalui</h4>
           </div>
           <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
@@ -552,13 +552,13 @@ export default function PortalPaymentPage() {
               key={step.title}
               className={`rounded-2xl border px-4 py-4 ${
                 step.completed
-                  ? 'border-sky-100 bg-sky-50 text-sky-900'
+                  ? 'border-emerald-100 bg-emerald-50 text-emerald-900'
                   : 'border-slate-200 bg-slate-50 text-slate-500'
               }`}
             >
               <div
                 className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
-                  step.completed ? 'bg-sky-600 text-white' : 'bg-white text-slate-400'
+                  step.completed ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'
                 }`}
               >
                 {step.completed ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
@@ -571,13 +571,13 @@ export default function PortalPaymentPage() {
       </div>
 
       {successMessage ? (
-        <div className="mb-8 rounded-[2rem] border border-sky-200 bg-sky-50 p-6 text-sky-900 shadow-sm">
+        <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 shadow-sm">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
               <CheckCircle2 size={24} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-700">Upload Berhasil</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Upload Berhasil</p>
               <h4 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight">Bukti Pembayaran Terkirim</h4>
               <p className="mt-2 text-sm font-semibold leading-7">{successMessage}</p>
             </div>
@@ -637,11 +637,11 @@ export default function PortalPaymentPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center gap-3">
-            <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
+            <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
               <ShieldCheck size={22} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Instruksi Transfer</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Instruksi Transfer</p>
               <h4 className="font-outfit text-xl font-black uppercase tracking-tight text-slate-900">Pembayaran Manual</h4>
             </div>
           </div>
@@ -653,11 +653,11 @@ export default function PortalPaymentPage() {
 
             {hasBankInfo ? (
               <div className="grid gap-3">
-                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                  <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
                     <Landmark size={13} /> Bank Tujuan
                   </p>
-                  <p className="mt-2 text-lg font-black text-sky-950">{configuredBankName || '-'}</p>
+                  <p className="mt-2 text-lg font-black text-emerald-950">{configuredBankName || '-'}</p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -667,7 +667,7 @@ export default function PortalPaymentPage() {
                         <button
                           type="button"
                           onClick={() => void handleCopy(configuredAccountNumber, 'Nomor rekening')}
-                          className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm transition hover:bg-sky-700"
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm transition hover:bg-emerald-700"
                         >
                           <Copy size={11} /> Salin
                         </button>
@@ -682,7 +682,7 @@ export default function PortalPaymentPage() {
                         <button
                           type="button"
                           onClick={() => void handleCopy(configuredAccountName, 'Atas nama rekening')}
-                          className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm transition hover:bg-sky-700"
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm transition hover:bg-emerald-700"
                         >
                           <Copy size={11} /> Salin
                         </button>
@@ -707,7 +707,7 @@ export default function PortalPaymentPage() {
             )}
 
             {configuredPaymentNote ? (
-              <p className="rounded-2xl border border-sky-100 bg-sky-50 p-4 font-semibold text-sky-900">
+              <p className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 font-semibold text-emerald-900">
                 {configuredPaymentNote}
               </p>
             ) : null}
@@ -742,7 +742,7 @@ export default function PortalPaymentPage() {
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 disabled:text-slate-400"
                 placeholder="Contoh: 250000"
               />
               {!isLocked && configuredAmount > 0 && parsedAmount > 0 && parsedAmount !== configuredAmount ? (
@@ -765,17 +765,17 @@ export default function PortalPaymentPage() {
                 value={paymentDate}
                 onChange={(event) => setPaymentDate(event.target.value)}
                 disabled={isLocked}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:text-slate-400"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 disabled:text-slate-400"
               />
             </div>
           </div>
 
-          <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-dashed border-sky-200 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 sm:p-8">
+          <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-dashed border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 p-6 sm:p-8">
             <div className="mx-auto flex max-w-xl flex-col items-center text-center">
               <div className="relative">
                 <div
                   className={`absolute inset-0 animate-pulse rounded-3xl opacity-60 blur-lg ${
-                    selectedProofFile || proofUrl ? 'bg-emerald-400' : 'bg-sky-500'
+                    selectedProofFile || proofUrl ? 'bg-emerald-400' : 'bg-emerald-500'
                   }`}
                 />
                 <div
@@ -784,7 +784,7 @@ export default function PortalPaymentPage() {
                       ? 'bg-slate-400'
                       : selectedProofFile || proofUrl
                         ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/40'
-                        : 'bg-gradient-to-br from-sky-500 to-blue-700 shadow-sky-600/40'
+                        : 'bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-emerald-600/40'
                   }`}
                 >
                   {isUploading ? (
@@ -797,7 +797,7 @@ export default function PortalPaymentPage() {
                 </div>
               </div>
 
-              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">Bukti Transfer</p>
+              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">Bukti Transfer</p>
               <h5 className="mt-2 font-outfit text-xl font-black uppercase tracking-tight text-slate-900">
                 {isUploading
                   ? 'Mengunggah Bukti...'
@@ -810,7 +810,7 @@ export default function PortalPaymentPage() {
               <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
                 {selectedProofFile ? (
                   <>
-                    File dipilih: <span className="font-black text-sky-700">{selectedProofFile.name}</span>
+                    File dipilih: <span className="font-black text-emerald-700">{selectedProofFile.name}</span>
                   </>
                 ) : proofUrl ? (
                   'Bukti sebelumnya sudah tersimpan. Ganti bila perlu, lalu kirim ulang ke panitia.'
@@ -830,7 +830,7 @@ export default function PortalPaymentPage() {
                   <button
                     type="button"
                     onClick={() => void openProofInNewTab(proofDisplayUrl, (m) => showToast('error', m))}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 backdrop-blur transition hover:border-sky-200 hover:bg-white hover:text-sky-700"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 backdrop-blur transition hover:border-emerald-200 hover:bg-white hover:text-emerald-700"
                   >
                     <Eye size={16} />
                     Preview
@@ -851,7 +851,7 @@ export default function PortalPaymentPage() {
                         ? 'bg-slate-300 text-slate-500 shadow-none'
                         : hasPaymentWarning
                           ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-xl shadow-amber-500/30'
-                          : 'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 shadow-xl shadow-sky-600/30'
+                          : 'bg-gradient-to-r from-emerald-600 via-emerald-600 to-indigo-600 shadow-xl shadow-emerald-600/30'
                     }`}
                   >
                     <UploadCloud size={16} />
@@ -874,7 +874,7 @@ export default function PortalPaymentPage() {
                 className={`inline-flex items-center justify-center gap-3 rounded-full px-8 py-4 text-xs font-black uppercase tracking-widest transition-all duration-300 ${
                   !canSubmitPayment || isUploading
                     ? 'cursor-not-allowed bg-slate-200 text-slate-400'
-                    : 'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white shadow-xl shadow-sky-600/30 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-sky-600/40 active:translate-y-0 active:scale-[0.98]'
+                    : 'bg-gradient-to-r from-emerald-600 via-emerald-600 to-indigo-600 text-white shadow-xl shadow-emerald-600/30 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-emerald-600/40 active:translate-y-0 active:scale-[0.98]'
                 }`}
               >
                 {isUploading ? (
@@ -897,7 +897,7 @@ export default function PortalPaymentPage() {
                   Pantau Status di Dasbor <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </Link>
               ) : paymentStatus === 'pending' ? (
-                <span className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-50 px-5 py-3 text-xs font-black uppercase tracking-widest text-sky-700">
+                <span className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-50 px-5 py-3 text-xs font-black uppercase tracking-widest text-emerald-700">
                   <RefreshCw size={16} className="animate-spin" /> Menunggu Verifikasi Panitia
                 </span>
               ) : (

@@ -28,8 +28,8 @@ const STATUS_FILTERS = [
 
 function statusStyle(status: string) {
   switch (status.toLowerCase()) {
-    case 'accepted': return 'bg-sky-100 text-sky-700 border-sky-200';
-    case 'review': return 'bg-sky-100 text-sky-700 border-sky-200';
+    case 'accepted': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    case 'review': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     case 'tes': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
     case 're_registration': return 'bg-violet-100 text-violet-700 border-violet-200';
     case 'rejected': return 'bg-rose-100 text-rose-700 border-rose-200';
@@ -181,12 +181,12 @@ export default function TabTesSeleksi() {
   const selectedCount = selected.size;
 
   const inputClass =
-    'w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[13px] font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-400/20';
+    'w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[13px] font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-400/20';
 
   if (loading && registrations.length === 0) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="animate-spin text-sky-600" />
+        <Loader2 className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -204,7 +204,7 @@ export default function TabTesSeleksi() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama / asal sekolah"
-              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 md:w-64"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 md:w-64"
             />
           </div>
           <button
@@ -236,13 +236,13 @@ export default function TabTesSeleksi() {
       </div>
 
       {selectedCount > 0 && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 md:flex-row md:items-end">
+        <div className="flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 md:flex-row md:items-end">
           <div className="md:w-56">
-            <label className="text-[10px] font-black uppercase tracking-widest text-sky-700">Jadwal Tes (massal)</label>
+            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Jadwal Tes (massal)</label>
             <input type="datetime-local" value={batchDate} onChange={(e) => setBatchDate(e.target.value)} className={`mt-1 ${inputClass}`} />
           </div>
           <div className="md:flex-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-sky-700">Lokasi Tes (massal)</label>
+            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Lokasi Tes (massal)</label>
             <input
               value={batchLocation}
               onChange={(e) => setBatchLocation(e.target.value)}
@@ -253,7 +253,7 @@ export default function TabTesSeleksi() {
           <button
             onClick={() => void applyBatch()}
             disabled={batchSaving}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 disabled:opacity-50"
           >
             {batchSaving ? <Loader2 size={15} className="animate-spin" /> : <CalendarClock size={15} />}
             Terapkan ke {selectedCount} terpilih
@@ -267,7 +267,7 @@ export default function TabTesSeleksi() {
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-black uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-3.5">
-                  <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="h-4 w-4 accent-sky-600" />
+                  <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="h-4 w-4 accent-emerald-600" />
                 </th>
                 <th className="px-4 py-3.5">Calon Santri</th>
                 <th className="px-4 py-3.5">Status</th>
@@ -288,7 +288,7 @@ export default function TabTesSeleksi() {
                   const saving = savingId === r.id;
                   const selectedRow = selected.has(r.id);
                   return (
-                    <tr key={r.id} className={`border-b border-slate-50 last:border-0 ${selectedRow ? 'bg-sky-50/60' : 'hover:bg-slate-50/50'}`}>
+                    <tr key={r.id} className={`border-b border-slate-50 last:border-0 ${selectedRow ? 'bg-emerald-50/60' : 'hover:bg-slate-50/50'}`}>
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
@@ -301,12 +301,12 @@ export default function TabTesSeleksi() {
                               return next;
                             })
                           }
-                          className="h-4 w-4 accent-sky-600"
+                          className="h-4 w-4 accent-emerald-600"
                         />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600">
                             <UserRound size={18} />
                           </div>
                           <div className="min-w-0">
@@ -354,7 +354,7 @@ export default function TabTesSeleksi() {
                         <button
                           onClick={() => void saveRow(r)}
                           disabled={saving || batchSaving}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
                         >
                           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Simpan
                         </button>

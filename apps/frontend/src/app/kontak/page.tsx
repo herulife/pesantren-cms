@@ -68,31 +68,31 @@ export function ContactPageContent() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <div className="relative overflow-hidden bg-slate-950 py-24 text-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-sky-950/70" />
-        <div className="absolute right-0 top-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-800/30 blur-[100px]" />
-        <div className="absolute bottom-0 left-0 h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-sky-900/20 blur-[100px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-emerald-950/70" />
+        <div className="absolute right-0 top-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-800/30 blur-[100px]" />
+        <div className="absolute bottom-0 left-0 h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-emerald-900/20 blur-[100px]" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 text-center">
-          <div className="mb-6 inline-block rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-bold tracking-widest text-sky-200">
+          <div className="mb-6 inline-block rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-bold tracking-widest text-emerald-200">
             {pageContent.hero.eyebrow.toUpperCase()}
           </div>
           <h1 className="font-outfit mb-6 text-4xl font-black tracking-tight md:text-5xl">
             {pageContent.hero.title}
           </h1>
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-sky-100/80">
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-emerald-100/80">
             {pageContent.hero.subtitle}
           </p>
 
           <div className="mt-10 grid gap-4 text-left md:grid-cols-3">
             <div className="rounded-[1.75rem] border border-white/10 bg-white/10 px-5 py-5 backdrop-blur">
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-sky-200">
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">
                 {pageContent.summary.address_title}
               </p>
               <p className="mt-3 text-sm font-medium leading-relaxed text-white/80">{schoolAddress}</p>
               <p className="mt-3 text-xs text-white/70">{pageContent.summary.address_supporting}</p>
             </div>
             <div className="rounded-[1.75rem] border border-white/10 bg-white/10 px-5 py-5 backdrop-blur">
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-sky-200">
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">
                 {pageContent.summary.contact_title}
               </p>
               <p className="mt-3 text-sm font-semibold text-white">{schoolPhone}</p>
@@ -100,7 +100,7 @@ export function ContactPageContent() {
               <p className="mt-3 text-xs text-white/70">{pageContent.summary.contact_supporting}</p>
             </div>
             <div className="rounded-[1.75rem] border border-white/10 bg-white/10 px-5 py-5 backdrop-blur">
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-sky-200">
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-200">
                 {pageContent.summary.hours_title}
               </p>
               <p className="mt-3 text-sm font-medium text-white/80">{pageContent.summary.hours_supporting}</p>
@@ -118,7 +118,7 @@ export function ContactPageContent() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-1">
             <div className="flex items-start gap-5 rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-sm">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                 <MapPin size={24} />
               </div>
               <div>
@@ -128,7 +128,7 @@ export function ContactPageContent() {
             </div>
 
             <div className="flex items-start gap-5 rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-sm">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                 <Phone size={24} />
               </div>
               <div>
@@ -151,7 +151,7 @@ export function ContactPageContent() {
                         )}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
                       >
                         <MessageCircle size={14} />
                         Chat Admin {index + 1}
@@ -191,19 +191,19 @@ export function ContactPageContent() {
               </div>
 
               {isSuccess ? (
-                <div className="animate-in zoom-in-95 rounded-3xl border border-sky-200 bg-sky-50 p-8 text-center">
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                <div className="animate-in zoom-in-95 rounded-3xl border border-emerald-200 bg-emerald-50 p-8 text-center">
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Send size={32} />
                   </div>
-                  <h3 className="mb-2 text-2xl font-black text-sky-900">
+                  <h3 className="mb-2 text-2xl font-black text-emerald-900">
                     {pageContent.form.success_title}
                   </h3>
-                  <p className="mx-auto mb-8 max-w-sm text-sky-700">
+                  <p className="mx-auto mb-8 max-w-sm text-emerald-700">
                     {pageContent.form.success_message}
                   </p>
                   <button
                     onClick={() => setIsSuccess(false)}
-                    className="rounded-2xl bg-sky-600 px-8 py-3 font-bold text-white transition hover:bg-sky-700"
+                    className="rounded-2xl bg-emerald-600 px-8 py-3 font-bold text-white transition hover:bg-emerald-700"
                   >
                     {pageContent.form.reset_label}
                   </button>
@@ -221,7 +221,7 @@ export function ContactPageContent() {
                         value={formData.name}
                         onChange={handleChange}
                         required
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         autoComplete="name"
                         placeholder="Cth: Abdullah"
                       />
@@ -235,7 +235,7 @@ export function ContactPageContent() {
                         name="whatsapp"
                         value={formData.whatsapp}
                         onChange={handleChange}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         autoComplete="tel"
                         placeholder="Cth: 08123456789"
                       />
@@ -251,7 +251,7 @@ export function ContactPageContent() {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-bold transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                       autoComplete="email"
                         placeholder="Cth: abdullah@email.com"
                     />
@@ -267,7 +267,7 @@ export function ContactPageContent() {
                       value={formData.message}
                       onChange={handleChange}
                       required
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-medium leading-relaxed transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                       placeholder="Tuliskan pesan atau pertanyaan Anda di sini..."
                     />
                   </div>
@@ -275,7 +275,7 @@ export function ContactPageContent() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-sky-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-sky-600/20 transition hover:bg-sky-700 disabled:opacity-50 md:w-auto"
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-10 py-5 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50 md:w-auto"
                   >
                     {isSubmitting ? (
                       <>
@@ -296,7 +296,7 @@ export function ContactPageContent() {
         <div className="mt-12 rounded-[2.5rem] border border-slate-100 bg-white/96 p-4 shadow-xl shadow-slate-200/50 backdrop-blur-sm md:p-8">
           <div className="flex flex-col gap-4 px-4 pb-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-sky-600">
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-600">
                 {pageContent.map.eyebrow}
               </p>
               <h2 className="font-outfit mt-2 text-xl font-black text-slate-800">{pageContent.map.title}</h2>
@@ -328,7 +328,7 @@ export function ContactPageContent() {
                 className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-slate-50/50 backdrop-blur-[1px]"
                 aria-label="Aktifkan peta"
               >
-                <span className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-700 shadow-lg ring-1 ring-slate-200 transition hover:bg-sky-600 hover:text-white">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-700 shadow-lg ring-1 ring-slate-200 transition hover:bg-emerald-600 hover:text-white">
                   <MapPin size={15} /> Ketuk untuk berinteraksi dengan peta
                 </span>
               </button>

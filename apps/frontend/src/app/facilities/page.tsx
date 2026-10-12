@@ -79,20 +79,20 @@ export default function FacilitiesPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-sky-900/80 bg-slate-950 py-24 text-white lg:py-28">
+      <section className="relative overflow-hidden border-b border-emerald-900/80 bg-slate-950 py-24 text-white lg:py-28">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1768152859503-084ed0e5507d?auto=format&fit=crop&w=1700&q=80')] bg-cover bg-center opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-sky-950/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-emerald-950/70" />
         <div className="relative mx-auto max-w-6xl px-4">
           <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-sky-100">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100">
                 <Sparkles size={14} />
                 Fasilitas Pondok
               </p>
               <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
                 Lingkungan belajar yang mendukung ibadah, akademik, keterampilan, dan kenyamanan santri.
               </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-sky-50/90">
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-emerald-50/90">
                 Kenali sarana pondok yang mendukung ibadah, belajar, keterampilan, dan kenyamanan
                 santri dalam keseharian di Darussunnah.
               </p>
@@ -101,7 +101,7 @@ export default function FacilitiesPage() {
               {facilityHighlights.map((item) => (
                 <div key={item.label} className="rounded-[1.6rem] border border-white/10 bg-white/8 px-5 py-5 shadow-[0_20px_42px_-30px_rgba(0,0,0,0.45)] backdrop-blur-sm">
                   <p className="text-3xl font-black text-white">{item.value}</p>
-                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/82">{item.label}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-200/82">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -118,8 +118,8 @@ export default function FacilitiesPage() {
               onClick={() => setActiveCategory(category)}
               className={`rounded-full border px-5 py-3 text-xs font-black uppercase tracking-[0.22em] whitespace-nowrap transition-all ${
                 activeCategory === category
-                  ? 'border-sky-600 bg-sky-600 text-white shadow-lg shadow-sky-200'
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-sky-200 hover:text-sky-700'
+                  ? 'border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-emerald-200 hover:text-emerald-700'
               }`}
             >
               {category}
@@ -141,7 +141,7 @@ export default function FacilitiesPage() {
               {filteredFacilities.map((facility) => (
                 <div
                   key={facility.id}
-                  className="group overflow-hidden rounded-[2.2rem] border border-white/70 bg-white/92 shadow-[0_20px_50px_-35px_rgba(250,204,21,0.22)] backdrop-blur-sm transition-all hover:-translate-y-1 hover:border-sky-200"
+                  className="group overflow-hidden rounded-[2.2rem] border border-white/70 bg-white/92 shadow-[0_20px_50px_-35px_rgba(250,204,21,0.22)] backdrop-blur-sm transition-all hover:-translate-y-1 hover:border-emerald-200"
                 >
                   <div className="relative h-56 overflow-hidden bg-slate-50">
                     {facility.imageUrl ? (
@@ -154,9 +154,9 @@ export default function FacilitiesPage() {
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center text-sky-300">
+                      <div className="flex h-full w-full flex-col items-center justify-center text-emerald-300">
                         <Building2 size={54} className="mb-4" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-500">
+                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-500">
                           Fasilitas Pondok
                         </span>
                       </div>
@@ -164,7 +164,7 @@ export default function FacilitiesPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/8 to-transparent" />
                   </div>
                     <div className="p-7">
-                      <span className="inline-flex rounded-full bg-sky-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-sky-700">
+                      <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
                         {facility.category}
                       </span>
                     <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900">{facility.name}</h2>
@@ -185,12 +185,12 @@ export default function FacilitiesPage() {
       <section className="bg-[#f7f8f4] py-16 md:py-20">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[2rem] border border-white bg-white p-8 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">Lingkungan Pondok</p>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Lingkungan Pondok</p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
               Suasana yang mendukung fokus belajar dan pembiasaan hidup tertib.
             </h2>
             <div className="mt-6 flex items-start gap-4 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5">
-              <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
+              <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
                 <MapPin size={18} />
               </div>
               <p className="text-sm leading-7 text-slate-600">
@@ -200,12 +200,12 @@ export default function FacilitiesPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-sky-50/50 p-8">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-700">Fasilitas Inti</p>
+          <div className="rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/50 p-8">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Fasilitas Inti</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {fallbackFacilities.slice(0, 6).map((facility) => (
                 <div key={facility.name} className="flex gap-3 rounded-[1.5rem] border border-white bg-white p-4 shadow-sm">
-                  <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
+                  <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
                     <CheckCircle2 size={18} />
                   </div>
                   <p className="text-sm font-semibold leading-7 text-slate-700">{facility.name}</p>
@@ -218,7 +218,7 @@ export default function FacilitiesPage() {
 
       <section className="bg-white py-20">
         <div className="mx-auto max-w-5xl px-4 text-center">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600">Selanjutnya</p>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Selanjutnya</p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
             Lanjutkan melihat program pondok atau informasi pendaftaran
           </h2>
@@ -231,7 +231,7 @@ export default function FacilitiesPage() {
             </Link>
             <Link
               href="/psb"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-sky-200 hover:text-sky-700"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-emerald-200 hover:text-emerald-700"
             >
               Buka info PSB <ArrowRight size={16} />
             </Link>

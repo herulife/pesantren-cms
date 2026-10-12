@@ -39,8 +39,8 @@ interface UserRow {
 
 const ROLE_OPTIONS = [
   { value: 'superadmin', label: 'Super Admin', icon: Crown, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-200' },
-  { value: 'bendahara', label: 'Bendahara', icon: Wallet, color: 'text-sky-600', bg: 'bg-sky-50', ring: 'ring-sky-200' },
-  { value: 'panitia_psb', label: 'Panitia PSB', icon: GraduationCap, color: 'text-sky-600', bg: 'bg-sky-50', ring: 'ring-sky-200' },
+  { value: 'bendahara', label: 'Bendahara', icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200' },
+  { value: 'panitia_psb', label: 'Panitia PSB', icon: GraduationCap, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200' },
   { value: 'tim_media', label: 'Tim Media', icon: Camera, color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200' },
   { value: 'pimpinan', label: 'Pimpinan', icon: Shield, color: 'text-red-600', bg: 'bg-red-50', ring: 'ring-red-200' },
   { value: 'wali_kelas', label: 'Wali Kelas', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200' },
@@ -56,7 +56,7 @@ function getUsageStatus(user: UserRow, currentUserId?: number | null) {
   if (user.id === currentUserId) {
     return {
       label: 'Sedang Dipakai',
-      tone: 'text-sky-700 bg-sky-50',
+      tone: 'text-emerald-700 bg-emerald-50',
       detail: 'Akun yang sedang aktif digunakan sekarang.',
     };
   }
@@ -64,7 +64,7 @@ function getUsageStatus(user: UserRow, currentUserId?: number | null) {
   if (user.last_login_at) {
     return {
       label: 'Sudah Pernah Dipakai',
-      tone: 'text-sky-600 bg-sky-50',
+      tone: 'text-emerald-600 bg-emerald-50',
       detail: 'Akun ini pernah dipakai masuk ke sistem.',
     };
   }
@@ -318,7 +318,7 @@ export default function UsersPage() {
           <p className="text-slate-500 text-sm font-medium">Kelola akun, role, dan akses user yang digunakan dalam sistem pondok.</p>
         </div>
         <div className="hidden md:flex gap-2 bg-white px-6 py-4 rounded-lg border border-slate-200 shadow-sm shadow-slate-100">
-           <UserCheck size={20} className="text-sky-500" />
+           <UserCheck size={20} className="text-emerald-500" />
            <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Sistem RBAC Terintegrasi</span>
         </div>
       </div>
@@ -326,7 +326,7 @@ export default function UsersPage() {
       <div className="mb-10 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600">Bootstrap Akun</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Bootstrap Akun</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Tambah User Dari Dashboard</h2>
             <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
               Superadmin atau bendahara bisa membuat akun staf baru langsung dari panel tanpa menunggu pendaftaran publik. Akun wali (role user) tidak ditampilkan di sini.
@@ -335,7 +335,7 @@ export default function UsersPage() {
           <button
             type="button"
             onClick={() => setShowCreateForm((prev) => !prev)}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-sky-700"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
           >
             {showCreateForm ? <X size={16} /> : <Plus size={16} />}
             {showCreateForm ? 'Tutup Form' : 'Tambah User'}
@@ -343,7 +343,7 @@ export default function UsersPage() {
         </div>
 
         {showCreateForm ? (
-          <form onSubmit={handleCreateUser} className="mt-6 grid gap-4 rounded-2xl border border-sky-100 bg-sky-50/40 p-5 md:grid-cols-2 xl:grid-cols-4">
+          <form onSubmit={handleCreateUser} className="mt-6 grid gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5 md:grid-cols-2 xl:grid-cols-4">
             <label className="block">
               <span className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
                 <UserCheck size={14} /> Nama
@@ -352,7 +352,7 @@ export default function UsersPage() {
                 required
                 value={createForm.name}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                 placeholder="Nama pengguna"
               />
             </label>
@@ -366,7 +366,7 @@ export default function UsersPage() {
                 required
                 value={createForm.email}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                 placeholder="nama@darussunnahparung.com"
               />
             </label>
@@ -381,7 +381,7 @@ export default function UsersPage() {
                 minLength={8}
                 value={createForm.password}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                 placeholder="Minimal 8 karakter"
               />
             </label>
@@ -393,7 +393,7 @@ export default function UsersPage() {
               <select
                 value={createForm.role}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
               >
                 {manageableRoleOptions.map((role) => (
                   <option key={role.value} value={role.value}>
@@ -403,7 +403,7 @@ export default function UsersPage() {
               </select>
             </label>
 
-            <div className="md:col-span-2 xl:col-span-4 flex flex-col gap-3 border-t border-sky-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="md:col-span-2 xl:col-span-4 flex flex-col gap-3 border-t border-emerald-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs font-medium leading-6 text-slate-500">
                 Akun baru akan langsung masuk ke tabel user dan bisa dipakai login sesuai role yang dipilih.
               </p>
@@ -451,7 +451,7 @@ export default function UsersPage() {
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-10">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 border border-sky-100"><Shield size={18} /></div>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100"><Shield size={18} /></div>
             <div>
               <h3 className="font-black text-slate-900 text-sm uppercase tracking-wide">Hak Akses Menu</h3>
               <p className="text-xs text-slate-500 mt-1">Atur menu apa yang bisa diakses per role — mis. bendahara uncheck Berita jadi tidak tampil.</p>
@@ -529,7 +529,7 @@ export default function UsersPage() {
                   ))}
                   {notInList.length > 0 && (
                     <details className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2">
-                      <summary className="cursor-pointer text-xs font-bold text-sky-700 hover:underline">
+                      <summary className="cursor-pointer text-xs font-bold text-emerald-700 hover:underline">
                         Tambah menu lain ({notInList.length}) — di luar standar {role.label}
                       </summary>
                       <div className="mt-2 space-y-2">
@@ -551,13 +551,13 @@ export default function UsersPage() {
       {/* Search & Filter Bar */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-10 flex flex-col md:flex-row items-stretch md:items-center gap-6">
           <div className="flex-1 relative group w-full">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-700 transition-colors" size={20} />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-700 transition-colors" size={20} />
             <input 
               type="text"
               placeholder="Cari user berdasarkan identitas nama atau email terdaftar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-16 pr-8 py-4 bg-slate-50 border border-slate-100 focus:bg-white focus:border-sky-500 rounded-xl text-sm font-bold transition-all outline-none shadow-inner"
+              className="w-full pl-16 pr-8 py-4 bg-slate-50 border border-slate-100 focus:bg-white focus:border-emerald-500 rounded-xl text-sm font-bold transition-all outline-none shadow-inner"
             />
           </div>
           
@@ -606,9 +606,9 @@ export default function UsersPage() {
                   const usageStatus = getUsageStatus(u, currentUser?.id);
 
                   return (
-                    <tr key={u.id} className={`group hover:bg-sky-50/40 transition-colors duration-500 ${isSelf ? 'bg-sky-50/40' : ''}`}>
+                    <tr key={u.id} className={`group hover:bg-emerald-50/40 transition-colors duration-500 ${isSelf ? 'bg-emerald-50/40' : ''}`}>
                       <td className="pl-10 pr-6 py-8">
-                        <span className="text-[10px] font-black font-mono text-slate-300 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 shadow-inner group-hover:bg-white group-hover:text-sky-500 transition-all">#{u.id}</span>
+                        <span className="text-[10px] font-black font-mono text-slate-300 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 shadow-inner group-hover:bg-white group-hover:text-emerald-500 transition-all">#{u.id}</span>
                       </td>
                       <td className="px-6 py-8">
                         <div className="flex items-center gap-4">
@@ -652,25 +652,25 @@ export default function UsersPage() {
                                 className={`appearance-none pl-6 pr-12 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest border-2 outline-none cursor-pointer transition-all shadow-sm ${
                                   updating === u.id 
                                     ? 'bg-slate-50 border-slate-100 text-slate-300'
-                                    : 'bg-white border-slate-100 text-slate-600 hover:border-sky-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10'
+                                    : 'bg-white border-slate-100 text-slate-600 hover:border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
                                 }`}
                               >
                                  {manageableRoleOptions.map(r => (
                                    <option key={r.value} value={r.value}>{r.label}</option>
                                  ))}
                               </select>
-                              <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover/select:text-sky-600 transition-colors" />
+                              <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover/select:text-emerald-600 transition-colors" />
                             </div>
                           )}
                           
                           {updating === u.id && (
-                             <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin"></div>
+                             <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
                           )}
 
                           {!isSelf && (isSuper || u.role !== 'superadmin') && (
                             <button
                               onClick={() => openEditDialog(u)}
-                              className="p-3 text-slate-300 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all"
+                              className="p-3 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                               title="Ubah nama & email login"
                             >
                               <Pencil size={20} />
@@ -717,12 +717,12 @@ export default function UsersPage() {
       </div>
 
       {/* Access Permission Legend */}
-      <div className="bg-gradient-to-br from-sky-950 via-slate-950 to-slate-950 p-12 rounded-xl text-white relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/10 rounded-full -mr-32 -mt-32 blur-3xl transition-colors group-hover:bg-sky-500/20"></div>
+      <div className="bg-gradient-to-br from-emerald-950 via-slate-950 to-slate-950 p-12 rounded-xl text-white relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full -mr-32 -mt-32 blur-3xl transition-colors group-hover:bg-emerald-500/20"></div>
         <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
            <div className="max-w-md">
-              <div className="bg-sky-500/15 p-4 rounded-xl w-fit mb-6 border border-sky-500/20">
-                <UserCog size={32} className="text-sky-300" />
+              <div className="bg-emerald-500/15 p-4 rounded-xl w-fit mb-6 border border-emerald-500/20">
+                <UserCog size={32} className="text-emerald-300" />
               </div>
               <h4 className="text-4xl font-black uppercase tracking-tight mb-4 font-outfit">Siklus Otoritas</h4>
               <p className="text-slate-400 text-sm font-medium leading-relaxed">
@@ -733,8 +733,8 @@ export default function UsersPage() {
            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">
               {[
                 { role: 'Super Admin', access: 'Kontrol Penuh', icon: Crown, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-                { role: 'Bendahara', access: 'Keuangan & Akad', icon: Wallet, color: 'text-sky-400', bg: 'bg-sky-400/10' },
-                { role: 'Panitia PSB', access: 'Adm. Santri Baru', icon: GraduationCap, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+                { role: 'Bendahara', access: 'Keuangan & Akad', icon: Wallet, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+                { role: 'Panitia PSB', access: 'Adm. Santri Baru', icon: GraduationCap, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
                 { role: 'Tim Media', access: 'Berita & Edukasi', icon: Camera, color: 'text-purple-400', bg: 'bg-purple-400/10' },
               ].map(item => {
                 const Icon = item.icon;
@@ -777,7 +777,7 @@ export default function UsersPage() {
           <div className="relative w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">Ubah Akun</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-600">Ubah Akun</p>
                 <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
                   {selectedUser?.name || 'User'}
                 </h3>
@@ -806,7 +806,7 @@ export default function UsersPage() {
                 <input
                   value={editForm.name}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   placeholder="Nama pengguna"
                 />
               </label>
@@ -818,7 +818,7 @@ export default function UsersPage() {
                   type="email"
                   value={editForm.email}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   placeholder="nama@darussunnahparung.com"
                 />
               </label>
@@ -839,7 +839,7 @@ export default function UsersPage() {
                 type="button"
                 disabled={isSavingEdit}
                 onClick={handleUpdateProfile}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSavingEdit ? <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Pencil size={16} />}
                 {isSavingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}

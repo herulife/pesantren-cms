@@ -46,10 +46,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu size={22} />
             </button>
             <div className="flex flex-col">
-              <Link href="/admin" className="text-sm font-black uppercase tracking-[0.18em] text-sky-700">
+              <Link href="/admin" className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">
                 Dashboard
               </Link>
-              <Link href="/" className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-colors hover:text-sky-700">
+              <Link href="/" className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 transition-colors hover:text-emerald-700">
                 Lihat Website
               </Link>
             </div>
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/admin/akun"
               aria-label="Akun saya"
               title="Akun Saya"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             >
               <UserAvatar name={user?.name} photoUrl={user?.photo_url} />
             </Link>

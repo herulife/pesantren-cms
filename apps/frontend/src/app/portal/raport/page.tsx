@@ -149,7 +149,7 @@ export default function PortalRaportPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-10">
-        <RefreshCw className="animate-spin text-sky-600" />
+        <RefreshCw className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -203,7 +203,7 @@ export default function PortalRaportPage() {
             <button
               type="button"
               onClick={() => downloadStudentReportPDF(reportPayload)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
             >
               <Download size={16} />
               Download
@@ -238,10 +238,10 @@ export default function PortalRaportPage() {
       )}
 
       {eraport && (
-        <section className="overflow-hidden rounded-[1.5rem] border border-sky-200 bg-gradient-to-br from-sky-600 via-sky-700 to-sky-800 shadow-lg shadow-sky-700/20 print:shadow-none">
+        <section className="overflow-hidden rounded-[1.5rem] border border-emerald-200 bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 shadow-lg shadow-emerald-700/20 print:shadow-none">
           <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-6">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-100">Nilai Akhir LMS · DARUSSUNNAH</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-100">Nilai Akhir LMS · DARUSSUNNAH</p>
               <h2 className="mt-1 font-outfit text-lg font-black tracking-tight text-white">
                 E-Raport {eraport.semester === '1' ? 'Semester Ganjil' : 'Semester Genap'} · TA {eraport.academic_year}
               </h2>
@@ -256,9 +256,9 @@ export default function PortalRaportPage() {
               </button>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-3 text-center ring-1 ring-white/20">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100">Nilai Akhir</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">Nilai Akhir</p>
               <p className="text-2xl font-black text-white">{eraport.is_complete ? eraport.final_score?.toFixed(2) : '\u2013'}</p>
-              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-sky-800">{eraport.is_complete ? eraport.predikat : 'Belum lengkap'}</span>
+              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-emerald-800">{eraport.is_complete ? eraport.predikat : 'Belum lengkap'}</span>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 border-t border-white/10 px-5 py-4 sm:grid-cols-3 lg:px-6">
@@ -268,7 +268,7 @@ export default function PortalRaportPage() {
               { label: 'Kesantrian', value: eraport.kesantrian_score, missing: ((eraport as { missing?: string[] }).missing || []).some(m => m.toLowerCase().includes('kesantrian')) },
             ].map((item) => (
               <div key={item.label} className="rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/10">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-sky-100">{item.label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100">{item.label}</p>
                 <p className="mt-0.5 text-lg font-black text-white">{item.missing ? '\u2013' : Number(item.value || 0).toFixed(2)}</p>
               </div>
             ))}
@@ -291,7 +291,7 @@ export default function PortalRaportPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-600">Penjelasan untuk Wali</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-600">Penjelasan untuk Wali</p>
                 <h3 id="formula-title" className="mt-1 font-outfit text-xl font-black tracking-tight text-slate-900">
                   Dari mana Nilai Akhir berasal?
                 </h3>
@@ -310,7 +310,7 @@ export default function PortalRaportPage() {
             </p>
             <ul className="mt-4 space-y-3">
               {[
-                { name: 'Mata Pelajaran', desc: 'Rata-rata nilai semua mapel semester ini.', tint: 'bg-sky-50 text-sky-700' },
+                { name: 'Mata Pelajaran', desc: 'Rata-rata nilai semua mapel semester ini.', tint: 'bg-emerald-50 text-emerald-700' },
                 { name: 'Project', desc: 'Rata-rata nilai kegiatan project yang sudah dinilai.', tint: 'bg-emerald-50 text-emerald-700' },
                 { name: 'Kesantrian', desc: 'Rata-rata aspek adab, ibadah, disiplin, dan kemandirian yang sudah dinilai.', tint: 'bg-amber-50 text-amber-700' },
               ].map((row) => (
@@ -322,8 +322,8 @@ export default function PortalRaportPage() {
                 </li>
               ))}
             </ul>
-            <div className="mt-4 rounded-2xl bg-sky-50 p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sky-600">Contoh hitung semester ini</p>
+            <div className="mt-4 rounded-2xl bg-emerald-50 p-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-600">Contoh hitung semester ini</p>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">
                 ({Number(eraport.mapel_score || 0).toFixed(1)} + {Number(eraport.project_score || 0).toFixed(1)} + {Number(eraport.kesantrian_score || 0).toFixed(1)}) ÷ 3
                 {' = '}{eraport.is_complete ? eraport.final_score?.toFixed(2) : 'belum lengkap'}
@@ -336,7 +336,7 @@ export default function PortalRaportPage() {
             <button
               type="button"
               onClick={() => setShowFormula(false)}
-              className="mt-5 min-h-[44px] w-full rounded-2xl bg-sky-600 py-3 text-sm font-bold text-white transition hover:bg-sky-700"
+              className="mt-5 min-h-[44px] w-full rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
             >
               Mengerti
             </button>
@@ -350,13 +350,13 @@ export default function PortalRaportPage() {
             label: 'Rata-rata Nilai',
             value: formatScore(reportSummary.averageScore),
             icon: <TrendingUp size={18} />,
-            accent: 'text-sky-700 bg-sky-50 border-sky-100',
+            accent: 'text-emerald-700 bg-emerald-50 border-emerald-100',
           },
           {
             label: 'Nilai Tertinggi',
             value: formatScore(reportSummary.bestScore),
             icon: <Target size={18} />,
-            accent: 'text-sky-700 bg-sky-50 border-sky-100',
+            accent: 'text-emerald-700 bg-emerald-50 border-emerald-100',
           },
           {
             label: 'Total Mapel Dinilai',
@@ -409,7 +409,7 @@ export default function PortalRaportPage() {
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 md:text-right">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Nilai Akhir</p>
-                      <p className="mt-1 text-2xl font-black text-sky-700">{formatScore(item.final_score)}</p>
+                      <p className="mt-1 text-2xl font-black text-emerald-700">{formatScore(item.final_score)}</p>
                     </div>
                   </div>
 
@@ -457,8 +457,8 @@ export default function PortalRaportPage() {
           <div className="px-5 py-5 lg:px-6">
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
-                { label: 'Hadir', value: reportSummary.hadir, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
-                { label: 'Sakit', value: reportSummary.sakit, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
+                { label: 'Hadir', value: reportSummary.hadir, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+                { label: 'Sakit', value: reportSummary.sakit, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
                 { label: 'Izin', value: reportSummary.izin, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
                 { label: 'Alpha', value: reportSummary.alpha, accent: 'bg-rose-50 text-rose-700 border-rose-100' },
               ].map((item) => (
@@ -532,7 +532,7 @@ export default function PortalRaportPage() {
                   { label: 'Total Setoran', value: arbain.length, tone: 'border-slate-200 bg-slate-50 text-slate-900' },
                   { label: 'Lulus', value: arbain.filter((i) => i.status === 'lulus').length, tone: 'border-emerald-100 bg-emerald-50 text-emerald-700' },
                   { label: 'Setor', value: arbain.filter((i) => i.status === 'setor').length, tone: 'border-amber-100 bg-amber-50 text-amber-700' },
-                  { label: 'Proses', value: arbain.filter((i) => i.status === 'proses').length, tone: 'border-sky-100 bg-sky-50 text-sky-700' },
+                  { label: 'Proses', value: arbain.filter((i) => i.status === 'proses').length, tone: 'border-emerald-100 bg-emerald-50 text-emerald-700' },
                 ].map((card) => (
                   <div key={card.label} className={`rounded-xl border p-4 ${card.tone}`}>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-70">{card.label}</p>

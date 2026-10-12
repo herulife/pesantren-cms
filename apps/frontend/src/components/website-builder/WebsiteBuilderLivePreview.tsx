@@ -187,7 +187,7 @@ function renderChrome(
     return (
       <div className="flex h-[48px] items-center justify-between border-b border-slate-200 bg-slate-50 px-4">
         <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-          <Globe2 size={12} className="text-sky-500" />
+          <Globe2 size={12} className="text-emerald-500" />
           {previewPath}
         </div>
         <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{previewTitle}</span>

@@ -10,17 +10,17 @@ export default function PsbSuccessPage() {
     <PublicLayout>
       <section className="py-20 bg-slate-50 min-h-screen">
         <div className="container mx-auto px-4 max-w-3xl">
-          <div className="bg-white p-8 md:p-14 rounded-[3rem] border border-slate-100 shadow-2xl shadow-sky-900/5 text-center relative overflow-hidden">
+          <div className="bg-white p-8 md:p-14 rounded-[3rem] border border-slate-100 shadow-2xl shadow-emerald-900/5 text-center relative overflow-hidden">
              
              {/* Decorative Background */}
-             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-sky-50 to-white opacity-50 pointer-events-none"></div>
+             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-emerald-50 to-white opacity-50 pointer-events-none"></div>
 
              <div className="relative z-10">
-               <div className="w-24 h-24 bg-sky-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-sky-100">
-                  <CheckCircle2 className="text-sky-500" size={48} />
+               <div className="w-24 h-24 bg-emerald-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-emerald-100">
+                  <CheckCircle2 className="text-emerald-500" size={48} />
                </div>
                
-               <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 font-outfit uppercase tracking-tight leading-tight">Pendaftaran <span className="text-sky-600 block sm:inline">Berhasil!</span></h1>
+               <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 font-outfit uppercase tracking-tight leading-tight">Pendaftaran <span className="text-emerald-600 block sm:inline">Berhasil!</span></h1>
                <p className="text-slate-600 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
                  Alhamdulillah, data awal pendaftaran calon santri telah kami terima. Silahkan lengkapi biodata dan unggah dokumen persyaratan di Portal Wali Santri.
                </p>
@@ -49,7 +49,7 @@ export default function PsbSuccessPage() {
                <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link 
                     href="/portal/biodata" 
-                    className="px-8 py-5 bg-sky-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95 flex items-center justify-center gap-3"
+                    className="px-8 py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-3"
                   >
                     <User size={18} />
                     Lengkapi Biodata

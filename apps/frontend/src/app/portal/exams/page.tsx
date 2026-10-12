@@ -22,8 +22,8 @@ export default function AvailableExamsPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-        <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-sky-50 shadow-inner">
-          <RefreshCw className="h-8 w-8 animate-spin text-sky-600" />
+        <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-50 shadow-inner">
+          <RefreshCw className="h-8 w-8 animate-spin text-emerald-600" />
         </div>
         <p className="font-outfit text-sm font-black uppercase tracking-widest text-slate-400">Memuat Ujian...</p>
       </div>
@@ -37,14 +37,14 @@ export default function AvailableExamsPage() {
         <Link href="/portal" className="inline-flex items-center gap-2 w-fit rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 border border-slate-200">
           <ArrowLeft size={16} /> Kembali ke Portal
         </Link>
-        <div className="flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 w-fit">
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 w-fit">
           <GraduationCap size={16} /> Computer Based Test
         </div>
       </div>
 
       {/* Hero Title */}
       <div className="mb-12 relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-10 text-white shadow-2xl">
-        <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-sky-500/20 blur-3xl" />
+        <div className="absolute right-0 top-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="absolute left-0 bottom-0 h-64 w-64 -ml-20 -mb-20 rounded-full bg-purple-500/20 blur-3xl" />
         
         <div className="relative z-10">
@@ -66,15 +66,15 @@ export default function AvailableExamsPage() {
           {exams.map((exam, index) => {
             // Pick a color theme based on index for variety
             const colors = [
-              "from-sky-500 to-sky-700",
+              "from-emerald-500 to-emerald-700",
               "from-purple-500 to-purple-700",
-              "from-sky-500 to-sky-700",
+              "from-emerald-500 to-emerald-700",
               "from-amber-500 to-amber-700"
             ];
             const bgGradient = colors[index % colors.length];
 
             return (
-              <div key={exam.id} className="group relative flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-slate-200 transition-all hover:shadow-2xl hover:shadow-slate-200/50 hover:ring-sky-300">
+              <div key={exam.id} className="group relative flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-slate-200 transition-all hover:shadow-2xl hover:shadow-slate-200/50 hover:ring-emerald-300">
                 
                 {/* Card Header (Subject Cover) */}
                 <div className={`relative h-40 w-full bg-gradient-to-br ${bgGradient} p-6 flex flex-col justify-between overflow-hidden`}>
@@ -112,7 +112,7 @@ export default function AvailableExamsPage() {
                   <div className="mt-auto pt-4">
                     <Link
                       href={`/portal/exams/${exam.id}`}
-                      className="group/btn flex w-full items-center justify-center gap-3 rounded-[1.25rem] bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white transition-all shadow-lg hover:bg-sky-600 hover:shadow-sky-600/30 active:scale-95"
+                      className="group/btn flex w-full items-center justify-center gap-3 rounded-[1.25rem] bg-slate-900 py-4 text-xs font-black uppercase tracking-widest text-white transition-all shadow-lg hover:bg-emerald-600 hover:shadow-emerald-600/30 active:scale-95"
                     >
                       Mulai Mengerjakan
                       <PlayCircle size={18} className="transition-transform group-hover/btn:scale-110" />

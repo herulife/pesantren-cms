@@ -172,7 +172,7 @@ export default function GalleryAdminPage() {
         </div>
         <Link
           href="/admin/gallery/form"
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition-all shadow-xl shadow-sky-600/20 active:scale-95"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 active:scale-95"
         >
           <Plus size={20} />
           <span>Upload Foto</span>
@@ -182,11 +182,11 @@ export default function GalleryAdminPage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-700">Album Kegiatan</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">Album Kegiatan</p>
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Kelola Dokumentasi Per Kegiatan</h2>
           </div>
           <div className="flex items-center gap-3 text-xs font-bold text-slate-500">
-            <span className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-4 py-2 text-sky-700">
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-emerald-700">
               <FolderOpen size={14} />
               {albumSummaries.length} album
             </span>
@@ -202,7 +202,7 @@ export default function GalleryAdminPage() {
             <button
               type="button"
               onClick={() => { setSelectedAlbumFilter('Semua Album'); setPagination((prev) => ({ ...prev, offset: 0 })); }}
-              className={`rounded-xl border p-5 text-left transition-all ${selectedAlbumFilter === 'Semua Album' ? 'border-sky-500 bg-sky-50 shadow-lg shadow-sky-100' : 'border-slate-200 bg-slate-50 hover:border-sky-200 hover:bg-white'}`}
+              className={`rounded-xl border p-5 text-left transition-all ${selectedAlbumFilter === 'Semua Album' ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-100' : 'border-slate-200 bg-slate-50 hover:border-emerald-200 hover:bg-white'}`}
             >
               <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Semua Album</p>
               <h3 className="mt-3 text-xl font-black uppercase tracking-tight text-slate-900">Tampilkan Semua</h3>
@@ -212,13 +212,13 @@ export default function GalleryAdminPage() {
               <Link
                 key={album.slug}
                 href={`/admin/gallery/album/${album.slug}`}
-                className={`rounded-xl border overflow-hidden text-left transition-all ${selectedAlbumFilter === album.slug ? 'border-sky-500 bg-sky-50 shadow-lg shadow-sky-100' : 'border-slate-200 bg-white hover:border-sky-200 hover:-translate-y-1'}`}
+                className={`rounded-xl border overflow-hidden text-left transition-all ${selectedAlbumFilter === album.slug ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-100' : 'border-slate-200 bg-white hover:border-emerald-200 hover:-translate-y-1'}`}
               >
                 <div className="h-36 w-full bg-slate-100">
                   <img src={resolveDisplayImageUrl(album.cover)} alt={album.name} className="h-full w-full object-cover" />
                 </div>
                 <div className="p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">{album.category}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-700">{album.category}</p>
                   <h3 className="mt-2 text-lg font-black uppercase tracking-tight text-slate-900">{album.name}</h3>
                   <div className="mt-3 flex items-center justify-between text-xs font-bold text-slate-500">
                     <span>{album.count} foto</span>
@@ -243,7 +243,7 @@ export default function GalleryAdminPage() {
               <button 
                 key={cat}
                 onClick={() => { setSelectedCategory(cat); setPagination({ ...pagination, offset: 0 }); }}
-                className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 {cat}
               </button>
@@ -251,27 +251,27 @@ export default function GalleryAdminPage() {
           </div>
 
           <div className="flex-1 w-full relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors" size={18} />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
             <input 
               type="text" 
               placeholder="Cari dokumentasi berdasarkan judul..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-sm shadow-inner"
+              className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-bold text-sm shadow-inner"
             />
           </div>
         </div>
 
         {selectedAlbumFilter !== 'Semua Album' && (
-          <div className="px-8 py-4 border-b border-sky-100 bg-sky-50 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="px-8 py-4 border-b border-emerald-100 bg-emerald-50 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-sky-700">Filter Album Aktif</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-700">Filter Album Aktif</p>
               <p className="text-sm font-bold text-slate-700">{albumSummaries.find((album) => album.slug === selectedAlbumFilter)?.name || selectedAlbumFilter}</p>
             </div>
             <button
               type="button"
               onClick={() => setSelectedAlbumFilter('Semua Album')}
-              className="px-4 py-2 rounded-lg bg-white border border-sky-200 text-[10px] font-black uppercase tracking-widest text-sky-700"
+              className="px-4 py-2 rounded-lg bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-700"
             >
               Reset Album
             </button>
@@ -280,12 +280,12 @@ export default function GalleryAdminPage() {
 
         {/* Bulk Actions Bar */}
         {selectedIds.size > 0 && (
-          <div className="bg-sky-50 px-8 py-4 border-b border-sky-100 flex items-center justify-between animate-in slide-in-from-top duration-300">
+          <div className="bg-emerald-50 px-8 py-4 border-b border-emerald-100 flex items-center justify-between animate-in slide-in-from-top duration-300">
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
+              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
                 {selectedIds.size}
               </div>
-              <span className="text-xs font-black text-sky-800 uppercase tracking-widest">Item Terpilih</span>
+              <span className="text-xs font-black text-emerald-800 uppercase tracking-widest">Item Terpilih</span>
             </div>
             <div className="flex items-center gap-3">
               <button 
@@ -309,7 +309,7 @@ export default function GalleryAdminPage() {
                     type="checkbox" 
                     checked={gallery.length > 0 && selectedIds.size === gallery.length} 
                     onChange={(e) => handleSelectAll(e.target.checked)} 
-                    className="w-5 h-5 rounded-lg border-slate-200 text-sky-600 focus:ring-sky-500/20 cursor-pointer transition-all" 
+                    className="w-5 h-5 rounded-lg border-slate-200 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer transition-all" 
                   />
                 </th>
                 <th className="px-6 py-6">Informasi Galeri</th>
@@ -339,13 +339,13 @@ export default function GalleryAdminPage() {
                 gallery.map((item) => {
                   const isChecked = selectedIds.has(item.id);
                   return (
-                    <tr key={item.id} className={`group hover:bg-slate-50 transition-colors ${isChecked ? 'bg-sky-50/50' : ''}`}>
+                    <tr key={item.id} className={`group hover:bg-slate-50 transition-colors ${isChecked ? 'bg-emerald-50/50' : ''}`}>
                       <td className="pl-10 pr-6 py-6 text-center">
                         <input 
                           type="checkbox" 
                           checked={isChecked} 
                           onChange={(e) => handleSelectOne(item.id, e.target.checked)} 
-                          className="w-5 h-5 rounded-lg border-slate-200 text-sky-600 focus:ring-sky-500/20 cursor-pointer transition-all" 
+                          className="w-5 h-5 rounded-lg border-slate-200 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer transition-all" 
                         />
                       </td>
                       <td className="px-6 py-6 max-w-lg">
@@ -356,7 +356,7 @@ export default function GalleryAdminPage() {
                           <div className="flex flex-col gap-2">
                             <button 
                               onClick={() => { setSelectedItem(item); setIsPreviewOpen(true); }}
-                              className="font-black text-slate-900 leading-snug uppercase tracking-tight group-hover:text-sky-600 transition-colors text-left line-clamp-2"
+                              className="font-black text-slate-900 leading-snug uppercase tracking-tight group-hover:text-emerald-600 transition-colors text-left line-clamp-2"
                             >
                               {item.title}
                             </button>
@@ -374,12 +374,12 @@ export default function GalleryAdminPage() {
                       </td>
                       <td className="px-6 py-6 hidden lg:table-cell">
                         <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 uppercase tracking-widest shadow-sm">
-                          <Tag size={12} className="text-sky-500" />
+                          <Tag size={12} className="text-emerald-500" />
                           {item.category}
                         </span>
                       </td>
                       <td className="px-6 py-6 hidden md:table-cell">
-                        <span className="flex items-center gap-2 text-sky-600 bg-sky-50 border border-sky-100 rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+                        <span className="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest">
                           <Eye size={12}/> ONLINE
                         </span>
                       </td>
@@ -387,14 +387,14 @@ export default function GalleryAdminPage() {
                         <div className="flex justify-end items-center gap-2">
                           <button 
                             onClick={() => { setSelectedItem(item); setIsPreviewOpen(true); }}
-                            className="p-3 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all" 
+                            className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" 
                             title="Pratinjau Foto"
                           >
                             <Eye size={20} />
                           </button>
                           <button 
                             onClick={() => { navigator.clipboard.writeText(resolveDisplayImageUrl(item.image_url)); showToast('success', 'URL Gambar berhasil disalin!'); }}
-                            className="p-3 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all" 
+                            className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" 
                             title="Salin Link Gambar"
                           >
                             <Copy size={20} />
@@ -443,13 +443,13 @@ export default function GalleryAdminPage() {
       {/* Preview Modal */}
       {isPreviewOpen && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-sky-950/90 backdrop-blur-xl" onClick={() => setIsPreviewOpen(false)}></div>
+          <div className="absolute inset-0 bg-emerald-950/90 backdrop-blur-xl" onClick={() => setIsPreviewOpen(false)}></div>
           <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col items-center justify-center animate-in zoom-in duration-500">
              <img src={resolveDisplayImageUrl(selectedItem.image_url)} className="w-full h-full object-contain rounded-xl shadow-2xl border border-white/10" />
              <div className="absolute top-4 right-4 flex gap-2">
                 <button 
                   onClick={() => { navigator.clipboard.writeText(resolveDisplayImageUrl(selectedItem.image_url)); showToast('success', 'URL Gambar disalin!'); }}
-                  className="p-4 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-lg hover:bg-sky-600 transition-all font-bold text-xs flex items-center gap-2"
+                  className="p-4 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-lg hover:bg-emerald-600 transition-all font-bold text-xs flex items-center gap-2"
                 >
                   <Copy size={20} /> Salin Link
                 </button>
@@ -458,7 +458,7 @@ export default function GalleryAdminPage() {
                 </button>
              </div>
              <div className="absolute bottom-[-80px] left-0 right-0 text-center">
-                <p className="text-sky-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">{selectedItem.category}</p>
+                <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">{selectedItem.category}</p>
                 <h3 className="text-white text-2xl font-black uppercase tracking-tight">{selectedItem.title}</h3>
              </div>
           </div>

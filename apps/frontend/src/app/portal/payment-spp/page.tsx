@@ -132,7 +132,7 @@ export default function PortalPaymentSppPage() {
       </div>
 
       {bankInfo && (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
           <p className="font-black">Transfer ke: {bankInfo}</p>
           <p className="mt-1 text-xs">Setelah transfer, pilih tagihan di bawah lalu upload bukti. Bendahara akan memverifikasi.</p>
         </div>
@@ -172,7 +172,7 @@ export default function PortalPaymentSppPage() {
                       Kwitansi
                     </button>
                     {b.status !== 'pending' && (
-                      <button onClick={() => openPay(b)} className="rounded-xl bg-sky-600 px-4 py-2 text-xs font-bold text-white hover:bg-sky-700">
+                      <button onClick={() => openPay(b)} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700">
                         Bayar
                       </button>
                     )}

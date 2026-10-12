@@ -122,7 +122,7 @@ export default function NotificationBell() {
 				aria-label="Notifikasi"
 				title="Notifikasi"
 				onClick={toggle}
-				className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:text-sky-700"
+				className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:text-emerald-700"
 			>
 				<Bell size={18} />
 				{unread > 0 && (
@@ -135,7 +135,7 @@ export default function NotificationBell() {
 			{open && (
 				<div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl focus:outline-none sm:w-96">
 					<div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-						<p className="text-sm font-black uppercase tracking-[0.14em] text-sky-700">
+						<p className="text-sm font-black uppercase tracking-[0.14em] text-emerald-700">
 							Notifikasi
 						</p>
 						<div className="flex items-center gap-1">
@@ -143,7 +143,7 @@ export default function NotificationBell() {
 								<button
 									type="button"
 									onClick={markAll}
-									className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-sky-700"
+									className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-emerald-700"
 									title="Tandai semua dibaca"
 								>
 									<CheckCheck size={14} />
@@ -174,7 +174,7 @@ export default function NotificationBell() {
 									key={item.id}
 									type="button"
 									onClick={() => openItem(item)}
-									className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-sky-50 ${
+									className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-emerald-50 ${
 										item.read ? 'opacity-60' : ''
 									}`}
 								>
@@ -187,7 +187,7 @@ export default function NotificationBell() {
 												{item.title}
 											</span>
 											{!item.read && (
-												<span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" />
+												<span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
 											)}
 										</span>
 										<span className="mt-0.5 block truncate text-xs text-slate-500">

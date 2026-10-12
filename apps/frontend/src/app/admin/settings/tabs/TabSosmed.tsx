@@ -70,20 +70,20 @@ export default function TabSosmed() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-sky-600" /></div>;
+  if (isLoading) return <div className="p-10 flex justify-center"><RefreshCw className="animate-spin text-emerald-600" /></div>;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between gap-4">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600">
+                <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
                    <Share2 size={24} />
                 </div>
                 <div>
                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight font-outfit">Media Sosial</h2>
                    <p className="mt-1 text-xs font-medium text-slate-500">
-                      Tampil otomatis di <span className="font-bold text-sky-700">topbar atas</span> &amp; <span className="font-bold text-sky-700">footer</span> website. {filledCount} dari {KEYS.length} terisi.
+                      Tampil otomatis di <span className="font-bold text-emerald-700">topbar atas</span> &amp; <span className="font-bold text-emerald-700">footer</span> website. {filledCount} dari {KEYS.length} terisi.
                    </p>
                 </div>
              </div>
@@ -93,7 +93,7 @@ export default function TabSosmed() {
                const normalized = normalizeUrl(formValues[field.key] || '');
                return (
                  <div key={field.key} className="space-y-4">
-                    <label className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <label className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
                       {field.icon} {field.label}
                     </label>
                     <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export default function TabSosmed() {
                           onChange={(e) => handleChange(field.key, e.target.value)}
                           placeholder={field.placeholder}
                           inputMode="url"
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all"
+                          className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
                        />
                        {normalized ? (
                          <a
@@ -110,7 +110,7 @@ export default function TabSosmed() {
                            target="_blank"
                            rel="noopener noreferrer"
                            title={`Buka ${field.label}`}
-                           className="shrink-0 p-4 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors"
+                           className="shrink-0 p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
                          >
                            <ExternalLink size={16} />
                          </a>
@@ -133,7 +133,7 @@ export default function TabSosmed() {
           <button
              onClick={handleSaveAll}
              disabled={isSaving}
-             className="px-8 py-4 bg-sky-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-sky-700 transition flex items-center gap-3 shadow-lg shadow-sky-600/20 disabled:opacity-50"
+             className="px-8 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition flex items-center gap-3 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
           >
              {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
              SIMPAN SOSMED

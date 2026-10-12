@@ -273,10 +273,10 @@ export default function KwitansiModal({ data, schoolName, schoolAddress, schoolP
             <button onClick={onClose} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
               <X size={16} /> Tutup
             </button>
-            <button onClick={() => void doDownload()} disabled={downloading} className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-60">
+            <button onClick={() => void doDownload()} disabled={downloading} className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60">
               <Download size={16} /> {downloading ? 'Menyiapkan PDF…' : 'Download PDF'}
             </button>
-            <button onClick={doPrint} className="flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700">
+            <button onClick={doPrint} className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">
               <Printer size={16} /> Cetak Kwitansi
             </button>
           </div>

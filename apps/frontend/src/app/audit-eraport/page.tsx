@@ -451,7 +451,7 @@ function CatCard({ cat }: { cat: Cat }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-black uppercase tracking-widest text-sky-700">
+        <h2 className="text-sm font-black uppercase tracking-widest text-emerald-700">
           K{cat.id} · {cat.title}
         </h2>
         <span className="text-sm font-black text-slate-900">
@@ -461,7 +461,7 @@ function CatCard({ cat }: { cat: Cat }) {
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500"
+          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-500"
           style={{ width: `${(cat.ok / cat.denom) * 100}%` }}
         />
       </div>
@@ -493,9 +493,9 @@ export default function AuditEraportPage() {
     <PublicLayout>
       <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="flex flex-wrap items-center gap-3">
-          <GraduationCap size={30} className="text-sky-600" />
+          <GraduationCap size={30} className="text-emerald-600" />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-600">Audit E-Raport</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-600">Audit E-Raport</p>
             <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
               Audit E-Raport · {TOTAL_DENOM} Checkpoint
             </h1>
@@ -506,7 +506,7 @@ export default function AuditEraportPage() {
           </div>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-sky-300"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-emerald-300"
           >
             <ArrowLeft size={14} /> Beranda
           </Link>
@@ -609,14 +609,14 @@ Nilai yang benar: 33.33 "Perlu Perbaikan"  =>  selisih 67 poin`}
           </p>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-5">
-          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-sky-700">
+        <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-emerald-700">
             <ArrowRight size={16} /> Top 5 Prioritas
           </h2>
           <ol className="mt-3 space-y-2">
             {TOP5.map((t, i) => (
               <li key={i} className="flex items-start gap-2 text-sm leading-6 text-slate-700">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[11px] font-black text-white">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-black text-white">
                   {i + 1}
                 </span>
                 {t}
@@ -627,7 +627,7 @@ Nilai yang benar: 33.33 "Perlu Perbaikan"  =>  selisih 67 poin`}
 
         <div className="mt-10">
           <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
-            <FileCheck2 size={20} className="text-sky-600" /> Rincian · {TOTAL_OK}/{TOTAL_DENOM}
+            <FileCheck2 size={20} className="text-emerald-600" /> Rincian · {TOTAL_OK}/{TOTAL_DENOM}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             7 kategori · {TOTAL_DENOM} checkpoint. Setiap butir citing path:line pada kode, kecuali yang ditandai
@@ -671,13 +671,13 @@ Nilai yang benar: 33.33 "Perlu Perbaikan"  =>  selisih 67 poin`}
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/audit"
-            className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-sky-700"
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-emerald-700"
           >
             <Lock size={16} /> Audit Menyeluruh
           </Link>
           <Link
             href="/portal"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-sky-300"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-emerald-300"
           >
             <GraduationCap size={16} /> Buka Portal Wali
           </Link>

@@ -49,8 +49,8 @@ type WebsiteShellRendererProps = {
 };
 
 function primaryClasses(theme: WebsiteBuilderTheme) {
-  if (theme.palette.primary === 'blue') return 'from-blue-600 to-sky-500';
-  if (theme.palette.primary === 'teal') return 'from-teal-600 to-cyan-500';
+  if (theme.palette.primary === 'blue') return 'from-emerald-600 to-emerald-500';
+  if (theme.palette.primary === 'teal') return 'from-teal-600 to-emerald-500';
   if (theme.palette.primary === 'amber') return 'from-amber-500 to-orange-500';
   if (theme.palette.primary === 'slate') return 'from-slate-800 to-slate-600';
   return 'from-emerald-600 to-emerald-400';

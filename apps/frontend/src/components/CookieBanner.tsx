@@ -54,12 +54,12 @@ export default function CookieBanner() {
           <button
             type="button"
             onClick={() => choose('accepted')}
-            className="rounded-xl bg-sky-600 px-4 py-3 text-sm font-black text-white transition hover:bg-sky-700"
+            className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
           >
             Setuju
           </button>
         </div>
-        <Link href="/privasi" className="mt-3 block text-center text-xs font-bold text-sky-700 hover:underline">
+        <Link href="/privasi" className="mt-3 block text-center text-xs font-bold text-emerald-700 hover:underline">
           Baca Kebijakan Privasi
         </Link>
       </div>

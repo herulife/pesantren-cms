@@ -101,9 +101,9 @@ export default function GaleriDetailPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden border-b border-sky-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.22),_transparent_42%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-20 text-white">
+      <section className="relative overflow-hidden border-b border-emerald-900/40 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.22),_transparent_42%),linear-gradient(135deg,_#052e2b_0%,_#064e3b_52%,_#022c22_100%)] py-20 text-white">
         <div className="container relative z-10 mx-auto max-w-6xl px-4">
-          <Link href="/galeri" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-sky-100/80 hover:text-white">
+          <Link href="/galeri" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-100/80 hover:text-white">
             <ArrowLeft size={14} />
             Kembali ke Galeri
           </Link>
@@ -124,11 +124,11 @@ export default function GaleriDetailPage() {
             <PublicGridSkeleton count={8} className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" itemClassName="h-[260px] rounded-[2rem]" />
           ) : album ? (
             <>
-              <div className="mb-8 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-sky-700">
+              <div className="mb-8 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
                 <span className="rounded-full bg-white px-4 py-2 shadow-sm">{album.category || 'Kegiatan'}</span>
                 {album.eventDate && (
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
-                    <CalendarDays size={14} className="text-sky-600" />
+                    <CalendarDays size={14} className="text-emerald-600" />
                     {album.eventDate}
                   </span>
                 )}
@@ -141,7 +141,7 @@ export default function GaleriDetailPage() {
                   className="h-[360px] w-full object-cover"
                 />
                 <div className="px-6 py-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-600">Cover Album</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">Cover Album</p>
                   <h3 className="mt-2 text-2xl font-black uppercase tracking-tight text-slate-900">{album.cover.title}</h3>
                 </div>
               </div>
@@ -189,7 +189,7 @@ export default function GaleriDetailPage() {
                       className="w-full object-cover"
                     />
                     <div className="px-6 py-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-600">{photo.category}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">{photo.category}</p>
                       <h3 className="mt-2 text-lg font-black uppercase tracking-tight text-slate-900">{photo.title}</h3>
                     </div>
                   </div>

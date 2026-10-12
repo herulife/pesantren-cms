@@ -55,7 +55,7 @@ export default function PrivasiPage() {
     <PublicLayout>
       <section className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-3xl px-4">
-          <p className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-sky-700">
+          <p className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-emerald-700">
             <ShieldCheck size={14} /> Kebijakan Privasi
           </p>
           <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
@@ -74,7 +74,7 @@ export default function PrivasiPage() {
                 <ul className="mt-3 space-y-2">
                   {s.body.map((b) => (
                     <li key={b} className="flex gap-3 text-sm leading-7 text-slate-600">
-                      <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
+                      <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       <span>{b}</span>
                     </li>
                   ))}
@@ -86,7 +86,7 @@ export default function PrivasiPage() {
             <Link href="/syarat" className="rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-slate-800">
               Baca Syarat Layanan
             </Link>
-            <Link href="/kontak" className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-sky-300">
+            <Link href="/kontak" className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-emerald-300">
               Hubungi Admin
             </Link>
           </div>
